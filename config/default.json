@@ -16,6 +16,11 @@
   "waiting_discontent": 1,
   "arrival_ticks": [0, 6, 12, 18, 24, 30],
   "preferences": [1, 1],
+  "boredom_free_actions": 1,
+  "boredom_decay": 0.15,
+  "boredom_min_multiplier": 0.4,
+  "switch_min_streak": 2,
+  "switch_bonus": 4,
   "actions": [
     {"name": "ねこじゃらし・ゆっくり", "kind": "play", "satisfaction": 12, "stamina_cost": 8},
     {"name": "ねこじゃらし・普通", "kind": "play", "satisfaction": 20, "stamina_cost": 15},

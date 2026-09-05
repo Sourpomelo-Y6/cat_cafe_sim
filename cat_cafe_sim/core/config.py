@@ -34,6 +34,11 @@ class Config:
     arrival_ticks: tuple[int, ...]
     preferences: tuple[float, float]
     actions: tuple[Action, ...]
+    boredom_free_actions: int = 1
+    boredom_decay: float = 0.15
+    boredom_min_multiplier: float = 0.4
+    switch_min_streak: int = 2
+    switch_bonus: float = 4
 
     @classmethod
     def from_dict(cls, data):
@@ -57,12 +62,18 @@ class Config:
             value = getattr(self, name)
             if type(value) is not int or value < (1 if name != "queue_capacity" else 0):
                 raise ValueError(f"{name} must be a valid integer")
+        for name in ("boredom_free_actions", "switch_min_streak"):
+            if type(getattr(self, name)) is not int or getattr(self, name) < 1:
+                raise ValueError(f"{name} must be a positive integer")
         for name in ("max_stamina", "max_spirit", "refill_cost", "rest_recovery",
                      "satisfaction_target", "time_price", "success_bonus", "perfect_multiplier",
-                     "initial_funds", "failure_discontent", "waiting_discontent"):
+                     "initial_funds", "failure_discontent", "waiting_discontent",
+                     "boredom_decay", "boredom_min_multiplier", "switch_bonus"):
             value = getattr(self, name)
             if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value) or value < 0:
                 raise ValueError(f"{name} must be finite and nonnegative")
+        if self.boredom_decay > 1 or self.boredom_min_multiplier > 1:
+            raise ValueError("boredom coefficients must be at most one")
         if min(self.max_stamina, self.max_spirit, self.refill_cost, self.satisfaction_target) <= 0:
             raise ValueError("resource maxima, target and refill cost must be positive")
         if type(self.allow_zero_spirit_after_refill) is not bool:

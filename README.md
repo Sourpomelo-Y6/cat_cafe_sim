@@ -1,6 +1,7 @@
 # 猫カフェシミュレーター
 
-Docsの仕様に基づく、Python標準ライブラリだけで動くPhase 1実装です。
+Docsの仕様に基づく、1日営業シミュレーターとPhase 2の接客環境です。
+営業CLIはPython標準ライブラリだけで動作します。接客環境には任意依存のGymnasiumを使用します。
 Python 3.12で動作確認しています。プロジェクトのルートから実行してください。
 
 ```bash
@@ -26,3 +27,22 @@ python3 -m unittest discover -s tests -v
 猫行動は方策が自動選択します。UIや学習ライブラリは必須ではありません。
 
 実装範囲と判定規則、検証結果、今後の作業は [Docs/Phase1_ImplementationStatus.md](Docs/Phase1_ImplementationStatus.md) を参照してください。
+
+Phase 2では、交流種類ごとの飽き・条件付き切り替えボーナスと、単一接客用の
+`CatInteractionEnv`を追加しました。Q学習は次の実装段階です。
+
+```bash
+# 接客環境用の依存をインストール
+venv/bin/python -m pip install -r requirements-env.txt
+
+# Gymnasium公式チェッカーを含む全テスト
+venv/bin/python -m unittest discover -s tests -v
+
+# 連打・固定ループ・休む行動を、3種類の好みで比較
+venv/bin/python -m cat_cafe_sim.envs --seed 42
+```
+
+Gymnasium未導入の場合、接客環境のテストのみスキップされます。
+ルール・報酬設定、API使用例、診断結果は
+[Docs/Phase2_InteractionFoundation.md](Docs/Phase2_InteractionFoundation.md)を参照してください。
+0.2.0ではログ形式を拡張したため、0.1.0の営業ログは再生対象外です。

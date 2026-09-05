@@ -22,6 +22,8 @@ class Visit:
     seated_at: int | None = None
     actions_taken: int = 0
     previous_action: int | None = None
+    last_interaction_kind: str | None = None
+    interaction_streak: int = 0
     first_visit: bool = True
     first_meeting: bool = True
     departure_reason: str | None = None

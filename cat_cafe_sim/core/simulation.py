@@ -3,6 +3,7 @@ import random
 
 from .config import Config
 from .models import Cat, Seat, Visit
+from .interaction import apply_interaction_history
 from cat_cafe_sim.policies import FixedCatPolicy
 
 
@@ -140,6 +141,7 @@ class SimulationCore:
         obs = {"satisfaction": v.satisfaction, "stamina": self.cat.stamina, "spirit": self.cat.spirit,
                "previous_action": v.previous_action, "first_action": v.actions_taken == 0,
                "first_visit": v.first_visit, "first_meeting": v.first_meeting,
+               "last_interaction_kind": v.last_interaction_kind, "interaction_streak": v.interaction_streak,
                "remaining_ticks": self.config.opening_ticks - self.tick}
         action_id = self.cat_policy.choose(obs) if action_override is None else action_override
         requested_action = action_id
@@ -149,11 +151,11 @@ class SimulationCore:
         action = self.config.actions[action_id]
         before = v.satisfaction
         stamina_before = self.cat.stamina
+        effect = apply_interaction_history(v, action, self.config)
         if action.kind == "rest":
             self.cat.stamina = min(self.config.max_stamina, self.cat.stamina + self.config.rest_recovery)
         else:
-            preference = self.config.preferences[0 if action.kind == "play" else 1]
-            v.satisfaction = min(self.config.satisfaction_target, max(0, v.satisfaction + action.satisfaction * preference))
+            v.satisfaction = min(self.config.satisfaction_target, max(0, v.satisfaction + effect.satisfaction))
             self.cat.stamina = max(0, self.cat.stamina - action.stamina_cost)
         v.seated_ticks += 1
         v.actions_taken += 1
@@ -161,6 +163,9 @@ class SimulationCore:
         self.service_ticks += 1
         self._emit("action", customer_id=v.id, action=action_id, name=action.name,
                    satisfaction_delta=v.satisfaction - before, stamina_before=stamina_before,
+                   stamina_spent=max(0, stamina_before - self.cat.stamina),
+                   boredom_multiplier=effect.boredom_multiplier, switch_bonus=effect.switch_bonus,
+                   last_interaction_kind=v.last_interaction_kind, interaction_streak=v.interaction_streak,
                    stamina=self.cat.stamina, spirit=self.cat.spirit)
         if v.satisfaction >= self.config.satisfaction_target:
             self._depart(v, "success", perfect=self.cat.stamina == 0)
