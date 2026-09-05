@@ -2,7 +2,7 @@ from dataclasses import asdict, dataclass
 import random
 
 from .config import Config
-from .models import Cat, Seat, Visit
+from .models import Cat, Seat, StartState, Visit
 from .interaction import apply_interaction_history
 from cat_cafe_sim.policies import FixedCatPolicy
 
@@ -18,9 +18,13 @@ class Command:
 class SimulationCore:
     """1日、1匹、1席。stepは来客→操作→接客→期限/閉店の順に1tick進む。"""
 
-    def __init__(self, config=None, seed=0, cat_policy=None):
+    def __init__(self, config=None, seed=0, cat_policy=None, *, start_state=None):
         self.config = config or Config.load()
         self.config.validate()
+        initial = start_state if start_state is not None else StartState(self.config.max_stamina, self.config.max_spirit)
+        initial.validate(self.config)
+        # NumPyのスカラー等もログに保存できる標準Python型へ揃える。
+        self.start_state = StartState(float(initial.stamina), float(initial.spirit), int(initial.tick))
         self.seed = seed
         self.cat_policy = cat_policy or FixedCatPolicy()
         validate_config = getattr(self.cat_policy, "validate_config", None)
@@ -30,11 +34,11 @@ class SimulationCore:
         self.health_rng = random.Random(f"{seed}:health")
         # Phase 1の来店は固定。将来の乱数来店も営業前に生成する。
         self._schedule = tuple(self.config.arrival_ticks)
-        self.cat = Cat(stamina=self.config.max_stamina, spirit=self.config.max_spirit)
+        self.cat = Cat(stamina=self.start_state.stamina, spirit=self.start_state.spirit)
         self.seat = Seat()
         self.visits = {}
         self.queue = []
-        self.tick = 0
+        self.tick = self.start_state.tick
         self.day = 1
         self.closed = False
         self.funds = self.config.initial_funds

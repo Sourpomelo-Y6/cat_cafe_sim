@@ -1,14 +1,16 @@
 import json
+from dataclasses import asdict
 from pathlib import Path
 
 from cat_cafe_sim import __version__
-from cat_cafe_sim.core import Command, SimulationCore
+from cat_cafe_sim.core import Command, SimulationCore, StartState
 from cat_cafe_sim.core.config import Config
 
 
 def save(core, path, manager_version="manual-v1"):
     payload = {"format_version": 1, "simulator_version": __version__,
                "config": core.config.to_dict(), "seed": core.seed,
+               "start_state": asdict(core.start_state),
                "cat_policy_version": core.cat_policy.version,
                "manager_policy_version": manager_version,
                "records": core.records, "summary": core.summary()}
@@ -24,7 +26,8 @@ def verify(path):
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     if payload["format_version"] != 1 or payload["simulator_version"] != __version__:
         raise ValueError("unsupported replay version")
-    core = SimulationCore(Config.from_dict(payload["config"]), seed=payload["seed"])
+    initial = StartState(**payload["start_state"]) if "start_state" in payload else None
+    core = SimulationCore(Config.from_dict(payload["config"]), seed=payload["seed"], start_state=initial)
     for index, record in enumerate(payload["records"]):
         core.step(Command(**record["command"]), cat_action=record["cat_action"])
         if core.records[-1] != record:

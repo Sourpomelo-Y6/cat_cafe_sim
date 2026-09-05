@@ -69,3 +69,17 @@ python3 -m cat_cafe_sim replay reports/learned_day_seed42.json
 
 `--config`省略時はモデル内の設定を使います。接客ルールがモデルと異なる設定は開始前に拒否します。
 営業中の未知状態率も記録します。[営業への接続と比較結果](Docs/Phase2_LearnedCafePolicy.md)を参照してください。
+
+接客環境では、消耗した猫・閉店間際からの開始状態も指定できます。
+
+```python
+from cat_cafe_sim.envs import CatInteractionEnv
+
+env = CatInteractionEnv()
+observation, info = env.reset(seed=42, options={
+    "stamina": 20, "spirit": 31, "remaining_ticks": 5,
+})
+```
+
+開始条件の制約・終了判定・ログ再生は[接客開始状態の指定](Docs/Phase2_InteractionStart.md)を参照してください。
+学習時に開始条件を混ぜる処理は次の実装段階です。
