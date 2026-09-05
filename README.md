@@ -29,7 +29,7 @@ python3 -m unittest discover -s tests -v
 実装範囲と判定規則、検証結果、今後の作業は [Docs/Phase1_ImplementationStatus.md](Docs/Phase1_ImplementationStatus.md) を参照してください。
 
 Phase 2では、交流種類ごとの飽き・条件付き切り替えボーナスと、単一接客用の
-`CatInteractionEnv`を追加しました。Q学習は次の実装段階です。
+`CatInteractionEnv`を追加しました。さらに離散化・Q学習・モデル保存と比較評価も利用できます。
 
 ```bash
 # 接客環境用の依存をインストール
@@ -46,3 +46,15 @@ Gymnasium未導入の場合、接客環境のテストのみスキップされ�
 ルール・報酬設定、API使用例、診断結果は
 [Docs/Phase2_InteractionFoundation.md](Docs/Phase2_InteractionFoundation.md)を参照してください。
 0.2.0ではログ形式を拡張したため、0.1.0の営業ログは再生対象外です。
+
+猫方策の学習と評価：
+
+```bash
+venv/bin/python -m cat_cafe_sim.training inspect
+venv/bin/python -m cat_cafe_sim.training train
+venv/bin/python -m cat_cafe_sim.training evaluate --split test --output reports/cat_q.test.json
+```
+
+既定では3,000接客を学習し、`models/cat_q.json`と接客ごとのCSV・比較JSONを保存します。
+学習・調整・評価の客条件を分け、保存前後の評価結果も照合します。
+設定と検証結果は[Docs/Phase2_QLearning.md](Docs/Phase2_QLearning.md)を参照してください。

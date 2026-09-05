@@ -14,6 +14,7 @@ class CatInteractionEnv(gym.Env):
     """猫1匹・客1人の接客。満足/不満/閉店はterminated、外部上限はtruncated。"""
 
     metadata = {"render_modes": []}
+    version = "cat-interaction-v2"
 
     def __init__(self, config=None, rewards=None, *, max_steps=None):
         self.config = config or Config.load()
@@ -62,6 +63,8 @@ class CatInteractionEnv(gym.Env):
         departure = next((e for e in events if e["kind"] == "departure"), None)
         return {
             "action_mask": np.full(7, 0 if self._done else 1, dtype=np.int8),
+            # 外部打ち切り後も、学習の将来価値計算には元の状態の有効行動を渡す。
+            "bootstrap_action_mask": np.full(7, 0 if v.departure_reason else 1, dtype=np.int8),
             "reward_breakdown": self.rewards.breakdown(events),
             "departure_reason": v.departure_reason,
             "accounting": {key: departure[key] if departure else 0.0 for key in ("base_charge", "bonus", "bill")},

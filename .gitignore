@@ -4,3 +4,4 @@ __pycache__/
 *.py[cod]
 reports/*.json
 reports/*.csv
+models/
