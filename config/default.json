@@ -1,0 +1,28 @@
+{
+  "opening_ticks": 40,
+  "max_stamina": 100,
+  "max_spirit": 100,
+  "refill_cost": 30,
+  "allow_zero_spirit_after_refill": false,
+  "rest_recovery": 8,
+  "satisfaction_target": 100,
+  "time_price": 10,
+  "success_bonus": 100,
+  "perfect_multiplier": 2,
+  "initial_funds": 0,
+  "queue_capacity": 4,
+  "max_wait_ticks": 8,
+  "failure_discontent": 1,
+  "waiting_discontent": 1,
+  "arrival_ticks": [0, 6, 12, 18, 24, 30],
+  "preferences": [1, 1],
+  "actions": [
+    {"name": "ねこじゃらし・ゆっくり", "kind": "play", "satisfaction": 12, "stamina_cost": 8},
+    {"name": "ねこじゃらし・普通", "kind": "play", "satisfaction": 20, "stamina_cost": 15},
+    {"name": "ねこじゃらし・素早く", "kind": "play", "satisfaction": 28, "stamina_cost": 25},
+    {"name": "なでなで・ゆっくり", "kind": "pet", "satisfaction": 10, "stamina_cost": 5},
+    {"name": "なでなで・普通", "kind": "pet", "satisfaction": 16, "stamina_cost": 10},
+    {"name": "なでなで・素早く", "kind": "pet", "satisfaction": 22, "stamina_cost": 18},
+    {"name": "休む", "kind": "rest", "satisfaction": 0, "stamina_cost": 0}
+  ]
+}
