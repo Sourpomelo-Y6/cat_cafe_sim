@@ -1,5 +1,6 @@
 from dataclasses import asdict
 import statistics
+from itertools import product
 
 from cat_cafe_sim.envs import CatInteractionEnv
 from cat_cafe_sim.policies import FixedCatPolicy, RandomCatPolicy
@@ -10,12 +11,16 @@ def evaluate(model, *, split="validation"):
         raise ValueError("evaluation split must be validation or test")
     preferences_list = getattr(model.settings, f"{split}_preferences")
     seeds = getattr(model.settings, f"{split}_seeds")
+    model.settings.validate_starts(model.config)
+    profiles = getattr(model.settings, f"{split}_starts")
+    starts = [(p.name, options) for p in profiles for options in p.cases()] if profiles else [("default", {})]
     results = []
     for preferences in preferences_list:
-        for seed in seeds:
+        for seed, (profile, options) in product(seeds, starts):
             for name in ("random", "fixed", "q_learning"):
                 env = CatInteractionEnv(model.config, model.rewards)
-                observation, info = env.reset(seed=seed, options={"preferences": preferences})
+                observation, info = env.reset(seed=seed, options={"preferences": preferences, **options})
+                initial = dict(info["initial_state"])
                 baseline = RandomCatPolicy(seed) if name == "random" else FixedCatPolicy()
                 actions = []
                 rewards = dict.fromkeys(asdict(model.rewards), 0.0)
@@ -34,6 +39,7 @@ def evaluate(model, *, split="validation"):
                     if terminated or truncated:
                         break
                 results.append({"policy": name, "preferences": list(preferences), "seed": seed,
+                                "start_profile": profile, "initial_state": initial,
                                 "departure_reason": info["departure_reason"], **info["metrics"],
                                 "reward": sum(rewards.values()), "reward_breakdown": rewards,
                                 "unknown_states": unknown, "actions": actions})

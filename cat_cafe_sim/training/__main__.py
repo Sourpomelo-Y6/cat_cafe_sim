@@ -45,8 +45,8 @@ def main():
             command.add_argument("--rewards", type=Path, default=DEFAULT_REWARDS)
             command.add_argument("--episodes", type=int)
             command.add_argument("--seed", type=int)
-            command.add_argument("--model", type=Path, default=Path("models/cat_q.json"))
-            command.add_argument("--report-prefix", type=Path, default=Path("reports/cat_q"))
+            command.add_argument("--model", type=Path)
+            command.add_argument("--report-prefix", type=Path)
     comparison = sub.add_parser("evaluate")
     comparison.add_argument("--model", type=Path, default=Path("models/cat_q.json"))
     comparison.add_argument("--split", choices=("validation", "test"), default="validation")
@@ -62,6 +62,10 @@ def main():
     if args.command == "train":
         overrides = {key: getattr(args, key) for key in ("episodes", "seed") if getattr(args, key) is not None}
         settings = replace(settings, **overrides)
+        stem = f"cat_q_mixed_seed{settings.seed}" if settings.train_starts else "cat_q"
+        args.model = args.model or Path("models") / f"{stem}.json"
+        args.report_prefix = args.report_prefix or Path("reports") / stem
+    settings.validate_starts(config)
     encoder = StateEncoder.for_config(config, settings.resource_edges, settings.time_edges)
     print(json.dumps(encoder.summary(), indent=2), flush=True)
     if encoder.summary()["state_upper_bound"] > settings.max_states:

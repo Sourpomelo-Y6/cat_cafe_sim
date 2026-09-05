@@ -5,20 +5,25 @@ from cat_cafe_sim.envs import CatInteractionEnv
 from .encoding import StateEncoder
 from .model import CatModel
 from .q_learning import QLearningAgent
+from .start_profiles import choose_start
 
 
 def train(config, rewards, settings, *, progress=None):
+    settings.validate_starts(config)
     encoder = StateEncoder.for_config(config, settings.resource_edges, settings.time_edges)
     if encoder.summary()["state_upper_bound"] > settings.max_states:
         raise ValueError("state budget exceeded; reduce bins before training")
     agent = QLearningAgent(encoder, learning_rate=settings.learning_rate, discount=settings.discount, seed=settings.seed)
     scenarios = random.Random(f"{settings.seed}:training-scenarios")
+    starts = random.Random(f"{settings.seed}:training-starts")
     env = CatInteractionEnv(config, rewards)
     rows = []
     for episode in range(settings.episodes):
         preferences = scenarios.choice(settings.train_preferences)
+        profile, start_options = choose_start(settings.train_starts, starts)
         seed = settings.scenario_seed + episode
-        observation, info = env.reset(seed=seed, options={"preferences": preferences})
+        observation, info = env.reset(seed=seed, options={"preferences": preferences, **start_options})
+        initial = dict(info["initial_state"])
         epsilon = settings.epsilon(episode)
         totals = dict.fromkeys(asdict(rewards), 0.0)
         actions = [0] * 7
@@ -37,6 +42,7 @@ def train(config, rewards, settings, *, progress=None):
             if terminated or truncated:
                 break
         rows.append({"episode": episode + 1, "scenario_seed": seed,
+                     "start_profile": profile, **{f"initial_{key}": value for key, value in initial.items()},
                      "play_preference": preferences[0], "pet_preference": preferences[1],
                      "epsilon": epsilon, "reward": total_reward,
                      "departure_reason": info["departure_reason"], **info["metrics"],

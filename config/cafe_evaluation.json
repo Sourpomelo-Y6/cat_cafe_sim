@@ -1,0 +1,17 @@
+{
+  "validation": {
+    "seeds": [40000, 40001],
+    "scenarios": [
+      {"name": "validation_regular", "preferences": [1.1, 0.9], "arrival_ticks": [0, 5, 11, 17, 23, 29]},
+      {"name": "validation_spaced", "preferences": [0.9, 1.1], "arrival_ticks": [0, 8, 16, 24, 32]}
+    ]
+  },
+  "test": {
+    "seeds": [50000, 50001, 50002, 50003, 50004],
+    "scenarios": [
+      {"name": "test_play", "preferences": [1.35, 0.65], "arrival_ticks": [0, 4, 9, 15, 22, 30]},
+      {"name": "test_pet", "preferences": [0.65, 1.35], "arrival_ticks": [0, 7, 13, 20, 27, 34]},
+      {"name": "test_difficult", "preferences": [0.45, 0.45], "arrival_ticks": [0, 5, 10, 16, 23, 31]}
+    ]
+  }
+}

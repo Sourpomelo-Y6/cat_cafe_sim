@@ -1,0 +1,200 @@
+{
+  "episodes": 3000,
+  "learning_rate": 0.15,
+  "discount": 0.95,
+  "epsilon_start": 1.0,
+  "epsilon_end": 0.05,
+  "epsilon_decay_fraction": 0.8,
+  "seed": 42,
+  "scenario_seed": 10000,
+  "resource_edges": [
+    0.25,
+    0.5,
+    0.75
+  ],
+  "time_edges": [
+    1,
+    5,
+    10,
+    20
+  ],
+  "max_states": 100000,
+  "train_preferences": [
+    [
+      1,
+      1
+    ],
+    [
+      1.5,
+      0.5
+    ],
+    [
+      0.5,
+      1.5
+    ],
+    [
+      0,
+      2
+    ],
+    [
+      2,
+      0
+    ]
+  ],
+  "validation_preferences": [
+    [
+      1.1,
+      0.9
+    ],
+    [
+      0.9,
+      1.1
+    ]
+  ],
+  "test_preferences": [
+    [
+      1.35,
+      0.65
+    ],
+    [
+      0.65,
+      1.35
+    ],
+    [
+      0.45,
+      0.45
+    ]
+  ],
+  "validation_seeds": [
+    20000,
+    20001,
+    20002,
+    20003,
+    20004
+  ],
+  "test_seeds": [
+    30000,
+    30001,
+    30002,
+    30003,
+    30004
+  ],
+  "train_starts": [
+    {
+      "name": "full",
+      "weight": 3,
+      "stamina": [
+        100
+      ],
+      "spirit": [
+        100
+      ],
+      "remaining_ticks": [
+        40
+      ]
+    },
+    {
+      "name": "depleted",
+      "weight": 5,
+      "stamina": [
+        10,
+        25,
+        50,
+        75,
+        100
+      ],
+      "spirit": [
+        10,
+        30,
+        40,
+        70,
+        100
+      ],
+      "remaining_ticks": [
+        10,
+        20,
+        30,
+        40
+      ]
+    },
+    {
+      "name": "late",
+      "weight": 2,
+      "stamina": [
+        10,
+        25,
+        50,
+        75,
+        100
+      ],
+      "spirit": [
+        10,
+        30,
+        40,
+        70,
+        100
+      ],
+      "remaining_ticks": [
+        1,
+        3,
+        5
+      ]
+    }
+  ],
+  "validation_starts": [
+    {
+      "name": "validation_mid",
+      "weight": 1,
+      "stamina": [
+        60
+      ],
+      "spirit": [
+        55
+      ],
+      "remaining_ticks": [
+        12
+      ]
+    },
+    {
+      "name": "validation_early",
+      "weight": 1,
+      "stamina": [
+        90
+      ],
+      "spirit": [
+        85
+      ],
+      "remaining_ticks": [
+        28
+      ]
+    }
+  ],
+  "test_starts": [
+    {
+      "name": "test_late",
+      "weight": 1,
+      "stamina": [
+        35
+      ],
+      "spirit": [
+        25
+      ],
+      "remaining_ticks": [
+        7
+      ]
+    },
+    {
+      "name": "test_mid",
+      "weight": 1,
+      "stamina": [
+        85
+      ],
+      "spirit": [
+        65
+      ],
+      "remaining_ticks": [
+        17
+      ]
+    }
+  ]
+}

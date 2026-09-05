@@ -45,6 +45,7 @@ class CatModel:
         config = Config.from_dict(data["game_config"])
         rewards = CatRewards(**data["rewards"])
         settings = TrainingSettings.from_dict(data["training"])
+        settings.validate_starts(config)
         encoder = StateEncoder.from_dict(data["encoder"])
         expected = StateEncoder.for_config(config, settings.resource_edges, settings.time_edges)
         if encoder != expected or encoder.summary()["state_upper_bound"] > settings.max_states:

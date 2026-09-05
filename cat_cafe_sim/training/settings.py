@@ -4,6 +4,7 @@ import math
 from pathlib import Path
 
 from .encoding import StateEncoder
+from .start_profiles import StartProfile
 
 DEFAULT_TRAINING = Path(__file__).resolve().parents[2] / "config" / "cat_training.json"
 
@@ -26,6 +27,9 @@ class TrainingSettings:
     test_preferences: tuple[tuple[float, float], ...]
     validation_seeds: tuple[int, ...]
     test_seeds: tuple[int, ...]
+    train_starts: tuple[StartProfile, ...] = ()
+    validation_starts: tuple[StartProfile, ...] = ()
+    test_starts: tuple[StartProfile, ...] = ()
 
     def __post_init__(self):
         for key in ("episodes", "max_states", "seed", "scenario_seed"):
@@ -58,6 +62,18 @@ class TrainingSettings:
                 raise ValueError("training and evaluation seed ranges overlap")
         if set(self.validation_seeds) & set(self.test_seeds):
             raise ValueError("validation and test seeds overlap")
+        groups = (self.train_starts, self.validation_starts, self.test_starts)
+        if any(groups) and not all(groups):
+            raise ValueError("provide start profiles for all three splits")
+        cases = []
+        for profiles in groups:
+            if len({p.name for p in profiles}) != len(profiles):
+                raise ValueError("duplicate start profile names")
+            if profiles and not math.isfinite(sum(p.weight for p in profiles)):
+                raise ValueError("profile weight total must be finite")
+            cases.append({tuple(case.values()) for p in profiles for case in p.cases()})
+        if any(cases[i] & cases[j] for i, j in ((0, 1), (0, 2), (1, 2))):
+            raise ValueError("start-state splits must be disjoint")
 
     @classmethod
     def from_dict(cls, data):
@@ -66,7 +82,14 @@ class TrainingSettings:
             data[key] = tuple(data[key])
         for key in ("train_preferences", "validation_preferences", "test_preferences"):
             data[key] = tuple(tuple(pair) for pair in data[key])
+        for key in ("train_starts", "validation_starts", "test_starts"):
+            data[key] = tuple(StartProfile.from_dict(p) for p in data.get(key, ()))
         return cls(**data)
+
+    def validate_starts(self, config):
+        for profiles in (self.train_starts, self.validation_starts, self.test_starts):
+            for profile in profiles:
+                profile.validate_config(config)
 
     @classmethod
     def load(cls, path=DEFAULT_TRAINING):

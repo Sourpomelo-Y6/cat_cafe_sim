@@ -82,4 +82,11 @@ observation, info = env.reset(seed=42, options={
 ```
 
 開始条件の制約・終了判定・ログ再生は[接客開始状態の指定](Docs/Phase2_InteractionStart.md)を参照してください。
-学習時に開始条件を混ぜる処理は次の実装段階です。
+開始条件を混ぜて再学習する場合は、別の設定を指定します。
+
+```bash
+venv/bin/python -m cat_cafe_sim.training train --training config/cat_training_mixed.json --seed 42
+```
+
+旧モデルとは別の`models/cat_q_mixed_seed42.json`へ保存します。
+複数seedの再学習手順と営業比較は[開始条件の混合と比較結果](Docs/Phase2_MixedStartTraining.md)を参照してください。
