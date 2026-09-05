@@ -58,3 +58,14 @@ venv/bin/python -m cat_cafe_sim.training evaluate --split test --output reports/
 既定では3,000接客を学習し、`models/cat_q.json`と接客ごとのCSV・比較JSONを保存します。
 学習・調整・評価の客条件を分け、保存前後の評価結果も照合します。
 設定と検証結果は[Docs/Phase2_QLearning.md](Docs/Phase2_QLearning.md)を参照してください。
+
+保存したモデルで1日営業する場合：
+
+```bash
+venv/bin/python -m cat_cafe_sim run --policy learned --model models/cat_q.json \
+  --seed 42 --output reports/learned_day_seed42.json
+python3 -m cat_cafe_sim replay reports/learned_day_seed42.json
+```
+
+`--config`省略時はモデル内の設定を使います。接客ルールがモデルと異なる設定は開始前に拒否します。
+営業中の未知状態率も記録します。[営業への接続と比較結果](Docs/Phase2_LearnedCafePolicy.md)を参照してください。

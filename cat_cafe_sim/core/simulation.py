@@ -23,6 +23,9 @@ class SimulationCore:
         self.config.validate()
         self.seed = seed
         self.cat_policy = cat_policy or FixedCatPolicy()
+        validate_config = getattr(self.cat_policy, "validate_config", None)
+        if validate_config is not None:
+            validate_config(self.config)
         self.arrival_rng = random.Random(f"{seed}:arrival")
         self.health_rng = random.Random(f"{seed}:health")
         # Phase 1の来店は固定。将来の乱数来店も営業前に生成する。

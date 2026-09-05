@@ -10,12 +10,13 @@ from cat_cafe_sim.replay import save, verify
 
 
 def main():
-    parser = argparse.ArgumentParser(description="猫カフェ Phase 1: UIなしの1日営業と再生検証")
+    parser = argparse.ArgumentParser(description="猫カフェ: 固定・ランダム・学習済み猫による1日営業と再生検証")
     sub = parser.add_subparsers(dest="command", required=True)
     run = sub.add_parser("run")
-    run.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
+    run.add_argument("--config", type=Path, help="省略時は既定設定。learnedではモデル内の設定")
     run.add_argument("--seed", type=int, default=0)
-    run.add_argument("--policy", choices=("fixed", "random"), default="fixed")
+    run.add_argument("--policy", choices=("fixed", "random", "learned"), default="fixed")
+    run.add_argument("--model", type=Path, help="learned用の保存済みQモデルJSON")
     run.add_argument("--output", type=Path, default=Path("reports/day.json"))
     replay = sub.add_parser("replay")
     replay.add_argument("path", type=Path)
@@ -24,9 +25,28 @@ def main():
         core = verify(args.path)
         print("再生一致: 全tickの状態・イベント・集計を確認しました。")
     else:
-        policy = FixedCatPolicy() if args.policy == "fixed" else RandomCatPolicy(args.seed)
+        if args.policy == "learned" and args.model is None:
+            parser.error("--policy learned requires --model")
+        if args.policy != "learned" and args.model is not None:
+            parser.error("--model is only supported with --policy learned")
+        try:
+            if args.policy == "learned":
+                # 固定・ランダム営業とログ再生には学習依存を読み込まない。
+                from cat_cafe_sim.policies.learned import LearnedCatPolicy
+                policy = LearnedCatPolicy.load(args.model)
+                config = Config.load(args.config) if args.config else policy.model.config
+                policy.validate_config(config)
+            else:
+                policy = FixedCatPolicy() if args.policy == "fixed" else RandomCatPolicy(args.seed)
+                config = Config.load(args.config or DEFAULT_CONFIG)
+        except ModuleNotFoundError as error:
+            if error.name not in ("gymnasium", "numpy"):
+                raise
+            parser.error("learned requires dependencies: install requirements-env.txt")
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            parser.error(str(error))
         manager = FixedManagerPolicy()
-        core = SimulationCore(Config.load(args.config), seed=args.seed, cat_policy=policy)
+        core = SimulationCore(config, seed=args.seed, cat_policy=policy)
         while not core.closed:
             core.step(manager_policy=manager)
         save(core, args.output, manager.version)
@@ -34,7 +54,10 @@ def main():
             writer = csv.DictWriter(file, fieldnames=list(core.summary()))
             writer.writeheader()
             writer.writerow({k: json.dumps(v) if isinstance(v, dict) else v for k, v in core.summary().items()})
-    print(json.dumps(core.summary(), ensure_ascii=False, indent=2))
+    result = core.summary()
+    if args.command == "run" and args.policy == "learned":
+        result["policy_diagnostics"] = policy.metadata()
+    print(json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":

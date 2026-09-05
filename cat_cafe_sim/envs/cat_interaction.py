@@ -8,6 +8,7 @@ from cat_cafe_sim.core import Command, SimulationCore
 from cat_cafe_sim.core.config import Config
 from cat_cafe_sim.core.models import Visit
 from .rewards import CatRewards
+from .observations import cat_observation
 
 
 class CatInteractionEnv(gym.Env):
@@ -45,18 +46,14 @@ class CatInteractionEnv(gym.Env):
     def _observation(self):
         v = self._visit()
         c = self.core.cat
-        return {
-            "resources": np.array([v.satisfaction / self.config.satisfaction_target,
-                                   c.stamina / self.config.max_stamina,
-                                   c.spirit / self.config.max_spirit], dtype=np.float32),
-            "previous_action": 7 if v.previous_action is None else v.previous_action,
-            "last_interaction_kind": {None: 2, "play": 0, "pet": 1}[v.last_interaction_kind],
+        return cat_observation({
+            "satisfaction": v.satisfaction, "stamina": c.stamina, "spirit": c.spirit,
+            "previous_action": v.previous_action, "last_interaction_kind": v.last_interaction_kind,
             "interaction_streak": v.interaction_streak,
             "remaining_ticks": self.config.opening_ticks - self.core.tick,
-            "first_action": int(v.actions_taken == 0),
-            "first_visit": int(v.first_visit),
-            "first_meeting": int(v.first_meeting),
-        }
+            "first_action": v.actions_taken == 0, "first_visit": v.first_visit,
+            "first_meeting": v.first_meeting,
+        }, self.config)
 
     def _info(self, events):
         v = self._visit()

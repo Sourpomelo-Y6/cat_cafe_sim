@@ -12,6 +12,9 @@ def save(core, path, manager_version="manual-v1"):
                "cat_policy_version": core.cat_policy.version,
                "manager_policy_version": manager_version,
                "records": core.records, "summary": core.summary()}
+    metadata = getattr(core.cat_policy, "metadata", None)
+    if metadata is not None:
+        payload["cat_policy_metadata"] = metadata()
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
