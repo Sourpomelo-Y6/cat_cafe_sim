@@ -10,7 +10,7 @@ from .start_profiles import choose_start
 
 def train(config, rewards, settings, *, progress=None):
     settings.validate_starts(config)
-    encoder = StateEncoder.for_config(config, settings.resource_edges, settings.time_edges)
+    encoder = StateEncoder.for_config(config, settings.resource_edges, settings.time_edges, settings.stamina_edges)
     if encoder.summary()["state_upper_bound"] > settings.max_states:
         raise ValueError("state budget exceeded; reduce bins before training")
     agent = QLearningAgent(encoder, learning_rate=settings.learning_rate, discount=settings.discount, seed=settings.seed)

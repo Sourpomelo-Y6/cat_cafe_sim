@@ -90,3 +90,6 @@ venv/bin/python -m cat_cafe_sim.training train --training config/cat_training_mi
 
 旧モデルとは別の`models/cat_q_mixed_seed42.json`へ保存します。
 複数seedの再学習手順と営業比較は[開始条件の混合と比較結果](Docs/Phase2_MixedStartTraining.md)を参照してください。
+
+混合開始モデルの不満退店を分析し、体力区間を細分化した候補も比較しました。
+[失敗分析・再現手順・採用判断](Docs/Phase2_FailureAnalysis.md)を参照してください。

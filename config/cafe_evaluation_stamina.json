@@ -1,0 +1,95 @@
+{
+  "validation": {
+    "seeds": [
+      40000,
+      40001
+    ],
+    "scenarios": [
+      {
+        "name": "validation_regular",
+        "preferences": [
+          1.1,
+          0.9
+        ],
+        "arrival_ticks": [
+          0,
+          5,
+          11,
+          17,
+          23,
+          29
+        ]
+      },
+      {
+        "name": "validation_spaced",
+        "preferences": [
+          0.9,
+          1.1
+        ],
+        "arrival_ticks": [
+          0,
+          8,
+          16,
+          24,
+          32
+        ]
+      }
+    ]
+  },
+  "test": {
+    "seeds": [
+      60000,
+      60001,
+      60002,
+      60003,
+      60004
+    ],
+    "scenarios": [
+      {
+        "name": "fresh_play",
+        "preferences": [
+          1.25,
+          0.7
+        ],
+        "arrival_ticks": [
+          0,
+          6,
+          10,
+          18,
+          25,
+          33
+        ]
+      },
+      {
+        "name": "fresh_pet",
+        "preferences": [
+          0.7,
+          1.25
+        ],
+        "arrival_ticks": [
+          0,
+          4,
+          12,
+          19,
+          26,
+          32
+        ]
+      },
+      {
+        "name": "fresh_difficult",
+        "preferences": [
+          0.55,
+          0.5
+        ],
+        "arrival_ticks": [
+          0,
+          7,
+          14,
+          19,
+          24,
+          30
+        ]
+      }
+    ]
+  }
+}

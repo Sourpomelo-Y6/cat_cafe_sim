@@ -30,6 +30,7 @@ class TrainingSettings:
     train_starts: tuple[StartProfile, ...] = ()
     validation_starts: tuple[StartProfile, ...] = ()
     test_starts: tuple[StartProfile, ...] = ()
+    stamina_edges: tuple[float, ...] | None = None
 
     def __post_init__(self):
         for key in ("episodes", "max_states", "seed", "scenario_seed"):
@@ -42,7 +43,9 @@ class TrainingSettings:
                 raise ValueError(f"{key} must be in [0, 1]")
         if self.learning_rate == 0 or self.epsilon_decay_fraction == 0 or self.epsilon_end > self.epsilon_start:
             raise ValueError("invalid learning rate or epsilon schedule")
-        StateEncoder(self.resource_edges, self.time_edges, 1, 1)
+        StateEncoder(self.resource_edges, self.time_edges, 1, 1,
+                     version="cat-state-v1" if self.stamina_edges is None else "cat-state-v2-stamina",
+                     stamina_edges=self.stamina_edges)
         preferences = []
         for split in ("train", "validation", "test"):
             conditions = getattr(self, f"{split}_preferences")
@@ -84,6 +87,8 @@ class TrainingSettings:
             data[key] = tuple(tuple(pair) for pair in data[key])
         for key in ("train_starts", "validation_starts", "test_starts"):
             data[key] = tuple(StartProfile.from_dict(p) for p in data.get(key, ()))
+        if data.get("stamina_edges") is not None:
+            data["stamina_edges"] = tuple(data["stamina_edges"])
         return cls(**data)
 
     def validate_starts(self, config):

@@ -47,7 +47,7 @@ class CatModel:
         settings = TrainingSettings.from_dict(data["training"])
         settings.validate_starts(config)
         encoder = StateEncoder.from_dict(data["encoder"])
-        expected = StateEncoder.for_config(config, settings.resource_edges, settings.time_edges)
+        expected = StateEncoder.for_config(config, settings.resource_edges, settings.time_edges, settings.stamina_edges)
         if encoder != expected or encoder.summary()["state_upper_bound"] > settings.max_states:
             raise ValueError("model encoder does not match configuration or state budget")
         if data["learning_rate"] != settings.learning_rate or data["discount"] != settings.discount:

@@ -62,11 +62,12 @@ def main():
     if args.command == "train":
         overrides = {key: getattr(args, key) for key in ("episodes", "seed") if getattr(args, key) is not None}
         settings = replace(settings, **overrides)
-        stem = f"cat_q_mixed_seed{settings.seed}" if settings.train_starts else "cat_q"
+        stem = (f"cat_q_stamina_seed{settings.seed}" if settings.stamina_edges is not None
+                else f"cat_q_mixed_seed{settings.seed}" if settings.train_starts else "cat_q")
         args.model = args.model or Path("models") / f"{stem}.json"
         args.report_prefix = args.report_prefix or Path("reports") / stem
     settings.validate_starts(config)
-    encoder = StateEncoder.for_config(config, settings.resource_edges, settings.time_edges)
+    encoder = StateEncoder.for_config(config, settings.resource_edges, settings.time_edges, settings.stamina_edges)
     print(json.dumps(encoder.summary(), indent=2), flush=True)
     if encoder.summary()["state_upper_bound"] > settings.max_states:
         parser.error("state budget exceeded; reduce bins before training")
