@@ -116,3 +116,5 @@ python3 -m cat_cafe_sim.human_cat_gui
 [試遊画面の操作方法と検証結果](Docs/HumanToCatPlaytestUI.md)を参照してください。
 
 次の拡張として、[お客のテンション、心をつかむ／心を開く、同時発動の資金ボーナス、動作種類の追加](Docs/HumanToCatSpecialActions.md)を整理しています（未実装）。
+
+[特別行動の初回実装用仕様](Docs/HumanToCatSpecialActionsSpecification.md)には、ゲージ増減・予約処理・猫の任意発動・終了条件・暫定ボーナスとターン例をまとめています（未実装）。
