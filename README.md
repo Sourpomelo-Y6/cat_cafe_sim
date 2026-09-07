@@ -114,3 +114,5 @@ python3 -m cat_cafe_sim.human_cat_gui
 
 6つの行動、日本語の反応・履歴、関心・体力表示、条件変更・再開始、ログ保存に対応しています。
 [試遊画面の操作方法と検証結果](Docs/HumanToCatPlaytestUI.md)を参照してください。
+
+次の拡張として、[お客のテンション、心をつかむ／心を開く、同時発動の資金ボーナス、動作種類の追加](Docs/HumanToCatSpecialActions.md)を整理しています（未実装）。

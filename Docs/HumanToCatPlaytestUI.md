@@ -54,3 +54,6 @@ CAT_CAFE_TEST_GUI=1 venv/bin/python -m unittest discover -s tests -p test_human_
 
 次は手動試遊で反応の分かりやすさと低体力からの立て直しを確認する。
 営業への接続、学習、「心をつかむ／心を開く」は引き続き後続範囲。
+
+2026-09-07追記：[テンション・特別行動・種類拡張の追加案](HumanToCatSpecialActions.md)を整理した。
+本書の実装・検証記録は初期ルールのもの。追加案は未実装で、次の仕様具体化の対象とする。
