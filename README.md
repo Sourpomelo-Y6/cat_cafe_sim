@@ -96,4 +96,12 @@ venv/bin/python -m cat_cafe_sim.training train --training config/cat_training_mi
 
 人対人の行動を人対猫に置き換える[行動原案](Docs/HumanToCatActionProposal.md)について、
 [主体・行動効果・猫の反応・最小実装範囲の設計案](Docs/HumanToCatInteractionDesign.md)を整理しています。
-この新しい交流モードは設計段階です。
+単独交流の初期実装を追加しました。実行・再生・固定方策の比較ができます。
+
+```bash
+python3 -m cat_cafe_sim.human_cat_demo run --actions direct direct pause feint
+python3 -m cat_cafe_sim.human_cat_demo replay reports/human_cat_session.json
+python3 -m cat_cafe_sim.human_cat_demo compare
+```
+
+[実装範囲・操作方法・48条件の比較結果](Docs/HumanToCatInteractionImplementation.md)を参照してください。

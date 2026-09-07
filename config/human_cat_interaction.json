@@ -1,0 +1,28 @@
+{
+  "ticks": 20,
+  "max_stamina": 100,
+  "target": 100,
+  "preferences": [
+    1,
+    1
+  ],
+  "direct_gain": 12,
+  "direct_cost": 5,
+  "adapt_gain": 10,
+  "adapt_cost": 5,
+  "gentle_gain": 8,
+  "gentle_cost": 2,
+  "intense_gain": 24,
+  "intense_cost": 15,
+  "feint_gain": 10,
+  "feint_cost": 8,
+  "combo_gain": 18,
+  "pause_recovery": 2,
+  "boredom_decay": 0.15,
+  "boredom_floor": 0.4,
+  "low_stamina": 20,
+  "confused_threshold": 6,
+  "favorable_threshold": 10,
+  "enthusiastic_threshold": 18,
+  "confused_multiplier": 0.5
+}

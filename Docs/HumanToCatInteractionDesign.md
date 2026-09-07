@@ -2,6 +2,9 @@
 
 作成日：2026-09-06
 
+初期範囲の実装が完了した。[実装記録と検証結果](HumanToCatInteractionImplementation.md)を参照。
+以下は実装前に整理した設計案の記録。
+
 ## 位置づけ
 
 [行動原案](HumanToCatActionProposal.md)を、人が動作を選び、猫の反応を見ながら交流する仕様へ整理する。
