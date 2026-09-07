@@ -105,3 +105,12 @@ python3 -m cat_cafe_sim.human_cat_demo compare
 ```
 
 [実装範囲・操作方法・48条件の比較結果](Docs/HumanToCatInteractionImplementation.md)を参照してください。
+
+ボタンで猫との交流を試す場合（Tkinterとデスクトップ環境が必要）：
+
+```bash
+python3 -m cat_cafe_sim.human_cat_gui
+```
+
+6つの行動、日本語の反応・履歴、関心・体力表示、条件変更・再開始、ログ保存に対応しています。
+[試遊画面の操作方法と検証結果](Docs/HumanToCatPlaytestUI.md)を参照してください。
