@@ -7,10 +7,14 @@ from .core.human_cat_interaction import (
     ACTIONS, DEFAULT_CONFIG, HumanCatInteraction, InteractionConfig, save, verify,
 )
 
+from .core.human_cat_special import SpecialConfig, SPECIAL_CONFIG, create_session
+
 ACTION_NAMES = dict(zip(ACTIONS, ('素直に動かす', '相手に合わせる', '激しく動かす',
                                   'フェイントを入れる', '動きを止めて待つ', '動作を切り替える')))
 REACTION_NAMES = dict(turn_away='そっぽを向く', listless='けだるそうにする', confused='戸惑う',
                       enthusiastic='熱心に応じる', favorable='好意的に応じる', neutral='普通に応じる')
+ACTION_NAMES['connect'] = '心をつかむ'
+REACTION_NAMES.update(open_up='心を開く', received='特別な働きかけを受け止める')
 END_NAMES = dict(success='交流成功！', exhausted='体力がなくなり、交流終了', timeout='時間になり、交流終了')
 
 
@@ -18,12 +22,12 @@ class PlaySession:
     """画面の入力変換。状態遷移とログ形式は既存coreに委譲する。"""
     def __init__(self, config):
         self.base_config = config
-        self.core = HumanCatInteraction(config)
+        self.core = create_session(config)
 
     def restart(self, play, pet, stamina):
         config = replace(self.base_config, preferences=(float(play), float(pet)))
         # 検証に失敗した場合は現在の交流を保持する。
-        core = HumanCatInteraction(config, stamina=float(stamina))
+        core = create_session(config, stamina=float(stamina))
         self.core = core
 
     def act(self, action):
@@ -36,9 +40,10 @@ class PlaySession:
 
 def history_row(record):
     after = record['after']
-    return (record['tick'] + 1, ACTION_NAMES[record['action']], REACTION_NAMES[record['reaction']],
-            f"{after['engagement']:.1f} (+{record['engagement_delta']:.1f})",
+    row = (record['tick'] + 1, ACTION_NAMES[record['action']], REACTION_NAMES[record['reaction']],
+            f"{after['engagement']:.1f} ({record['engagement_delta']:+.1f})",
             f"{after['stamina']:.1f}")
+    return row + ((f"{after['tension']:.1f}", f"+{sum(record['bonuses'].values()):g}") if 'bonuses' in record else ())
 
 
 class InteractionWindow:
@@ -48,8 +53,8 @@ class InteractionWindow:
         self.root = root
         self.session = PlaySession(config)
         root.title('猫とのふれあい — 試遊')
-        root.geometry('900x680')
-        root.minsize(760, 570)
+        root.geometry('940x800')
+        root.minsize(800, 720)
         root.columnconfigure(0, weight=1)
         root.rowconfigure(0, weight=1)
         frame = ttk.Frame(root, padding=18)
@@ -92,10 +97,21 @@ class InteractionWindow:
             ttk.Label(status, textvariable=value, width=17).grid(row=row, column=2, padx=8)
         ttk.Label(status, textvariable=self.reaction, font=('', 14, 'bold')).grid(row=3, column=0, columnspan=3, sticky='w', pady=(8, 0))
 
+        self.special_status = tk.StringVar()
+        self.tension_text = tk.StringVar()
+        self.tension_bar = None
+        if isinstance(config, SpecialConfig):
+            ttk.Label(status, text='テンション').grid(row=4, column=0)
+            self.tension_bar = ttk.Progressbar(status, maximum=config.target)
+            self.tension_bar.grid(row=4, column=1, sticky='ew')
+            ttk.Label(status, textvariable=self.tension_text).grid(row=4, column=2)
+            ttk.Label(status, textvariable=self.special_status, wraplength=800).grid(row=5, column=0, columnspan=3, sticky='w')
+            ttk.Label(status, text=f'猫は関心{config.optional_threshold:g}以上で、テンション{config.optional_threshold:g}以上・残り1ターン・体力{config.low_stamina:g}以下のいずれかなら心を開きます。', wraplength=800).grid(row=6, column=0, columnspan=3, sticky='w')
+
         actions = ttk.Frame(frame)
         actions.grid(row=4, sticky='ew', pady=(0, 12))
         self.buttons = {}
-        for i, action in enumerate(ACTIONS):
+        for i, action in enumerate(ACTIONS + (('connect',) if isinstance(config, SpecialConfig) else ())):
             actions.columnconfigure(i % 3, weight=1)
             button = ttk.Button(actions, text=ACTION_NAMES[action], command=lambda a=action: self.act(a))
             button.grid(row=i // 3, column=i % 3, sticky='ew', padx=3, pady=3, ipady=5)
@@ -105,8 +121,15 @@ class InteractionWindow:
         history.grid(row=5, sticky='nsew')
         history.columnconfigure(0, weight=1)
         history.rowconfigure(0, weight=1)
-        self.history = ttk.Treeview(history, columns=('tick', 'action', 'reaction', 'engagement', 'stamina'), show='headings', height=7)
-        for name, label, width in zip(self.history['columns'], ('回', '人の動作', '猫の反応', '関心（増分）', '体力'), (45, 180, 170, 140, 70)):
+        columns = ('tick', 'action', 'reaction', 'engagement', 'stamina')
+        labels = ('回', '人の動作', '猫の反応', '関心（増減）', '体力')
+        widths = (40, 150, 150, 130, 60)
+        if isinstance(config, SpecialConfig):
+            columns += ('tension', 'bonus')
+            labels += ('テンション', '獲得資金')
+            widths += (80, 70)
+        self.history = ttk.Treeview(history, columns=columns, show='headings', height=7)
+        for name, label, width in zip(columns, labels, widths):
             self.history.heading(name, text=label)
             self.history.column(name, width=width, minwidth=40)
         self.history.grid(row=0, column=0, sticky='nsew')
@@ -130,7 +153,13 @@ class InteractionWindow:
         self.stamina_text.set(f"{s['stamina']:.1f} / {c.max_stamina:g}")
         self.engagement_bar['value'] = s['engagement']
         self.stamina_bar['value'] = s['stamina']
+        if self.tension_bar is not None:
+            self.tension_bar['value'] = s['tension']
+            self.tension_text.set(f"{s['tension']:.1f} / {c.target:g}")
+            self.special_status.set(f"次回予約：お客 {'心をつかむ' if s['connect_pending'] else 'なし'} ／ 猫 {'心を開く' if s['open_up_pending'] else 'なし'}\n獲得資金 {s['bonus_funds']:g} ／ 発動 お客{s['connect_count']}回・猫{s['open_up_count']}回・同時{s['simultaneous_count']}回")
         reaction = REACTION_NAMES.get(s['previous_reaction'], '猫がこちらを見ています')
+        if s.get('previous_cat_action') in ('open_up', 'received'):
+            reaction = REACTION_NAMES[s['previous_cat_action']]
         self.reaction.set(f"{END_NAMES[s['end_reason']]} — {reaction}" if s['end_reason'] else reaction)
         valid = self.session.core.valid_actions()
         for action, button in self.buttons.items():
@@ -177,10 +206,12 @@ class InteractionWindow:
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--config', type=Path, default=DEFAULT_CONFIG)
+    parser.add_argument('--config', type=Path, default=None)
+    parser.add_argument('--rules', type=int, choices=(1, 2), default=2)
     args = parser.parse_args(argv)
     try:
-        config = InteractionConfig.load(args.config)
+        config = (SpecialConfig.load(args.config or SPECIAL_CONFIG) if args.rules == 2
+                  else InteractionConfig.load(args.config or DEFAULT_CONFIG))
     except (OSError, ValueError, TypeError, KeyError) as error:
         parser.error(str(error))
     try:

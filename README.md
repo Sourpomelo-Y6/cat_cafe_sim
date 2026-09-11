@@ -115,6 +115,17 @@ python3 -m cat_cafe_sim.human_cat_gui
 6つの行動、日本語の反応・履歴、関心・体力表示、条件変更・再開始、ログ保存に対応しています。
 [試遊画面の操作方法と検証結果](Docs/HumanToCatPlaytestUI.md)を参照してください。
 
-次の拡張として、[お客のテンション、心をつかむ／心を開く、同時発動の資金ボーナス、動作種類の追加](Docs/HumanToCatSpecialActions.md)を整理しています（未実装）。
+次の拡張として、[お客のテンション、心をつかむ／心を開く、同時発動の資金ボーナス、動作種類の追加](Docs/HumanToCatSpecialActions.md)を整理しています。特別行動は版2で実装済み、動作種類の追加は未実装です。
 
-[特別行動の初回実装用仕様](Docs/HumanToCatSpecialActionsSpecification.md)には、ゲージ増減・予約処理・猫の任意発動・終了条件・暫定ボーナスとターン例をまとめています（未実装）。
+[特別行動の初回実装用仕様](Docs/HumanToCatSpecialActionsSpecification.md)には、ゲージ増減・予約処理・猫の任意発動・終了条件・暫定ボーナスとターン例をまとめています。
+
+テンションと特別行動を含む版2は、試遊画面の既定です。CLIでは版を指定します。
+
+```bash
+python3 -m cat_cafe_sim.human_cat_gui
+python3 -m cat_cafe_sim.human_cat_demo run --rules 2 --tension 80 --engagement 80 --actions connect
+python3 -m cat_cafe_sim.human_cat_demo compare --rules 2
+```
+
+[版2の操作・互換性・比較結果](Docs/HumanToCatSpecialActionsImplementation.md)を参照してください。
+初期版の試遊画面は`python3 -m cat_cafe_sim.human_cat_gui --rules 1`で起動できます。

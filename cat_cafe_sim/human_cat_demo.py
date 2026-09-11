@@ -8,6 +8,8 @@ from .core.human_cat_interaction import (
     ACTIONS, DEFAULT_CONFIG, NEGATIVE, HumanCatInteraction, InteractionConfig, save, verify,
 )
 
+from .core.human_cat_special import SpecialConfig, SPECIAL_CONFIG, SpecialInteraction
+
 POLICIES = ('direct', 'intense', 'pause_feint', 'responsive', 'switching', 'pause')
 
 
@@ -56,25 +58,43 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest='command', required=True)
     run = sub.add_parser('run', help='指定列を1回だけ実行。終了以後の残り操作は実行しない')
-    run.add_argument('--config', type=Path, default=DEFAULT_CONFIG)
+    run.add_argument('--config', type=Path, default=None)
     run.add_argument('--stamina', type=float)
-    run.add_argument('--actions', nargs='+', choices=ACTIONS, required=True)
+    run.add_argument('--actions', nargs='+', choices=ACTIONS + ('connect',), required=True)
     run.add_argument('--output', type=Path, default=Path('reports/human_cat_session.json'))
     replay = sub.add_parser('replay')
     replay.add_argument('path', type=Path)
     comparison = sub.add_parser('compare')
-    comparison.add_argument('--config', type=Path, default=DEFAULT_CONFIG)
+    comparison.add_argument('--config', type=Path, default=None)
     comparison.add_argument('--output', type=Path, default=Path('reports/human_cat_comparison.json'))
+    for command in (run, comparison):
+        command.add_argument('--rules', type=int, choices=(1, 2), default=1)
+    run.add_argument('--tension', type=float, default=0)
+    run.add_argument('--engagement', type=float, default=0)
     args = parser.parse_args(argv)
     try:
         if args.command == 'replay':
             session = verify(args.path)
             print('Replay matched:', json.dumps(session.summary(), ensure_ascii=False))
         elif args.command == 'compare':
-            rows = compare(InteractionConfig.load(args.config), args.output)
+            if args.rules == 2:
+                from .evaluation.special_actions import compare_special
+                if args.output == Path('reports/human_cat_comparison.json'):
+                    args.output = Path('reports/human_cat_special_comparison.json')
+                rows = compare_special(SpecialConfig.load(args.config or SPECIAL_CONFIG), args.output)
+            else:
+                rows = compare(InteractionConfig.load(args.config or DEFAULT_CONFIG), args.output)
             print(f'{len(rows)} cases saved and replay verified: {args.output}')
         else:
-            session = HumanCatInteraction(InteractionConfig.load(args.config), stamina=args.stamina)
+            if args.rules == 2:
+                session = SpecialInteraction(SpecialConfig.load(args.config or SPECIAL_CONFIG), stamina=args.stamina,
+                                             tension=args.tension, engagement=args.engagement)
+                if args.output == Path('reports/human_cat_session.json'):
+                    args.output = Path('reports/human_cat_special_session.json')
+            else:
+                if args.tension or args.engagement:
+                    raise ValueError('initial gauges require --rules 2')
+                session = HumanCatInteraction(InteractionConfig.load(args.config or DEFAULT_CONFIG), stamina=args.stamina)
             for action in args.actions:
                 if session.state['end_reason']:
                     break
@@ -84,6 +104,8 @@ def main(argv=None):
                       f"関心={state['engagement']:.2f} 体力={state['stamina']:.2f} 種類={state['mode']}")
             save(session, args.output)
             verify(args.output)
+            if args.rules == 2:
+                print(json.dumps(session.summary(), ensure_ascii=False))
             print('終了:', session.state['end_reason'] or '継続中（指定列を実行済み）')
             print(f'Saved and replay verified: {args.output}')
     except (ValueError, TypeError, KeyError, OSError) as error:

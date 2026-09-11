@@ -102,6 +102,9 @@ class HumanCatInteraction:
     def step(self, action):
         if not isinstance(action, str) or action not in self.valid_actions():
             raise ValueError('invalid action or session already ended')
+        return self._step_normal(action)
+
+    def _step_normal(self, action):
         c, s = self.config, self.state
         before = self.observation()
         exchange = action in INTERACTIONS
@@ -170,6 +173,9 @@ def save(session, path):
 
 def verify(path):
     data = json.loads(Path(path).read_text(encoding='utf-8'))
+    if data.get('rule_version') == 2 and type(data.get('rule_version')) is int:
+        from .human_cat_special import verify_special
+        return verify_special(data)
     if data.get('mode_id') != MODE_ID or type(data.get('rule_version')) is not int or data['rule_version'] != RULE_VERSION:
         raise ValueError('unsupported interaction mode or version')
     session = HumanCatInteraction(InteractionConfig.from_dict(data['config']), stamina=data['initial_stamina'])

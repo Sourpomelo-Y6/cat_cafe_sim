@@ -95,3 +95,35 @@ class WindowTests(unittest.TestCase):
                 patch('tkinter.messagebox.showerror') as error:
             app.save_log()
             error.assert_called_once()
+
+
+@unittest.skipUnless(os.environ.get('CAT_CAFE_TEST_GUI') == '1', 'set CAT_CAFE_TEST_GUI=1 on a desktop')
+class SpecialWindowTests(unittest.TestCase):
+    def test_special_reservations_buttons_history_and_save(self):
+        import tkinter as tk
+        from cat_cafe_sim.human_cat_gui import InteractionWindow
+        from cat_cafe_sim.core.human_cat_special import SpecialConfig, SpecialInteraction
+        root = tk.Tk()
+        root.withdraw()
+        self.addCleanup(root.destroy)
+        app = InteractionWindow(root, SpecialConfig())
+        self.assertTrue(app.buttons['connect'].instate(['disabled']))
+        app.session.core = SpecialInteraction(tension=100, engagement=80)
+        app.refresh()
+        root.update_idletasks()
+        self.assertTrue(app.buttons['connect'].instate(['!disabled']))
+        self.assertTrue(app.buttons['direct'].instate(['disabled']))
+        self.assertIn('心をつかむ',app.special_status.get())
+        app.buttons['connect'].invoke()
+        self.assertIn('200',app.special_status.get())
+        self.assertIn('心を開く',app.reaction.get())
+        self.assertTrue(all(b.instate(['disabled']) for b in app.buttons.values()))
+        self.assertEqual(len(app.history.item(app.history.get_children()[0])['values']),7)
+        with tempfile.TemporaryDirectory() as directory:
+            path = str(Path(directory)/'special.json')
+            with patch('tkinter.filedialog.asksaveasfilename',return_value=path):
+                app.save_log()
+            self.assertEqual(verify(path).log(), app.session.core.log())
+        app.restart()
+        self.assertEqual(app.session.core.state['bonus_funds'],0)
+        self.assertEqual(app.session.core.state['tension'],0)

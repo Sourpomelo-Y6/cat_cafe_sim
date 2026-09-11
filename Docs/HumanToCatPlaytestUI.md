@@ -57,3 +57,5 @@ CAT_CAFE_TEST_GUI=1 venv/bin/python -m unittest discover -s tests -p test_human_
 
 2026-09-07追記：[テンション・特別行動・種類拡張の追加案](HumanToCatSpecialActions.md)を整理した。
 本書の実装・検証記録は初期ルールのもの。追加案は未実装で、次の仕様具体化の対象とする。
+
+2026-09-11：画面の既定は[特別行動を含む版2](HumanToCatSpecialActionsImplementation.md)になった。本書の初期画面は`--rules 1`で利用できる。
