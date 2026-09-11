@@ -142,3 +142,12 @@ python3 -m cat_cafe_sim.human_cat_demo compare --rules 3
 
 [版3の操作・設定・120条件の比較結果](Docs/HumanToCatInteractionTypesImplementation.md)を参照してください。
 旧版の試遊画面は`--rules 1`または`--rules 2`で選択できます。
+
+個性別の成功経路と低体力条件を[到達経路の診断](Docs/HumanToCatReachabilityAnalysis.md)にまとめました。
+
+```bash
+python3 -m cat_cafe_sim.evaluation.reachability
+python3 -m cat_cafe_sim.evaluation.reactive_adapt
+```
+
+探索は個性を知った診断用です。公開反応だけの方策とは分けて比較しています。

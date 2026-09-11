@@ -108,3 +108,6 @@ CAT_CAFE_TEST_GUI=1 venv/bin/python -m unittest discover -s tests -p test_human_
 ```
 
 道具購入・在庫、長期的な性格変化、学習、営業への接続は今回の範囲に含めていない。
+
+続いて[個性ごとの成功経路と反応方策の診断](HumanToCatReachabilityAnalysis.md)を実施した。
+距離を大切にする猫にも成功経路を確認し、追加の方策候補を比較した。版3のルール値は据え置いている。
