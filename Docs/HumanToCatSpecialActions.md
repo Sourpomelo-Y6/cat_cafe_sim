@@ -3,7 +3,7 @@
 更新日：2026-09-07 / 状態：追加アイディアの記録
 
 2026-09-11に特別行動を版2として実装した。[実装記録](HumanToCatSpecialActionsImplementation.md)を参照。
-動作種類は[8種類と猫の個性の暫定仕様](HumanToCatInteractionTypes.md)へ具体化した（未実装）。以下は追加案を整理した時点の記録。
+動作種類は[8種類と猫の個性の暫定仕様](HumanToCatInteractionTypes.md)へ具体化し、[版3として実装](HumanToCatInteractionTypesImplementation.md)した。以下は追加案を整理した時点の記録。
 
 特別行動に関する未確定部分は[初回実装用の暫定仕様](HumanToCatSpecialActionsSpecification.md)で具体化した。
 本書は追加アイディアと検討経緯の記録。特別行動の実装時は具体化した仕様を参照し、種類拡張は引き続き別途検討する。

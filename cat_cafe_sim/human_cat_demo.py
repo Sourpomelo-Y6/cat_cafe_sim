@@ -8,6 +8,7 @@ from .core.human_cat_interaction import (
     ACTIONS, DEFAULT_CONFIG, NEGATIVE, HumanCatInteraction, InteractionConfig, save, verify,
 )
 
+from .core.human_cat_types import TypesConfig, TypesInteraction, TYPES_CONFIG, load_presets
 from .core.human_cat_special import SpecialConfig, SPECIAL_CONFIG, SpecialInteraction
 
 POLICIES = ('direct', 'intense', 'pause_feint', 'responsive', 'switching', 'pause')
@@ -60,7 +61,7 @@ def main(argv=None):
     run = sub.add_parser('run', help='指定列を1回だけ実行。終了以後の残り操作は実行しない')
     run.add_argument('--config', type=Path, default=None)
     run.add_argument('--stamina', type=float)
-    run.add_argument('--actions', nargs='+', choices=ACTIONS + ('connect',), required=True)
+    run.add_argument('--actions', nargs='+', required=True)
     run.add_argument('--output', type=Path, default=Path('reports/human_cat_session.json'))
     replay = sub.add_parser('replay')
     replay.add_argument('path', type=Path)
@@ -68,7 +69,8 @@ def main(argv=None):
     comparison.add_argument('--config', type=Path, default=None)
     comparison.add_argument('--output', type=Path, default=Path('reports/human_cat_comparison.json'))
     for command in (run, comparison):
-        command.add_argument('--rules', type=int, choices=(1, 2), default=1)
+        command.add_argument('--rules', type=int, choices=(1, 2, 3), default=1)
+    run.add_argument('--preset', help='版3の個性プリセット名')
     run.add_argument('--tension', type=float, default=0)
     run.add_argument('--engagement', type=float, default=0)
     args = parser.parse_args(argv)
@@ -77,7 +79,12 @@ def main(argv=None):
             session = verify(args.path)
             print('Replay matched:', json.dumps(session.summary(), ensure_ascii=False))
         elif args.command == 'compare':
-            if args.rules == 2:
+            if args.rules == 3:
+                from .evaluation.interaction_types import compare_types
+                if args.output == Path('reports/human_cat_comparison.json'):
+                    args.output = Path('reports/human_cat_types_comparison.json')
+                rows = compare_types(TypesConfig.load(args.config or TYPES_CONFIG), args.output)
+            elif args.rules == 2:
                 from .evaluation.special_actions import compare_special
                 if args.output == Path('reports/human_cat_comparison.json'):
                     args.output = Path('reports/human_cat_special_comparison.json')
@@ -86,7 +93,16 @@ def main(argv=None):
                 rows = compare(InteractionConfig.load(args.config or DEFAULT_CONFIG), args.output)
             print(f'{len(rows)} cases saved and replay verified: {args.output}')
         else:
-            if args.rules == 2:
+            if args.preset and args.rules != 3:
+                raise ValueError('presets require --rules 3')
+            if args.rules == 3:
+                config = TypesConfig.load(args.config or TYPES_CONFIG)
+                if args.preset:
+                    config = replace(config, personality=load_presets()[args.preset])
+                session = TypesInteraction(config, stamina=args.stamina, tension=args.tension, engagement=args.engagement)
+                if args.output == Path('reports/human_cat_session.json'):
+                    args.output = Path('reports/human_cat_types_session.json')
+            elif args.rules == 2:
                 session = SpecialInteraction(SpecialConfig.load(args.config or SPECIAL_CONFIG), stamina=args.stamina,
                                              tension=args.tension, engagement=args.engagement)
                 if args.output == Path('reports/human_cat_session.json'):
@@ -98,13 +114,19 @@ def main(argv=None):
             for action in args.actions:
                 if session.state['end_reason']:
                     break
-                record = session.step(action)
+                if args.rules == 3:
+                    parts = action.split(':')
+                    if len(parts) > 2:
+                        raise ValueError('use switch:target_type')
+                    record = session.step(parts[0], parts[1] if len(parts) == 2 else None)
+                else:
+                    record = session.step(action)
                 state = record['after']
                 print(f"{record['tick'] + 1}: {action} → {record['reaction']} "
                       f"関心={state['engagement']:.2f} 体力={state['stamina']:.2f} 種類={state['mode']}")
             save(session, args.output)
             verify(args.output)
-            if args.rules == 2:
+            if args.rules >= 2:
                 print(json.dumps(session.summary(), ensure_ascii=False))
             print('終了:', session.state['end_reason'] or '継続中（指定列を実行済み）')
             print(f'Saved and replay verified: {args.output}')

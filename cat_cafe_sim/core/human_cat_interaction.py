@@ -43,7 +43,7 @@ class InteractionConfig:
         if type(self.ticks) is not int or self.ticks < 1:
             raise ValueError('ticks must be a positive integer')
         for key, value in asdict(self).items():
-            if key in ('ticks', 'preferences'):
+            if key in ('ticks', 'preferences', 'types', 'personality'):
                 continue
             if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
                 raise ValueError(f'invalid {key}')
@@ -107,6 +107,33 @@ class HumanCatInteraction:
     def _step_normal(self, action):
         c, s = self.config, self.state
         before = self.observation()
+        cost, score, reaction, diagnostic = self._normal_effect(action)
+        multiplier = 0 if reaction in ('turn_away', 'listless') else c.confused_multiplier if reaction == 'confused' else 1
+        s['engagement'] = min(c.target, s['engagement'] + score * multiplier)
+        s['stamina'] = max(0, s['stamina'] - cost)
+        if action == 'pause':
+            s['stamina'] = min(c.max_stamina, s['stamina'] + c.pause_recovery)
+        elif action == 'switch':
+            s['mode'] = self._switch_mode()
+        s['pause_after_interaction'] = action == 'pause' and before['previous_action'] in INTERACTIONS
+        s['previous_action'], s['previous_reaction'] = action, reaction
+        s['remaining_ticks'] -= 1
+        s['end_reason'] = ('exhausted' if s['stamina'] == 0 else 'success' if s['engagement'] >= c.target
+                           else 'timeout' if s['remaining_ticks'] == 0 else None)
+        record = dict(tick=len(self.records), action=action, reaction=reaction, before=before,
+                      after=self.observation(), engagement_delta=s['engagement'] - before['engagement'],
+                      stamina_spent=min(before['stamina'], cost),
+                      stamina_recovered=max(0, s['stamina'] - before['stamina']),
+                      diagnostic=diagnostic)
+        self.records.append(record)
+        return copy.deepcopy(record)
+
+    def _switch_mode(self):
+        return 'pet' if self.state['mode'] == 'play' else 'play'
+
+    def _normal_effect(self, action):
+        c, s = self.config, self.state
+        before = self.observation()
         exchange = action in INTERACTIONS
         base = cost = score = 0
         boredom = 1
@@ -133,25 +160,7 @@ class HumanCatInteraction:
             reaction = 'favorable'
         else:
             reaction = 'neutral'
-        multiplier = 0 if reaction in ('turn_away', 'listless') else c.confused_multiplier if reaction == 'confused' else 1
-        s['engagement'] = min(c.target, s['engagement'] + score * multiplier)
-        s['stamina'] = max(0, s['stamina'] - cost)
-        if action == 'pause':
-            s['stamina'] = min(c.max_stamina, s['stamina'] + c.pause_recovery)
-        elif action == 'switch':
-            s['mode'] = 'pet' if s['mode'] == 'play' else 'play'
-        s['pause_after_interaction'] = action == 'pause' and before['previous_action'] in INTERACTIONS
-        s['previous_action'], s['previous_reaction'] = action, reaction
-        s['remaining_ticks'] -= 1
-        s['end_reason'] = ('exhausted' if s['stamina'] == 0 else 'success' if s['engagement'] >= c.target
-                           else 'timeout' if s['remaining_ticks'] == 0 else None)
-        record = dict(tick=len(self.records), action=action, reaction=reaction, before=before,
-                      after=self.observation(), engagement_delta=s['engagement'] - before['engagement'],
-                      stamina_spent=min(before['stamina'], cost),
-                      stamina_recovered=max(0, s['stamina'] - before['stamina']),
-                      diagnostic=dict(base_gain=base, score=score, boredom_multiplier=boredom))
-        self.records.append(record)
-        return copy.deepcopy(record)
+        return cost, score, reaction, dict(base_gain=base, score=score, boredom_multiplier=boredom)
 
     def summary(self):
         return dict(engagement=self.state['engagement'], stamina=self.state['stamina'],
@@ -173,6 +182,9 @@ def save(session, path):
 
 def verify(path):
     data = json.loads(Path(path).read_text(encoding='utf-8'))
+    if data.get('rule_version') == 3 and type(data.get('rule_version')) is int:
+        from .human_cat_types import verify_types
+        return verify_types(data)
     if data.get('rule_version') == 2 and type(data.get('rule_version')) is int:
         from .human_cat_special import verify_special
         return verify_special(data)

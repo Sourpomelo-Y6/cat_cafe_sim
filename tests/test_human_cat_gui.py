@@ -127,3 +127,48 @@ class SpecialWindowTests(unittest.TestCase):
         app.restart()
         self.assertEqual(app.session.core.state['bonus_funds'],0)
         self.assertEqual(app.session.core.state['tension'],0)
+
+
+@unittest.skipUnless(os.environ.get('CAT_CAFE_TEST_GUI') == '1', 'set CAT_CAFE_TEST_GUI=1 on a desktop')
+class TypesWindowTests(unittest.TestCase):
+    def test_selection_personality_restart_and_specials(self):
+        import tkinter as tk
+        from cat_cafe_sim.human_cat_gui import InteractionWindow
+        from cat_cafe_sim.core.human_cat_types import TypesConfig, TypesInteraction
+        root=tk.Tk();root.withdraw();self.addCleanup(root.destroy)
+        app=InteractionWindow(root,TypesConfig())
+        controls=app.type_controls
+        original=app.session.core.log()
+        controls.preset.set('穏やかな甘えん坊');controls.select_preset()
+        target=next(label for label,key in controls.labels.items() if key=='brush')
+        controls.target.set(target);app.refresh()
+        self.assertEqual(app.session.core.log(),original)
+        app.buttons['switch'].invoke()
+        self.assertEqual(app.session.core.state['mode'],'brush')
+        self.assertTrue(app.buttons['intense'].instate(['disabled']))
+        self.assertTrue(app.buttons['switch'].instate(['disabled']))
+        values=controls.pending.to_dict();values['type_preferences']['brush']=1.9
+        controls.accept_details(values)
+        self.assertEqual(app.session.core.config.personality.type_preferences[5],1)
+        app.restart()
+        self.assertEqual(app.session.core.config.personality.type_preferences[5],1.9)
+        self.assertEqual(app.history.get_children(),())
+        pending=controls.pending
+        values['switch_affinity']=3
+        with self.assertRaises(ValueError):controls.accept_details(values)
+        self.assertEqual(controls.pending,pending)
+        # Open actual editor and close without accepting: no change to staged settings.
+        controls.edit();root.update_idletasks()
+        dialogs=[w for w in root.winfo_children() if isinstance(w,tk.Toplevel)]
+        self.assertEqual(len(dialogs),1)
+        dialogs[0].destroy()
+        self.assertEqual(controls.pending,pending)
+        app.session.core=TypesInteraction(TypesConfig(),tension=100,engagement=100)
+        app.refresh()
+        self.assertTrue(app.buttons['switch'].instate(['disabled']))
+        app.buttons['connect'].invoke()
+        self.assertIn('200',app.special_status.get())
+        with tempfile.TemporaryDirectory() as directory:
+            path=str(Path(directory)/'types.json')
+            with patch('tkinter.filedialog.asksaveasfilename',return_value=path):app.save_log()
+            self.assertEqual(verify(path).log(),app.session.core.log())

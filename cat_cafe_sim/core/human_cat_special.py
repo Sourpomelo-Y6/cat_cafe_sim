@@ -147,4 +147,7 @@ def verify_special(data):
 
 
 def create_session(config, **kwargs):
+    from .human_cat_types import TypesConfig, TypesInteraction
+    if isinstance(config, TypesConfig):
+        return TypesInteraction(config, **kwargs)
     return SpecialInteraction(config, **kwargs) if isinstance(config, SpecialConfig) else HumanCatInteraction(config, **kwargs)

@@ -115,11 +115,11 @@ python3 -m cat_cafe_sim.human_cat_gui
 6つの行動、日本語の反応・履歴、関心・体力表示、条件変更・再開始、ログ保存に対応しています。
 [試遊画面の操作方法と検証結果](Docs/HumanToCatPlaytestUI.md)を参照してください。
 
-次の拡張として、[お客のテンション、心をつかむ／心を開く、同時発動の資金ボーナス、動作種類の追加](Docs/HumanToCatSpecialActions.md)を整理しています。特別行動は版2で実装済み、動作種類の追加は未実装です。
+次の拡張として、[お客のテンション、心をつかむ／心を開く、同時発動の資金ボーナス、動作種類の追加](Docs/HumanToCatSpecialActions.md)を整理しています。特別行動は版2、8種類と個性は版3で実装済みです。
 
 [特別行動の初回実装用仕様](Docs/HumanToCatSpecialActionsSpecification.md)には、ゲージ増減・予約処理・猫の任意発動・終了条件・暫定ボーナスとターン例をまとめています。
 
-テンションと特別行動を含む版2は、試遊画面の既定です。CLIでは版を指定します。
+テンションと特別行動を含む版2も利用できます。試遊画面の既定は後述の版3です。CLIでは版を指定します。
 
 ```bash
 python3 -m cat_cafe_sim.human_cat_gui
@@ -130,4 +130,15 @@ python3 -m cat_cafe_sim.human_cat_demo compare --rules 2
 [版2の操作・互換性・比較結果](Docs/HumanToCatSpecialActionsImplementation.md)を参照してください。
 初期版の試遊画面は`python3 -m cat_cafe_sim.human_cat_gui --rules 1`で起動できます。
 
-次の拡張として、[8種類の交流・猫ごとの好みと強さの好み・飽き・切り替えの暫定仕様](Docs/HumanToCatInteractionTypes.md)をまとめています（未実装）。
+次の拡張として、[8種類の交流・猫ごとの好みと強さの好み・飽き・切り替えの暫定仕様](Docs/HumanToCatInteractionTypes.md)をまとめています。
+
+8種類の交流と5つの個性プリセットを追加しました。画面で変更先と次の猫の個性を選べます。
+
+```bash
+python3 -m cat_cafe_sim.human_cat_gui
+python3 -m cat_cafe_sim.human_cat_demo run --rules 3 --preset '穏やかな甘えん坊' --actions switch:pet direct
+python3 -m cat_cafe_sim.human_cat_demo compare --rules 3
+```
+
+[版3の操作・設定・120条件の比較結果](Docs/HumanToCatInteractionTypesImplementation.md)を参照してください。
+旧版の試遊画面は`--rules 1`または`--rules 2`で選択できます。

@@ -93,3 +93,5 @@ CAT_CAFE_TEST_GUI=1 venv/bin/python -m unittest discover -s tests -p test_human_
 目視の操作感確認は未実施。動作種類の追加、学習、営業財布への接続は後続範囲。
 
 次の種類拡張は[8種類の交流と猫の個性](HumanToCatInteractionTypes.md)に整理した。数値と対応表は暫定仕様で、版2の実装は変更していない。
+
+続いて[8種類と個性の版3](HumanToCatInteractionTypesImplementation.md)を実装した。現在の画面の既定は版3で、本書の版2は`--rules 2`で利用できる。

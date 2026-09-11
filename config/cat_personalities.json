@@ -1,0 +1,97 @@
+{
+  "中立": {
+    "type_preferences": {
+      "teaser": 1,
+      "ball": 1,
+      "plush": 1,
+      "tunnel": 1,
+      "pet": 1,
+      "brush": 1,
+      "voice": 1,
+      "presence": 1
+    },
+    "intensity_preferences": {
+      "gentle": 1,
+      "standard": 1,
+      "active": 1
+    },
+    "boredom_decay": 0.15,
+    "switch_affinity": 0
+  },
+  "活発な探検家": {
+    "type_preferences": {
+      "teaser": 1.5,
+      "ball": 1.7,
+      "plush": 0.8,
+      "tunnel": 1.8,
+      "pet": 0.7,
+      "brush": 0.5,
+      "voice": 0.8,
+      "presence": 0.4
+    },
+    "intensity_preferences": {
+      "gentle": 0.8,
+      "standard": 1,
+      "active": 1.3
+    },
+    "boredom_decay": 0.2,
+    "switch_affinity": 0.2
+  },
+  "穏やかな甘えん坊": {
+    "type_preferences": {
+      "teaser": 0.8,
+      "ball": 0.6,
+      "plush": 1.2,
+      "tunnel": 0.5,
+      "pet": 1.8,
+      "brush": 1.5,
+      "voice": 1.2,
+      "presence": 1.3
+    },
+    "intensity_preferences": {
+      "gentle": 1.3,
+      "standard": 1,
+      "active": 0.4
+    },
+    "boredom_decay": 0.08,
+    "switch_affinity": -0.2
+  },
+  "距離を大切にする猫": {
+    "type_preferences": {
+      "teaser": 1.2,
+      "ball": 1.3,
+      "plush": 0.8,
+      "tunnel": 1.4,
+      "pet": 0.2,
+      "brush": 0,
+      "voice": 1.4,
+      "presence": 1.8
+    },
+    "intensity_preferences": {
+      "gentle": 1.2,
+      "standard": 0.8,
+      "active": 0.5
+    },
+    "boredom_decay": 0.12,
+    "switch_affinity": -0.1
+  },
+  "遊び好きで繊細な猫": {
+    "type_preferences": {
+      "teaser": 1.8,
+      "ball": 1.6,
+      "plush": 1.4,
+      "tunnel": 1.2,
+      "pet": 0.9,
+      "brush": 0.8,
+      "voice": 1,
+      "presence": 0.8
+    },
+    "intensity_preferences": {
+      "gentle": 1.3,
+      "standard": 1,
+      "active": 0.2
+    },
+    "boredom_decay": 0.15,
+    "switch_affinity": 0
+  }
+}
