@@ -187,6 +187,7 @@ class RelationshipWindowTests(unittest.TestCase):
 
     def test_finish_reunion_pair_switch_and_retry(self):
         app=self.app
+        self.assertIn('初対面',app.greeting_text.get())
         app.buttons['direct'].invoke()
         with patch.object(app,'show_result'):
             app.finish_button.invoke()
@@ -195,8 +196,10 @@ class RelationshipWindowTests(unittest.TestCase):
         self.assertTrue(all(b.instate(['disabled']) for b in app.buttons.values()))
         app.restart()
         self.assertEqual(app.session.core.state['affinity_start'],.5)
+        self.assertIn('再会',app.greeting_text.get())
         app.customer_id.set('guest-2');app.restart()
         self.assertEqual(app.session.core.state['affinity_start'],0)
+        self.assertIn('初対面',app.greeting_text.get())
         app.buttons['direct'].invoke()
         with patch.object(app.session.store,'_write',side_effect=OSError('test failure')), \
                 patch('tkinter.messagebox.showerror') as error,patch.object(app,'show_result'):

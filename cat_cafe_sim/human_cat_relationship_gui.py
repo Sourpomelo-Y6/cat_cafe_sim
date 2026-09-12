@@ -4,6 +4,7 @@ from pathlib import Path
 
 from .human_cat_gui import InteractionWindow, PlaySession
 from .storage.relationships import RelationshipStore
+from .relationship_presentation import greeting_text, relationship_change_text
 
 
 class RelationshipPlaySession(PlaySession):
@@ -34,6 +35,7 @@ def result_text(core, persisted):
     parts=r['affinity_breakdown']
     return (f"{END_NAMES[r['end_reason']]}\n猫：{r['cat_id']}　お客：{r['customer_id']}\n"
             f"親しみ {r['affinity_before']:g} → {r['affinity_after']:g}（{r['affinity_delta']:+g}）\n"
+            f"{relationship_change_text(r['affinity_before'], r['affinity_after'])}\n"
             f"内訳：通常 {parts['normal']:+g} / 心をつかむ {parts['connect']:+g} / 心を開く {parts['open_up']:+g}\n"
             f"同時発動 {parts['simultaneous']:+g} / 消耗 {parts['exhaustion']:+g}\n"
             f"範囲制限による未反映 {r['affinity_unapplied']:+g}\n"
@@ -60,6 +62,8 @@ class RelationshipWindow(InteractionWindow):
         ttk.Entry(ids,textvariable=self.customer_id,width=14).pack(side='left',padx=4)
         ttk.Button(ids,text='保存データを選ぶ…',command=self.choose_store).pack(side='left',padx=4)
         ttk.Button(ids,text='新しい保存データ…',command=self.new_store).pack(side='left')
+        self.greeting_text=tk.StringVar()
+        ttk.Label(self.status_frame,textvariable=self.greeting_text,wraplength=850).grid(row=8,column=0,columnspan=3,sticky='w',pady=6)
         self.affinity_text=tk.StringVar()
         self.store_text=tk.StringVar()
         ttk.Label(self.status_frame,textvariable=self.affinity_text,wraplength=850).grid(row=7,column=0,columnspan=3,sticky='w',pady=6)
@@ -78,6 +82,7 @@ class RelationshipWindow(InteractionWindow):
         if not hasattr(self,'affinity_text'):
             return
         r=self.session.core.summary()
+        self.greeting_text.set(greeting_text(self.session.core))
         self.affinity_text.set(f"猫 {self.session.core.cat_id} → お客 {self.session.core.customer_id}　親しみ {r['affinity_before']:g} / 変化予定 {r['affinity_pending']:+g} / 終了時 {r['affinity_after']:g}\n"
                                + ('保存済み' if self.session.persisted else '結果未保存' if r['end_reason'] else '交流中：親しみはまだ保存されていません'))
         self.store_text.set(f'現在の保存先：{self.session.store.path}\n次回の保存先：{self.next_store.path}')

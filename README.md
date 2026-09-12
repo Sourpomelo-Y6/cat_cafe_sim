@@ -169,3 +169,6 @@ python3 -m cat_cafe_sim.human_cat_demo compare --rules 4
 画面では「切り上げる」で成果を確定し、同じ猫ID・客IDで再会すると親しみを引き継ぎます。
 保存先の既定は`saves/relationships.json`です。CLIは`--save-result`指定時だけ関係データを更新します。
 ログ再生は関係データを更新しません。営業の所持金や客満足との接続は今後の作業です。
+
+親しみと個性に応じた[再会時の描写と関係の目安](Docs/HumanToCatRelationshipPresentation.md)も表示します。
+結果画面では、親しみの数値に加えて段階の変化を確認できます。
