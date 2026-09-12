@@ -62,19 +62,39 @@ class InteractionWindow:
         self.root = root
         self.session = PlaySession(config)
         root.title('猫とのふれあい — 試遊')
-        root.geometry('980x880')
-        root.minsize(860, 800)
+        root.geometry('980x740')
+        root.minsize(860, 600)
         root.columnconfigure(0, weight=1)
         root.rowconfigure(0, weight=1)
         frame = ttk.Frame(root, padding=18)
         frame.grid(sticky='nsew')
         frame.columnconfigure(0, weight=1)
-        frame.rowconfigure(5, weight=1)
+        frame.rowconfigure(2, weight=3, minsize=120)
+        frame.rowconfigure(5, weight=2, minsize=140)
         ttk.Label(frame, text='猫とのふれあい', font=('', 20, 'bold')).grid(sticky='w')
         ttk.Label(frame, text='動作を選んで、猫の反応を見てみましょう。停止すると体力が少し回復します。').grid(sticky='w', pady=(4, 12))
 
-        settings = ttk.LabelFrame(frame, text='次の交流の条件', padding=10)
-        settings.grid(row=2, sticky='ew')
+        self.tabs = ttk.Notebook(frame)
+        self.tabs.grid(row=2, sticky='nsew')
+
+        def scroll_page(title):
+            page = ttk.Frame(self.tabs)
+            self.tabs.add(page, text=title)
+            canvas = tk.Canvas(page, highlightthickness=0)
+            scroll = ttk.Scrollbar(page, orient='vertical', command=canvas.yview)
+            canvas.configure(yscrollcommand=scroll.set)
+            scroll.pack(side='right', fill='y')
+            canvas.pack(side='left', fill='both', expand=True)
+            content = ttk.Frame(canvas, padding=8)
+            item = canvas.create_window(0, 0, window=content, anchor='nw')
+            content.bind('<Configure>', lambda event: canvas.configure(scrollregion=canvas.bbox('all')))
+            canvas.bind('<Configure>', lambda event: canvas.itemconfigure(item, width=event.width))
+            return content
+
+        status_page = scroll_page('交流の様子')
+        settings_page = scroll_page('猫の登録・次の交流')
+        settings = ttk.LabelFrame(settings_page, text='次の交流の条件', padding=10)
+        settings.pack(fill='x')
         self.settings_frame = settings
         self.play = tk.StringVar(value=str(config.preferences[0]))
         self.pet = tk.StringVar(value=str(config.preferences[1]))
@@ -96,8 +116,8 @@ class InteractionWindow:
             ttk.Button(settings, text='この条件で再開始', command=self.restart).grid(row=0, column=3, padx=6)
             ttk.Label(settings, text='数値を変更しても、再開始するまでは現在の交流に影響しません。').grid(row=1, column=0, columnspan=4, sticky='w', pady=(8, 0))
 
-        status = ttk.Frame(frame, padding=(0, 12))
-        status.grid(row=3, sticky='ew')
+        status = ttk.Frame(status_page, padding=(0, 8))
+        status.pack(fill='x')
         self.status_frame = status
         status.columnconfigure(1, weight=1)
         self.status = tk.StringVar()

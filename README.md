@@ -177,3 +177,6 @@ python3 -m cat_cafe_sim.human_cat_demo compare --rules 4
 [関係一覧の操作とデータの扱い](Docs/HumanToCatRelationshipList.md)を参照してください。
 
 [猫の名前と個性を登録](Docs/HumanToCatCatProfiles.md)すると、同じ猫IDの再会には保存済みの個性を使います。関係一覧には名前も表示します。
+
+試遊画面は「交流の様子」と「猫の登録・次の交流」のタブに分かれています。
+猫の登録・関係一覧・個性・動作の変更先は設定側のタブで選べます。タブ内は縦スクロールでき、行動ボタンとログ欄は常に表示されます。

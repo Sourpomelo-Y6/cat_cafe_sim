@@ -213,6 +213,21 @@ class RelationshipWindowTests(unittest.TestCase):
         app.show_result()
         self.root.update_idletasks()
 
+    def test_log_and_actions_remain_visible_at_small_window_size(self):
+        app = self.app
+        self.root.deiconify()
+        self.root.geometry('860x600')
+        self.root.update()
+        for tab in app.tabs.tabs():
+            app.tabs.select(tab)
+            self.root.update()
+            self.assertTrue(app.history.winfo_ismapped())
+            self.assertGreaterEqual(app.history.winfo_height(), 120)
+            bottom = self.root.winfo_rooty() + self.root.winfo_height()
+            for widget in (app.history, app.finish_button, app.buttons['direct']):
+                self.assertGreaterEqual(widget.winfo_rooty(), self.root.winfo_rooty())
+                self.assertLessEqual(widget.winfo_rooty() + widget.winfo_height(), bottom)
+
     def test_cat_registration_persists_name_and_personality_on_reunion(self):
         app = self.app
         original = app.session.core.config.personality

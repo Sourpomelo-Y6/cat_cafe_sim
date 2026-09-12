@@ -86,7 +86,7 @@ class RelationshipWindow(InteractionWindow):
         self.persist_button=ttk.Button(self.footer,text='結果保存を再試行',command=self.persist_result)
         self.persist_button.grid(row=1,column=1)
         ttk.Button(self.footer,text='終了結果を見る',command=self.show_result).grid(row=2,column=1)
-        root.geometry('1020x1000')
+        root.geometry('1020x760')
         root.protocol('WM_DELETE_WINDOW',self.close)
         self.refresh()
 
