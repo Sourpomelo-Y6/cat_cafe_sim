@@ -12,6 +12,8 @@ class RelationshipPlaySession(PlaySession):
         self.base_config = config
         self.store = store
         self.core = store.begin(config,cat_id,customer_id,stamina=stamina)
+        self.profile = store.cat_profile(cat_id)
+        self.cat_name = self.profile['name'] if self.profile else cat_id
         self.persisted = False
 
     def save(self, path):
@@ -20,7 +22,8 @@ class RelationshipPlaySession(PlaySession):
         super().save(path)
 
     def persist(self):
-        result = self.store.apply(self.core)
+        result = self.store.apply(self.core, cat_name=self.cat_name)
+        self.profile = self.store.cat_profile(self.core.cat_id)
         self.persisted = True
         return result
 
@@ -63,6 +66,15 @@ class RelationshipWindow(InteractionWindow):
         ttk.Button(ids,text='保存データを選ぶ…',command=self.choose_store).pack(side='left',padx=4)
         ttk.Button(ids,text='新しい保存データ…',command=self.new_store).pack(side='left')
         ttk.Button(self.settings_frame,text='関係一覧から再会…',command=self.show_relationships).grid(row=6,column=0,columnspan=5,sticky='w',pady=4)
+        profile_frame = ttk.Frame(self.settings_frame)
+        profile_frame.grid(row=7,column=0,columnspan=5,sticky='w',pady=4)
+        ttk.Label(profile_frame,text='現在の猫の名前').pack(side='left')
+        self.cat_name = tk.StringVar(value=self.session.cat_name)
+        self.name_entry = ttk.Entry(profile_frame,textvariable=self.cat_name,width=20)
+        self.name_entry.pack(side='left',padx=4)
+        self.register_button = ttk.Button(profile_frame,text='現在の名前・個性で猫を登録',command=self.register_cat)
+        self.register_button.pack(side='left')
+        ttk.Label(self.settings_frame,text='未登録の猫は登録ボタンまたは結果保存で登録します。上の個性選択は未登録の猫の再開始に使います。',wraplength=850).grid(row=8,column=0,columnspan=5,sticky='w')
         self.greeting_text=tk.StringVar()
         ttk.Label(self.status_frame,textvariable=self.greeting_text,wraplength=850).grid(row=8,column=0,columnspan=3,sticky='w',pady=6)
         self.affinity_text=tk.StringVar()
@@ -83,7 +95,10 @@ class RelationshipWindow(InteractionWindow):
         if not hasattr(self,'affinity_text'):
             return
         r=self.session.core.summary()
-        self.greeting_text.set(greeting_text(self.session.core))
+        registered = bool(self.session.profile)
+        self.name_entry.state(['disabled'] if registered else ['!disabled'])
+        self.register_button.state(['disabled'] if registered else ['!disabled'])
+        self.greeting_text.set(f'{self.session.cat_name}（{self.session.core.cat_id}） · ' + ('登録済みの個性' if registered else '個性未登録') + '\n' + greeting_text(self.session.core))
         self.affinity_text.set(f"猫 {self.session.core.cat_id} → お客 {self.session.core.customer_id}　親しみ {r['affinity_before']:g} / 変化予定 {r['affinity_pending']:+g} / 終了時 {r['affinity_after']:g}\n"
                                + ('保存済み' if self.session.persisted else '結果未保存' if r['end_reason'] else '交流中：親しみはまだ保存されていません'))
         self.store_text.set(f'現在の保存先：{self.session.store.path}\n次回の保存先：{self.next_store.path}')
@@ -93,6 +108,9 @@ class RelationshipWindow(InteractionWindow):
     def persist_result(self):
         from tkinter import messagebox
         try:
+            if not self.session.profile:
+                from .core.human_cat_relationship import identity
+                self.session.cat_name = identity(self.cat_name.get())
             self.session.persist()
         except (OSError,ValueError,TypeError,KeyError) as error:
             messagebox.showerror('結果を保存できませんでした',str(error),parent=self.root)
@@ -161,6 +179,7 @@ class RelationshipWindow(InteractionWindow):
             messagebox.showerror('再会を開始できません',str(error),parent=self.root)
             return
         self.session=next_session
+        self.cat_name.set(self.session.cat_name)
         self.history.delete(*self.history.get_children())
         self.notice.set('関係を引き継いで交流を開始しました。')
         self.refresh()
@@ -168,6 +187,18 @@ class RelationshipWindow(InteractionWindow):
     def close(self):
         if self.resolve_current():
             self.root.destroy()
+
+    def register_cat(self):
+        from tkinter import messagebox
+        try:
+            profile = self.session.store.register_cat(self.session.core.cat_id, self.cat_name.get(),
+                                                      self.session.core.config.personality)
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            messagebox.showerror('猫を登録できませんでした', str(error), parent=self.root)
+            return
+        self.session.profile = profile
+        self.session.cat_name = profile['name']
+        self.refresh()
 
     def show_relationships(self):
         browser = RelationshipBrowser(self)
@@ -209,12 +240,12 @@ class RelationshipBrowser:
         self.dialog.geometry('860x420')
         self.dialog.transient(owner.root)
         ttk.Label(self.dialog, text=f'保存先：{self.store.path}', wraplength=820, padding=8).pack(anchor='w')
-        ttk.Label(self.dialog, text='選んだ相手と、メイン画面で指定した個性・開始体力で再会します。', padding=8).pack(anchor='w')
+        ttk.Label(self.dialog, text='登録済みの猫は保存した個性を使います。未登録の猫の個性・開始体力はメイン画面で指定します。', padding=8).pack(anchor='w')
         frame = ttk.Frame(self.dialog)
         frame.pack(fill='both', expand=True, padx=8)
-        columns = ('cat', 'customer', 'affinity', 'stage', 'change')
+        columns = ('name', 'cat', 'customer', 'affinity', 'stage', 'change')
         self.tree = ttk.Treeview(frame, columns=columns, show='headings', selectmode='browse')
-        for column, label, width in zip(columns, ('猫ID', 'お客ID', '親しみ', '関係の目安', '直近の保存済み交流'), (130,130,70,160,210)):
+        for column, label, width in zip(columns, ('猫の名前', '猫ID', 'お客ID', '親しみ', '関係の目安', '直近の保存済み交流'), (120,100,100,60,150,190)):
             self.tree.heading(column, text=label)
             self.tree.column(column, width=width, minwidth=60)
         scrollbar = ttk.Scrollbar(frame, orient='vertical', command=self.tree.yview)
@@ -253,7 +284,7 @@ class RelationshipBrowser:
                       if result else '記録なし')
             item = str(index)
             self.rows[item] = row
-            self.tree.insert('', 'end', iid=item, values=(row['cat_id'], row['customer_id'],
+            self.tree.insert('', 'end', iid=item, values=(row['cat_name'], row['cat_id'], row['customer_id'],
                              f"{row['affinity']:g}", STAGES[stage_index(row['affinity'])], change))
         self.message.set(f'{len(rows)}組の関係があります。' if rows else '保存済みの関係はありません。交流結果を保存すると表示されます。')
 

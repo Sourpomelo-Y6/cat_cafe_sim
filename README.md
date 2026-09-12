@@ -175,3 +175,5 @@ python3 -m cat_cafe_sim.human_cat_demo compare --rules 4
 
 「関係一覧から再会…」で保存済みの相手と直近の親しみの増減を確認し、その相手と再会できます。
 [関係一覧の操作とデータの扱い](Docs/HumanToCatRelationshipList.md)を参照してください。
+
+[猫の名前と個性を登録](Docs/HumanToCatCatProfiles.md)すると、同じ猫IDの再会には保存済みの個性を使います。関係一覧には名前も表示します。

@@ -213,6 +213,31 @@ class RelationshipWindowTests(unittest.TestCase):
         app.show_result()
         self.root.update_idletasks()
 
+    def test_cat_registration_persists_name_and_personality_on_reunion(self):
+        app = self.app
+        original = app.session.core.config.personality
+        app.cat_name.set('ミケ')
+        app.register_button.invoke()
+        self.assertEqual(app.session.store.cat_profile('cat-1')['name'], 'ミケ')
+        self.assertTrue(app.name_entry.instate(['disabled']))
+        app.type_controls.pending = app.type_controls.presets['活発な探検家']
+        app.customer_id.set('another-guest')
+        app.restart()
+        self.assertEqual(app.session.core.config.personality, original)
+        self.assertEqual(app.cat_name.get(), 'ミケ')
+        with patch.object(app, 'show_result'):
+            app.finish()
+        browser = app.show_relationships()
+        self.assertEqual(browser.tree.item(browser.tree.get_children()[0], 'values')[0], 'ミケ')
+        browser.dialog.destroy()
+        app.cat_id.set('new-cat'); app.restart()
+        self.assertEqual(app.session.core.config.personality, app.type_controls.pending)
+        self.assertFalse(app.name_entry.instate(['disabled']))
+        app.cat_name.set('タマ')
+        with patch.object(app, 'show_result'):
+            app.finish()
+        self.assertEqual(app.session.store.cat_profile('new-cat')['name'], 'タマ')
+
     def test_relationship_list_empty_select_cancel_and_reunite(self):
         app = self.app
         browser = app.show_relationships()
@@ -224,8 +249,8 @@ class RelationshipWindowTests(unittest.TestCase):
         browser.reload()
         item = browser.tree.get_children()[0]
         values = browser.tree.item(item, 'values')
-        self.assertEqual(values[:3], ('other-cat', 'other-guest', '0.5'))
-        self.assertIn('+0.5', values[4])
+        self.assertEqual(values[:4], ('other-cat', 'other-cat', 'other-guest', '0.5'))
+        self.assertIn('+0.5', values[5])
         browser.tree.selection_set(item)
         browser.selection_changed()
         self.assertTrue(browser.reunion_button.instate(['!disabled']))
