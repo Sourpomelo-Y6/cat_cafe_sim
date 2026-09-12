@@ -100,8 +100,7 @@ class SpecialInteraction(HumanCatInteraction):
         s['open_up_count'] += int(opened)
         s['simultaneous_count'] += int(connect and opened)
         s['previous_cat_action'] = 'open_up' if opened else 'received' if connect else 'normal'
-        s['end_reason'] = ('exhausted' if s['stamina'] == 0 else 'success' if s['connect_count'] and s['open_up_count']
-                           else 'timeout' if s['remaining_ticks'] == 0 else None)
+        s['end_reason'] = self._end_reason()
         pending = dict(connect=s['tension'] >= c.forced_threshold, open_up=s['engagement'] >= c.forced_threshold)
         s['connect_pending'] = pending['connect'] and not s['end_reason']
         s['open_up_pending'] = pending['open_up'] and not s['end_reason']
@@ -120,6 +119,11 @@ class SpecialInteraction(HumanCatInteraction):
                       bonuses=bonuses, expired_reservations={k: bool(v and s['end_reason']) for k, v in pending.items()})
         self.records[-1] = record
         return copy.deepcopy(record)
+
+    def _end_reason(self):
+        s = self.state
+        return ('exhausted' if s['stamina'] == 0 else 'success' if s['connect_count'] and s['open_up_count']
+                else 'timeout' if s['remaining_ticks'] == 0 else None)
 
     def summary(self):
         result = super().summary()
@@ -147,6 +151,9 @@ def verify_special(data):
 
 
 def create_session(config, **kwargs):
+    from .human_cat_relationship import RelationshipConfig, RelationshipInteraction
+    if isinstance(config, RelationshipConfig):
+        return RelationshipInteraction(config, **kwargs)
     from .human_cat_types import TypesConfig, TypesInteraction
     if isinstance(config, TypesConfig):
         return TypesInteraction(config, **kwargs)

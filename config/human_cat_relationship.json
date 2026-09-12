@@ -1,0 +1,161 @@
+{
+  "rules": {
+    "ticks": 20,
+    "max_stamina": 100,
+    "target": 100,
+    "direct_gain": 12,
+    "direct_cost": 5,
+    "adapt_gain": 10,
+    "adapt_cost": 5,
+    "gentle_gain": 8,
+    "gentle_cost": 2,
+    "intense_gain": 24,
+    "intense_cost": 15,
+    "feint_gain": 10,
+    "feint_cost": 8,
+    "combo_gain": 18,
+    "pause_recovery": 2,
+    "boredom_floor": 0.4,
+    "low_stamina": 20,
+    "confused_threshold": 6,
+    "favorable_threshold": 10,
+    "enthusiastic_threshold": 18,
+    "confused_multiplier": 0.5,
+    "optional_threshold": 80,
+    "forced_threshold": 100,
+    "gauge_cost": 80,
+    "connect_bonus": 50,
+    "open_up_bonus": 50,
+    "simultaneous_bonus": 100,
+    "open_up_tension": 10,
+    "tension_enthusiastic": 20,
+    "tension_favorable": 12,
+    "tension_neutral": 6,
+    "tension_confused_loss": 4,
+    "tension_listless_loss": 6,
+    "tension_turn_away_loss": 8,
+    "affinity_enthusiastic": 1,
+    "affinity_favorable": 0.5,
+    "affinity_turn_away_loss": 1,
+    "affinity_connect": 1,
+    "affinity_open_up": 2,
+    "affinity_simultaneous": 1,
+    "affinity_exhausted_loss": 2
+  },
+  "types": [
+    {
+      "id": "teaser",
+      "name": "ねこじゃらし",
+      "group": "play",
+      "gain": 1,
+      "cost": 1,
+      "actions": [
+        "direct",
+        "adapt",
+        "intense",
+        "feint"
+      ]
+    },
+    {
+      "id": "ball",
+      "name": "ボール遊び",
+      "group": "play",
+      "gain": 1,
+      "cost": 1.1,
+      "actions": [
+        "direct",
+        "adapt",
+        "intense",
+        "feint"
+      ]
+    },
+    {
+      "id": "plush",
+      "name": "ぬいぐるみ遊び",
+      "group": "play",
+      "gain": 0.9,
+      "cost": 0.9,
+      "actions": [
+        "direct",
+        "adapt",
+        "feint"
+      ]
+    },
+    {
+      "id": "tunnel",
+      "name": "トンネル遊び",
+      "group": "play",
+      "gain": 1.1,
+      "cost": 1.2,
+      "actions": [
+        "direct",
+        "adapt",
+        "intense",
+        "feint"
+      ]
+    },
+    {
+      "id": "pet",
+      "name": "なでる",
+      "group": "contact",
+      "gain": 1,
+      "cost": 1,
+      "actions": [
+        "direct",
+        "adapt"
+      ]
+    },
+    {
+      "id": "brush",
+      "name": "ブラッシング",
+      "group": "contact",
+      "gain": 0.9,
+      "cost": 0.8,
+      "actions": [
+        "direct",
+        "adapt"
+      ]
+    },
+    {
+      "id": "voice",
+      "name": "声をかける",
+      "group": "quiet",
+      "gain": 0.7,
+      "cost": 0.5,
+      "actions": [
+        "direct",
+        "adapt"
+      ]
+    },
+    {
+      "id": "presence",
+      "name": "そばで見守る",
+      "group": "quiet",
+      "gain": 0.5,
+      "cost": 0.3,
+      "actions": [
+        "direct",
+        "adapt"
+      ]
+    }
+  ],
+  "personality": {
+    "type_preferences": {
+      "teaser": 1,
+      "ball": 1,
+      "plush": 1,
+      "tunnel": 1,
+      "pet": 1,
+      "brush": 1,
+      "voice": 1,
+      "presence": 1
+    },
+    "intensity_preferences": {
+      "gentle": 1,
+      "standard": 1,
+      "active": 1
+    },
+    "boredom_decay": 0.15,
+    "switch_affinity": 0
+  }
+}

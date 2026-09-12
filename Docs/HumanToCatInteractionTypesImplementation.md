@@ -2,7 +2,7 @@
 
 2026-09-12追記：[交流の目的・終了・成果の見直し](HumanToCatInteractionPurpose.md)を整理した。
 本書の「成功」は旧来の暫定的な両側特別行動の発動条件を指し、好感度や交流全体の良さを意味しない。
-低体力からの達成は必須要件ではない。実行ルールはまだ変更していない。
+低体力からの達成は必須要件ではない。版3のルールは維持し、終了と成果の分離は[版4](HumanToCatRelationshipImplementation.md)で実装した。
 
 
 更新日：2026-09-11 / 単独交流ルール版：3
@@ -14,8 +14,8 @@
 ## 起動と画面操作
 
 ```bash
-# 既定は版3
-python3 -m cat_cafe_sim.human_cat_gui
+# 版3を指定（現在の既定は版4）
+python3 -m cat_cafe_sim.human_cat_gui --rules 3
 # 旧版の画面
 python3 -m cat_cafe_sim.human_cat_gui --rules 2
 python3 -m cat_cafe_sim.human_cat_gui --rules 1

@@ -172,3 +172,67 @@ class TypesWindowTests(unittest.TestCase):
             path=str(Path(directory)/'types.json')
             with patch('tkinter.filedialog.asksaveasfilename',return_value=path):app.save_log()
             self.assertEqual(verify(path).log(),app.session.core.log())
+
+
+@unittest.skipUnless(os.environ.get('CAT_CAFE_TEST_GUI') == '1', 'set CAT_CAFE_TEST_GUI=1 on a desktop')
+class RelationshipWindowTests(unittest.TestCase):
+    def setUp(self):
+        import tkinter as tk
+        from cat_cafe_sim.human_cat_relationship_gui import RelationshipWindow
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=tk.Tk();self.root.withdraw();self.addCleanup(self.root.destroy)
+        self.app=RelationshipWindow(self.root,RelationshipConfig(),Path(self.temp.name)/'relations.json')
+        self.root.update_idletasks()
+
+    def test_finish_reunion_pair_switch_and_retry(self):
+        app=self.app
+        app.buttons['direct'].invoke()
+        with patch.object(app,'show_result'):
+            app.finish_button.invoke()
+        self.assertTrue(app.session.persisted)
+        self.assertEqual(app.session.core.result()['affinity_delta'],.5)
+        self.assertTrue(all(b.instate(['disabled']) for b in app.buttons.values()))
+        app.restart()
+        self.assertEqual(app.session.core.state['affinity_start'],.5)
+        app.customer_id.set('guest-2');app.restart()
+        self.assertEqual(app.session.core.state['affinity_start'],0)
+        app.buttons['direct'].invoke()
+        with patch.object(app.session.store,'_write',side_effect=OSError('test failure')), \
+                patch('tkinter.messagebox.showerror') as error,patch.object(app,'show_result'):
+            app.finish()
+            error.assert_called_once()
+        self.assertFalse(app.session.persisted)
+        self.assertTrue(app.persist_button.instate(['!disabled']))
+        app.persist_button.invoke()
+        self.assertTrue(app.session.persisted)
+        self.assertEqual(app.session.store.snapshot('cat-1','guest-2')['affinity'],.5)
+        app.show_result()
+        self.root.update_idletasks()
+
+    def test_resolve_cancel_discard_and_save(self):
+        import tkinter as tk
+        from tkinter import ttk
+        app=self.app
+        app.buttons['direct'].invoke()
+        before=app.session.core.log()
+        def select(label):
+            def click():
+                for dialog in self.root.winfo_children():
+                    if isinstance(dialog,tk.Toplevel):
+                        for child in dialog.winfo_children():
+                            if isinstance(child,ttk.Button) and child.cget('text')==label:
+                                child.invoke();return
+                self.fail('decision button not found')
+            self.root.after(10,click)
+        select('戻る')
+        self.assertFalse(app.resolve_current())
+        self.assertEqual(app.session.core.log(),before)
+        select('試遊・未保存結果を破棄')
+        self.assertTrue(app.resolve_current())
+        self.assertFalse(app.session.store.path.exists())
+        # Decision alone has no side effect; caller performs the transition.
+        select('切り上げて結果を保存')
+        self.assertTrue(app.resolve_current())
+        self.assertTrue(app.session.persisted)
+        self.assertEqual(app.session.store.snapshot('cat-1','guest-1')['affinity'],.5)

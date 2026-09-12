@@ -182,6 +182,9 @@ def save(session, path):
 
 def verify(path):
     data = json.loads(Path(path).read_text(encoding='utf-8'))
+    if data.get('rule_version') == 4 and type(data.get('rule_version')) is int:
+        from .human_cat_relationship import verify_relationship
+        return verify_relationship(data)
     if data.get('rule_version') == 3 and type(data.get('rule_version')) is int:
         from .human_cat_types import verify_types
         return verify_types(data)

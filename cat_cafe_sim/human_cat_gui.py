@@ -16,7 +16,7 @@ REACTION_NAMES = dict(turn_away='そっぽを向く', listless='けだるそう�
                       enthusiastic='熱心に応じる', favorable='好意的に応じる', neutral='普通に応じる')
 ACTION_NAMES['connect'] = '心をつかむ'
 REACTION_NAMES.update(open_up='心を開く', received='特別な働きかけを受け止める')
-END_NAMES = dict(success='交流成功！', exhausted='体力がなくなり、交流終了', timeout='時間になり、交流終了')
+END_NAMES = dict(manual='自分で切り上げました', time_limit='交流時間が終了しました', success='交流成功！', exhausted='体力がなくなり、交流終了', timeout='時間になり、交流終了')
 
 
 class PlaySession:
@@ -75,6 +75,7 @@ class InteractionWindow:
 
         settings = ttk.LabelFrame(frame, text='次の交流の条件', padding=10)
         settings.grid(row=2, sticky='ew')
+        self.settings_frame = settings
         self.play = tk.StringVar(value=str(config.preferences[0]))
         self.pet = tk.StringVar(value=str(config.preferences[1]))
         self.stamina = tk.StringVar(value=str(config.max_stamina))
@@ -97,6 +98,7 @@ class InteractionWindow:
 
         status = ttk.Frame(frame, padding=(0, 12))
         status.grid(row=3, sticky='ew')
+        self.status_frame = status
         status.columnconfigure(1, weight=1)
         self.status = tk.StringVar()
         self.reaction = tk.StringVar()
@@ -153,6 +155,7 @@ class InteractionWindow:
         self.history.configure(yscrollcommand=scrollbar.set)
         footer = ttk.Frame(frame)
         footer.grid(row=6, sticky='ew', pady=(12, 0))
+        self.footer = footer
         footer.columnconfigure(0, weight=1)
         self.notice = tk.StringVar(value='種類によって選べる動作が変わります。')
         ttk.Label(footer, textvariable=self.notice, wraplength=590).grid(row=0, column=0, sticky='w')
@@ -236,10 +239,12 @@ class InteractionWindow:
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path, default=None)
-    parser.add_argument('--rules', type=int, choices=(1, 2, 3), default=3)
+    parser.add_argument('--rules', type=int, choices=(1, 2, 3, 4), default=4)
+    parser.add_argument('--relationships', type=Path, default=Path('saves/relationships.json'))
     args = parser.parse_args(argv)
     try:
-        config = (TypesConfig.load(args.config or TYPES_CONFIG) if args.rules == 3 else SpecialConfig.load(args.config or SPECIAL_CONFIG) if args.rules == 2
+        from .core.human_cat_relationship import RelationshipConfig, RELATIONSHIP_CONFIG
+        config = (RelationshipConfig.load(args.config or RELATIONSHIP_CONFIG) if args.rules == 4 else TypesConfig.load(args.config or TYPES_CONFIG) if args.rules == 3 else SpecialConfig.load(args.config or SPECIAL_CONFIG) if args.rules == 2
                   else InteractionConfig.load(args.config or DEFAULT_CONFIG))
     except (OSError, ValueError, TypeError, KeyError) as error:
         parser.error(str(error))
@@ -251,7 +256,15 @@ def main(argv=None):
         root = tk.Tk()
     except tk.TclError as error:
         parser.error(f'画面を開けません。デスクトップ環境で実行してください: {error}')
-    InteractionWindow(root, config)
+    if args.rules == 4:
+        from .human_cat_relationship_gui import RelationshipWindow
+        try:
+            RelationshipWindow(root, config, args.relationships)
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            root.destroy()
+            parser.error(str(error))
+    else:
+        InteractionWindow(root, config)
     root.mainloop()
 
 

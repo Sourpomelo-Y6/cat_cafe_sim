@@ -1,8 +1,8 @@
 # 猫カフェシミュレーター
 
 現在の設計整理は[交流の目的・終了・成果の見直し](Docs/HumanToCatInteractionPurpose.md)を参照してください。
-現行版3の「成功」は両側の特別行動発動を表す暫定条件です。好感度は未実装で、低体力からの達成を必須要件にはしません。
-終了と成果の分離・関係性の案を整理した段階で、実行ルールはまだ変更していません。
+単独交流の現行版4では、猫からお客への親しみを組み合わせごとに保存します。任意終了・時間終了・体力切れと、親しみ・資金・消耗の成果を分けました。
+[版4の操作・保存・検証結果](Docs/HumanToCatRelationshipImplementation.md)を参照してください。低体力から特別行動を達成することは必須要件にしません。
 [親しみ・成果確定・再会の初回仕様](Docs/HumanToCatRelationshipSpecification.md)に、暫定の増減量と保存・結果表示の扱いを具体化しています。
 
 
@@ -125,7 +125,7 @@ python3 -m cat_cafe_sim.human_cat_gui
 
 [特別行動の初回実装用仕様](Docs/HumanToCatSpecialActionsSpecification.md)には、ゲージ増減・予約処理・猫の任意発動・終了条件・暫定ボーナスとターン例をまとめています。
 
-テンションと特別行動を含む版2も利用できます。試遊画面の既定は後述の版3です。CLIでは版を指定します。
+テンションと特別行動を含む版2も利用できます。試遊画面の既定は版4です。CLIでは版を指定します。
 
 ```bash
 python3 -m cat_cafe_sim.human_cat_gui
@@ -141,7 +141,7 @@ python3 -m cat_cafe_sim.human_cat_demo compare --rules 2
 8種類の交流と5つの個性プリセットを追加しました。画面で変更先と次の猫の個性を選べます。
 
 ```bash
-python3 -m cat_cafe_sim.human_cat_gui
+python3 -m cat_cafe_sim.human_cat_gui --rules 3
 python3 -m cat_cafe_sim.human_cat_demo run --rules 3 --preset '穏やかな甘えん坊' --actions switch:pet direct
 python3 -m cat_cafe_sim.human_cat_demo compare --rules 3
 ```
@@ -157,3 +157,15 @@ python3 -m cat_cafe_sim.evaluation.reactive_adapt
 ```
 
 探索は個性を知った診断用です。公開反応だけの方策とは分けて比較しています。
+
+### 親しみ・任意終了・再会（版4）
+
+```bash
+python3 -m cat_cafe_sim.human_cat_gui
+python3 -m cat_cafe_sim.human_cat_demo run --rules 4 --cat-id cat-1 --customer-id guest-1 --actions direct finish --relationships saves/example.json --save-result --output reports/relationship_example.json
+python3 -m cat_cafe_sim.human_cat_demo compare --rules 4
+```
+
+画面では「切り上げる」で成果を確定し、同じ猫ID・客IDで再会すると親しみを引き継ぎます。
+保存先の既定は`saves/relationships.json`です。CLIは`--save-result`指定時だけ関係データを更新します。
+ログ再生は関係データを更新しません。営業の所持金や客満足との接続は今後の作業です。

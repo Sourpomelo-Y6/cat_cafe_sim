@@ -1,6 +1,7 @@
 # 交流の目的・終了・成果の見直し
 
-親しみ・終了・成果・持ち越しの初回案を[暫定仕様](HumanToCatRelationshipSpecification.md)へ具体化した（未実装）。
+親しみ・終了・成果・持ち越しの初回案を[暫定仕様](HumanToCatRelationshipSpecification.md)へ具体化し、版4として実装した。
+[版4の実装記録](HumanToCatRelationshipImplementation.md)を参照。以下は版3時点の問題整理と設計経緯であり、「現在」「未実装」は整理当時を指す。
 本書は見直しの目的と、その時点の未確定事項を記録する。
 
 
