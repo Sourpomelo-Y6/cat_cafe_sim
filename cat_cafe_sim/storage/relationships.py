@@ -50,6 +50,20 @@ class RelationshipStore:
                 return dict(affinity=pair['affinity'],revision=pair['revision'])
         return dict(affinity=0,revision=0)
 
+    def list_relationships(self):
+        """保存順で各組み合わせの直近結果を取り出す。読み取りのみ。"""
+        data = self._read()
+        latest = {}
+        for applied in data['applied'].values():
+            result = applied['result']
+            key = (identity(result.get('cat_id')), identity(result.get('customer_id')))
+            for name in ('affinity_before', 'affinity_after'):
+                bounded(result.get(name), 0, 100, name)
+            bounded(result.get('affinity_delta'), -100, 100, 'affinity_delta')
+            latest[key] = result
+        return [dict(pair, latest_result=copy.deepcopy(latest.get((pair['cat_id'], pair['customer_id']))))
+                for pair in sorted(data['pairs'], key=lambda pair: (pair['cat_id'], pair['customer_id']))]
+
     def begin(self, config, cat_id, customer_id, **kwargs):
         return RelationshipInteraction(config,cat_id=cat_id,customer_id=customer_id,
                                        **self.snapshot(cat_id,customer_id),**kwargs)

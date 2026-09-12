@@ -213,6 +213,57 @@ class RelationshipWindowTests(unittest.TestCase):
         app.show_result()
         self.root.update_idletasks()
 
+    def test_relationship_list_empty_select_cancel_and_reunite(self):
+        app = self.app
+        browser = app.show_relationships()
+        self.assertEqual(browser.tree.get_children(), ())
+        self.assertTrue(browser.reunion_button.instate(['disabled']))
+        self.assertFalse(app.session.store.path.exists())
+        other = app.session.store.begin(app.session.base_config, 'other-cat', 'other-guest')
+        other.step('direct'); other.finish(); app.session.store.apply(other)
+        browser.reload()
+        item = browser.tree.get_children()[0]
+        values = browser.tree.item(item, 'values')
+        self.assertEqual(values[:3], ('other-cat', 'other-guest', '0.5'))
+        self.assertIn('+0.5', values[4])
+        browser.tree.selection_set(item)
+        browser.selection_changed()
+        self.assertTrue(browser.reunion_button.instate(['!disabled']))
+        app.buttons['direct'].invoke()
+        old_session = app.session
+        with patch.object(app, 'resolve_current', return_value=False):
+            browser.reunion_button.invoke()
+        self.assertIs(app.session, old_session)
+        self.assertEqual(app.cat_id.get(), 'cat-1')
+        self.assertTrue(browser.dialog.winfo_exists())
+        with patch.object(app, 'resolve_current', return_value=True):
+            browser.reunion_button.invoke()
+        self.assertEqual(app.session.core.cat_id, 'other-cat')
+        self.assertEqual(app.session.core.customer_id, 'other-guest')
+        self.assertEqual(app.session.core.state['affinity_start'], .5)
+        self.assertIn('再会', app.greeting_text.get())
+        self.assertFalse(browser.dialog.winfo_exists())
+
+    def test_relationship_list_uses_next_store_and_handles_read_failure(self):
+        from cat_cafe_sim.storage.relationships import RelationshipStore
+        app = self.app
+        app.next_store = RelationshipStore(Path(self.temp.name) / 'next.json')
+        next_core = app.next_store.begin(app.session.base_config, 'next-cat', 'next-guest')
+        next_core.finish(); app.next_store.apply(next_core)
+        browser = app.show_relationships()
+        self.assertEqual(len(browser.tree.get_children()), 1)
+        with patch.object(browser.store, 'list_relationships', side_effect=OSError('read error')), \
+                patch('tkinter.messagebox.showerror') as error:
+            browser.reload()
+        error.assert_called_once()
+        self.assertEqual(browser.tree.get_children(), ())
+        self.assertTrue(browser.reunion_button.instate(['disabled']))
+        browser.reload()
+        browser.tree.selection_set(browser.tree.get_children()[0])
+        browser.reunite()
+        self.assertEqual(app.session.store.path, app.next_store.path)
+        self.assertEqual(app.session.core.cat_id, 'next-cat')
+
     def test_resolve_cancel_discard_and_save(self):
         import tkinter as tk
         from tkinter import ttk

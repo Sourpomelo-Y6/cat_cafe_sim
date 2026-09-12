@@ -62,6 +62,7 @@ class RelationshipWindow(InteractionWindow):
         ttk.Entry(ids,textvariable=self.customer_id,width=14).pack(side='left',padx=4)
         ttk.Button(ids,text='保存データを選ぶ…',command=self.choose_store).pack(side='left',padx=4)
         ttk.Button(ids,text='新しい保存データ…',command=self.new_store).pack(side='left')
+        ttk.Button(self.settings_frame,text='関係一覧から再会…',command=self.show_relationships).grid(row=6,column=0,columnspan=5,sticky='w',pady=4)
         self.greeting_text=tk.StringVar()
         ttk.Label(self.status_frame,textvariable=self.greeting_text,wraplength=850).grid(row=8,column=0,columnspan=3,sticky='w',pady=6)
         self.affinity_text=tk.StringVar()
@@ -168,6 +169,10 @@ class RelationshipWindow(InteractionWindow):
         if self.resolve_current():
             self.root.destroy()
 
+    def show_relationships(self):
+        browser = RelationshipBrowser(self)
+        return browser
+
     def choose_store(self):
         from tkinter import filedialog,messagebox
         path=filedialog.askopenfilename(parent=self.root,title='次回の関係保存データ',filetypes=[('JSON','*.json')])
@@ -190,3 +195,84 @@ class RelationshipWindow(InteractionWindow):
                 return
             self.next_store=RelationshipStore(path)
             self.refresh()
+
+
+class RelationshipBrowser:
+    """次回の保存先を固定して閲覧し、既存の保存／破棄確認を経て再会する。"""
+    def __init__(self, owner):
+        import tkinter as tk
+        from tkinter import ttk
+        self.owner = owner
+        self.store = owner.next_store
+        self.dialog = tk.Toplevel(owner.root)
+        self.dialog.title('猫とお客の関係一覧')
+        self.dialog.geometry('860x420')
+        self.dialog.transient(owner.root)
+        ttk.Label(self.dialog, text=f'保存先：{self.store.path}', wraplength=820, padding=8).pack(anchor='w')
+        ttk.Label(self.dialog, text='選んだ相手と、メイン画面で指定した個性・開始体力で再会します。', padding=8).pack(anchor='w')
+        frame = ttk.Frame(self.dialog)
+        frame.pack(fill='both', expand=True, padx=8)
+        columns = ('cat', 'customer', 'affinity', 'stage', 'change')
+        self.tree = ttk.Treeview(frame, columns=columns, show='headings', selectmode='browse')
+        for column, label, width in zip(columns, ('猫ID', 'お客ID', '親しみ', '関係の目安', '直近の保存済み交流'), (130,130,70,160,210)):
+            self.tree.heading(column, text=label)
+            self.tree.column(column, width=width, minwidth=60)
+        scrollbar = ttk.Scrollbar(frame, orient='vertical', command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side='right', fill='y')
+        self.tree.pack(fill='both', expand=True)
+        self.message = tk.StringVar()
+        ttk.Label(self.dialog, textvariable=self.message, padding=8).pack(anchor='w')
+        buttons = ttk.Frame(self.dialog)
+        buttons.pack(fill='x', padx=8, pady=8)
+        self.reunion_button = ttk.Button(buttons, text='選んだ相手と再会', command=self.reunite)
+        self.reunion_button.pack(side='left')
+        ttk.Button(buttons, text='一覧を更新', command=self.reload).pack(side='left', padx=8)
+        ttk.Button(buttons, text='閉じる', command=self.dialog.destroy).pack(side='right')
+        self.tree.bind('<<TreeviewSelect>>', self.selection_changed)
+        self.reload()
+
+    def selection_changed(self, event=None):
+        self.reunion_button.state(['!disabled'] if self.tree.selection() else ['disabled'])
+
+    def reload(self):
+        from tkinter import messagebox
+        from .relationship_presentation import STAGES, stage_index
+        self.tree.delete(*self.tree.get_children())
+        self.rows = {}
+        self.selection_changed()
+        try:
+            rows = self.store.list_relationships()
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            self.message.set('一覧を読み込めませんでした。保存先を確認して再度更新してください。')
+            messagebox.showerror('関係一覧を読めません', str(error), parent=self.dialog)
+            return
+        for index, row in enumerate(rows):
+            result = row['latest_result']
+            change = (f"{result['affinity_before']:g} → {result['affinity_after']:g}（{result['affinity_delta']:+g}）"
+                      if result else '記録なし')
+            item = str(index)
+            self.rows[item] = row
+            self.tree.insert('', 'end', iid=item, values=(row['cat_id'], row['customer_id'],
+                             f"{row['affinity']:g}", STAGES[stage_index(row['affinity'])], change))
+        self.message.set(f'{len(rows)}組の関係があります。' if rows else '保存済みの関係はありません。交流結果を保存すると表示されます。')
+
+    def reunite(self):
+        selected = self.tree.selection()
+        if not selected:
+            return
+        row = self.rows[selected[0]]
+        owner = self.owner
+        previous = (owner.cat_id.get(), owner.customer_id.get(), owner.next_store)
+        old_session = owner.session
+        owner.cat_id.set(row['cat_id'])
+        owner.customer_id.set(row['customer_id'])
+        owner.next_store = self.store
+        owner.restart()
+        if owner.session is not old_session:
+            self.dialog.destroy()
+        else:
+            owner.cat_id.set(previous[0])
+            owner.customer_id.set(previous[1])
+            owner.next_store = previous[2]
+            owner.refresh()

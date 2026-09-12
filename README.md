@@ -172,3 +172,6 @@ python3 -m cat_cafe_sim.human_cat_demo compare --rules 4
 
 親しみと個性に応じた[再会時の描写と関係の目安](Docs/HumanToCatRelationshipPresentation.md)も表示します。
 結果画面では、親しみの数値に加えて段階の変化を確認できます。
+
+「関係一覧から再会…」で保存済みの相手と直近の親しみの増減を確認し、その相手と再会できます。
+[関係一覧の操作とデータの扱い](Docs/HumanToCatRelationshipList.md)を参照してください。
