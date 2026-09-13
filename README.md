@@ -195,9 +195,13 @@ python3 -m cat_cafe_sim.cafe_interaction replay reports/cafe_interaction.json
 親しみと猫の登録は保存しますが、営業の所持金・時計・体力は今回の試遊中だけ保持します。
 
 通常の営業画面では、プレイヤーは担当猫を割り当て、その後の交流は自動で進みます。
-「自動割り当て」を選べば、待機順の案内も自動化できます。営業は複数猫・1席に対応しています。
+「自動割り当て」を選べば、待機順の案内も自動化できます。営業は複数猫・2席の同時交流に対応しています。
 コマンドを手動で選ぶ検証画面は`python3 -m cat_cafe_sim.cafe_interaction gui --manual`で開きます。
 CLIの`run`も操作列を省略すると閉店まで自動進行します。[操作と自動選択の規則](Docs/HumanToCatAutomaticCafe.md)を参照してください。
 
 登録済みの猫から担当を選び、猫ごとの体力・個性・お客への親しみを確認できます。自動割り当ては体力に余裕がある猫を優先します。
 [参加猫の指定・担当交代・個別の体力管理](Docs/HumanToCatCafeRoster.md)を参照してください。
+
+通常営業は2席で同時に交流します。席ごとの状態と会計を確認できます。
+テスト用の猫5匹は`python3 -m cat_cafe_sim.cafe_interaction seed-playtest`で追加できます。
+[2席営業の操作・テスト用の猫](Docs/HumanToCatMultiSeatCafe.md)を参照してください。

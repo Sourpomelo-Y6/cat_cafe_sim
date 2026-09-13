@@ -101,7 +101,7 @@ class ManualCafeInteractionWindow:
             else:
                 names={'arrival':'来店','assigned':'着席','interaction_started':'交流開始','closed':'閉店'}
                 text=f"{names.get(kind,kind)} {event.get('customer_id','')}"
-            item=self.history.insert('','end',values=(event['tick'],text));self.history.see(item)
+            item=self.history.insert('','end',values=(event['tick'],(event.get('seat_id','')+' '+text).strip()));self.history.see(item)
         self.logged=len(core.events)
 
     def save_log(self):
@@ -143,12 +143,16 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.start_button.configure(text='担当猫を割り当てる',command=self.assign)
         automation = ttk.Frame(self.actions_frame.master)
         automation.grid(row=4,sticky='ew',pady=6)
-        buttons = ttk.Frame(automation)
+        buttons = self.automation_buttons = ttk.Frame(automation)
         buttons.pack(fill='x')
         self.run_button = ttk.Button(buttons,text='営業を開始・再開',command=self.toggle)
         self.run_button.pack(side='left',padx=4)
         self.assignment_button = ttk.Checkbutton(buttons,text='自動割り当て',variable=self.auto_assign,command=self.refresh)
         self.assignment_button.pack(side='left')
+        ttk.Label(buttons,text='割り当て先').pack(side='left',padx=6)
+        self.seat_choice=tk.StringVar(value=session.free_seats[0] if session.free_seats else '')
+        self.seat_selector=ttk.Combobox(buttons,textvariable=self.seat_choice,values=tuple(session.free_seats),state='readonly',width=10)
+        self.seat_selector.pack(side='left')
         roster_frame = ttk.Frame(automation)
         roster_frame.pack(fill='x',pady=4)
         self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status'),show='headings',height=3)
@@ -183,9 +187,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
 
     def assign(self):
         self.stop()
-        before = self.session.core.active
-        self.perform(lambda:self.session.start(self.customer.get(),self.cat_labels.get(self.cat_choice.get(),'')))
-        if before is None and self.session.core.active is not None:
+        before = len(self.session.active_interactions)
+        self.perform(lambda:self.session.start(self.customer.get(),self.cat_labels.get(self.cat_choice.get(),''),self.seat_choice.get()))
+        if len(self.session.active_interactions) > before:
             self.running = True
             self.schedule()
         self.refresh()
@@ -213,17 +217,32 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         blocked = bool(self.session.pending) or core.closed
         self.run_button.configure(text='一時停止' if self.running else '営業を開始・再開')
         self.run_button.state(['disabled'] if blocked else ['!disabled'])
-        manual = not self.auto_assign.get() and not core.active and not blocked
+        manual = not self.auto_assign.get() and bool(self.session.free_seats) and not blocked
         self.queue.configure(state='readonly' if manual else 'disabled')
         self.cat_selector.configure(state='readonly' if manual else 'disabled')
+        self.seat_selector.configure(values=tuple(self.session.free_seats),state='readonly' if manual else 'disabled')
+        if self.seat_choice.get() not in self.session.free_seats:
+            self.seat_choice.set(self.session.free_seats[0] if self.session.free_seats else '')
         rows = self.session.cat_choices(self.customer.get())
         selected = next((row for row in rows if row['cat_id']==self.cat_labels.get(self.cat_choice.get())),None)
         self.start_button.state(['!disabled'] if manual and core.queue and selected and selected['available'] else ['disabled'])
         self.roster.delete(*self.roster.get_children())
         for row in rows:
-            state = '交流中' if core.active and core.active.cat_id==row['cat_id'] else '担当可能' if row['available'] else '交流不可'
+            state = '交流中' if any(active.cat_id==row['cat_id'] for active in self.session.active_interactions.values()) else '担当可能' if row['available'] else '交流不可'
             self.roster.insert('','end',values=(f"{row['name']}（{row['cat_id']}）",row['personality'],f"{row['stamina']:g}",
                                                f"{row['affinity']:g}" if self.customer.get() else '—',state))
+        if hasattr(core,'seats'):
+            lines=[]
+            for seat_id in core.seats:
+                active=self.session.active_interactions.get(seat_id)
+                if active:
+                    r=active.summary()
+                    name=self.session.profiles.get(active.cat_id,{}).get('name',active.cat_id)
+                    lines.append(f"{seat_id}：{active.customer_id} / {name} · 体力 {r['stamina']:g} · 関心 {r['engagement']:g} · テンション {r['tension']:g} · 親しみ {r['affinity_after']:g} · 資金 {r['bonus_funds']:g}（見込み）")
+                else:
+                    last=next((event for event in reversed(core.events) if event['kind']=='departure' and event.get('seat_id')==seat_id),None)
+                    lines.append(f"{seat_id}：空席"+(f" · 直近の会計 {last['bill']:g}" if last else ''))
+            self.details.set('\n'.join(lines))
         if not self.session.pending:
             self.notice.set('自動進行中：交流コマンドは自動で選ばれます。' if self.running else
                             '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')

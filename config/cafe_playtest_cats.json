@@ -1,0 +1,7 @@
+[
+  {"cat_id": "playtest-mike", "name": "ミケ", "preset": "穏やかな甘えん坊"},
+  {"cat_id": "playtest-tama", "name": "タマ", "preset": "活発な探検家"},
+  {"cat_id": "playtest-sora", "name": "ソラ", "preset": "距離を大切にする猫"},
+  {"cat_id": "playtest-kohaku", "name": "コハク", "preset": "遊び好きで繊細な猫"},
+  {"cat_id": "playtest-mugi", "name": "ムギ", "preset": "中立"}
+]

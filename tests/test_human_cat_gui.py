@@ -485,3 +485,50 @@ class CafeRosterWindowTests(unittest.TestCase):
         self.app.auto_assign.set(True);self.app.refresh()
         self.session.automatic_step()
         self.assertEqual(self.session.core.active.cat_id,'cat-b')
+
+
+@unittest.skipUnless(os.environ.get('CAT_CAFE_TEST_GUI') == '1', 'set CAT_CAFE_TEST_GUI=1 on a desktop')
+class MultiSeatCafeWindowTests(unittest.TestCase):
+    def setUp(self):
+        import tkinter as tk
+        from dataclasses import replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.cafe_interaction_gui import CafeInteractionWindow
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.storage.relationships import RelationshipStore
+        from cat_cafe_sim.storage.playtest_cats import add_playtest_cats
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=tk.Tk();self.root.withdraw();self.addCleanup(self.root.destroy)
+        store=RelationshipStore(Path(self.temp.name)/'relations.json');add_playtest_cats(store)
+        self.session=CafeInteractionSession(store=store,cafe_config=replace(Config.load(),arrival_ticks=(0,0)))
+        self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
+
+    def test_two_manual_assignments_and_visible_seat_status(self):
+        self.session.step();self.app.refresh()
+        labels=list(self.app.cat_labels)
+        self.app.cat_choice.set(labels[0]);self.app.seat_choice.set('seat-2')
+        self.app.refresh();self.app.start_button.invoke();self.app.stop()
+        self.assertIn('seat-2',self.session.active_interactions)
+        self.app.cat_choice.set(labels[1]);self.app.refresh()
+        self.assertEqual(self.app.seat_choice.get(),'seat-1')
+        self.app.start_button.invoke();self.app.stop()
+        self.assertEqual(len(self.session.active_interactions),2)
+        self.session.automatic_step();self.app.refresh()
+        for key in ('seat-1','seat-2'):
+            self.assertIn(key,self.app.details.get())
+        self.assertTrue(self.app.start_button.instate(['disabled']))
+        self.root.deiconify();self.root.geometry('860x600');self.root.update()
+        self.assertGreaterEqual(self.app.history.winfo_height(),120)
+        self.assertLessEqual(self.app.history.winfo_rooty()+self.app.history.winfo_height(),
+                             self.root.winfo_rooty()+self.root.winfo_height())
+
+    def test_auto_assignment_uses_two_seats_and_completion_is_shown(self):
+        from dataclasses import replace
+        self.session.interaction_config=replace(self.session.interaction_config,ticks=1)
+        self.app.auto_assign.set(True);self.app.refresh()
+        self.session.automatic_step();self.session.automatic_step();self.app.refresh()
+        self.assertEqual(len(self.session.core.outcomes),2)
+        self.assertIn('直近の会計',self.app.details.get())
+        rows=[self.app.history.item(item,'values')[1] for item in self.app.history.get_children()]
+        self.assertTrue(any('seat-1' in row and '会計' in row for row in rows))
+        self.assertTrue(any('seat-2' in row and '会計' in row for row in rows))

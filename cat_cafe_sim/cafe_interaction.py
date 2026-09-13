@@ -3,22 +3,26 @@ from dataclasses import replace
 from pathlib import Path
 import json
 
+from .core.multi_seat_cafe import MultiSeatCafeCore
 from .core.cafe_interaction import CafeInteractionCore, verify_cafe_interaction
 from .core.human_cat_relationship import RelationshipConfig, verify_relationship
 from .storage.relationships import RelationshipStore
 
 
 class CafeInteractionSession:
-    def __init__(self, core=None, store=None, interaction_config=None, *, cat_ids=None, cafe_config=None):
+    def __init__(self, core=None, store=None, interaction_config=None, *, cat_ids=None, cafe_config=None, seat_count=None):
         self.store = store or RelationshipStore('saves/cafe_relationships.json')
-        if core is not None and (cat_ids is not None or cafe_config is not None):
+        if core is not None and (cat_ids is not None or cafe_config is not None or seat_count is not None):
             raise ValueError('coreと営業設定・参加猫は同時に指定できません。')
         profiles = {row['cat_id']:row for row in self.store.list_cats()}
         if core is None:
             ids = list(cat_ids) if cat_ids is not None else list(profiles) or ['cat-1']
             if cat_ids is not None and any(key not in profiles for key in ids):
                 raise ValueError('参加する猫は先に登録してください。')
-            core = CafeInteractionCore(cafe_config, cat_ids=ids)
+            if seat_count not in (None,1,2):
+                raise ValueError('席数は1または2を指定してください。')
+            core_type = CafeInteractionCore if seat_count == 1 else MultiSeatCafeCore
+            core = core_type(cafe_config, cat_ids=ids)
         self.core = core
         self.profiles = profiles
         self.affinities = {(r['cat_id'],r['customer_id']):r['affinity'] for r in self.store.list_relationships()}
@@ -35,9 +39,21 @@ class CafeInteractionSession:
     def cat_name(self):
         return self.profiles.get(self.core.cat.id, {}).get('name', self.core.cat.id)
 
+    @property
+    def active_interactions(self):
+        if isinstance(self.core,MultiSeatCafeCore):
+            return self.core.interactions
+        return {self.core.seat.id:self.core.active} if self.core.active else {}
+
+    @property
+    def free_seats(self):
+        seats = self.core.seats if isinstance(self.core,MultiSeatCafeCore) else {self.core.seat.id:self.core.seat}
+        return [key for key in seats if key not in self.active_interactions]
+
     def available_cats(self):
         return [cat for cat in self.core.cats.values()
-                if cat.health_status == 'healthy' and not cat.cannot_continue and cat.stamina > 0]
+                if cat.health_status == 'healthy' and not cat.cannot_continue and cat.stamina > 0
+                and cat.id not in {item.cat_id for item in self.active_interactions.values()}]
 
     def cat_choices(self, customer_id=None):
         from .core.human_cat_types import Personality
@@ -59,7 +75,7 @@ class CafeInteractionSession:
         if self.pending:
             raise ValueError('未保存の交流結果があります。先に保存を再試行してください。')
 
-    def start(self, customer_id, cat_id=None):
+    def start(self, customer_id, cat_id=None, seat_id=None):
         self._ready()
         cat_id = self.core.cat.id if cat_id is None else cat_id
         if cat_id not in self.core.cats:
@@ -67,11 +83,23 @@ class CafeInteractionSession:
         config = replace(self.interaction_config,
                          ticks=min(self.interaction_config.ticks, self.core.config.opening_ticks-self.core.tick))
         interaction = self.store.begin(config, cat_id, customer_id, stamina=self.core.cats[cat_id].stamina)
-        self.core.start(interaction)
+        if isinstance(self.core,MultiSeatCafeCore):
+            self.core.start(interaction,seat_id)
+        else:
+            if seat_id not in (None,self.core.seat.id):
+                raise ValueError('不明な席です。')
+            self.core.start(interaction)
 
     def step(self, action=None, target_type=None):
         self._ready()
-        self.core.step(action, target_type)
+        if isinstance(self.core,MultiSeatCafeCore):
+            if len(self.active_interactions)>1:
+                raise ValueError('複数席の交流は自動進行を使ってください。')
+            if not self.active_interactions and (action is not None or target_type is not None):
+                raise ValueError('先に交流を開始してください。')
+            self.core.step({key:(action,target_type) for key in self.active_interactions})
+        else:
+            self.core.step(action, target_type)
         self.persist()
 
     def automatic_step(self, *, auto_assign=True):
@@ -79,17 +107,19 @@ class CafeInteractionSession:
         self._ready()
         if self.core.closed:
             return False
-        if self.core.active is None:
-            candidates = self.available_cats()
-            if self.core.queue and candidates:
-                if not auto_assign:
-                    return False
-                cat = min(candidates, key=lambda cat: (-cat.stamina, cat.id))
-                self.start(self.core.queue[0], cat.id)
-        if self.core.active:
-            active = self.core.active
-            action, target = self.policy.choose(active.observation(), active.valid_actions())
-            self.step(action, target)
+        while self.free_seats and self.core.queue and self.available_cats():
+            if not auto_assign:
+                return False
+            cat = min(self.available_cats(), key=lambda cat: (-cat.stamina, cat.id))
+            self.start(self.core.queue[0], cat.id, self.free_seats[0])
+        if isinstance(self.core,MultiSeatCafeCore):
+            commands={key:self.policy.choose(active.observation(),active.valid_actions())
+                      for key,active in self.active_interactions.items()}
+            self.core.step(commands)
+            self.persist()
+        elif self.core.active:
+            active=self.core.active
+            self.step(*self.policy.choose(active.observation(),active.valid_actions()))
         else:
             self.step()
         return True
@@ -123,18 +153,29 @@ def main():
     run.add_argument('--relationships', type=Path, default=Path('saves/cafe_relationships.json'))
     run.add_argument('--output', type=Path, default=Path('reports/cafe_interaction.json'))
     run.add_argument('--config', type=Path)
+    run.add_argument('--seats',type=int,choices=(1,2),default=None)
     run.add_argument('--cats', nargs='+', help='営業へ参加する登録済み猫ID。省略時は全登録猫')
     gui = sub.add_parser('gui')
+    gui.add_argument('--seats',type=int,choices=(1,2),default=None)
     gui.add_argument('--cats', nargs='+', help='営業へ参加する登録済み猫ID。省略時は全登録猫')
     gui.add_argument('--manual', action='store_true', help='検証用の手動コマンド画面')
     gui.add_argument('--relationships', type=Path, default=Path('saves/cafe_relationships.json'))
+    seed = sub.add_parser('seed-playtest',help='テスト用の猫5匹を追加（既存IDは変更しない）')
+    seed.add_argument('--relationships',type=Path,default=Path('saves/cafe_relationships.json'))
     replay = sub.add_parser('replay'); replay.add_argument('path', type=Path)
     args = parser.parse_args()
     try:
+        if args.command == 'seed-playtest':
+            from .storage.playtest_cats import add_playtest_cats
+            print(json.dumps({'added':add_playtest_cats(RelationshipStore(args.relationships))},ensure_ascii=False))
+            return
         if args.command == 'gui':
             import tkinter as tk
             from .cafe_interaction_gui import CafeInteractionWindow, ManualCafeInteractionWindow
-            session = CafeInteractionSession(store=RelationshipStore(args.relationships), cat_ids=args.cats)
+            if args.manual and args.seats == 2:
+                parser.error('検証用の手動コマンド画面は1席です。通常画面で2席を試してください。')
+            session = CafeInteractionSession(store=RelationshipStore(args.relationships), cat_ids=args.cats,
+                                             seat_count=1 if args.manual else args.seats)
             root = tk.Tk()
             window = ManualCafeInteractionWindow if args.manual else CafeInteractionWindow
             window(root, session)
@@ -146,7 +187,8 @@ def main():
             if args.output.resolve() == args.relationships.resolve():
                 raise ValueError('営業ログと関係保存先は別のファイルにしてください。')
             session = CafeInteractionSession(store=RelationshipStore(args.relationships), cat_ids=args.cats,
-                                             cafe_config=Config.load(args.config) if args.config else None)
+                                             cafe_config=Config.load(args.config) if args.config else None,
+                                             seat_count=args.seats if args.seats is not None else (1 if args.operations else 2))
             core = session.core
             try:
                 if args.operations is None:

@@ -49,7 +49,7 @@ class CafeInteractionCore(SimulationCore):
             raise ValueError('交流の開始条件が営業状態と一致しません。')
         self._tick_events = []
         self.cat = cat
-        self._apply(Command('assign', interaction.customer_id, interaction.cat_id))
+        self._apply(Command('assign', interaction.customer_id, interaction.cat_id, self.seat.id))
         self.active = copy.deepcopy(interaction)
         self.visits[interaction.customer_id].first_meeting = interaction.initial_relationship['revision'] == 0
         self._emit('interaction_started', session_id=interaction.session_id, customer_id=interaction.customer_id)
@@ -131,6 +131,9 @@ class CafeInteractionCore(SimulationCore):
 def verify_cafe_interaction(data):
     from .config import Config
     from .models import StartState
+    if data.get('mode_id') == 'cafe-human-cat' and data.get('format_version') == 3:
+        from .multi_seat_cafe import verify_multi_seat
+        return verify_multi_seat(data)
     if data.get('mode_id') != 'cafe-human-cat' or data.get('format_version') not in (1, 2):
         raise ValueError('unsupported cafe interaction log')
     core = CafeInteractionCore(Config.from_dict(data['config']), seed=data['seed'],
