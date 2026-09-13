@@ -168,7 +168,7 @@ python3 -m cat_cafe_sim.human_cat_demo compare --rules 4
 
 画面では「切り上げる」で成果を確定し、同じ猫ID・客IDで再会すると親しみを引き継ぎます。
 保存先の既定は`saves/relationships.json`です。CLIは`--save-result`指定時だけ関係データを更新します。
-ログ再生は関係データを更新しません。営業の所持金や客満足との接続は今後の作業です。
+ログ再生は関係データを更新しません。営業の所持金・体力との接続は後述の営業試遊で扱い、客満足との接続は今後の作業です。
 
 親しみと個性に応じた[再会時の描写と関係の目安](Docs/HumanToCatRelationshipPresentation.md)も表示します。
 結果画面では、親しみの数値に加えて段階の変化を確認できます。
@@ -180,3 +180,16 @@ python3 -m cat_cafe_sim.human_cat_demo compare --rules 4
 
 試遊画面は「交流の様子」と「猫の登録・次の交流」のタブに分かれています。
 猫の登録・関係一覧・個性・動作の変更先は設定側のタブで選べます。タブ内は縦スクロールでき、行動ボタンとログ欄は常に表示されます。
+
+### 営業中の交流
+
+来店したお客を選び、版4の交流から時間料金・特別行動の資金・残り体力・親しみを営業へ反映する試遊を追加しました。
+
+```bash
+python3 -m cat_cafe_sim.cafe_interaction gui
+python3 -m cat_cafe_sim.cafe_interaction run --operations wait start:guest-1 direct finish
+python3 -m cat_cafe_sim.cafe_interaction replay reports/cafe_interaction.json
+```
+
+[営業との接続仕様・操作方法](Docs/HumanToCatCafeIntegration.md)を参照してください。
+親しみと猫の登録は保存しますが、営業の所持金・時計・体力は今回の試遊中だけ保持します。

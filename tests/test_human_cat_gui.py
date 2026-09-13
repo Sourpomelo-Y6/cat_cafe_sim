@@ -330,3 +330,44 @@ class RelationshipWindowTests(unittest.TestCase):
         self.assertTrue(app.resolve_current())
         self.assertTrue(app.session.persisted)
         self.assertEqual(app.session.store.snapshot('cat-1','guest-1')['affinity'],.5)
+
+
+@unittest.skipUnless(os.environ.get('CAT_CAFE_TEST_GUI') == '1', 'set CAT_CAFE_TEST_GUI=1 on a desktop')
+class CafeInteractionWindowTests(unittest.TestCase):
+    def setUp(self):
+        import tkinter as tk
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.cafe_interaction_gui import CafeInteractionWindow
+        from cat_cafe_sim.storage.relationships import RelationshipStore
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=tk.Tk();self.root.withdraw();self.addCleanup(self.root.destroy)
+        self.session=CafeInteractionSession(store=RelationshipStore(Path(self.temp.name)/'relations.json'))
+        self.app=CafeInteractionWindow(self.root,self.session)
+
+    def test_wait_select_interact_finish_and_log_visibility(self):
+        self.app.wait_button.invoke()
+        self.assertEqual(self.app.customer.get(),'guest-1')
+        self.app.start_button.invoke()
+        self.assertIsNotNone(self.session.core.active)
+        self.app.buttons['direct'].invoke()
+        self.app.finish_button.invoke()
+        self.assertEqual(self.session.core.funds,10)
+        self.assertEqual(self.session.core.cat.stamina,95)
+        self.assertEqual(self.session.store.snapshot('cat-1','guest-1')['affinity'],.5)
+        self.assertFalse(self.session.pending)
+        self.assertGreater(len(self.app.history.get_children()),3)
+        self.root.deiconify();self.root.geometry('860x600');self.root.update()
+        self.assertGreaterEqual(self.app.history.winfo_height(),120)
+        self.assertLessEqual(self.app.history.winfo_rooty()+self.app.history.winfo_height(),
+                             self.root.winfo_rooty()+self.root.winfo_height())
+
+    def test_save_failure_blocks_actions_until_retry(self):
+        self.app.wait_button.invoke();self.app.start_button.invoke();self.app.buttons['direct'].invoke()
+        with patch.object(self.session.store,'_write',side_effect=OSError('full')), patch('tkinter.messagebox.showerror') as error:
+            self.app.finish_button.invoke()
+        error.assert_called_once()
+        self.assertTrue(self.app.wait_button.instate(['disabled']))
+        self.assertTrue(self.app.retry_button.instate(['!disabled']))
+        self.app.retry_button.invoke()
+        self.assertFalse(self.session.pending)
+        self.assertEqual(self.session.core.funds,10)
