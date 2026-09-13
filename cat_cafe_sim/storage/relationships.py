@@ -55,6 +55,11 @@ class RelationshipStore:
                 Personality.from_dict(cat['personality'])
         return data
 
+    def list_cats(self):
+        """交流結果がない登録猫も含める。読み取りのみ。"""
+        return [dict(cat_id=cat_id, **copy.deepcopy(profile))
+                for cat_id, profile in sorted(self._read().get('cats', {}).items())]
+
     def cat_profile(self, cat_id):
         identity(cat_id)
         return copy.deepcopy(self._read().get('cats', {}).get(cat_id))

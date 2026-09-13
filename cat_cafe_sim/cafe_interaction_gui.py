@@ -135,17 +135,31 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.wait_button.pack_forget()
         self.finish_button.pack_forget()
         self.auto_assign = tk.BooleanVar(value=False)
-        self.cat_choice = tk.StringVar(value=f'{session.cat_name}（{session.core.cat.id}）')
+        self.cat_labels = {f"{row['name']}（{row['cat_id']}）":row['cat_id'] for row in session.cat_choices()}
+        self.cat_choice = tk.StringVar(value=next(iter(self.cat_labels)))
         self.cat_selector = ttk.Combobox(self.controls,textvariable=self.cat_choice,
-                                       values=(self.cat_choice.get(),),state='readonly',width=18)
+                                       values=tuple(self.cat_labels),state='readonly',width=18)
         self.cat_selector.pack(side='left',before=self.start_button,padx=4)
         self.start_button.configure(text='担当猫を割り当てる',command=self.assign)
         automation = ttk.Frame(self.actions_frame.master)
         automation.grid(row=4,sticky='ew',pady=6)
-        self.run_button = ttk.Button(automation,text='営業を開始・再開',command=self.toggle)
+        buttons = ttk.Frame(automation)
+        buttons.pack(fill='x')
+        self.run_button = ttk.Button(buttons,text='営業を開始・再開',command=self.toggle)
         self.run_button.pack(side='left',padx=4)
-        self.assignment_button = ttk.Checkbutton(automation,text='自動割り当て',variable=self.auto_assign,command=self.refresh)
+        self.assignment_button = ttk.Checkbutton(buttons,text='自動割り当て',variable=self.auto_assign,command=self.refresh)
         self.assignment_button.pack(side='left')
+        roster_frame = ttk.Frame(automation)
+        roster_frame.pack(fill='x',pady=4)
+        self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status'),show='headings',height=3)
+        for key,title,width in (('cat','営業中の猫',210),('personality','個性',180),('stamina','体力',80),('affinity','選んだお客への親しみ',180),('status','状態',90)):
+            self.roster.heading(key,text=title)
+            self.roster.column(key,width=width,minwidth=50)
+        scrollbar=ttk.Scrollbar(roster_frame,orient='vertical',command=self.roster.yview)
+        scrollbar.pack(side='right',fill='y')
+        self.roster.configure(yscrollcommand=scrollbar.set)
+        self.roster.pack(fill='x')
+        self.cat_selector.bind('<<ComboboxSelected>>', lambda event:self.refresh())
         self.queue.bind('<<ComboboxSelected>>', lambda event:self.refresh())
         self.refresh()
 
@@ -170,7 +184,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
     def assign(self):
         self.stop()
         before = self.session.core.active
-        self.perform(lambda:self.session.start(self.customer.get(),self.session.core.cat.id))
+        self.perform(lambda:self.session.start(self.customer.get(),self.cat_labels.get(self.cat_choice.get(),'')))
         if before is None and self.session.core.active is not None:
             self.running = True
             self.schedule()
@@ -202,8 +216,14 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         manual = not self.auto_assign.get() and not core.active and not blocked
         self.queue.configure(state='readonly' if manual else 'disabled')
         self.cat_selector.configure(state='readonly' if manual else 'disabled')
-        self.start_button.state(['!disabled'] if manual and core.queue and not core.cat.cannot_continue
-                                and core.cat.health_status=='healthy' and core.cat.stamina>0 else ['disabled'])
+        rows = self.session.cat_choices(self.customer.get())
+        selected = next((row for row in rows if row['cat_id']==self.cat_labels.get(self.cat_choice.get())),None)
+        self.start_button.state(['!disabled'] if manual and core.queue and selected and selected['available'] else ['disabled'])
+        self.roster.delete(*self.roster.get_children())
+        for row in rows:
+            state = '交流中' if core.active and core.active.cat_id==row['cat_id'] else '担当可能' if row['available'] else '交流不可'
+            self.roster.insert('','end',values=(f"{row['name']}（{row['cat_id']}）",row['personality'],f"{row['stamina']:g}",
+                                               f"{row['affinity']:g}" if self.customer.get() else '—',state))
         if not self.session.pending:
             self.notice.set('自動進行中：交流コマンドは自動で選ばれます。' if self.running else
                             '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')

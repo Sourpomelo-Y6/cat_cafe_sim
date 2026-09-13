@@ -440,3 +440,48 @@ class AutomaticCafeWindowTests(unittest.TestCase):
         self.assertEqual(self.session.core.funds,10)
         self.app.run_button.invoke()
         self.assertTrue(self.app.running)
+
+
+@unittest.skipUnless(os.environ.get('CAT_CAFE_TEST_GUI') == '1', 'set CAT_CAFE_TEST_GUI=1 on a desktop')
+class CafeRosterWindowTests(unittest.TestCase):
+    def setUp(self):
+        import tkinter as tk
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.cafe_interaction_gui import CafeInteractionWindow
+        from cat_cafe_sim.storage.relationships import RelationshipStore
+        from cat_cafe_sim.core.human_cat_types import load_presets
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=tk.Tk();self.root.withdraw();self.addCleanup(self.root.destroy)
+        store=RelationshipStore(Path(self.temp.name)/'relations.json')
+        store.register_cat('cat-a','ミケ',load_presets()['穏やかな甘えん坊'])
+        store.register_cat('cat-b','タマ',load_presets()['活発な探検家'])
+        self.session=CafeInteractionSession(store=store)
+        self.app=CafeInteractionWindow(self.root,self.session)
+        self.addCleanup(self.app.stop)
+
+    def test_roster_selection_assigns_chosen_cat_and_preserves_other_stamina(self):
+        self.session.step();self.app.refresh()
+        rows=[self.app.roster.item(item,'values') for item in self.app.roster.get_children()]
+        self.assertEqual(len(rows),2)
+        self.assertEqual(rows[1][:4],('タマ（cat-b）','活発な探検家','100','0'))
+        self.app.cat_choice.set('タマ（cat-b）');self.app.refresh();self.app.start_button.invoke()
+        self.app.stop()
+        self.assertEqual(self.session.core.active.cat_id,'cat-b')
+        self.session.automatic_step(auto_assign=False);self.app.refresh()
+        self.assertEqual(self.session.core.cats['cat-b'].stamina,95)
+        self.assertEqual(self.session.core.cats['cat-a'].stamina,100)
+        self.root.deiconify();self.root.geometry('860x600');self.root.update()
+        self.assertGreaterEqual(self.app.history.winfo_height(),120)
+        self.assertLessEqual(self.app.history.winfo_rooty()+self.app.history.winfo_height(),
+                             self.root.winfo_rooty()+self.root.winfo_height())
+
+    def test_unavailable_cat_cannot_be_assigned_but_other_can(self):
+        self.session.step()
+        self.session.core.cats['cat-a'].health_status='sick'
+        self.app.refresh()
+        self.assertTrue(self.app.start_button.instate(['disabled']))
+        self.app.cat_choice.set('タマ（cat-b）');self.app.refresh()
+        self.assertTrue(self.app.start_button.instate(['!disabled']))
+        self.app.auto_assign.set(True);self.app.refresh()
+        self.session.automatic_step()
+        self.assertEqual(self.session.core.active.cat_id,'cat-b')

@@ -1,15 +1,24 @@
-"""版4交流を用いる1匹・1席の営業。従来の自動接客モードとは別に再生する。"""
+"""版4交流を用いる複数猫・1席の営業。従来の自動接客モードとは別に再生する。"""
 import copy
 import json
 from dataclasses import asdict
 
 from .simulation import SimulationCore, Command
-from .human_cat_relationship import verify_relationship
+from .human_cat_relationship import verify_relationship, identity
+from .models import Cat
 
 
 class CafeInteractionCore(SimulationCore):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, cat_ids=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.roster_ids = None if cat_ids is None else list(cat_ids)
+        ids = self.roster_ids if self.roster_ids is not None else [self.cat.id]
+        for cat_id in ids:
+            identity(cat_id)
+        if not ids or len(set(ids)) != len(ids):
+            raise ValueError('営業する猫IDは重複のない1匹以上を指定してください。')
+        self.cats = {cat_id: Cat(id=cat_id, stamina=self.start_state.stamina, spirit=self.start_state.spirit) for cat_id in ids}
+        self.cat = self.cats[ids[0]]
         self.active = None
         self.outcomes = {}
         self.operations = []
@@ -18,7 +27,8 @@ class CafeInteractionCore(SimulationCore):
     def snapshot(self):
         return {**super().snapshot(),
                 'interaction': self.active.log() if self.active else None,
-                'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus}
+                'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
+                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None else {})}
 
     def _record(self, operation):
         self.operations.append(dict(operation=operation, events=copy.deepcopy(self._tick_events), state=self.snapshot()))
@@ -26,17 +36,19 @@ class CafeInteractionCore(SimulationCore):
     def start(self, interaction):
         if self.closed or self.active or self.seat.customer_id is not None:
             raise ValueError('交流を開始できません。営業中の空席が必要です。')
-        if interaction.cat_id != self.cat.id or interaction.customer_id not in self.queue:
+        if interaction.cat_id not in self.cats or interaction.customer_id not in self.queue:
             raise ValueError('営業中の猫と待機中のお客を選んでください。')
-        if self.cat.health_status != 'healthy' or self.cat.cannot_continue or self.cat.stamina <= 0:
+        cat = self.cats[interaction.cat_id]
+        if cat.health_status != 'healthy' or cat.cannot_continue or cat.stamina <= 0:
             raise ValueError('この猫は現在交流できません。')
         if (interaction.records or interaction.state['end_reason'] or
-                interaction.state['stamina'] != self.cat.stamina or
+                interaction.state['stamina'] != cat.stamina or
                 interaction.config.max_stamina != self.config.max_stamina or
                 interaction.config.ticks > self.config.opening_ticks - self.tick or
                 interaction.session_id in self.outcomes):
             raise ValueError('交流の開始条件が営業状態と一致しません。')
         self._tick_events = []
+        self.cat = cat
         self._apply(Command('assign', interaction.customer_id, interaction.cat_id))
         self.active = copy.deepcopy(interaction)
         self.visits[interaction.customer_id].first_meeting = interaction.initial_relationship['revision'] == 0
@@ -106,21 +118,24 @@ class CafeInteractionCore(SimulationCore):
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
                     interaction_bonus=self.interaction_bonus, stamina=self.cat.stamina,
-                    service_ticks=self.service_ticks)
+                    service_ticks=self.service_ticks,
+                    **({'cat_stamina': {key:cat.stamina for key,cat in self.cats.items()}} if self.roster_ids is not None else {}))
 
     def log(self):
-        return dict(mode_id='cafe-human-cat', format_version=1, config=json.loads(json.dumps(self.config.to_dict())),
+        return dict(mode_id='cafe-human-cat', format_version=2 if self.roster_ids is not None else 1, config=json.loads(json.dumps(self.config.to_dict())),
                     seed=self.seed, start_state=asdict(self.start_state),
-                    operations=copy.deepcopy(self.operations), summary=self.summary())
+                    operations=copy.deepcopy(self.operations), summary=self.summary(),
+                    **({'cat_ids': list(self.roster_ids)} if self.roster_ids is not None else {}))
 
 
 def verify_cafe_interaction(data):
     from .config import Config
     from .models import StartState
-    if data.get('mode_id') != 'cafe-human-cat' or data.get('format_version') != 1:
+    if data.get('mode_id') != 'cafe-human-cat' or data.get('format_version') not in (1, 2):
         raise ValueError('unsupported cafe interaction log')
     core = CafeInteractionCore(Config.from_dict(data['config']), seed=data['seed'],
-                               start_state=StartState(**data['start_state']))
+                               start_state=StartState(**data['start_state']),
+                               cat_ids=data['cat_ids'] if data['format_version'] == 2 else None)
     for item in data['operations']:
         operation = item['operation']
         if operation['kind'] == 'start':
