@@ -18,6 +18,8 @@ class CafeInteractionSession:
         profile = self.store.cat_profile(self.core.cat.id)
         self.cat_name = profile['name'] if profile else self.core.cat.id
         self.persisted = set()
+        from .policies.human_cat import AutomaticInteractionPolicy
+        self.policy = AutomaticInteractionPolicy()
 
     @property
     def pending(self):
@@ -27,8 +29,10 @@ class CafeInteractionSession:
         if self.pending:
             raise ValueError('未保存の交流結果があります。先に保存を再試行してください。')
 
-    def start(self, customer_id):
+    def start(self, customer_id, cat_id=None):
         self._ready()
+        if cat_id is not None and cat_id != self.core.cat.id:
+            raise ValueError('営業に参加している猫を選んでください。')
         config = replace(self.interaction_config,
                          ticks=min(self.interaction_config.ticks, self.core.config.opening_ticks-self.core.tick))
         interaction = self.store.begin(config, self.core.cat.id, customer_id, stamina=self.core.cat.stamina)
@@ -38,6 +42,26 @@ class CafeInteractionSession:
         self._ready()
         self.core.step(action, target_type)
         self.persist()
+
+    def automatic_step(self, *, auto_assign=True):
+        """最大1営業tick進める。手動割り当て待ちではFalseを返す。"""
+        self._ready()
+        if self.core.closed:
+            return False
+        if self.core.active is None:
+            cat = self.core.cat
+            available = cat.health_status == 'healthy' and not cat.cannot_continue and cat.stamina > 0
+            if self.core.queue and available:
+                if not auto_assign:
+                    return False
+                self.start(self.core.queue[0], cat.id)
+        if self.core.active:
+            active = self.core.active
+            action, target = self.policy.choose(active.observation(), active.valid_actions())
+            self.step(action, target)
+        else:
+            self.step()
+        return True
 
     def finish(self):
         self.core.finish()
@@ -63,21 +87,23 @@ def main():
     parser = argparse.ArgumentParser(description='版4交流を営業へ接続する試遊')
     sub = parser.add_subparsers(dest='command', required=True)
     run = sub.add_parser('run')
-    run.add_argument('--operations', nargs='+', default=['wait', 'start:guest-1', 'direct', 'finish'])
+    run.add_argument('--operations', nargs='+', help='検証用の手動操作列。省略時は自動割り当て・自動交流で閉店まで進行')
     run.add_argument('--relationships', type=Path, default=Path('saves/cafe_relationships.json'))
     run.add_argument('--output', type=Path, default=Path('reports/cafe_interaction.json'))
     run.add_argument('--config', type=Path)
     gui = sub.add_parser('gui')
+    gui.add_argument('--manual', action='store_true', help='検証用の手動コマンド画面')
     gui.add_argument('--relationships', type=Path, default=Path('saves/cafe_relationships.json'))
     replay = sub.add_parser('replay'); replay.add_argument('path', type=Path)
     args = parser.parse_args()
     try:
         if args.command == 'gui':
             import tkinter as tk
-            from .cafe_interaction_gui import CafeInteractionWindow
+            from .cafe_interaction_gui import CafeInteractionWindow, ManualCafeInteractionWindow
             session = CafeInteractionSession(store=RelationshipStore(args.relationships))
             root = tk.Tk()
-            CafeInteractionWindow(root, session)
+            window = ManualCafeInteractionWindow if args.manual else CafeInteractionWindow
+            window(root, session)
             root.mainloop()
             return
         if args.command == 'replay':
@@ -88,7 +114,10 @@ def main():
             core = CafeInteractionCore(Config.load(args.config) if args.config else None)
             session = CafeInteractionSession(core, RelationshipStore(args.relationships))
             try:
-                for operation in args.operations:
+                if args.operations is None:
+                    while not core.closed:
+                        session.automatic_step()
+                for operation in args.operations or ():
                     if operation == 'wait': session.step()
                     elif operation == 'finish': session.finish()
                     elif operation == 'retry': session.persist()

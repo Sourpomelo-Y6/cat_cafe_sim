@@ -337,12 +337,12 @@ class CafeInteractionWindowTests(unittest.TestCase):
     def setUp(self):
         import tkinter as tk
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
-        from cat_cafe_sim.cafe_interaction_gui import CafeInteractionWindow
+        from cat_cafe_sim.cafe_interaction_gui import ManualCafeInteractionWindow
         from cat_cafe_sim.storage.relationships import RelationshipStore
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.root=tk.Tk();self.root.withdraw();self.addCleanup(self.root.destroy)
         self.session=CafeInteractionSession(store=RelationshipStore(Path(self.temp.name)/'relations.json'))
-        self.app=CafeInteractionWindow(self.root,self.session)
+        self.app=ManualCafeInteractionWindow(self.root,self.session)
 
     def test_wait_select_interact_finish_and_log_visibility(self):
         self.app.wait_button.invoke()
@@ -371,3 +371,72 @@ class CafeInteractionWindowTests(unittest.TestCase):
         self.app.retry_button.invoke()
         self.assertFalse(self.session.pending)
         self.assertEqual(self.session.core.funds,10)
+
+
+@unittest.skipUnless(os.environ.get('CAT_CAFE_TEST_GUI') == '1', 'set CAT_CAFE_TEST_GUI=1 on a desktop')
+class AutomaticCafeWindowTests(unittest.TestCase):
+    def setUp(self):
+        import tkinter as tk
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.cafe_interaction_gui import CafeInteractionWindow
+        from cat_cafe_sim.storage.relationships import RelationshipStore
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=tk.Tk();self.root.withdraw();self.addCleanup(self.root.destroy)
+        self.session=CafeInteractionSession(store=RelationshipStore(Path(self.temp.name)/'relations.json'))
+        self.app=CafeInteractionWindow(self.root,self.session)
+        self.addCleanup(self.app.stop)
+
+    def drive(self):
+        if self.app.timer is not None:
+            self.root.after_cancel(self.app.timer)
+            self.app.timer=None
+        self.app.advance()
+
+    def test_manual_assignment_starts_automatic_exchange_and_can_pause(self):
+        self.root.deiconify();self.root.geometry('860x600');self.root.update()
+        self.assertFalse(self.app.actions_frame.winfo_ismapped())
+        self.assertFalse(self.app.finish_button.winfo_ismapped())
+        self.app.run_button.invoke();self.drive();self.drive()
+        self.assertFalse(self.app.running)  # 来店後は割り当てを待つ。
+        self.assertEqual(self.session.core.tick,1)
+        self.app.start_button.invoke()
+        self.assertTrue(self.app.running)
+        self.drive()
+        self.assertEqual(len(self.session.core.active.records),1)
+        self.app.run_button.invoke()
+        before=self.session.core.log();self.drive()
+        self.assertEqual(self.session.core.log(),before)
+        self.assertIsNone(self.app.timer)
+        self.assertGreaterEqual(self.app.history.winfo_height(),120)
+        for widget in (self.app.history,self.app.start_button,self.app.run_button):
+            self.assertLessEqual(widget.winfo_rootx()+widget.winfo_width(),self.root.winfo_rootx()+self.root.winfo_width())
+
+    def test_auto_assignment_to_closing_and_single_timer(self):
+        self.app.auto_assign.set(True);self.app.refresh()
+        self.assertTrue(self.app.start_button.instate(['disabled']))
+        self.app.run_button.invoke()
+        timer=self.app.timer;self.app.schedule()
+        self.assertEqual(self.app.timer,timer)
+        for _ in range(50):
+            if not self.app.running:break
+            self.drive()
+        self.assertTrue(self.session.core.closed)
+        self.assertFalse(self.app.running)
+        self.assertIsNone(self.app.timer)
+        self.assertFalse(self.session.pending)
+
+    def test_auto_save_failure_pauses_until_retry_and_explicit_resume(self):
+        from dataclasses import replace
+        self.session.interaction_config=replace(self.session.interaction_config,ticks=1)
+        self.app.auto_assign.set(True);self.app.toggle();self.drive()
+        with patch.object(self.session.store,'_write',side_effect=OSError('full')),patch('tkinter.messagebox.showerror'):
+            self.drive()
+        self.assertFalse(self.app.running)
+        self.assertIsNone(self.app.timer)
+        self.assertTrue(self.app.run_button.instate(['disabled']))
+        self.app.retry_button.invoke()
+        self.assertFalse(self.session.pending)
+        self.assertFalse(self.app.running)
+        self.assertEqual(self.session.core.funds,10)
+        self.app.run_button.invoke()
+        self.assertTrue(self.app.running)

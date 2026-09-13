@@ -141,3 +141,49 @@ class CafeInteractionTests(unittest.TestCase):
         self.assertEqual(session.core.visits['guest-1'].departure_reason,'interaction_time_limit')
         session.start('guest-2')
         self.assertEqual(session.core.active.state['stamina'],95)
+
+    def test_automatic_assignment_and_actions_close_day_and_replay(self):
+        session=self.session()
+        while not session.core.closed:
+            self.assertTrue(session.automatic_step())
+        self.assertGreater(len(session.core.outcomes),0)
+        self.assertFalse(session.pending)
+        self.assertEqual(session.core.funds,session.core.config.initial_funds+sum(v.bill for v in session.core.visits.values()))
+        self.assertEqual(verify_cafe_interaction(session.core.log()).summary(),session.core.summary())
+
+    def test_manual_assignment_waits_without_advancing_then_automates(self):
+        session=self.session()
+        self.assertTrue(session.automatic_step(auto_assign=False))
+        before=session.core.log()
+        self.assertFalse(session.automatic_step(auto_assign=False))
+        self.assertEqual(session.core.log(),before)
+        with self.assertRaises(ValueError):session.start('guest-1','unknown-cat')
+        self.assertEqual(session.core.log(),before)
+        session.start('guest-1','cat-1')
+        while session.core.active:
+            self.assertTrue(session.automatic_step(auto_assign=False))
+        self.assertTrue(session.core.outcomes)
+        self.assertFalse(session.pending)
+
+    def test_automatic_policy_priority_and_reaction_switch(self):
+        from cat_cafe_sim.policies.human_cat import AutomaticInteractionPolicy
+        policy=AutomaticInteractionPolicy()
+        obs=dict(stamina=5,previous_reaction='confused',mode='teaser')
+        self.assertEqual(policy.choose(obs,('connect',)),('connect',None))
+        self.assertEqual(policy.choose(obs,('direct','pause','switch')),('pause',None))
+        obs['stamina']=100
+        self.assertEqual(policy.choose(obs,('direct','pause','switch')),('switch','ball'))
+        obs['previous_reaction']='favorable'
+        self.assertEqual(policy.choose(obs,('direct','pause','switch')),('direct',None))
+
+    def test_automatic_save_failure_stops_and_retries_without_reaccounting(self):
+        session=self.session();session.interaction_config=replace(RelationshipConfig(),ticks=1)
+        session.automatic_step()
+        with patch.object(self.store,'_write',side_effect=OSError('full')):
+            with self.assertRaises(OSError):session.automatic_step()
+        before=session.core.log()
+        with self.assertRaises(ValueError):session.automatic_step()
+        self.assertEqual(session.core.log(),before)
+        session.persist();session.persist()
+        self.assertEqual(session.core.funds,10)
+        self.assertFalse(session.pending)

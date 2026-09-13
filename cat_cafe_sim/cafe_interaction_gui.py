@@ -3,7 +3,7 @@ from .human_cat_gui import ACTION_NAMES, history_row
 from .relationship_presentation import greeting_text
 
 
-class CafeInteractionWindow:
+class ManualCafeInteractionWindow:
     def __init__(self, root, session):
         import tkinter as tk
         from tkinter import ttk
@@ -15,8 +15,9 @@ class CafeInteractionWindow:
         frame.columnconfigure(0,weight=1); frame.rowconfigure(5,weight=1,minsize=140)
         self.status = tk.StringVar(); self.details = tk.StringVar(); self.notice = tk.StringVar()
         ttk.Label(frame,textvariable=self.status,wraplength=820).grid(row=0,sticky='w',pady=6)
-        ttk.Label(frame,text='「営業を1tick進める」で来客を待ち、お客を選んで交流を開始します。営業状態はこの画面を開いている間だけ保持します。',wraplength=820).grid(row=1,sticky='w')
-        controls = ttk.Frame(frame); controls.grid(row=2,sticky='ew',pady=8)
+        self.instructions=ttk.Label(frame,text='検証用：時間送りと交流コマンドを手動で操作します。営業状態は起動中だけ保持します。',wraplength=820)
+        self.instructions.grid(row=1,sticky='w')
+        controls = self.controls = ttk.Frame(frame); controls.grid(row=2,sticky='ew',pady=8)
         self.customer = tk.StringVar()
         self.queue = ttk.Combobox(controls,textvariable=self.customer,state='readonly',width=18)
         self.queue.pack(side='left')
@@ -29,7 +30,7 @@ class CafeInteractionWindow:
         self.retry_button=ttk.Button(controls,text='結果保存を再試行',command=lambda:self.perform(session.persist))
         self.retry_button.pack(side='left')
         ttk.Label(frame,textvariable=self.details,wraplength=820).grid(row=3,sticky='w',pady=6)
-        actions=ttk.Frame(frame); actions.grid(row=4,sticky='ew')
+        actions=self.actions_frame=ttk.Frame(frame); actions.grid(row=4,sticky='ew')
         self.types={t.name:t.id for t in session.interaction_config.types}
         self.target=tk.StringVar(value=next(iter(self.types)))
         ttk.Combobox(actions,textvariable=self.target,values=tuple(self.types),state='readonly',width=18).grid(row=0,column=0,columnspan=2,sticky='w')
@@ -117,3 +118,102 @@ class CafeInteractionWindow:
                 self.perform(self.session.finish)
                 if self.session.pending or self.session.core.active:return
         self.root.destroy()
+
+
+class CafeInteractionWindow(ManualCafeInteractionWindow):
+    """通常営業。プレイヤーは割り当てと進行・一時停止だけを操作する。"""
+    interval_ms = 700
+
+    def __init__(self, root, session):
+        import tkinter as tk
+        from tkinter import ttk
+        self.running = False
+        self.timer = None
+        super().__init__(root, session)
+        self.instructions.configure(text='担当猫を割り当てると交流は自動で進みます。自動割り当ても選べます。営業状態は起動中だけ保持します。')
+        self.actions_frame.grid_remove()
+        self.wait_button.pack_forget()
+        self.finish_button.pack_forget()
+        self.auto_assign = tk.BooleanVar(value=False)
+        self.cat_choice = tk.StringVar(value=f'{session.cat_name}（{session.core.cat.id}）')
+        self.cat_selector = ttk.Combobox(self.controls,textvariable=self.cat_choice,
+                                       values=(self.cat_choice.get(),),state='readonly',width=18)
+        self.cat_selector.pack(side='left',before=self.start_button,padx=4)
+        self.start_button.configure(text='担当猫を割り当てる',command=self.assign)
+        automation = ttk.Frame(self.actions_frame.master)
+        automation.grid(row=4,sticky='ew',pady=6)
+        self.run_button = ttk.Button(automation,text='営業を開始・再開',command=self.toggle)
+        self.run_button.pack(side='left',padx=4)
+        self.assignment_button = ttk.Checkbutton(automation,text='自動割り当て',variable=self.auto_assign,command=self.refresh)
+        self.assignment_button.pack(side='left')
+        self.queue.bind('<<ComboboxSelected>>', lambda event:self.refresh())
+        self.refresh()
+
+    def stop(self):
+        self.running = False
+        if self.timer is not None:
+            self.root.after_cancel(self.timer)
+            self.timer = None
+
+    def schedule(self):
+        if self.running and self.timer is None:
+            self.timer = self.root.after(self.interval_ms, self.advance)
+
+    def toggle(self):
+        if self.running:
+            self.stop()
+        elif not self.session.pending and not self.session.core.closed:
+            self.running = True
+            self.schedule()
+        self.refresh()
+
+    def assign(self):
+        self.stop()
+        before = self.session.core.active
+        self.perform(lambda:self.session.start(self.customer.get(),self.session.core.cat.id))
+        if before is None and self.session.core.active is not None:
+            self.running = True
+            self.schedule()
+        self.refresh()
+
+    def advance(self):
+        from tkinter import messagebox
+        self.timer = None
+        if not self.running:
+            return
+        try:
+            progressed = self.session.automatic_step(auto_assign=self.auto_assign.get())
+            if not progressed or self.session.core.closed:
+                self.stop()
+        except (OSError,ValueError,TypeError,KeyError,RuntimeError) as error:
+            self.stop()
+            messagebox.showerror('営業を一時停止しました',str(error),parent=self.root)
+        self.refresh()
+        self.schedule()
+
+    def refresh(self):
+        super().refresh()
+        if not hasattr(self,'run_button'):
+            return
+        core = self.session.core
+        blocked = bool(self.session.pending) or core.closed
+        self.run_button.configure(text='一時停止' if self.running else '営業を開始・再開')
+        self.run_button.state(['disabled'] if blocked else ['!disabled'])
+        manual = not self.auto_assign.get() and not core.active and not blocked
+        self.queue.configure(state='readonly' if manual else 'disabled')
+        self.cat_selector.configure(state='readonly' if manual else 'disabled')
+        self.start_button.state(['!disabled'] if manual and core.queue and not core.cat.cannot_continue
+                                and core.cat.health_status=='healthy' and core.cat.stamina>0 else ['disabled'])
+        if not self.session.pending:
+            self.notice.set('自動進行中：交流コマンドは自動で選ばれます。' if self.running else
+                            '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')
+
+    def save_log(self):
+        self.stop()
+        self.refresh()
+        super().save_log()
+
+    def close(self):
+        self.stop()
+        self.refresh()
+        super().close()
