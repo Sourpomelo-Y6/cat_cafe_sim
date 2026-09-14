@@ -95,6 +95,8 @@ class ManualCafeInteractionWindow:
             if kind=='human_cat_action':
                 row=history_row(event['record'])
                 text=f'{row[1]} / {row[2]}'
+            elif kind=='shifts_set':
+                text='出勤・休養を設定 · 出勤 '+('、'.join(event['working_cats']) or 'なし')
             elif kind=='next_day':
                 text=f"{event['day']}日目の準備 · 猫の体力が全回復しました"
             elif kind=='departure':
@@ -165,10 +167,12 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.seat_choice=tk.StringVar(value=session.free_seats[0] if session.free_seats else '')
         self.seat_selector=ttk.Combobox(buttons,textvariable=self.seat_choice,values=tuple(session.free_seats),state='readonly',width=10)
         self.seat_selector.pack(side='left')
+        self.shift_button=ttk.Button(buttons,text='出勤・休養…',command=self.show_shifts)
+        self.shift_button.pack(side='left',padx=6)
         roster_frame = ttk.Frame(automation)
         roster_frame.pack(fill='x',pady=4)
-        self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status'),show='headings',height=3)
-        for key,title,width in (('cat','営業中の猫',210),('personality','個性',180),('stamina','体力',80),('affinity','選んだお客への親しみ',180),('status','状態',90)):
+        self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status','fatigue'),show='headings',height=3)
+        for key,title,width in (('cat','営業中の猫',190),('personality','個性',130),('stamina','体力',65),('affinity','選んだお客への親しみ',180),('status','状態',85),('fatigue','疲労',65)):
             self.roster.heading(key,text=title)
             self.roster.column(key,width=width,minwidth=50)
         scrollbar=ttk.Scrollbar(roster_frame,orient='vertical',command=self.roster.yview)
@@ -226,6 +230,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if not hasattr(self,'run_button'):
             return
         core = self.session.core
+        self.shift_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending else ['disabled'])
         self.day_button.state(['!disabled'] if core.closed and not self.session.pending else ['disabled'])
         blocked = bool(self.session.pending) or core.closed
         self.run_button.configure(text='一時停止' if self.running else '営業を開始・再開')
@@ -241,9 +246,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.start_button.state(['!disabled'] if manual and core.queue and selected and selected['available'] else ['disabled'])
         self.roster.delete(*self.roster.get_children())
         for row in rows:
-            state = '交流中' if any(active.cat_id==row['cat_id'] for active in self.session.active_interactions.values()) else '担当可能' if row['available'] else '交流不可'
+            state = '休養' if not row['working'] else '交流中' if any(active.cat_id==row['cat_id'] for active in self.session.active_interactions.values()) else '担当可能' if row['available'] else '交流不可'
             self.roster.insert('','end',values=(f"{row['name']}（{row['cat_id']}）",row['personality'],f"{row['stamina']:g}",
-                                               f"{row['affinity']:g}" if self.customer.get() else '—',state))
+                                               f"{row['affinity']:g}" if self.customer.get() else '—',state,f"{row['fatigue']:g}"))
         if hasattr(core,'seats'):
             lines=[]
             for seat_id in core.seats:
@@ -259,6 +264,13 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if not self.session.pending:
             self.notice.set('自動進行中：交流コマンドは自動で選ばれます。' if self.running else
                             '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')
+
+    def show_shifts(self):
+        from .cafe_shift_gui import CafeShiftWindow
+        self.stop()
+        self.refresh()
+        if self.session.core.can_set_shifts and not self.session.pending:
+            self.shift_window = CafeShiftWindow(self.root, self.session, self.refresh)
 
     def show_history(self):
         from .cafe_history import CafeHistoryWindow
@@ -277,6 +289,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             for key,row in result['cats'].items():
                 name=self.session.profiles.get(key,{}).get('name',key)
                 lines.append(f"{name}：残り {row['stamina']:g} / 消耗 {row['spent']:g}")
+                if 'shift' in row:
+                    label='出勤' if row['shift']=='work' else '休養'
+                    lines.append(f"  {label} · 疲労 {row['fatigue_before']:g} → {row['fatigue_after']:g}")
             lines.append("\n親しみの変化")
             for row in result['affinity_changes']:
                 name=self.session.profiles.get(row['cat_id'],{}).get('name',row['cat_id'])

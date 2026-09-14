@@ -43,7 +43,7 @@ class CafeHistoryWindow:
         self.days = self.table(frame, ('日目', '売上', 'うちボーナス', '交流件数', '閉店時所持金'))
         ttk.Label(frame, text='猫ごとの比較（体力消耗は営業開始時からの差、親しみは各お客への実増減の合計）',
                   wraplength=600).pack(anchor='w', pady=(10, 0))
-        self.cats = self.table(frame, ('日目', '猫', '接客回数', '体力消耗', '残り体力', '親しみ増減'))
+        self.cats = self.table(frame, ('日目', '猫', '接客回数', '体力消耗', '残り体力', '親しみ増減', '出勤・休養', '疲労変化'))
         for result in rows:
             summary = result['summary']
             self.days.insert('', 'end', values=(result['day'], f"{summary['revenue']:g}",
@@ -51,7 +51,9 @@ class CafeHistoryWindow:
             for cat_id, cat in result['cats'].items():
                 name = session.profiles.get(cat_id, {}).get('name', cat_id)
                 self.cats.insert('', 'end', values=(result['day'], f'{name}（{cat_id}）', cat['interactions'],
-                    f"{cat['spent']:g}", f"{cat['stamina']:g}", f"{cat['affinity_delta']:+g}"))
+                    f"{cat['spent']:g}", f"{cat['stamina']:g}", f"{cat['affinity_delta']:+g}",
+                    {'work': '出勤', 'rest': '休養'}.get(cat.get('shift'), '記録なし'),
+                    f"{cat['fatigue_before']:g} → {cat['fatigue_after']:g}" if 'fatigue_before' in cat else '記録なし'))
         ttk.Button(frame, text='閉じる', command=self.window.destroy).pack(anchor='e', pady=(8, 0))
         self.window.bind('<Escape>', lambda event: self.window.destroy())
 

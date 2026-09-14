@@ -1,0 +1,5 @@
+{
+  "max_fatigue": 100,
+  "fatigue_per_service_tick": 1,
+  "rest_day_recovery": 20
+}

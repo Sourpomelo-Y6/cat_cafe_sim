@@ -23,6 +23,7 @@ class CafeInteractionSession:
                 raise ValueError('席数は1または2を指定してください。')
             core_type = CafeInteractionCore if seat_count == 1 else MultiSeatCafeCore
             core = core_type(cafe_config, cat_ids=ids)
+            core.set_shifts(ids)
         self.core = core
         self.profiles = profiles
         self.affinities = {(r['cat_id'],r['customer_id']):r['affinity'] for r in self.store.list_relationships()}
@@ -54,7 +55,7 @@ class CafeInteractionSession:
 
     def available_cats(self):
         return [cat for cat in self.core.cats.values()
-                if cat.health_status == 'healthy' and not cat.cannot_continue and cat.stamina > 0
+                if cat.id in self.core.working_cats and cat.health_status == 'healthy' and not cat.cannot_continue and cat.stamina > 0
                 and cat.id not in {item.cat_id for item in self.active_interactions.values()}]
 
     def cat_choices(self, customer_id=None):
@@ -65,7 +66,7 @@ class CafeInteractionSession:
             personality = Personality.from_dict(profile['personality']) if profile else self.interaction_config.personality
             label = next((name for name,value in self.presets.items() if value == personality), 'カスタム')
             rows.append(dict(cat_id=cat_id,name=profile['name'] if profile else cat_id,personality=label,
-                             stamina=cat.stamina,affinity=self.affinities.get((cat_id,customer_id),0),
+                             stamina=cat.stamina,fatigue=cat.fatigue,working=cat_id in self.core.working_cats,affinity=self.affinities.get((cat_id,customer_id),0),
                              available=cat in self.available_cats()))
         return rows
 
@@ -78,6 +79,10 @@ class CafeInteractionSession:
         check_link(self)
         if self.pending:
             raise ValueError('未保存の交流結果があります。先に保存を再試行してください。')
+
+    def set_shifts(self, working_cats):
+        self._ready()
+        self.core.set_shifts(working_cats)
 
     def next_day(self):
         self._ready()

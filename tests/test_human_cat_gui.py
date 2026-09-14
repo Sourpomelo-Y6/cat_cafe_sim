@@ -552,6 +552,38 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_shift_dialog_cancel_save_pause_and_lock_after_start(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        self.assertIn('disabled',self.app.shift_button.state())
+        self.app.session=CafeInteractionSession(store=self.store)
+        self.app.logged=0
+        self.app.refresh()
+        key=next(iter(self.app.session.core.cats))
+        self.app.toggle()
+        self.app.shift_button.invoke()
+        dialog=self.app.shift_window
+        self.assertFalse(self.app.running)
+        self.assertIsNone(self.app.timer)
+        dialog.tree.selection_set(key)
+        dialog.set_selected(False)
+        dialog.window.destroy()
+        self.assertIn(key,self.app.session.core.working_cats)
+        self.app.shift_button.invoke()
+        dialog=self.app.shift_window
+        dialog.tree.selection_set(key)
+        dialog.set_selected(False)
+        self.root.deiconify();dialog.window.deiconify()
+        self.root.update()
+        self.assertGreater(dialog.tree.winfo_height(),40)
+        dialog.save_button.invoke()
+        self.assertNotIn(key,self.app.session.core.working_cats)
+        rows=[self.app.roster.item(item,'values') for item in self.app.roster.get_children()]
+        self.assertEqual(rows[0][4],'休養')
+        self.assertEqual(rows[0][5],'0')
+        self.app.session.automatic_step()
+        self.app.refresh()
+        self.assertIn('disabled',self.app.shift_button.state())
+
     def test_history_empty_two_days_and_pause(self):
         self.app.toggle()
         self.app.history_button.invoke()

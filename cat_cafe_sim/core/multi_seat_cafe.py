@@ -135,7 +135,9 @@ def verify_multi_seat(data):
                            start_state=StartState(**data['start_state']),cat_ids=data['cat_ids'])
     for item in data['operations']:
         operation=item['operation']
-        if operation['kind']=='start':
+        if operation['kind']=='set_shifts':
+            core.set_shifts(operation['working_cats'],operation['rules'])
+        elif operation['kind']=='start':
             core.start(verify_relationship(operation['interaction']),operation['seat_id'])
         elif operation['kind']=='step':
             core.step(operation['commands'])
