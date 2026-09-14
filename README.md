@@ -192,7 +192,7 @@ python3 -m cat_cafe_sim.cafe_interaction replay reports/cafe_interaction.json
 ```
 
 [営業との接続仕様・操作方法](Docs/HumanToCatCafeIntegration.md)を参照してください。
-親しみと猫の登録は保存しますが、営業の所持金・時計・体力は今回の試遊中だけ保持します。
+親しみと猫の登録に加え、営業の所持金・時計・体力・交流途中の状態も営業セーブで保存・再開できます。
 
 通常の営業画面では、プレイヤーは担当猫を割り当て、その後の交流は自動で進みます。
 「自動割り当て」を選べば、待機順の案内も自動化できます。営業は複数猫・2席の同時交流に対応しています。
@@ -205,3 +205,7 @@ CLIの`run`も操作列を省略すると閉店まで自動進行します。[�
 通常営業は2席で同時に交流します。席ごとの状態と会計を確認できます。
 テスト用の猫5匹は`python3 -m cat_cafe_sim.cafe_interaction seed-playtest`で追加できます。
 [2席営業の操作・テスト用の猫](Docs/HumanToCatMultiSeatCafe.md)を参照してください。
+
+「営業を保存…」「続きから開く…」で、同じ営業日の途中から再開できます。読み込み後は一時停止状態になります。
+起動時に開く場合は`python3 -m cat_cafe_sim.cafe_interaction gui --resume saves/cafe_day.json`を使います。
+[営業セーブの操作・整合性・制限](Docs/HumanToCatCafeSaves.md)を参照してください。

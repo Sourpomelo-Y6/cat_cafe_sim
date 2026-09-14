@@ -532,3 +532,85 @@ class MultiSeatCafeWindowTests(unittest.TestCase):
         rows=[self.app.history.item(item,'values')[1] for item in self.app.history.get_children()]
         self.assertTrue(any('seat-1' in row and '会計' in row for row in rows))
         self.assertTrue(any('seat-2' in row and '会計' in row for row in rows))
+
+
+@unittest.skipUnless(os.environ.get('CAT_CAFE_TEST_GUI') == '1', 'set CAT_CAFE_TEST_GUI=1 on a desktop')
+class CafeSaveWindowTests(unittest.TestCase):
+    def setUp(self):
+        import tkinter as tk
+        from dataclasses import replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.cafe_interaction_gui import CafeInteractionWindow
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.storage.relationships import RelationshipStore
+        from cat_cafe_sim.storage.playtest_cats import add_playtest_cats
+        self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
+        self.root=tk.Tk();self.root.withdraw();self.addCleanup(self.root.destroy)
+        self.store=RelationshipStore(Path(self.temp.name)/'relations.json');add_playtest_cats(self.store)
+        self.session=CafeInteractionSession(store=self.store,cafe_config=replace(Config.load(),arrival_ticks=(0,0,1)))
+        self.session.automatic_step();self.session.automatic_step()
+        self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
+        self.path=Path(self.temp.name)/'day.json'
+
+    def test_save_open_restores_both_seats_and_pauses_timer(self):
+        self.app.auto_assign.set(True);self.app.toggle()
+        before=self.session.core.snapshot()
+        with patch('tkinter.filedialog.asksaveasfilename',return_value=str(self.path)):
+            self.app.save_button.invoke()
+        self.assertFalse(self.app.running);self.assertIsNone(self.app.timer)
+        self.session.automatic_step();self.app.refresh()
+        with patch('tkinter.filedialog.askopenfilename',return_value=str(self.path)),patch('tkinter.messagebox.askyesnocancel',return_value=False):
+            self.app.open_button.invoke()
+        self.assertIsNot(self.app.session,self.session)
+        self.assertEqual(self.app.session.core.snapshot(),before)
+        self.assertTrue(self.app.auto_assign.get())
+        self.assertFalse(self.app.running);self.assertIsNone(self.app.timer)
+        self.assertEqual(len(self.app.session.active_interactions),2)
+        self.app.run_button.invoke()
+        self.assertTrue(self.app.running)
+
+    def test_pending_loaded_result_retry_uses_loaded_session(self):
+        from dataclasses import replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+        from cat_cafe_sim.storage.relationships import RelationshipStore
+        from cat_cafe_sim.storage.cafe_saves import save_game
+        other_store=RelationshipStore(Path(self.temp.name)/'other.json')
+        other=CafeInteractionSession(store=other_store,cafe_config=replace(Config.load(),arrival_ticks=(0,)),
+                                     interaction_config=replace(RelationshipConfig(),ticks=1))
+        other.automatic_step()
+        with patch.object(other_store,'_write',side_effect=OSError('full')):
+            with self.assertRaises(OSError):other.automatic_step()
+        save_game(other,self.path,auto_assign=True)
+        original=self.store.path.read_bytes()
+        with patch('tkinter.filedialog.askopenfilename',return_value=str(self.path)),patch('tkinter.messagebox.askyesnocancel',return_value=False):
+            self.app.open_game()
+        self.assertTrue(self.app.retry_button.instate(['!disabled']))
+        self.assertTrue(self.app.run_button.instate(['disabled']))
+        self.app.retry_button.invoke()
+        self.assertFalse(self.app.session.pending)
+        self.assertEqual(other_store.snapshot('cat-1','guest-1')['affinity'],.5)
+        self.assertEqual(self.store.path.read_bytes(),original)
+        self.assertFalse(self.app.running)
+
+    def test_failed_or_cancelled_open_preserves_current_session(self):
+        self.path.write_text('{bad')
+        before=self.session.core.snapshot()
+        with patch('tkinter.filedialog.askopenfilename',return_value=str(self.path)),patch('tkinter.messagebox.showerror') as error:
+            self.app.open_game()
+        error.assert_called_once()
+        with patch('tkinter.filedialog.askopenfilename',return_value=''):
+            self.app.open_game()
+        self.assertIs(self.app.session,self.session)
+        self.assertEqual(self.session.core.snapshot(),before)
+
+    def test_close_saves_active_exchange_without_finishing_and_cancel_keeps_window(self):
+        from cat_cafe_sim.storage.cafe_saves import load_game
+        before=self.session.core.snapshot()
+        with patch.object(self.root,'destroy') as destroy,patch('tkinter.messagebox.askyesnocancel',return_value=True),patch('tkinter.filedialog.asksaveasfilename',return_value=''):
+            self.app.close();destroy.assert_not_called()
+        with patch.object(self.root,'destroy') as destroy,patch('tkinter.messagebox.askyesnocancel',return_value=True),patch('tkinter.filedialog.asksaveasfilename',return_value=str(self.path)):
+            self.app.close();destroy.assert_called_once()
+        self.assertEqual(load_game(self.path)[0].core.snapshot(),before)
+        self.assertEqual(len(self.session.active_interactions),2)

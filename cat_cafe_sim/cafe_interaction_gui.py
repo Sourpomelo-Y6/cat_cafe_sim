@@ -21,13 +21,13 @@ class ManualCafeInteractionWindow:
         self.customer = tk.StringVar()
         self.queue = ttk.Combobox(controls,textvariable=self.customer,state='readonly',width=18)
         self.queue.pack(side='left')
-        self.start_button=ttk.Button(controls,text='選んだお客と交流',command=lambda:self.perform(lambda:session.start(self.customer.get())))
+        self.start_button=ttk.Button(controls,text='選んだお客と交流',command=lambda:self.perform(lambda:self.session.start(self.customer.get())))
         self.start_button.pack(side='left',padx=6)
-        self.wait_button=ttk.Button(controls,text='営業を1tick進める',command=lambda:self.perform(session.step))
+        self.wait_button=ttk.Button(controls,text='営業を1tick進める',command=lambda:self.perform(self.session.step))
         self.wait_button.pack(side='left')
-        self.finish_button=ttk.Button(controls,text='切り上げて会計',command=lambda:self.perform(session.finish))
+        self.finish_button=ttk.Button(controls,text='切り上げて会計',command=lambda:self.perform(self.session.finish))
         self.finish_button.pack(side='left',padx=6)
-        self.retry_button=ttk.Button(controls,text='結果保存を再試行',command=lambda:self.perform(session.persist))
+        self.retry_button=ttk.Button(controls,text='結果保存を再試行',command=lambda:self.perform(self.session.persist))
         self.retry_button.pack(side='left')
         ttk.Label(frame,textvariable=self.details,wraplength=820).grid(row=3,sticky='w',pady=6)
         actions=self.actions_frame=ttk.Frame(frame); actions.grid(row=4,sticky='ew')
@@ -50,7 +50,9 @@ class ManualCafeInteractionWindow:
         scroll=ttk.Scrollbar(history,orient='vertical',command=self.history.yview)
         scroll.grid(row=0,column=1,sticky='ns');self.history.configure(yscrollcommand=scroll.set)
         ttk.Label(frame,textvariable=self.notice,wraplength=820).grid(row=6,sticky='w')
-        ttk.Button(frame,text='営業ログを保存…',command=self.save_log).grid(row=7,sticky='e')
+        self.file_controls=ttk.Frame(frame)
+        self.file_controls.grid(row=7,sticky='ew')
+        ttk.Button(self.file_controls,text='営業ログを保存…',command=self.save_log).pack(side='right')
         root.protocol('WM_DELETE_WINDOW',self.close)
         self.refresh()
 
@@ -130,10 +132,14 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.running = False
         self.timer = None
         super().__init__(root, session)
-        self.instructions.configure(text='担当猫を割り当てると交流は自動で進みます。自動割り当ても選べます。営業状態は起動中だけ保持します。')
+        self.instructions.configure(text='担当猫を割り当てると交流は自動で進みます。「営業を保存」で中断し、後で続きから開けます。')
         self.actions_frame.grid_remove()
         self.wait_button.pack_forget()
         self.finish_button.pack_forget()
+        self.save_button=ttk.Button(self.file_controls,text='営業を保存…',command=self.save_game)
+        self.save_button.pack(side='left')
+        self.open_button=ttk.Button(self.file_controls,text='続きから開く…',command=self.open_game)
+        self.open_button.pack(side='left',padx=6)
         self.auto_assign = tk.BooleanVar(value=False)
         self.cat_labels = {f"{row['name']}（{row['cat_id']}）":row['cat_id'] for row in session.cat_choices()}
         self.cat_choice = tk.StringVar(value=next(iter(self.cat_labels)))
@@ -247,12 +253,68 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.notice.set('自動進行中：交流コマンドは自動で選ばれます。' if self.running else
                             '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')
 
+    def save_game(self):
+        from pathlib import Path
+        from tkinter import filedialog,messagebox
+        from .storage.cafe_saves import save_game
+        self.stop()
+        self.refresh()
+        current=self.session.checkpoint_path or Path('saves/cafe_day.json')
+        path=filedialog.asksaveasfilename(parent=self.root,title='営業を保存',defaultextension='.json',
+                                         initialdir=str(current.parent),initialfile=current.name)
+        if not path:
+            return False
+        try:
+            saved=save_game(self.session,path,auto_assign=self.auto_assign.get())
+        except (OSError,ValueError,TypeError,KeyError,RuntimeError) as error:
+            messagebox.showerror('営業を保存できませんでした',str(error),parent=self.root)
+            return False
+        self.notice.set(f'営業を保存しました：{saved}（一時停止中）')
+        return True
+
+    def open_game(self):
+        from tkinter import filedialog,messagebox
+        from .storage.cafe_saves import load_game
+        self.stop()
+        self.refresh()
+        path=filedialog.askopenfilename(parent=self.root,title='営業の続きから開く',filetypes=[('営業セーブ','*.json')])
+        if not path:
+            return
+        try:
+            candidate,auto_assign=load_game(path)
+            if self.session.core.operations:
+                answer=messagebox.askyesnocancel('現在の営業', '現在の営業を保存してから開きますか？\n「いいえ」は現在の営業を保存せず切り替えます。',parent=self.root)
+                if answer is None or (answer and not self.save_game()):
+                    return
+                candidate,auto_assign=load_game(path)
+        except (OSError,ValueError,TypeError,KeyError,RuntimeError) as error:
+            messagebox.showerror('営業を開けませんでした',str(error),parent=self.root)
+            return
+        self.session=candidate
+        self.logged=0
+        self.history.delete(*self.history.get_children())
+        self.types={t.name:t.id for t in candidate.interaction_config.types}
+        self.target.set(next(iter(self.types)))
+        self.cat_labels={f"{row['name']}（{row['cat_id']}）":row['cat_id'] for row in candidate.cat_choices()}
+        self.cat_selector.configure(values=tuple(self.cat_labels))
+        self.cat_choice.set(next(iter(self.cat_labels)))
+        self.customer.set('')
+        self.auto_assign.set(auto_assign)
+        self.refresh()
+        self.notice.set('営業を復元しました。未保存の交流結果があるため、先に結果保存を再試行してください。' if candidate.pending else
+                        '営業を復元しました。一時停止中です。「営業を開始・再開」で続けられます。')
+
     def save_log(self):
         self.stop()
         self.refresh()
         super().save_log()
 
     def close(self):
+        from tkinter import messagebox
         self.stop()
         self.refresh()
-        super().close()
+        if self.session.core.operations:
+            answer=messagebox.askyesnocancel('営業を終了', '営業途中の状態を保存して終了しますか？\n「いいえ」は今回の営業状態を保存せず終了します。',parent=self.root)
+            if answer is None or (answer and not self.save_game()):
+                return
+        self.root.destroy()

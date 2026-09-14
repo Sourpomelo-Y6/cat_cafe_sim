@@ -32,6 +32,8 @@ class CafeInteractionSession:
         if self.core.config.max_stamina != self.interaction_config.max_stamina:
             raise ValueError('営業と交流の体力上限を同じ値にしてください。')
         self.persisted = set()
+        self.checkpoint_path = None
+        self.checkpoint_baseline = None
         from .policies.human_cat import AutomaticInteractionPolicy
         self.policy = AutomaticInteractionPolicy()
 
@@ -72,6 +74,8 @@ class CafeInteractionSession:
         return set(self.core.outcomes) - self.persisted
 
     def _ready(self):
+        from .storage.cafe_saves import check_link
+        check_link(self)
         if self.pending:
             raise ValueError('未保存の交流結果があります。先に保存を再試行してください。')
 
@@ -125,18 +129,26 @@ class CafeInteractionSession:
         return True
 
     def finish(self):
+        from .storage.cafe_saves import check_link
+        check_link(self)
         self.core.finish()
         self.persist()
 
     def persist(self):
+        from .storage.cafe_saves import check_link
+        check_link(self)
         for session_id, log in self.core.outcomes.items():
             if session_id not in self.persisted:
                 result = self.store.apply(verify_relationship(log))
                 self.affinities[(result['cat_id'],result['customer_id'])] = result['affinity_after']
                 self.persisted.add(session_id)
+                if self.checkpoint_baseline is not None:
+                    self.checkpoint_baseline = self.store._read()
 
     def save_log(self, path):
         path = Path(path)
+        if self.checkpoint_path is not None and path.resolve() == self.checkpoint_path:
+            raise ValueError('営業ログと営業セーブは別のファイルにしてください。')
         if path.resolve() == self.store.path.resolve():
             raise ValueError('営業ログと関係保存先は別のファイルにしてください。')
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -156,10 +168,11 @@ def main():
     run.add_argument('--seats',type=int,choices=(1,2),default=None)
     run.add_argument('--cats', nargs='+', help='営業へ参加する登録済み猫ID。省略時は全登録猫')
     gui = sub.add_parser('gui')
+    gui.add_argument('--resume',type=Path,help='営業セーブを一時停止状態で開く')
     gui.add_argument('--seats',type=int,choices=(1,2),default=None)
     gui.add_argument('--cats', nargs='+', help='営業へ参加する登録済み猫ID。省略時は全登録猫')
     gui.add_argument('--manual', action='store_true', help='検証用の手動コマンド画面')
-    gui.add_argument('--relationships', type=Path, default=Path('saves/cafe_relationships.json'))
+    gui.add_argument('--relationships', type=Path, default=None)
     seed = sub.add_parser('seed-playtest',help='テスト用の猫5匹を追加（既存IDは変更しない）')
     seed.add_argument('--relationships',type=Path,default=Path('saves/cafe_relationships.json'))
     replay = sub.add_parser('replay'); replay.add_argument('path', type=Path)
@@ -174,11 +187,21 @@ def main():
             from .cafe_interaction_gui import CafeInteractionWindow, ManualCafeInteractionWindow
             if args.manual and args.seats == 2:
                 parser.error('検証用の手動コマンド画面は1席です。通常画面で2席を試してください。')
-            session = CafeInteractionSession(store=RelationshipStore(args.relationships), cat_ids=args.cats,
-                                             seat_count=1 if args.manual else args.seats)
+            auto_assign=False
+            if args.resume:
+                if args.manual or args.cats or args.seats is not None or args.relationships is not None:
+                    parser.error('--resumeは猫・席・保存先・手動モードの指定と併用できません。')
+                from .storage.cafe_saves import load_game
+                session,auto_assign=load_game(args.resume)
+            else:
+                session = CafeInteractionSession(store=RelationshipStore(args.relationships or 'saves/cafe_relationships.json'), cat_ids=args.cats,
+                                                 seat_count=1 if args.manual else args.seats)
             root = tk.Tk()
             window = ManualCafeInteractionWindow if args.manual else CafeInteractionWindow
-            window(root, session)
+            app=window(root, session)
+            if not args.manual:
+                app.auto_assign.set(auto_assign)
+                app.refresh()
             root.mainloop()
             return
         if args.command == 'replay':

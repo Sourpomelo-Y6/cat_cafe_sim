@@ -23,6 +23,12 @@ class RelationshipStore:
         if not self.path.exists():
             return dict(format_version=1, pairs=[], applied={})
         data = json.loads(self.path.read_text(encoding='utf-8'), object_pairs_hook=unique_object)
+        return self.validate_data(data)
+
+    @staticmethod
+    def validate_data(data):
+        if not isinstance(data,dict):
+            raise ValueError('invalid relationship store')
         version = data.get('format_version')
         fields = {'format_version', 'pairs', 'applied'} | ({'cats'} if version == 2 else set())
         if set(data) != fields or type(version) is not int or version not in (1, 2):
