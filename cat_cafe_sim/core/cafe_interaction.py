@@ -26,6 +26,9 @@ class CafeInteractionCore(SimulationCore):
         self.day_results = []
         self.day_outcome_offset = 0
         self.returning_customers = set()
+        self.health_rules = None
+        self.initial_health = {}
+        self.health_results = {}
         self.shift_rules = None
         self.working_cats = set(ids)
         self.cat_service_ticks = dict.fromkeys(ids, 0)
@@ -35,6 +38,8 @@ class CafeInteractionCore(SimulationCore):
         return {**super().snapshot(),
                 'interaction': self.active.log() if self.active else None,
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
+                **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
+                                  results=copy.deepcopy(self.health_results))} if self.health_rules else {}),
                 **({'day_results': copy.deepcopy(self.day_results)} if self.day_results else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
                 **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None else {})}
@@ -54,6 +59,8 @@ class CafeInteractionCore(SimulationCore):
         if (not isinstance(working_cats, list) or any(not isinstance(key, str) for key in working_cats)
                 or len(set(working_cats)) != len(working_cats) or not set(working_cats) <= set(self.cats)):
             raise ValueError('営業に参加している猫を重複なく指定してください。')
+        if any(self.cats[key].health_status != 'healthy' for key in working_cats):
+            raise ValueError('療養中の猫は出勤できません。')
         selected_rules = ShiftRules(**rules) if rules is not None else self.shift_rules or ShiftRules.load()
         if self.shift_rules and selected_rules != self.shift_rules:
             raise ValueError('営業途中の履歴では疲労ルールを変更できません。')
@@ -65,12 +72,53 @@ class CafeInteractionCore(SimulationCore):
         self._emit('shifts_set', working_cats=sorted(self.working_cats))
         self._record(dict(kind='set_shifts', working_cats=sorted(self.working_cats), rules=asdict(selected_rules)))
 
+    def enable_health(self, rules):
+        from .cafe_health import HealthRules
+        if not self.can_set_shifts or not self.shift_rules or self.health_rules:
+            raise ValueError('病気ルールは出勤設定後の営業準備中に1回だけ有効にできます。')
+        selected = HealthRules(**rules)
+        self.health_rules = selected
+        self.initial_health = self._health_state()
+        self._tick_events = []
+        self._emit('health_enabled')
+        self._record(dict(kind='enable_health', rules=asdict(selected)))
+
+    def _health_state(self):
+        return {key: dict(status=cat.health_status, remaining=cat.recovery_days_remaining)
+                for key, cat in self.cats.items()}
+
+    def _settle_health(self):
+        from .cafe_health import health_draw
+        for key, cat in self.cats.items():
+            initial = self.initial_health[key]
+            chance, draw = None, None
+            if initial['status'] == 'sick':
+                cat.recovery_days_remaining = max(0, initial['remaining'] - 1)
+                cat.health_status = 'sick' if cat.recovery_days_remaining else 'healthy'
+                outcome = 'recovering' if cat.recovery_days_remaining else 'recovered'
+            else:
+                chance = self.health_rules.probability(cat.fatigue)
+                draw = health_draw(self.seed, self.day, key)
+                sick = draw < chance
+                cat.health_status = 'sick' if sick else 'healthy'
+                cat.recovery_days_remaining = self.health_rules.recovery_days if sick else 0
+                outcome = 'sick' if sick else 'healthy'
+            if cat.health_status == 'sick':
+                cat.cannot_continue = True
+            result = dict(before=initial['status'], after=cat.health_status,
+                          remaining_before=initial['remaining'], remaining_after=cat.recovery_days_remaining,
+                          outcome=outcome, probability=chance, draw=draw)
+            self.health_results[key] = result
+            self._emit('cat_health', cat_id=key, **result)
+
     def _emit(self, kind, **data):
         if kind == 'closed' and self.shift_rules:
             for key, cat in self.cats.items():
                 change = (self.cat_service_ticks[key] * self.shift_rules.fatigue_per_service_tick
                           if key in self.working_cats else -self.shift_rules.rest_day_recovery)
                 cat.fatigue = max(0, min(self.shift_rules.max_fatigue, self.initial_fatigue[key] + change))
+        if kind == 'closed' and self.health_rules:
+            self._settle_health()
         super()._emit(kind, **data)
 
     def _arrive(self):
@@ -91,7 +139,8 @@ class CafeInteractionCore(SimulationCore):
                          spent=(self.start_state.stamina if self.day == 1 else self.config.max_stamina)-cat.stamina,
                          **(dict(shift='work' if key in self.working_cats else 'rest',
                                  fatigue_before=self.initial_fatigue[key], fatigue_after=cat.fatigue,
-                                 service_ticks=self.cat_service_ticks[key]) if self.shift_rules else {}))
+                                 service_ticks=self.cat_service_ticks[key]) if self.shift_rules else {}),
+                         **(dict(health=copy.deepcopy(self.health_results[key])) if self.health_rules else {}))
                           for key,cat in self.cats.items()},
                     affinity_changes=[dict(cat_id=key[0], customer_id=key[1], change=value)
                                       for key,value in changes.items()])
@@ -118,6 +167,10 @@ class CafeInteractionCore(SimulationCore):
         self._tick_events = []
         self.cat_service_ticks = dict.fromkeys(self.cats, 0)
         self.initial_fatigue = {key: cat.fatigue for key, cat in self.cats.items()}
+        if self.health_rules:
+            self.working_cats = {key for key in self.working_cats if self.cats[key].health_status == 'healthy'}
+            self.initial_health = self._health_state()
+            self.health_results = {}
         self._emit('next_day', day=self.day)
         self._record(dict(kind='next_day'))
 
@@ -233,7 +286,9 @@ def verify_cafe_interaction(data):
                                cat_ids=data['cat_ids'] if data['format_version'] == 2 else None)
     for item in data['operations']:
         operation = item['operation']
-        if operation['kind'] == 'set_shifts':
+        if operation['kind'] == 'enable_health':
+            core.enable_health(operation['rules'])
+        elif operation['kind'] == 'set_shifts':
             core.set_shifts(operation['working_cats'], operation['rules'])
         elif operation['kind'] == 'start':
             core.start(verify_relationship(operation['interaction']))

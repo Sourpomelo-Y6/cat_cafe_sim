@@ -1,0 +1,6 @@
+{
+  "safe_fatigue": 60,
+  "probability_per_fatigue": 0.02,
+  "max_probability": 0.5,
+  "recovery_days": 2
+}

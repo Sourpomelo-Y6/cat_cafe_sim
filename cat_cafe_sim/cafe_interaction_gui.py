@@ -1,4 +1,5 @@
 """営業中のお客を選び、版4交流の成果を営業へ戻す試遊画面。"""
+from .cafe_health_text import health_text, health_result_text
 from .human_cat_gui import ACTION_NAMES, history_row
 from .relationship_presentation import greeting_text
 
@@ -95,6 +96,11 @@ class ManualCafeInteractionWindow:
             if kind=='human_cat_action':
                 row=history_row(event['record'])
                 text=f'{row[1]} / {row[2]}'
+            elif kind=='health_enabled':
+                text='病気・療養ルールを開始'
+            elif kind=='cat_health':
+                name=self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])
+                text=f"{name}：{health_result_text(event)}"
             elif kind=='shifts_set':
                 text='出勤・休養を設定 · 出勤 '+('、'.join(event['working_cats']) or 'なし')
             elif kind=='next_day':
@@ -171,8 +177,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.shift_button.pack(side='left',padx=6)
         roster_frame = ttk.Frame(automation)
         roster_frame.pack(fill='x',pady=4)
-        self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status','fatigue'),show='headings',height=3)
-        for key,title,width in (('cat','営業中の猫',190),('personality','個性',130),('stamina','体力',65),('affinity','選んだお客への親しみ',180),('status','状態',85),('fatigue','疲労',65)):
+        self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status','fatigue','health'),show='headings',height=3)
+        for key,title,width in (('cat','営業中の猫',170),('personality','個性',100),('stamina','体力',60),('affinity','選んだお客への親しみ',170),('status','状態',80),('fatigue','疲労',60),('health','体調',115)):
             self.roster.heading(key,text=title)
             self.roster.column(key,width=width,minwidth=50)
         scrollbar=ttk.Scrollbar(roster_frame,orient='vertical',command=self.roster.yview)
@@ -246,9 +252,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.start_button.state(['!disabled'] if manual and core.queue and selected and selected['available'] else ['disabled'])
         self.roster.delete(*self.roster.get_children())
         for row in rows:
-            state = '休養' if not row['working'] else '交流中' if any(active.cat_id==row['cat_id'] for active in self.session.active_interactions.values()) else '担当可能' if row['available'] else '交流不可'
+            state = '療養' if row['health_status']=='sick' else '休養' if not row['working'] else '交流中' if any(active.cat_id==row['cat_id'] for active in self.session.active_interactions.values()) else '担当可能' if row['available'] else '交流不可'
             self.roster.insert('','end',values=(f"{row['name']}（{row['cat_id']}）",row['personality'],f"{row['stamina']:g}",
-                                               f"{row['affinity']:g}" if self.customer.get() else '—',state,f"{row['fatigue']:g}"))
+                                               f"{row['affinity']:g}" if self.customer.get() else '—',state,f"{row['fatigue']:g}",health_text(row['health_status'],row['recovery_days_remaining'])))
         if hasattr(core,'seats'):
             lines=[]
             for seat_id in core.seats:
@@ -292,13 +298,15 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                 if 'shift' in row:
                     label='出勤' if row['shift']=='work' else '休養'
                     lines.append(f"  {label} · 疲労 {row['fatigue_before']:g} → {row['fatigue_after']:g}")
+                if 'health' in row:
+                    lines.append('  '+health_result_text(row['health']))
             lines.append("\n親しみの変化")
             for row in result['affinity_changes']:
                 name=self.session.profiles.get(row['cat_id'],{}).get('name',row['cat_id'])
                 lines.append(f"{name} → {row['customer_id']}：{row['change']:+g}")
             if not result['affinity_changes']:
                 lines.append('交流なし')
-            lines.append("\n一晩休むと体力が全回復します。翌日へ進みますか？")
+            lines.append("\n一晩休むと体力が全回復します。療養中の猫は復帰まで接客できません。翌日へ進みますか？")
             if messagebox.askyesno('閉店結果', '\n'.join(lines),parent=self.root):
                 self.session.next_day()
                 self.customer.set('')

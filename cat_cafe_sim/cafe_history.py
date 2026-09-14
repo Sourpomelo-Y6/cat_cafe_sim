@@ -1,5 +1,6 @@
 """保存済みの営業履歴から表示用の比較データを作る。営業状態は変更しない。"""
 import copy
+from .cafe_health_text import health_result_text
 
 
 def comparison_rows(core):
@@ -43,7 +44,7 @@ class CafeHistoryWindow:
         self.days = self.table(frame, ('日目', '売上', 'うちボーナス', '交流件数', '閉店時所持金'))
         ttk.Label(frame, text='猫ごとの比較（体力消耗は営業開始時からの差、親しみは各お客への実増減の合計）',
                   wraplength=600).pack(anchor='w', pady=(10, 0))
-        self.cats = self.table(frame, ('日目', '猫', '接客回数', '体力消耗', '残り体力', '親しみ増減', '出勤・休養', '疲労変化'))
+        self.cats = self.table(frame, ('日目', '猫', '接客回数', '体力消耗', '残り体力', '親しみ増減', '出勤・休養', '疲労変化', '体調・療養'))
         for result in rows:
             summary = result['summary']
             self.days.insert('', 'end', values=(result['day'], f"{summary['revenue']:g}",
@@ -53,7 +54,8 @@ class CafeHistoryWindow:
                 self.cats.insert('', 'end', values=(result['day'], f'{name}（{cat_id}）', cat['interactions'],
                     f"{cat['spent']:g}", f"{cat['stamina']:g}", f"{cat['affinity_delta']:+g}",
                     {'work': '出勤', 'rest': '休養'}.get(cat.get('shift'), '記録なし'),
-                    f"{cat['fatigue_before']:g} → {cat['fatigue_after']:g}" if 'fatigue_before' in cat else '記録なし'))
+                    f"{cat['fatigue_before']:g} → {cat['fatigue_after']:g}" if 'fatigue_before' in cat else '記録なし',
+                    health_result_text(cat['health']) if 'health' in cat else '記録なし'))
         ttk.Button(frame, text='閉じる', command=self.window.destroy).pack(anchor='e', pady=(8, 0))
         self.window.bind('<Escape>', lambda event: self.window.destroy())
 
@@ -65,7 +67,7 @@ class CafeHistoryWindow:
         tree = ttk.Treeview(frame, columns=columns, show='headings', height=5)
         for column in columns:
             tree.heading(column, text=column)
-            tree.column(column, width=210 if column == '猫' else 105, minwidth=70)
+            tree.column(column, width=210 if column in ('猫','体調・療養') else 105, minwidth=70)
         vertical = ttk.Scrollbar(frame, orient='vertical', command=tree.yview)
         horizontal = ttk.Scrollbar(frame, orient='horizontal', command=tree.xview)
         tree.configure(yscrollcommand=vertical.set, xscrollcommand=horizontal.set)

@@ -1,5 +1,5 @@
 """営業交流の操作と関係保存。未保存結果がある間は次の営業操作を止める。"""
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 import json
 
@@ -23,7 +23,9 @@ class CafeInteractionSession:
                 raise ValueError('席数は1または2を指定してください。')
             core_type = CafeInteractionCore if seat_count == 1 else MultiSeatCafeCore
             core = core_type(cafe_config, cat_ids=ids)
+            from .core.cafe_health import HealthRules
             core.set_shifts(ids)
+            core.enable_health(asdict(HealthRules.load()))
         self.core = core
         self.profiles = profiles
         self.affinities = {(r['cat_id'],r['customer_id']):r['affinity'] for r in self.store.list_relationships()}
@@ -66,7 +68,8 @@ class CafeInteractionSession:
             personality = Personality.from_dict(profile['personality']) if profile else self.interaction_config.personality
             label = next((name for name,value in self.presets.items() if value == personality), 'カスタム')
             rows.append(dict(cat_id=cat_id,name=profile['name'] if profile else cat_id,personality=label,
-                             stamina=cat.stamina,fatigue=cat.fatigue,working=cat_id in self.core.working_cats,affinity=self.affinities.get((cat_id,customer_id),0),
+                             stamina=cat.stamina,fatigue=cat.fatigue,health_status=cat.health_status,
+                             recovery_days_remaining=cat.recovery_days_remaining,working=cat_id in self.core.working_cats,affinity=self.affinities.get((cat_id,customer_id),0),
                              available=cat in self.available_cats()))
         return rows
 
@@ -82,7 +85,11 @@ class CafeInteractionSession:
 
     def set_shifts(self, working_cats):
         self._ready()
+        from .core.cafe_health import HealthRules
+        health_rules = None if self.core.health_rules else asdict(HealthRules.load())
         self.core.set_shifts(working_cats)
+        if health_rules is not None:
+            self.core.enable_health(health_rules)
 
     def next_day(self):
         self._ready()

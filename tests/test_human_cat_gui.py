@@ -552,6 +552,56 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_health_results_sick_work_lock_and_recovered_return(self):
+        from dataclasses import asdict,replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.multi_seat_cafe import MultiSeatCafeCore
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.core.cafe_health import HealthRules
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+        key=next(iter(self.session.core.cats))
+        core=MultiSeatCafeCore(replace(Config.load(),opening_ticks=3,arrival_ticks=(0,)),cat_ids=[key])
+        core.set_shifts([key],dict(max_fatigue=100,fatigue_per_service_tick=10,rest_day_recovery=5))
+        core.enable_health(asdict(HealthRules(safe_fatigue=0,probability_per_fatigue=1,max_probability=1)))
+        self.app.session=CafeInteractionSession(core=core,store=self.store,
+            interaction_config=replace(RelationshipConfig(),ticks=2))
+        self.app.logged=0
+        while not core.closed:self.app.session.automatic_step()
+        self.app.refresh()
+        row=self.app.roster.item(self.app.roster.get_children()[0],'values')
+        self.assertEqual(row[4],'療養')
+        self.assertEqual(row[6],'療養あと2日')
+        with patch('tkinter.messagebox.askyesno',return_value=False) as dialog:
+            self.app.day_button.invoke()
+        self.assertIn('発症',dialog.call_args.args[1])
+        self.assertIn('療養あと2日',dialog.call_args.args[1])
+        self.app.history_button.invoke()
+        history=self.app.history_window
+        values=history.cats.item(history.cats.get_children()[0],'values')
+        self.assertIn('発症',values[-1])
+        history.window.destroy()
+        self.app.session.next_day();self.app.refresh()
+        self.app.shift_button.invoke()
+        shifts=self.app.shift_window
+        self.root.deiconify();shifts.window.deiconify();self.root.update()
+        self.assertIn('disabled',shifts.work_button.state())
+        self.assertEqual(shifts.tree.set(key,'health'),'療養あと2日')
+        shifts.set_selected(True)
+        self.assertNotIn(key,shifts.working)
+        shifts.save_button.invoke()
+        for _ in range(2):
+            while not core.closed:self.app.session.automatic_step()
+            self.app.session.next_day()
+        self.app.refresh()
+        self.app.shift_button.invoke()
+        shifts=self.app.shift_window
+        self.root.update()
+        self.assertNotIn('disabled',shifts.work_button.state())
+        self.assertEqual(shifts.tree.set(key,'health'),'健康')
+        shifts.work_button.invoke();shifts.save_button.invoke()
+        self.assertEqual([cat.id for cat in self.app.session.available_cats()],[key])
+        self.assertFalse(self.app.running)
+
     def test_shift_dialog_cancel_save_pause_and_lock_after_start(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         self.assertIn('disabled',self.app.shift_button.state())
