@@ -79,6 +79,10 @@ class CafeInteractionSession:
         if self.pending:
             raise ValueError('未保存の交流結果があります。先に保存を再試行してください。')
 
+    def next_day(self):
+        self._ready()
+        self.core.next_day()
+
     def start(self, customer_id, cat_id=None, seat_id=None):
         self._ready()
         cat_id = self.core.cat.id if cat_id is None else cat_id

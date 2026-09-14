@@ -139,6 +139,8 @@ def verify_multi_seat(data):
             core.start(verify_relationship(operation['interaction']),operation['seat_id'])
         elif operation['kind']=='step':
             core.step(operation['commands'])
+        elif operation['kind']=='next_day':
+            core.next_day()
         elif operation['kind']=='finish':
             core.finish(operation['seat_id'])
         else:

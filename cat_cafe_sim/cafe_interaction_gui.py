@@ -69,7 +69,7 @@ class ManualCafeInteractionWindow:
 
     def refresh(self):
         core=self.session.core
-        self.status.set(f'営業 {core.tick}/{core.config.opening_ticks} tick · '+('閉店' if core.closed else '営業中')+
+        self.status.set(f'{core.day}日目 · 営業 {core.tick}/{core.config.opening_ticks} tick · '+('閉店' if core.closed else '営業中')+
                         f' · 資金 {core.funds:g} · 猫 {self.session.cat_name}（{core.cat.id}） · 体力 {core.cat.stamina:g}')
         self.queue.configure(values=tuple(core.queue))
         if self.customer.get() not in core.queue:
@@ -95,6 +95,8 @@ class ManualCafeInteractionWindow:
             if kind=='human_cat_action':
                 row=history_row(event['record'])
                 text=f'{row[1]} / {row[2]}'
+            elif kind=='next_day':
+                text=f"{event['day']}日目の準備 · 猫の体力が全回復しました"
             elif kind=='departure':
                 reasons={'interaction_manual':'切り上げ', 'interaction_time_limit':'交流時間終了', 'interaction_exhausted':'体力切れ', 'closing':'閉店', 'queue_full':'待機列満員', 'wait_timeout':'待機時間終了'}
                 text=f"退店 {event['customer_id']} · {reasons.get(event['reason'],event['reason'])} · 会計 {event['bill']:g}（時間 {event['base_charge']:g}＋ボーナス {event['bonus']:g}）"
@@ -140,6 +142,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.save_button.pack(side='left')
         self.open_button=ttk.Button(self.file_controls,text='続きから開く…',command=self.open_game)
         self.open_button.pack(side='left',padx=6)
+        self.day_button=ttk.Button(self.file_controls,text='閉店結果・翌日へ',command=self.show_day_result)
+        self.day_button.pack(side='left',padx=6)
         self.auto_assign = tk.BooleanVar(value=False)
         self.cat_labels = {f"{row['name']}（{row['cat_id']}）":row['cat_id'] for row in session.cat_choices()}
         self.cat_choice = tk.StringVar(value=next(iter(self.cat_labels)))
@@ -220,6 +224,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if not hasattr(self,'run_button'):
             return
         core = self.session.core
+        self.day_button.state(['!disabled'] if core.closed and not self.session.pending else ['disabled'])
         blocked = bool(self.session.pending) or core.closed
         self.run_button.configure(text='一時停止' if self.running else '営業を開始・再開')
         self.run_button.state(['disabled'] if blocked else ['!disabled'])
@@ -252,6 +257,31 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if not self.session.pending:
             self.notice.set('自動進行中：交流コマンドは自動で選ばれます。' if self.running else
                             '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')
+
+    def show_day_result(self):
+        from tkinter import messagebox
+        self.stop()
+        try:
+            result=self.session.core.day_result()
+            summary=result['summary']
+            lines=[f"{result['day']}日目の営業結果", f"売上 {summary['revenue']:g}（ボーナス {summary['interaction_bonus']:g}）",
+                   f"所持金 {summary['funds']:g}", "", "猫の体力（開始からの消耗）"]
+            for key,row in result['cats'].items():
+                name=self.session.profiles.get(key,{}).get('name',key)
+                lines.append(f"{name}：残り {row['stamina']:g} / 消耗 {row['spent']:g}")
+            lines.append("\n親しみの変化")
+            for row in result['affinity_changes']:
+                name=self.session.profiles.get(row['cat_id'],{}).get('name',row['cat_id'])
+                lines.append(f"{name} → {row['customer_id']}：{row['change']:+g}")
+            if not result['affinity_changes']:
+                lines.append('交流なし')
+            lines.append("\n一晩休むと体力が全回復します。翌日へ進みますか？")
+            if messagebox.askyesno('閉店結果', '\n'.join(lines),parent=self.root):
+                self.session.next_day()
+                self.customer.set('')
+        except (ValueError, OSError) as exc:
+            messagebox.showerror('翌日へ進めません',str(exc),parent=self.root)
+        self.refresh()
 
     def save_game(self):
         from pathlib import Path

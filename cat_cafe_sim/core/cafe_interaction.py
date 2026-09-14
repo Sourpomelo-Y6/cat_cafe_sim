@@ -23,12 +23,59 @@ class CafeInteractionCore(SimulationCore):
         self.outcomes = {}
         self.operations = []
         self.interaction_bonus = 0
+        self.day_results = []
+        self.day_outcome_offset = 0
+        self.returning_customers = set()
 
     def snapshot(self):
         return {**super().snapshot(),
                 'interaction': self.active.log() if self.active else None,
+                **({'day_results': copy.deepcopy(self.day_results)} if self.day_results else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
                 **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None else {})}
+
+    def _arrive(self):
+        super()._arrive()
+        for visit in self.visits.values():
+            visit.first_visit = visit.id not in self.returning_customers
+
+    def day_result(self):
+        if not self.closed:
+            raise ValueError('閉店後に結果を確認してください。')
+        changes = {}
+        for log in list(self.outcomes.values())[self.day_outcome_offset:]:
+            result = verify_relationship(log).result()
+            key = (result['cat_id'], result['customer_id'])
+            changes[key] = changes.get(key, 0) + result['affinity_after'] - result['affinity_before']
+        return dict(day=self.day, summary=self.summary(),
+                    cats={key: dict(stamina=cat.stamina,
+                         spent=(self.start_state.stamina if self.day == 1 else self.config.max_stamina)-cat.stamina)
+                          for key,cat in self.cats.items()},
+                    affinity_changes=[dict(cat_id=key[0], customer_id=key[1], change=value)
+                                      for key,value in changes.items()])
+
+    def next_day(self):
+        if not self.closed or self.active or getattr(self, 'interactions', {}):
+            raise ValueError('交流を終了して閉店してから翌日へ進んでください。')
+        result = self.day_result()
+        self.day_results.append(result)
+        self.day_outcome_offset = len(self.outcomes)
+        self.returning_customers.update(self.visits)
+        self.visits = {}
+        self.queue = []
+        self.tick = 0
+        self.day += 1
+        self.closed = False
+        self.service_ticks = 0
+        self.spirit_spent = 0
+        self.interaction_bonus = 0
+        for cat in self.cats.values():
+            cat.stamina = self.config.max_stamina
+            if cat.health_status == 'healthy':
+                cat.cannot_continue = False
+        self._tick_events = []
+        self._emit('next_day', day=self.day)
+        self._record(dict(kind='next_day'))
 
     def _record(self, operation):
         self.operations.append(dict(operation=operation, events=copy.deepcopy(self._tick_events), state=self.snapshot()))
@@ -113,7 +160,7 @@ class CafeInteractionCore(SimulationCore):
     def summary(self):
         visits = list(self.visits.values())
         return dict(ticks=self.tick, closed=self.closed, arrivals=len(visits),
-                    completed_interactions=len(self.outcomes),
+                    completed_interactions=len(self.outcomes)-self.day_outcome_offset,
                     departures={reason:sum(v.departure_reason == reason for v in visits)
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
@@ -145,6 +192,8 @@ def verify_cafe_interaction(data):
             core.start(verify_relationship(operation['interaction']))
         elif operation['kind'] == 'step':
             core.step(operation['action'], operation['target_type'])
+        elif operation['kind'] == 'next_day':
+            core.next_day()
         elif operation['kind'] == 'finish':
             core.finish()
         else:

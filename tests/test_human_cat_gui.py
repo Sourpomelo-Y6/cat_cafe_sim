@@ -552,6 +552,24 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_closed_result_cancel_and_next_day_pause(self):
+        self.assertIn('disabled',self.app.day_button.state())
+        while not self.session.core.closed:
+            self.session.automatic_step()
+        self.app.refresh()
+        with patch('tkinter.messagebox.askyesno',return_value=False) as dialog:
+            self.app.day_button.invoke()
+        self.assertIn('売上',dialog.call_args.args[1])
+        self.assertIn('親しみ',dialog.call_args.args[1])
+        self.assertEqual(self.session.core.day,1)
+        with patch('tkinter.messagebox.askyesno',return_value=True):
+            self.app.day_button.invoke()
+        self.assertEqual(self.session.core.day,2)
+        self.assertIn('2日目',self.app.status.get())
+        self.assertIn('disabled',self.app.day_button.state())
+        self.assertFalse(self.app.running)
+        self.assertIsNone(self.app.timer)
+
     def test_save_open_restores_both_seats_and_pauses_timer(self):
         self.app.auto_assign.set(True);self.app.toggle()
         before=self.session.core.snapshot()
