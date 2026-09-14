@@ -552,6 +552,30 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_history_empty_two_days_and_pause(self):
+        self.app.toggle()
+        self.app.history_button.invoke()
+        window=self.app.history_window
+        self.assertFalse(self.app.running)
+        self.assertIsNone(self.app.timer)
+        self.assertEqual(len(window.days.get_children()),0)
+        window.window.destroy()
+        for day in (1,2):
+            while not self.session.core.closed:
+                self.session.automatic_step()
+            if day==1:self.session.next_day()
+        self.app.history_button.invoke()
+        window=self.app.history_window
+        self.addCleanup(window.window.destroy)
+        self.assertEqual(len(window.days.get_children()),2)
+        self.assertEqual(len(window.cats.get_children()),2*len(self.session.core.cats))
+        self.root.deiconify()
+        window.window.deiconify()
+        window.window.geometry('640x420')
+        self.root.update()
+        self.assertGreater(window.days.winfo_height(),30)
+        self.assertGreater(window.cats.winfo_height(),30)
+
     def test_closed_result_cancel_and_next_day_pause(self):
         self.assertIn('disabled',self.app.day_button.state())
         while not self.session.core.closed:

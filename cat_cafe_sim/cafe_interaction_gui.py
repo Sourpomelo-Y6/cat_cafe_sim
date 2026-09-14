@@ -144,6 +144,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.open_button.pack(side='left',padx=6)
         self.day_button=ttk.Button(self.file_controls,text='閉店結果・翌日へ',command=self.show_day_result)
         self.day_button.pack(side='left',padx=6)
+        self.history_button=ttk.Button(self.file_controls,text='営業結果を比較…',command=self.show_history)
+        self.history_button.pack(side='left',padx=6)
         self.auto_assign = tk.BooleanVar(value=False)
         self.cat_labels = {f"{row['name']}（{row['cat_id']}）":row['cat_id'] for row in session.cat_choices()}
         self.cat_choice = tk.StringVar(value=next(iter(self.cat_labels)))
@@ -257,6 +259,12 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if not self.session.pending:
             self.notice.set('自動進行中：交流コマンドは自動で選ばれます。' if self.running else
                             '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')
+
+    def show_history(self):
+        from .cafe_history import CafeHistoryWindow
+        self.stop()
+        self.refresh()
+        self.history_window = CafeHistoryWindow(self.root, self.session)
 
     def show_day_result(self):
         from tkinter import messagebox

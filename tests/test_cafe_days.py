@@ -64,3 +64,27 @@ class CafeDayTests(unittest.TestCase):
         self.close_day(session)
         session.next_day()
         self.assertEqual(session.core.day,2)
+
+    def test_comparison_history_survives_resume_and_does_not_mutate_state(self):
+        from cat_cafe_sim.cafe_history import comparison_rows
+        session=self.session(2)
+        self.assertEqual(comparison_rows(session.core),[])
+        self.close_day(session)
+        first=comparison_rows(session.core)
+        self.assertEqual(first[0]['cats']['cat-1']['interactions'],1)
+        self.assertEqual(first[0]['cats']['cat-1']['affinity_delta'],
+                         sum(row['change'] for row in first[0]['affinity_changes']))
+        session.next_day()
+        self.assertEqual(comparison_rows(session.core),first)
+        self.close_day(session)
+        before=session.core.log()
+        rows=comparison_rows(session.core)
+        self.assertEqual([row['day'] for row in rows],[1,2])
+        self.assertEqual([row['cats']['cat-1']['interactions'] for row in rows],[1,1])
+        self.assertEqual(sum(row['summary']['revenue'] for row in rows),session.core.funds)
+        self.assertEqual(session.core.log(),before)
+        save_game(session,self.path)
+        loaded,_=load_game(self.path)
+        self.assertEqual(comparison_rows(loaded.core),rows)
+        rows[0]['cats']['cat-1']['stamina']=-1
+        self.assertEqual(session.core.log(),before)
