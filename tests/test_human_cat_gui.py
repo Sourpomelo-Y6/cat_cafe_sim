@@ -602,6 +602,26 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertEqual([cat.id for cat in self.app.session.available_cats()],[key])
         self.assertFalse(self.app.running)
 
+    def test_shift_forecasts_show_basis_and_do_not_change_state(self):
+        while not self.session.core.closed:self.session.automatic_step()
+        self.session.next_day();self.app.refresh()
+        before=self.session.core.log()
+        self.app.shift_button.invoke()
+        dialog=self.app.shift_window
+        self.root.deiconify();dialog.window.deiconify()
+        dialog.window.geometry('500x400');self.root.update()
+        key=next(iter(self.session.core.cats))
+        self.assertEqual(dialog.tree.set(key,'basis'),str(self.session.core.day_results[-1]['cats'][key]['service_ticks']))
+        self.assertIn('%',dialog.tree.set(key,'work_forecast'))
+        self.assertIn('%',dialog.tree.set(key,'rest_forecast'))
+        self.assertIn('前日の接客',dialog.forecast_note.get())
+        self.assertGreater(dialog.tree.winfo_height(),40)
+        self.assertLess(dialog.save_button.winfo_rooty()+dialog.save_button.winfo_height(),
+                        dialog.window.winfo_rooty()+dialog.window.winfo_height())
+        dialog.set_selected(False)
+        dialog.window.destroy()
+        self.assertEqual(self.session.core.log(),before)
+
     def test_shift_dialog_cancel_save_pause_and_lock_after_start(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         self.assertIn('disabled',self.app.shift_button.state())

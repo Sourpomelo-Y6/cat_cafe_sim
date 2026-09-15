@@ -1,5 +1,6 @@
 """営業開始前の出勤・休養設定画面。"""
 from .cafe_health_text import health_text
+from .cafe_shift_forecast import shift_forecast, estimate_text, forecast_note
 
 
 class CafeShiftWindow:
@@ -10,18 +11,24 @@ class CafeShiftWindow:
         self.on_saved = on_saved
         self.window = tk.Toplevel(parent)
         self.window.title('出勤・休養の設定')
-        self.window.geometry('620x400')
-        self.window.minsize(500, 300)
+        self.window.geometry('960x480')
+        self.window.minsize(500, 400)
         self.window.transient(parent)
         self.window.grab_set()
         frame = ttk.Frame(self.window, padding=12)
         frame.pack(fill='both', expand=True)
         ttk.Label(frame, text='営業開始前に設定してください。前日の設定を引き継ぎます。').pack(anchor='w')
         ttk.Label(frame, text='全員休養も可能です。その日は接客せず営業が進みます。').pack(anchor='w')
+        ttk.Label(frame, text='予測欄：閉店時の疲労 / 発症確率。出勤は前日の接客量を使った目安です。',
+                  wraplength=460).pack(anchor='w')
+        self.forecasts = {key: shift_forecast(session.core, key) for key in session.core.cats}
+        self.forecast_note = tk.StringVar()
         body = ttk.Frame(frame)
         body.pack(fill='both', expand=True, pady=8)
-        self.tree = ttk.Treeview(body, columns=('name', 'fatigue', 'shift', 'health'), show='headings', selectmode='browse')
-        for key, label, width in (('name', '猫', 200), ('fatigue', '現在の疲労', 80), ('shift', '本日の予定', 80), ('health', '体調', 130)):
+        self.tree = ttk.Treeview(body, columns=('name', 'fatigue', 'shift', 'health', 'basis', 'work_forecast', 'rest_forecast'), show='headings', selectmode='browse')
+        for key, label, width in (('name', '猫', 200), ('fatigue', '現在の疲労', 80), ('shift', '本日の予定', 80), ('health', '体調', 110),
+                                   ('basis', '前日接客行動数', 110), ('work_forecast', '出勤予測：疲労 / 発症', 170),
+                                   ('rest_forecast', '休養予測：疲労 / 発症', 170)):
             self.tree.heading(key, text=label)
             self.tree.column(key, width=width, minwidth=70)
         horizontal = ttk.Scrollbar(body, orient='horizontal', command=self.tree.xview)
@@ -33,9 +40,13 @@ class CafeShiftWindow:
         self.tree.pack(fill='both', expand=True)
         self.working = set(session.core.working_cats)
         for row in session.cat_choices():
+            forecast=self.forecasts[row['cat_id']]
             self.tree.insert('', 'end', iid=row['cat_id'], values=(f"{row['name']}（{row['cat_id']}）",
-                             f"{row['fatigue']:g}", '出勤' if row['working'] else '休養', health_text(row['health_status'],row['recovery_days_remaining'])))
+                             f"{row['fatigue']:g}", '出勤' if row['working'] else '休養', health_text(row['health_status'],row['recovery_days_remaining']),
+                             forecast['previous_actions'] if forecast['previous_actions'] is not None else '記録なし',
+                             '出勤不可' if forecast['sick'] else estimate_text(forecast['work']), estimate_text(forecast['rest'])))
         self.tree.selection_set(next(iter(session.core.cats)))
+        ttk.Label(frame, textvariable=self.forecast_note, wraplength=460).pack(anchor='w', pady=(0,8))
         controls = ttk.Frame(frame)
         controls.pack(fill='x')
         self.work_button=ttk.Button(controls, text='選択した猫を出勤', command=lambda: self.set_selected(True))
@@ -52,6 +63,7 @@ class CafeShiftWindow:
         selected=self.tree.selection()
         available=bool(selected) and all(self.session.core.cats[key].health_status=='healthy' for key in selected)
         self.work_button.state(['!disabled'] if available else ['disabled'])
+        self.forecast_note.set(forecast_note(self.forecasts[selected[0]]) if selected else '猫を選ぶと予測の根拠を確認できます。')
 
     def set_selected(self, working):
         for key in self.tree.selection():

@@ -88,3 +88,17 @@ class CafeDayTests(unittest.TestCase):
         self.assertEqual(comparison_rows(loaded.core),rows)
         rows[0]['cats']['cat-1']['stamina']=-1
         self.assertEqual(session.core.log(),before)
+
+    def test_forecast_survives_compact_save_and_does_not_change_business(self):
+        from cat_cafe_sim.cafe_shift_forecast import shift_forecast
+        session=self.session(2)
+        self.close_day(session);session.next_day()
+        before=session.core.log();relations=session.store.path.read_bytes()
+        forecast=shift_forecast(session.core,'cat-1')
+        self.assertEqual(forecast['previous_actions'],2)
+        self.assertEqual(forecast['work']['fatigue'],4)
+        self.assertEqual(session.core.log(),before)
+        self.assertEqual(session.store.path.read_bytes(),relations)
+        save_game(session,self.path)
+        loaded,_=load_game(self.path)
+        self.assertEqual(shift_forecast(loaded.core,'cat-1'),forecast)
