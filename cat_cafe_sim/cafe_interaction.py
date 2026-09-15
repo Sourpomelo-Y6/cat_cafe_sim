@@ -22,7 +22,7 @@ class CafeInteractionSession:
             if seat_count not in (None,1,2):
                 raise ValueError('席数は1または2を指定してください。')
             core_type = CafeInteractionCore if seat_count == 1 else MultiSeatCafeCore
-            core = core_type(cafe_config, cat_ids=ids)
+            core = core_type(cafe_config, cat_ids=ids, compact=True)
             from .core.cafe_health import HealthRules
             core.set_shifts(ids)
             core.enable_health(asdict(HealthRules.load()))
@@ -158,6 +158,9 @@ class CafeInteractionSession:
                 result = self.store.apply(verify_relationship(log))
                 self.affinities[(result['cat_id'],result['customer_id'])] = result['affinity_after']
                 self.persisted.add(session_id)
+                if self.core.compact:
+                    from .core.cafe_checkpoint import receipt
+                    self.core.outcomes[session_id] = receipt(log)
                 if self.checkpoint_baseline is not None:
                     self.checkpoint_baseline = self.store._read()
 
@@ -191,9 +194,16 @@ def main():
     gui.add_argument('--relationships', type=Path, default=None)
     seed = sub.add_parser('seed-playtest',help='テスト用の猫5匹を追加（既存IDは変更しない）')
     seed.add_argument('--relationships',type=Path,default=Path('saves/cafe_relationships.json'))
+    compact_save = sub.add_parser('compact-save',help='既存の営業セーブを別名の軽量形式へ変換')
+    compact_save.add_argument('source',type=Path)
+    compact_save.add_argument('target',type=Path)
     replay = sub.add_parser('replay'); replay.add_argument('path', type=Path)
     args = parser.parse_args()
     try:
+        if args.command == 'compact-save':
+            from .storage.cafe_saves import convert_game
+            print(convert_game(args.source,args.target))
+            return
         if args.command == 'seed-playtest':
             from .storage.playtest_cats import add_playtest_cats
             print(json.dumps({'added':add_playtest_cats(RelationshipStore(args.relationships))},ensure_ascii=False))

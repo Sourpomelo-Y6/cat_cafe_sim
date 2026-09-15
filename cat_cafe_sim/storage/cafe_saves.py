@@ -1,12 +1,9 @@
 """営業途中のチェックポイント。読み込みで会計や関係更新を実行しない。"""
 import copy
-import json
 from pathlib import Path
 
 from .relationships import RelationshipStore, RelationshipConflict
-from ..core.cafe_interaction import verify_cafe_interaction
 from ..core.human_cat_relationship import RelationshipConfig, verify_relationship
-from ..core.human_cat_types import unique_object
 from ..policies.human_cat import AutomaticInteractionPolicy
 
 
@@ -22,26 +19,34 @@ class MemoryRelationships(RelationshipStore):
 
 
 def validate_progress(core, baseline, current):
-    """保存済み時点から許す更新は、記録済みの終了結果の保存再試行だけ。"""
+    """既知の未保存結果の適用だけを許す。確定済み成果はハッシュで照合する。"""
+    from ..core.cafe_checkpoint import receipt, is_receipt
     expected = MemoryRelationships(baseline)
-    matched = expected.data == current
-    for log in core.outcomes.values():
-        expected.apply(verify_relationship(log))
-        matched = matched or expected.data == current
-    if not matched:
-        raise RelationshipConflict('関係データがこの営業セーブより先へ進んでいるか、変更されています。新しい営業セーブを開いてください。')
-    # 終了済みと偽られた適用IDや、異なる内容の終了結果も照合する。
     actual = MemoryRelationships(current)
+    matched = expected.data == current
     persisted = set()
     for session_id, log in core.outcomes.items():
+        saved = receipt(log)
+        applied = dict(digest=saved['digest'], result=saved['result'])
+        if session_id in baseline['applied']:
+            if baseline['applied'][session_id] != applied:
+                raise RelationshipConflict('保存済みの交流結果と営業の記録が一致しません。')
+        else:
+            if is_receipt(log):
+                raise RelationshipConflict('照合用の交流結果が関係データから失われています。')
+            expected.apply(verify_relationship(log))
+            matched = matched or expected.data == current
         if session_id in current['applied']:
-            actual.apply(verify_relationship(log))
+            if current['applied'][session_id] != applied:
+                raise RelationshipConflict('交流結果の内容が変更されています。')
             persisted.add(session_id)
+    if not matched:
+        raise RelationshipConflict('関係データがこの営業セーブより先へ進んでいるか、変更されています。新しい営業セーブを開いてください。')
     active = core.interactions.values() if hasattr(core,'interactions') else ([core.active] if core.active else [])
     for interaction in active:
         initial = interaction.initial_relationship
-        snapshot = actual.snapshot(interaction.cat_id,interaction.customer_id)
-        if (interaction.session_id in current['applied'] or snapshot != dict(affinity=initial['affinity'],revision=initial['revision'])):
+        pair = actual.snapshot(interaction.cat_id,interaction.customer_id)
+        if (interaction.session_id in current['applied'] or pair != dict(affinity=initial['affinity'],revision=initial['revision'])):
             raise RelationshipConflict('交流中の相手との関係が変更されています。新しい営業セーブを開いてください。')
     return persisted
 
@@ -61,16 +66,13 @@ def save_game(session, path, *, auto_assign=False):
     if path == session.store.path.resolve():
         raise ValueError('営業セーブと関係データは別のファイルにしてください。')
     check_link(session)
-    # 操作履歴で復元できない状態を黙って捨てない。
-    log = session.core.log()
-    restored = verify_cafe_interaction(log)
-    if restored.snapshot() != session.core.snapshot():
-        raise ValueError('営業状態と履歴が一致しないため保存できません。')
     relationships = session.store._read()
     persisted = validate_progress(session.core,relationships,relationships)
     if not session.persisted <= persisted:
         raise RelationshipConflict('保存済みの交流結果が関係データから失われています。')
-    payload = dict(kind='cafe-save',format_version=1,core=log,
+    from ..core.cafe_checkpoint import checkpoint
+    state = checkpoint(session.core, set(session.core.outcomes)-persisted)
+    payload = dict(kind='cafe-save',format_version=2,core=state,
                    interaction_config=session.interaction_config.to_dict(),
                    relationship_path=str(session.store.path.resolve()),relationships=relationships,
                    policy_version=session.policy.version,auto_assign=auto_assign)
@@ -84,23 +86,60 @@ def save_game(session, path, *, auto_assign=False):
 def load_game(path):
     from ..cafe_interaction import CafeInteractionSession
     path = Path(path).resolve()
-    data = json.loads(path.read_text(encoding='utf-8'),object_pairs_hook=unique_object)
+    from .legacy_cafe_reader import read_game
+    try:
+        data, legacy = read_game(path)
+    except (KeyError, TypeError, IndexError) as error:
+        raise ValueError('営業セーブの形式が不正です。') from error
     fields={'kind','format_version','core','interaction_config','relationship_path','relationships','policy_version','auto_assign'}
     if (not isinstance(data,dict) or set(data)!=fields or data['kind']!='cafe-save'
-            or type(data['format_version']) is not int or data['format_version']!=1
+            or type(data['format_version']) is not int or data['format_version'] not in (1,2)
             or type(data['auto_assign']) is not bool or data['policy_version']!=AutomaticInteractionPolicy.version):
         raise ValueError('対応していない営業セーブです。再生ログとは別の形式です。')
     if not isinstance(data['relationship_path'],str) or not Path(data['relationship_path']).is_absolute():
         raise ValueError('invalid relationship path')
     if Path(data['relationship_path']).resolve()==path:
         raise ValueError('営業セーブと関係データは別のファイルが必要です。')
-    core=verify_cafe_interaction(data['core'])
+    from ..core.cafe_checkpoint import checkpoint, restore
+    try:
+        core=legacy if data['format_version']==1 else restore(data['core'])
+    except (KeyError, TypeError, IndexError) as error:
+        raise ValueError('営業セーブの現在状態が不正です。') from error
     config=RelationshipConfig.from_dict(data['interaction_config'])
     store=RelationshipStore(data['relationship_path'])
     current=store._read()
     persisted=validate_progress(core,data['relationships'],current)
+    if legacy is not None:
+        core=restore(checkpoint(core,set(core.outcomes)-persisted))
     session=CafeInteractionSession(core,store,config)
     session.persisted=persisted
     session.checkpoint_path=path
     session.checkpoint_baseline=copy.deepcopy(current)
     return session,data['auto_assign']
+
+
+def convert_game(source, target):
+    """既存セーブを別名で形式2へ変換する。関係データを巻き戻さず、旧ファイルも変更しない。"""
+    from .legacy_cafe_reader import read_game
+    from ..core.cafe_checkpoint import checkpoint, restore
+    source, target = Path(source).resolve(), Path(target).resolve()
+    if source == target or target.exists():
+        raise ValueError('変換先は存在しない別のファイルを指定してください。')
+    data, legacy = read_game(source)
+    fields={'kind','format_version','core','interaction_config','relationship_path','relationships','policy_version','auto_assign'}
+    if (set(data)!=fields or data['kind']!='cafe-save' or type(data['format_version']) is not int
+            or data['format_version'] not in (1,2) or type(data['auto_assign']) is not bool
+            or data['policy_version']!=AutomaticInteractionPolicy.version):
+        raise ValueError('対応していない営業セーブです。')
+    relation=Path(data['relationship_path'])
+    if not relation.is_absolute() or target==relation.resolve() or source==relation.resolve():
+        raise ValueError('営業セーブと関係データは別のファイルが必要です。')
+    RelationshipConfig.from_dict(data['interaction_config'])
+    core=legacy if legacy is not None else restore(data['core'])
+    baseline=RelationshipStore.validate_data(data['relationships'])
+    persisted=validate_progress(core,baseline,baseline)
+    state=checkpoint(core,set(core.outcomes)-persisted)
+    restore(state)  # 書き出す前に復元と会計集計を検証する。
+    converted=dict(data,format_version=2,core=state)
+    RelationshipStore(target)._write(converted)
+    return target

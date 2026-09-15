@@ -23,8 +23,8 @@ class MultiSeatCafeCore(CafeInteractionCore):
         if self.active:
             self.cat = self.cats[self.active.cat_id]
 
-    def snapshot(self):
-        state = super().snapshot()
+    def _full_snapshot(self):
+        state = super()._full_snapshot()
         for key in ('interaction','seat','cat'):
             state.pop(key, None)
         state.update(seats={key:asdict(seat) for key,seat in self.seats.items()},
@@ -125,6 +125,8 @@ class MultiSeatCafeCore(CafeInteractionCore):
         return result
 
     def log(self):
+        if self.compact:
+            return super().log()
         return {**super().log(),'format_version':3,'cat_ids':list(self.cats),'seat_ids':list(self.seats)}
 
 

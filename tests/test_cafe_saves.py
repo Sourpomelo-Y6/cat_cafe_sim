@@ -140,7 +140,8 @@ class CafeSaveTests(unittest.TestCase):
         self.assertTrue(old.core.closed)
         save_game(old,self.path)
         loaded,_=load_game(self.path)
-        self.assertEqual(loaded.core.log(),old.core.log())
+        from cat_cafe_sim.core.cafe_checkpoint import snapshot
+        self.assertEqual(loaded.core.snapshot(),snapshot(old.core))
         self.assertFalse(loaded.automatic_step())
 
     def test_unlogged_state_mutation_is_not_silently_lost(self):

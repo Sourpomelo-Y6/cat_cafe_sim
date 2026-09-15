@@ -17,7 +17,7 @@ def comparison_rows(core):
             counts[key] = counts.get(key, 0) + 1
     for result in days:
         for cat_id, cat in result['cats'].items():
-            cat['interactions'] = counts.get((result['day'], cat_id), 0)
+            cat['interactions'] = cat.get('interactions', counts.get((result['day'], cat_id), 0))
             cat['affinity_delta'] = sum(row['change'] for row in result['affinity_changes']
                                         if row['cat_id'] == cat_id)
     return days

@@ -109,7 +109,8 @@ class CafeShiftTests(unittest.TestCase):
             self.assertNotIn('shift',core.day_result()['cats']['a'])
             save_game(session,self.path)
             loaded,_=load_game(self.path)
-            self.assertEqual(loaded.core.log(),core.log())
+            from cat_cafe_sim.core.cafe_checkpoint import snapshot
+            self.assertEqual(loaded.core.snapshot(),snapshot(core))
             loaded.next_day(); loaded.set_shifts([])
             self.assertIsNotNone(loaded.core.shift_rules)
             self.assertEqual(verify_cafe_interaction(loaded.core.log()).snapshot(),loaded.core.snapshot())

@@ -9,8 +9,11 @@ from .models import Cat
 
 
 class CafeInteractionCore(SimulationCore):
-    def __init__(self, *args, cat_ids=None, **kwargs):
+    def __init__(self, *args, cat_ids=None, compact=False, **kwargs):
         super().__init__(*args, **kwargs)
+        self.compact = compact
+        self.recorded_digest = None
+        self.replay_base = None
         self.roster_ids = None if cat_ids is None else list(cat_ids)
         ids = self.roster_ids if self.roster_ids is not None else [self.cat.id]
         for cat_id in ids:
@@ -35,6 +38,12 @@ class CafeInteractionCore(SimulationCore):
         self.initial_fatigue = dict.fromkeys(ids, 0)
 
     def snapshot(self):
+        if self.compact:
+            from .cafe_checkpoint import snapshot
+            return snapshot(self)
+        return self._full_snapshot()
+
+    def _full_snapshot(self):
         return {**super().snapshot(),
                 'interaction': self.active.log() if self.active else None,
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
@@ -129,13 +138,16 @@ class CafeInteractionCore(SimulationCore):
     def day_result(self):
         if not self.closed:
             raise ValueError('閉店後に結果を確認してください。')
+        from .cafe_checkpoint import outcome_result
         changes = {}
         for log in list(self.outcomes.values())[self.day_outcome_offset:]:
-            result = verify_relationship(log).result()
+            result = outcome_result(log)
             key = (result['cat_id'], result['customer_id'])
             changes[key] = changes.get(key, 0) + result['affinity_after'] - result['affinity_before']
         return dict(day=self.day, summary=self.summary(),
                     cats={key: dict(stamina=cat.stamina,
+                         **(dict(interactions=sum(1 for value in list(self.outcomes.values())[self.day_outcome_offset:]
+                              if outcome_result(value)['cat_id']==key)) if self.compact else {}),
                          spent=(self.start_state.stamina if self.day == 1 else self.config.max_stamina)-cat.stamina,
                          **(dict(shift='work' if key in self.working_cats else 'rest',
                                  fatigue_before=self.initial_fatigue[key], fatigue_after=cat.fatigue,
@@ -175,7 +187,12 @@ class CafeInteractionCore(SimulationCore):
         self._record(dict(kind='next_day'))
 
     def _record(self, operation):
-        self.operations.append(dict(operation=operation, events=copy.deepcopy(self._tick_events), state=self.snapshot()))
+        if self.compact:
+            from .cafe_checkpoint import record_digest
+            self.recorded_digest=record_digest(self)
+            self.operations.append(dict(operation=operation,events=copy.deepcopy(self._tick_events),state_digest=self.recorded_digest))
+        else:
+            self.operations.append(dict(operation=operation, events=copy.deepcopy(self._tick_events), state=self.snapshot()))
 
     def start(self, interaction):
         if self.closed or self.active or self.seat.customer_id is not None:
@@ -244,6 +261,8 @@ class CafeInteractionCore(SimulationCore):
         elif action is not None or target_type is not None:
             raise ValueError('先に待機中のお客との交流を開始してください。')
         super().step(cat_action=(action, target_type))
+        if self.compact:
+            self.records.clear()
         self._record(dict(kind='step', action=action, target_type=target_type))
         return self.observation()
 
@@ -267,6 +286,9 @@ class CafeInteractionCore(SimulationCore):
                     **({'cat_stamina': {key:cat.stamina for key,cat in self.cats.items()}} if self.roster_ids is not None else {}))
 
     def log(self):
+        if self.compact:
+            from .cafe_replay import replay_log
+            return replay_log(self)
         return dict(mode_id='cafe-human-cat', format_version=2 if self.roster_ids is not None else 1, config=json.loads(json.dumps(self.config.to_dict())),
                     seed=self.seed, start_state=asdict(self.start_state),
                     operations=copy.deepcopy(self.operations), summary=self.summary(),
@@ -276,6 +298,9 @@ class CafeInteractionCore(SimulationCore):
 def verify_cafe_interaction(data):
     from .config import Config
     from .models import StartState
+    if data.get('mode_id') == 'cafe-human-cat' and data.get('format_version') == 4:
+        from .cafe_replay import verify
+        return verify(data)
     if data.get('mode_id') == 'cafe-human-cat' and data.get('format_version') == 3:
         from .multi_seat_cafe import verify_multi_seat
         return verify_multi_seat(data)

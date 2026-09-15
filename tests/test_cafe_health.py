@@ -157,7 +157,8 @@ class CafeHealthTests(unittest.TestCase):
         self.assertNotIn('health',core.snapshot())
         save_game(session,self.path)
         loaded,_=load_game(self.path)
-        self.assertEqual(core.log(),loaded.core.log())
+        from cat_cafe_sim.core.cafe_checkpoint import snapshot
+        self.assertEqual(snapshot(core),loaded.core.snapshot())
         loaded.next_day();loaded.set_shifts([])
         self.assertIsNotNone(loaded.core.health_rules)
         self.assertNotIn('health',loaded.core.day_results[0]['cats']['a'])
