@@ -1,0 +1,855 @@
+{
+  "python": "3.12.9 (main, Sep  7 2025, 15:18:24) [GCC 13.3.0]",
+  "platform": "Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+  "conditions": {
+    "days": 100,
+    "config": {
+      "opening_ticks": 40,
+      "max_stamina": 100,
+      "max_spirit": 100,
+      "refill_cost": 30,
+      "allow_zero_spirit_after_refill": false,
+      "rest_recovery": 8,
+      "satisfaction_target": 100,
+      "time_price": 10,
+      "success_bonus": 100,
+      "perfect_multiplier": 2,
+      "initial_funds": 0,
+      "queue_capacity": 4,
+      "max_wait_ticks": 8,
+      "failure_discontent": 1,
+      "waiting_discontent": 1,
+      "arrival_ticks": [
+        0,
+        6,
+        12,
+        18,
+        24,
+        30
+      ],
+      "preferences": [
+        1,
+        1
+      ],
+      "actions": [
+        {
+          "name": "ねこじゃらし・ゆっくり",
+          "kind": "play",
+          "satisfaction": 12,
+          "stamina_cost": 8
+        },
+        {
+          "name": "ねこじゃらし・普通",
+          "kind": "play",
+          "satisfaction": 20,
+          "stamina_cost": 15
+        },
+        {
+          "name": "ねこじゃらし・素早く",
+          "kind": "play",
+          "satisfaction": 28,
+          "stamina_cost": 25
+        },
+        {
+          "name": "なでなで・ゆっくり",
+          "kind": "pet",
+          "satisfaction": 10,
+          "stamina_cost": 5
+        },
+        {
+          "name": "なでなで・普通",
+          "kind": "pet",
+          "satisfaction": 16,
+          "stamina_cost": 10
+        },
+        {
+          "name": "なでなで・素早く",
+          "kind": "pet",
+          "satisfaction": 22,
+          "stamina_cost": 18
+        },
+        {
+          "name": "休む",
+          "kind": "rest",
+          "satisfaction": 0,
+          "stamina_cost": 0
+        }
+      ],
+      "boredom_free_actions": 1,
+      "boredom_decay": 0.15,
+      "boredom_min_multiplier": 0.4,
+      "switch_min_streak": 2,
+      "switch_bonus": 4
+    },
+    "shifts": {
+      "max_fatigue": 100,
+      "fatigue_per_service_tick": 1,
+      "rest_day_recovery": 20
+    },
+    "health": {
+      "safe_fatigue": 60,
+      "probability_per_fatigue": 0.02,
+      "max_probability": 0.5,
+      "recovery_days": 2
+    },
+    "interaction": {
+      "rules": {
+        "ticks": 20,
+        "max_stamina": 100,
+        "target": 100,
+        "direct_gain": 12,
+        "direct_cost": 5,
+        "adapt_gain": 10,
+        "adapt_cost": 5,
+        "gentle_gain": 8,
+        "gentle_cost": 2,
+        "intense_gain": 24,
+        "intense_cost": 15,
+        "feint_gain": 10,
+        "feint_cost": 8,
+        "combo_gain": 18,
+        "pause_recovery": 2,
+        "boredom_floor": 0.4,
+        "low_stamina": 20,
+        "confused_threshold": 6,
+        "favorable_threshold": 10,
+        "enthusiastic_threshold": 18,
+        "confused_multiplier": 0.5,
+        "optional_threshold": 80,
+        "forced_threshold": 100,
+        "gauge_cost": 80,
+        "connect_bonus": 50,
+        "open_up_bonus": 50,
+        "simultaneous_bonus": 100,
+        "open_up_tension": 10,
+        "tension_enthusiastic": 20,
+        "tension_favorable": 12,
+        "tension_neutral": 6,
+        "tension_confused_loss": 4,
+        "tension_listless_loss": 6,
+        "tension_turn_away_loss": 8,
+        "affinity_enthusiastic": 1,
+        "affinity_favorable": 0.5,
+        "affinity_turn_away_loss": 1,
+        "affinity_connect": 1,
+        "affinity_open_up": 2,
+        "affinity_simultaneous": 1,
+        "affinity_exhausted_loss": 2
+      },
+      "types": [
+        {
+          "id": "teaser",
+          "name": "ねこじゃらし",
+          "group": "play",
+          "gain": 1,
+          "cost": 1,
+          "actions": [
+            "direct",
+            "adapt",
+            "intense",
+            "feint"
+          ]
+        },
+        {
+          "id": "ball",
+          "name": "ボール遊び",
+          "group": "play",
+          "gain": 1,
+          "cost": 1.1,
+          "actions": [
+            "direct",
+            "adapt",
+            "intense",
+            "feint"
+          ]
+        },
+        {
+          "id": "plush",
+          "name": "ぬいぐるみ遊び",
+          "group": "play",
+          "gain": 0.9,
+          "cost": 0.9,
+          "actions": [
+            "direct",
+            "adapt",
+            "feint"
+          ]
+        },
+        {
+          "id": "tunnel",
+          "name": "トンネル遊び",
+          "group": "play",
+          "gain": 1.1,
+          "cost": 1.2,
+          "actions": [
+            "direct",
+            "adapt",
+            "intense",
+            "feint"
+          ]
+        },
+        {
+          "id": "pet",
+          "name": "なでる",
+          "group": "contact",
+          "gain": 1,
+          "cost": 1,
+          "actions": [
+            "direct",
+            "adapt"
+          ]
+        },
+        {
+          "id": "brush",
+          "name": "ブラッシング",
+          "group": "contact",
+          "gain": 0.9,
+          "cost": 0.8,
+          "actions": [
+            "direct",
+            "adapt"
+          ]
+        },
+        {
+          "id": "voice",
+          "name": "声をかける",
+          "group": "quiet",
+          "gain": 0.7,
+          "cost": 0.5,
+          "actions": [
+            "direct",
+            "adapt"
+          ]
+        },
+        {
+          "id": "presence",
+          "name": "そばで見守る",
+          "group": "quiet",
+          "gain": 0.5,
+          "cost": 0.3,
+          "actions": [
+            "direct",
+            "adapt"
+          ]
+        }
+      ],
+      "personality": {
+        "type_preferences": {
+          "teaser": 1,
+          "ball": 1,
+          "plush": 1,
+          "tunnel": 1,
+          "pet": 1,
+          "brush": 1,
+          "voice": 1,
+          "presence": 1
+        },
+        "intensity_preferences": {
+          "gentle": 1,
+          "standard": 1,
+          "active": 1
+        },
+        "boredom_decay": 0.15,
+        "switch_affinity": 0
+      }
+    },
+    "cats": [
+      {
+        "cat_id": "playtest-kohaku",
+        "name": "コハク",
+        "personality": {
+          "type_preferences": {
+            "teaser": 1.8,
+            "ball": 1.6,
+            "plush": 1.4,
+            "tunnel": 1.2,
+            "pet": 0.9,
+            "brush": 0.8,
+            "voice": 1,
+            "presence": 0.8
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.2
+          },
+          "boredom_decay": 0.15,
+          "switch_affinity": 0
+        }
+      },
+      {
+        "cat_id": "playtest-mike",
+        "name": "ミケ",
+        "personality": {
+          "type_preferences": {
+            "teaser": 0.8,
+            "ball": 0.6,
+            "plush": 1.2,
+            "tunnel": 0.5,
+            "pet": 1.8,
+            "brush": 1.5,
+            "voice": 1.2,
+            "presence": 1.3
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.4
+          },
+          "boredom_decay": 0.08,
+          "switch_affinity": -0.2
+        }
+      },
+      {
+        "cat_id": "playtest-mugi",
+        "name": "ムギ",
+        "personality": {
+          "type_preferences": {
+            "teaser": 1,
+            "ball": 1,
+            "plush": 1,
+            "tunnel": 1,
+            "pet": 1,
+            "brush": 1,
+            "voice": 1,
+            "presence": 1
+          },
+          "intensity_preferences": {
+            "gentle": 1,
+            "standard": 1,
+            "active": 1
+          },
+          "boredom_decay": 0.15,
+          "switch_affinity": 0
+        }
+      },
+      {
+        "cat_id": "playtest-sora",
+        "name": "ソラ",
+        "personality": {
+          "type_preferences": {
+            "teaser": 1.2,
+            "ball": 1.3,
+            "plush": 0.8,
+            "tunnel": 1.4,
+            "pet": 0.2,
+            "brush": 0,
+            "voice": 1.4,
+            "presence": 1.8
+          },
+          "intensity_preferences": {
+            "gentle": 1.2,
+            "standard": 0.8,
+            "active": 0.5
+          },
+          "boredom_decay": 0.12,
+          "switch_affinity": -0.1
+        }
+      },
+      {
+        "cat_id": "playtest-tama",
+        "name": "タマ",
+        "personality": {
+          "type_preferences": {
+            "teaser": 1.5,
+            "ball": 1.7,
+            "plush": 0.8,
+            "tunnel": 1.8,
+            "pet": 0.7,
+            "brush": 0.5,
+            "voice": 0.8,
+            "presence": 0.4
+          },
+          "intensity_preferences": {
+            "gentle": 0.8,
+            "standard": 1,
+            "active": 1.3
+          },
+          "boredom_decay": 0.2,
+          "switch_affinity": 0.2
+        }
+      }
+    ],
+    "automatic_policy": "automatic-interaction-v1",
+    "measurement": "continuous unsaved simulation; checkpoints measured through a separate session"
+  },
+  "runs": [
+    {
+      "policy": "all_work",
+      "seed": 0,
+      "metrics": {
+        "revenue": 101530,
+        "bonus": 33550,
+        "arrivals": 594,
+        "interactions": 376,
+        "service_ticks": 6798,
+        "illnesses": 119,
+        "recovery_cat_days": 235,
+        "affinity_delta": 949.0,
+        "open_days": 99,
+        "closed_days": 1,
+        "mean_fatigue": 75.408,
+        "peak_fatigue": 100,
+        "simulation_seconds": 172.67210328600004,
+        "total_seconds": 173.7273572099998,
+        "final_funds": 101530
+      },
+      "samples": [
+        {
+          "day": 1,
+          "save_bytes": 31749,
+          "relationship_bytes": 8787,
+          "save_seconds": 0.005791321999822685,
+          "load_seconds": 0.006744214000264037
+        },
+        {
+          "day": 25,
+          "save_bytes": 460811,
+          "relationship_bytes": 145258,
+          "save_seconds": 0.06340733200022441,
+          "load_seconds": 0.07073172499985958
+        },
+        {
+          "day": 50,
+          "save_bytes": 884424,
+          "relationship_bytes": 277184,
+          "save_seconds": 0.10976832999995167,
+          "load_seconds": 0.1317753379998976
+        },
+        {
+          "day": 100,
+          "save_bytes": 1738548,
+          "relationship_bytes": 543682,
+          "save_seconds": 0.2149712800000998,
+          "load_seconds": 0.2950259140002345
+        }
+      ],
+      "first_10_days_seconds": 4.2748429709995435,
+      "last_10_days_seconds": 31.886969569999565
+    },
+    {
+      "policy": "all_work",
+      "seed": 1,
+      "metrics": {
+        "revenue": 101300,
+        "bonus": 34250,
+        "arrivals": 600,
+        "interactions": 370,
+        "service_ticks": 6705,
+        "illnesses": 116,
+        "recovery_cat_days": 229,
+        "affinity_delta": 862.0,
+        "open_days": 100,
+        "closed_days": 0,
+        "mean_fatigue": 74.362,
+        "peak_fatigue": 100,
+        "simulation_seconds": 173.21288977099857,
+        "total_seconds": 174.23810274399966,
+        "final_funds": 101300
+      },
+      "samples": [
+        {
+          "day": 1,
+          "save_bytes": 31749,
+          "relationship_bytes": 8787,
+          "save_seconds": 0.005723010000110662,
+          "load_seconds": 0.005905612999868026
+        },
+        {
+          "day": 25,
+          "save_bytes": 446453,
+          "relationship_bytes": 139590,
+          "save_seconds": 0.05246723000027487,
+          "load_seconds": 0.06537334099994041
+        },
+        {
+          "day": 50,
+          "save_bytes": 877392,
+          "relationship_bytes": 274395,
+          "save_seconds": 0.1069341929996881,
+          "load_seconds": 0.13483687799998734
+        },
+        {
+          "day": 100,
+          "save_bytes": 1717466,
+          "relationship_bytes": 535297,
+          "save_seconds": 0.20458877800001574,
+          "load_seconds": 0.2829579829999602
+        }
+      ],
+      "first_10_days_seconds": 4.101134179000383,
+      "last_10_days_seconds": 30.339995267999257
+    },
+    {
+      "policy": "all_work",
+      "seed": 2,
+      "metrics": {
+        "revenue": 104110,
+        "bonus": 35800,
+        "arrivals": 594,
+        "interactions": 378,
+        "service_ticks": 6831,
+        "illnesses": 108,
+        "recovery_cat_days": 212,
+        "affinity_delta": 872.0,
+        "open_days": 99,
+        "closed_days": 1,
+        "mean_fatigue": 75.382,
+        "peak_fatigue": 100,
+        "simulation_seconds": 181.05968489599985,
+        "total_seconds": 182.144908397,
+        "final_funds": 104110
+      },
+      "samples": [
+        {
+          "day": 1,
+          "save_bytes": 31748,
+          "relationship_bytes": 8787,
+          "save_seconds": 0.005735705999995844,
+          "load_seconds": 0.007470313999988321
+        },
+        {
+          "day": 25,
+          "save_bytes": 460852,
+          "relationship_bytes": 145291,
+          "save_seconds": 0.06070270600002914,
+          "load_seconds": 0.08066042500001913
+        },
+        {
+          "day": 50,
+          "save_bytes": 899453,
+          "relationship_bytes": 283015,
+          "save_seconds": 0.11689245400003756,
+          "load_seconds": 0.1548936529999878
+        },
+        {
+          "day": 100,
+          "save_bytes": 1746879,
+          "relationship_bytes": 546814,
+          "save_seconds": 0.21722968599999604,
+          "load_seconds": 0.2744082919999755
+        }
+      ],
+      "first_10_days_seconds": 4.430447742000126,
+      "last_10_days_seconds": 32.755782724999904
+    },
+    {
+      "policy": "rotating_rest",
+      "seed": 0,
+      "metrics": {
+        "revenue": 100420,
+        "bonus": 33550,
+        "arrivals": 582,
+        "interactions": 370,
+        "service_ticks": 6687,
+        "illnesses": 94,
+        "recovery_cat_days": 184,
+        "affinity_delta": 919.0,
+        "open_days": 97,
+        "closed_days": 3,
+        "mean_fatigue": 69.608,
+        "peak_fatigue": 100,
+        "simulation_seconds": 173.7365658039996,
+        "total_seconds": 174.755688173,
+        "final_funds": 100420
+      },
+      "samples": [
+        {
+          "day": 1,
+          "save_bytes": 31688,
+          "relationship_bytes": 8772,
+          "save_seconds": 0.005583661999992273,
+          "load_seconds": 0.0072688449999986915
+        },
+        {
+          "day": 25,
+          "save_bytes": 432010,
+          "relationship_bytes": 133708,
+          "save_seconds": 0.05166211900001372,
+          "load_seconds": 0.06340822699996806
+        },
+        {
+          "day": 50,
+          "save_bytes": 863079,
+          "relationship_bytes": 268574,
+          "save_seconds": 0.11071646699997473,
+          "load_seconds": 0.13448739000000387
+        },
+        {
+          "day": 100,
+          "save_bytes": 1717770,
+          "relationship_bytes": 535225,
+          "save_seconds": 0.20456497400004992,
+          "load_seconds": 0.2556364570000369
+        }
+      ],
+      "first_10_days_seconds": 4.373847840000053,
+      "last_10_days_seconds": 32.505863604999945
+    },
+    {
+      "policy": "rotating_rest",
+      "seed": 1,
+      "metrics": {
+        "revenue": 98920,
+        "bonus": 32650,
+        "arrivals": 588,
+        "interactions": 366,
+        "service_ticks": 6627,
+        "illnesses": 91,
+        "recovery_cat_days": 181,
+        "affinity_delta": 907.0,
+        "open_days": 98,
+        "closed_days": 2,
+        "mean_fatigue": 68.058,
+        "peak_fatigue": 100,
+        "simulation_seconds": 177.4386646129999,
+        "total_seconds": 178.51668714999994,
+        "final_funds": 98920
+      },
+      "samples": [
+        {
+          "day": 1,
+          "save_bytes": 31688,
+          "relationship_bytes": 8772,
+          "save_seconds": 0.005621109000003344,
+          "load_seconds": 0.005903820999947129
+        },
+        {
+          "day": 25,
+          "save_bytes": 431767,
+          "relationship_bytes": 133542,
+          "save_seconds": 0.0616120970000793,
+          "load_seconds": 0.06843259599997964
+        },
+        {
+          "day": 50,
+          "save_bytes": 841472,
+          "relationship_bytes": 259985,
+          "save_seconds": 0.10491161400000237,
+          "load_seconds": 0.14180674099998214
+        },
+        {
+          "day": 100,
+          "save_bytes": 1703212,
+          "relationship_bytes": 529341,
+          "save_seconds": 0.2532459010000139,
+          "load_seconds": 0.2734775779999836
+        }
+      ],
+      "first_10_days_seconds": 4.222886381999842,
+      "last_10_days_seconds": 34.683312685000146
+    },
+    {
+      "policy": "rotating_rest",
+      "seed": 2,
+      "metrics": {
+        "revenue": 101250,
+        "bonus": 33600,
+        "arrivals": 594,
+        "interactions": 374,
+        "service_ticks": 6765,
+        "illnesses": 89,
+        "recovery_cat_days": 176,
+        "affinity_delta": 879.0,
+        "open_days": 99,
+        "closed_days": 1,
+        "mean_fatigue": 68.906,
+        "peak_fatigue": 100,
+        "simulation_seconds": 181.28559833499958,
+        "total_seconds": 182.345335794,
+        "final_funds": 101250
+      },
+      "samples": [
+        {
+          "day": 1,
+          "save_bytes": 31687,
+          "relationship_bytes": 8772,
+          "save_seconds": 0.0053258049999840296,
+          "load_seconds": 0.0062836680000373235
+        },
+        {
+          "day": 25,
+          "save_bytes": 453467,
+          "relationship_bytes": 142233,
+          "save_seconds": 0.05548076200000196,
+          "load_seconds": 0.06838125599995237
+        },
+        {
+          "day": 50,
+          "save_bytes": 899511,
+          "relationship_bytes": 282895,
+          "save_seconds": 0.11762825899995732,
+          "load_seconds": 0.15365916200005358
+        },
+        {
+          "day": 100,
+          "save_bytes": 1732478,
+          "relationship_bytes": 540864,
+          "save_seconds": 0.22168752599998243,
+          "load_seconds": 0.2719044970000368
+        }
+      ],
+      "first_10_days_seconds": 4.515806683000164,
+      "last_10_days_seconds": 32.296171337999795
+    },
+    {
+      "policy": "fatigue_closure",
+      "seed": 0,
+      "metrics": {
+        "revenue": 59670,
+        "bonus": 22950,
+        "arrivals": 306,
+        "interactions": 204,
+        "service_ticks": 3672,
+        "illnesses": 0,
+        "recovery_cat_days": 0,
+        "affinity_delta": 351.0,
+        "open_days": 51,
+        "closed_days": 49,
+        "mean_fatigue": 26.252,
+        "peak_fatigue": 60,
+        "simulation_seconds": 64.27222546200039,
+        "total_seconds": 64.98075132600002,
+        "final_funds": 59670
+      },
+      "samples": [
+        {
+          "day": 1,
+          "save_bytes": 31749,
+          "relationship_bytes": 8787,
+          "save_seconds": 0.005223345999979756,
+          "load_seconds": 0.006647648000011941
+        },
+        {
+          "day": 25,
+          "save_bytes": 307636,
+          "relationship_bytes": 83479,
+          "save_seconds": 0.037194416000033925,
+          "load_seconds": 0.047482475000037994
+        },
+        {
+          "day": 50,
+          "save_bytes": 572383,
+          "relationship_bytes": 152355,
+          "save_seconds": 0.0703409750000219,
+          "load_seconds": 0.08570166699996662
+        },
+        {
+          "day": 100,
+          "save_bytes": 1116147,
+          "relationship_bytes": 295755,
+          "save_seconds": 0.13978438499998447,
+          "load_seconds": 0.1834445689999029
+        }
+      ],
+      "first_10_days_seconds": 2.3256560660000787,
+      "last_10_days_seconds": 11.229859851000128
+    },
+    {
+      "policy": "fatigue_closure",
+      "seed": 1,
+      "metrics": {
+        "revenue": 59670,
+        "bonus": 22950,
+        "arrivals": 306,
+        "interactions": 204,
+        "service_ticks": 3672,
+        "illnesses": 0,
+        "recovery_cat_days": 0,
+        "affinity_delta": 351.0,
+        "open_days": 51,
+        "closed_days": 49,
+        "mean_fatigue": 26.252,
+        "peak_fatigue": 60,
+        "simulation_seconds": 64.43331292499897,
+        "total_seconds": 65.12337186900004,
+        "final_funds": 59670
+      },
+      "samples": [
+        {
+          "day": 1,
+          "save_bytes": 31749,
+          "relationship_bytes": 8787,
+          "save_seconds": 0.005153610999968805,
+          "load_seconds": 0.006499459999986357
+        },
+        {
+          "day": 25,
+          "save_bytes": 307637,
+          "relationship_bytes": 83479,
+          "save_seconds": 0.03957105099993896,
+          "load_seconds": 0.04953444399984619
+        },
+        {
+          "day": 50,
+          "save_bytes": 572398,
+          "relationship_bytes": 152355,
+          "save_seconds": 0.07050894600001811,
+          "load_seconds": 0.08649965500012513
+        },
+        {
+          "day": 100,
+          "save_bytes": 1116169,
+          "relationship_bytes": 295755,
+          "save_seconds": 0.14743402499993863,
+          "load_seconds": 0.1738696859999891
+        }
+      ],
+      "first_10_days_seconds": 2.3609584340001675,
+      "last_10_days_seconds": 10.97898882200002
+    },
+    {
+      "policy": "fatigue_closure",
+      "seed": 2,
+      "metrics": {
+        "revenue": 59670,
+        "bonus": 22950,
+        "arrivals": 306,
+        "interactions": 204,
+        "service_ticks": 3672,
+        "illnesses": 0,
+        "recovery_cat_days": 0,
+        "affinity_delta": 351.0,
+        "open_days": 51,
+        "closed_days": 49,
+        "mean_fatigue": 26.252,
+        "peak_fatigue": 60,
+        "simulation_seconds": 64.56088088099955,
+        "total_seconds": 65.24186183899997,
+        "final_funds": 59670
+      },
+      "samples": [
+        {
+          "day": 1,
+          "save_bytes": 31748,
+          "relationship_bytes": 8787,
+          "save_seconds": 0.005994091000047774,
+          "load_seconds": 0.0070057010000255104
+        },
+        {
+          "day": 25,
+          "save_bytes": 307613,
+          "relationship_bytes": 83479,
+          "save_seconds": 0.03917130000013458,
+          "load_seconds": 0.04963807700005418
+        },
+        {
+          "day": 50,
+          "save_bytes": 572367,
+          "relationship_bytes": 152355,
+          "save_seconds": 0.07229669300022579,
+          "load_seconds": 0.08834219499999563
+        },
+        {
+          "day": 100,
+          "save_bytes": 1116153,
+          "relationship_bytes": 295755,
+          "save_seconds": 0.1319612679999409,
+          "load_seconds": 0.17963353299978735
+        }
+      ],
+      "first_10_days_seconds": 2.3525007920000007,
+      "last_10_days_seconds": 10.808489492999797
+    }
+  ]
+}
