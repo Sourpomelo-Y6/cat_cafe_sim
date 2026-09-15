@@ -103,6 +103,8 @@ class ManualCafeInteractionWindow:
                 text=f"{name}：{health_result_text(event)}"
             elif kind=='shifts_set':
                 text='出勤・休養を設定 · 出勤 '+('、'.join(event['working_cats']) or 'なし')
+            elif kind=='day_off':
+                text=f"{event['day']}日目は休業 · 来客なしで全猫を休養"
             elif kind=='next_day':
                 text=f"{event['day']}日目の準備 · 猫の体力が全回復しました"
             elif kind=='departure':
@@ -175,6 +177,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.seat_selector.pack(side='left')
         self.shift_button=ttk.Button(buttons,text='出勤・休養…',command=self.show_shifts)
         self.shift_button.pack(side='left',padx=6)
+        self.day_off_button=ttk.Button(buttons,text='今日は休業する',command=self.take_day_off)
+        self.day_off_button.pack(side='left',padx=4)
         roster_frame = ttk.Frame(automation)
         roster_frame.pack(fill='x',pady=4)
         self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status','fatigue','health'),show='headings',height=3)
@@ -236,6 +240,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if not hasattr(self,'run_button'):
             return
         core = self.session.core
+        self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending else ['disabled'])
         self.shift_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending else ['disabled'])
         self.day_button.state(['!disabled'] if core.closed and not self.session.pending else ['disabled'])
         blocked = bool(self.session.pending) or core.closed
@@ -270,6 +275,21 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if not self.session.pending:
             self.notice.set('自動進行中：交流コマンドは自動で選ばれます。' if self.running else
                             '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')
+
+        if core.can_set_shifts and not core.working_cats and not self.session.pending:
+            self.notice.set('全猫が休養予定です。「今日は休業する」で来客なしに1日休めます。')
+
+    def take_day_off(self):
+        from tkinter import messagebox
+        self.stop()
+        self.refresh()
+        if not self.session.core.can_set_shifts or self.session.pending:
+            return
+        if not messagebox.askyesno('今日は休業する',
+                '来客なしで全猫を1日休ませ、翌日の準備へ進みます。休業しますか？',parent=self.root):
+            return
+        self.perform(self.session.day_off)
+        self.refresh()
 
     def show_shifts(self):
         from .cafe_shift_gui import CafeShiftWindow

@@ -41,14 +41,14 @@ class CafeHistoryWindow:
             ttk.Label(frame, text='関係データへの保存が未完了です。営業画面で保存を再試行してください。').pack(anchor='w')
         if not rows:
             ttk.Label(frame, text='まだ閉店した営業日がありません。').pack(anchor='w', pady=8)
-        self.days = self.table(frame, ('日目', '売上', 'うちボーナス', '交流件数', '閉店時所持金'))
+        self.days = self.table(frame, ('日目', '売上', 'うちボーナス', '交流件数', '閉店時所持金', '営業区分'))
         ttk.Label(frame, text='猫ごとの比較（体力消耗は営業開始時からの差、親しみは各お客への実増減の合計）',
                   wraplength=600).pack(anchor='w', pady=(10, 0))
         self.cats = self.table(frame, ('日目', '猫', '接客回数', '体力消耗', '残り体力', '親しみ増減', '出勤・休養', '疲労変化', '体調・療養'))
         for result in rows:
             summary = result['summary']
             self.days.insert('', 'end', values=(result['day'], f"{summary['revenue']:g}",
-                f"{summary['interaction_bonus']:g}", summary['completed_interactions'], f"{summary['funds']:g}"))
+                f"{summary['interaction_bonus']:g}", summary['completed_interactions'], f"{summary['funds']:g}", '休業日' if result.get('day_type')=='day_off' else '営業日'))
             for cat_id, cat in result['cats'].items():
                 name = session.profiles.get(cat_id, {}).get('name', cat_id)
                 self.cats.insert('', 'end', values=(result['day'], f'{name}（{cat_id}）', cat['interactions'],

@@ -602,6 +602,35 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertEqual([cat.id for cat in self.app.session.available_cats()],[key])
         self.assertFalse(self.app.running)
 
+    def test_day_off_guidance_cancel_skip_and_history(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        self.assertIn('disabled',self.app.day_off_button.state())
+        self.app.session=CafeInteractionSession(store=self.store)
+        self.app.session.set_shifts([])
+        self.app.logged=0;self.app.refresh()
+        self.assertIn('今日は休業する',self.app.notice.get())
+        before=self.app.session.core.snapshot()
+        self.app.toggle()
+        with patch('tkinter.messagebox.askyesno',return_value=False):
+            self.app.day_off_button.invoke()
+        self.assertEqual(self.app.session.core.snapshot(),before)
+        self.assertFalse(self.app.running)
+        with patch('tkinter.messagebox.askyesno',return_value=True):
+            self.app.day_off_button.invoke()
+        self.assertEqual(self.app.session.core.day,2)
+        self.assertEqual(self.app.session.core.visits,{})
+        self.assertFalse(self.app.running)
+        self.assertIsNone(self.app.timer)
+        self.app.history_button.invoke()
+        history=self.app.history_window
+        self.assertEqual(history.days.item(history.days.get_children()[0],'values')[-1],'休業日')
+        history.window.destroy()
+        self.root.deiconify();self.root.geometry('860x600');self.root.update()
+        button=self.app.day_off_button
+        self.assertLessEqual(button.winfo_rootx()+button.winfo_width(),self.root.winfo_rootx()+self.root.winfo_width())
+        self.app.session.automatic_step();self.app.refresh()
+        self.assertIn('disabled',button.state())
+
     def test_shift_forecasts_show_basis_and_do_not_change_state(self):
         while not self.session.core.closed:self.session.automatic_step()
         self.session.next_day();self.app.refresh()

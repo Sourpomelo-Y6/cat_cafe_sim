@@ -91,6 +91,14 @@ class CafeInteractionSession:
         if health_rules is not None:
             self.core.enable_health(health_rules)
 
+    def day_off(self):
+        self._ready()
+        if not self.core.can_set_shifts:
+            raise ValueError('休業は営業開始前に選んでください。')
+        if not self.core.shift_rules or not self.core.health_rules:
+            self.set_shifts(sorted(self.core.working_cats))
+        self.core.day_off()
+
     def next_day(self):
         self._ready()
         self.core.next_day()

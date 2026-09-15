@@ -9,6 +9,7 @@ def apply_operation(core, operation):
     kind=operation['kind']
     if kind=='enable_health':core.enable_health(operation['rules'])
     elif kind=='set_shifts':core.set_shifts(operation['working_cats'],operation['rules'])
+    elif kind=='day_off':core.day_off()
     elif kind=='next_day':core.next_day()
     elif kind=='start':
         interaction=verify_relationship(operation['interaction'])

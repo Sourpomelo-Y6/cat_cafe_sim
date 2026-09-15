@@ -160,7 +160,24 @@ class CafeInteractionCore(SimulationCore):
     def next_day(self):
         if not self.closed or self.active or getattr(self, 'interactions', {}):
             raise ValueError('交流を終了して閉店してから翌日へ進んでください。')
+        self._advance_day(self.day_result(), dict(kind='next_day'))
+
+    def day_off(self):
+        if not self.can_set_shifts or not self.shift_rules or not self.health_rules:
+            raise ValueError('休業は出勤・病気ルールが有効な営業準備中に選んでください。')
+        planned = set(self.working_cats)
+        self.working_cats = set()
+        self._tick_events = []
+        self._emit('day_off', day=self.day)
+        self.tick = self.config.opening_ticks
+        self.closed = True
+        self._emit('closed', revenue=0)
         result = self.day_result()
+        result['day_type'] = 'day_off'
+        self.working_cats = planned
+        self._advance_day(result, dict(kind='day_off'), list(self._tick_events))
+
+    def _advance_day(self, result, operation, events=None):
         self.day_results.append(result)
         self.day_outcome_offset = len(self.outcomes)
         self.returning_customers.update(self.visits)
@@ -176,7 +193,7 @@ class CafeInteractionCore(SimulationCore):
             cat.stamina = self.config.max_stamina
             if cat.health_status == 'healthy':
                 cat.cannot_continue = False
-        self._tick_events = []
+        self._tick_events = [] if events is None else events
         self.cat_service_ticks = dict.fromkeys(self.cats, 0)
         self.initial_fatigue = {key: cat.fatigue for key, cat in self.cats.items()}
         if self.health_rules:
@@ -184,7 +201,7 @@ class CafeInteractionCore(SimulationCore):
             self.initial_health = self._health_state()
             self.health_results = {}
         self._emit('next_day', day=self.day)
-        self._record(dict(kind='next_day'))
+        self._record(operation)
 
     def _record(self, operation):
         if self.compact:
@@ -319,6 +336,8 @@ def verify_cafe_interaction(data):
             core.start(verify_relationship(operation['interaction']))
         elif operation['kind'] == 'step':
             core.step(operation['action'], operation['target_type'])
+        elif operation['kind'] == 'day_off':
+            core.day_off()
         elif operation['kind'] == 'next_day':
             core.next_day()
         elif operation['kind'] == 'finish':
