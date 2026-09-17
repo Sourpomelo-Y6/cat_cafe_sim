@@ -11,7 +11,7 @@ from pathlib import Path
 
 from .cafe_interaction import CafeInteractionSession
 from .core.cafe_health import HealthRules
-from .core.cafe_shifts import ShiftRules
+from .core.cafe_shifts import ShiftRules, fatigue_rest_schedule
 from .core.config import Config
 from .core.human_cat_relationship import RelationshipConfig
 from .core.multi_seat_cafe import MultiSeatCafeCore
@@ -39,8 +39,7 @@ def choose_schedule(core, policy):
         healthy = [key for key in healthy if key != off]
     if policy in ('fatigue_rest_one', 'fatigue_rest_two'):
         count = 1 if policy == 'fatigue_rest_one' else 2
-        resting = set(sorted(healthy, key=lambda key: (-core.cats[key].fatigue, key))[:count])
-        healthy = [key for key in healthy if key not in resting]
+        healthy = fatigue_rest_schedule(core.cats, count)
     return healthy or None
 
 

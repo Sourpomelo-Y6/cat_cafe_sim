@@ -631,6 +631,56 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app.session.automatic_step();self.app.refresh()
         self.assertIn('disabled',button.state())
 
+    def test_rest_proposal_is_editable_cancelable_and_saved_explicitly(self):
+        while not self.session.core.closed:self.session.automatic_step()
+        self.session.next_day();self.app.refresh()
+        ranked=sorted(self.session.core.cats, key=lambda key:(-self.session.core.cats[key].fatigue,key))
+        expected=set(ranked[2:])
+        before=self.session.core.log()
+        self.app.shift_button.invoke()
+        dialog=self.app.shift_window
+        dialog.proposal_button.invoke()
+        self.assertEqual(dialog.working,expected)
+        self.assertEqual(self.session.core.log(),before)
+        dialog.window.destroy()
+        self.assertEqual(self.session.core.log(),before)
+        self.app.shift_button.invoke()
+        dialog=self.app.shift_window
+        dialog.proposal_button.invoke()
+        dialog.tree.selection_set(ranked[0]);dialog.set_selected(True)
+        expected.add(ranked[0])
+        self.assertEqual(dialog.working,expected)
+        dialog.save_button.invoke()
+        self.assertEqual(self.session.core.working_cats,expected)
+        self.assertFalse(self.app.running)
+
+    def test_all_rest_proposal_guides_to_day_off_without_advancing(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.multi_seat_cafe import MultiSeatCafeCore
+        from cat_cafe_sim.core.config import Config
+        from unittest.mock import patch
+        ids=list(self.session.core.cats)[:2]
+        self.app.session=CafeInteractionSession(core=MultiSeatCafeCore(Config.load(), cat_ids=ids),store=self.store)
+        self.app.logged=0;self.app.refresh()
+        before=self.app.session.core.log()
+        self.app.shift_button.invoke();dialog=self.app.shift_window
+        dialog.proposal_button.invoke()
+        self.assertFalse(dialog.working)
+        self.assertIn('全員休養',dialog.schedule_note.get())
+        self.assertIn('今日は休業する',dialog.schedule_note.get())
+        self.assertEqual(self.app.session.core.log(),before)
+        self.root.deiconify();dialog.window.geometry('500x400');self.root.update()
+        self.assertGreater(dialog.tree.winfo_height(),40)
+        self.assertLess(dialog.save_button.winfo_rooty()+dialog.save_button.winfo_height(),
+                        dialog.window.winfo_rooty()+dialog.window.winfo_height())
+        dialog.save_button.invoke()
+        self.assertEqual(self.app.session.core.day,1)
+        self.assertIn('今日は休業する',self.app.notice.get())
+        with patch('tkinter.messagebox.askyesno',return_value=True):
+            self.app.day_off_button.invoke()
+        self.assertEqual(self.app.session.core.day,2)
+        self.assertEqual(self.app.session.core.day_results[-1]['day_type'],'day_off')
+
     def test_shift_forecasts_show_basis_and_do_not_change_state(self):
         while not self.session.core.closed:self.session.automatic_step()
         self.session.next_day();self.app.refresh()

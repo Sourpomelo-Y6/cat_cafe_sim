@@ -1,5 +1,6 @@
 """営業開始前の出勤・休養設定画面。"""
 from .cafe_health_text import health_text
+from .core.cafe_shifts import fatigue_rest_schedule
 from .cafe_shift_forecast import shift_forecast, estimate_text, forecast_note
 
 
@@ -18,11 +19,18 @@ class CafeShiftWindow:
         frame = ttk.Frame(self.window, padding=12)
         frame.pack(fill='both', expand=True)
         ttk.Label(frame, text='営業開始前に設定してください。前日の設定を引き継ぎます。').pack(anchor='w')
-        ttk.Label(frame, text='全員休養も可能です。その日は接客せず営業が進みます。').pack(anchor='w')
         ttk.Label(frame, text='予測欄：閉店時の疲労 / 発症確率。出勤は前日の接客量を使った目安です。',
                   wraplength=460).pack(anchor='w')
         self.forecasts = {key: shift_forecast(session.core, key) for key in session.core.cats}
         self.forecast_note = tk.StringVar()
+        footer = ttk.Frame(frame)
+        footer.pack(side='bottom', fill='x')
+        self.proposal_button = ttk.Button(frame, text='疲労が高い2匹を休養する案を作成', command=self.propose_rest)
+        self.proposal_button.pack(anchor='w', pady=(6, 0))
+        ttk.Label(frame, text='案は健康な猫を疲労順に最大2匹休養、残りを出勤にします。手動で変更できます。',
+                  wraplength=460).pack(anchor='w')
+        self.schedule_note = tk.StringVar()
+        ttk.Label(frame, textvariable=self.schedule_note, wraplength=460).pack(anchor='w')
         body = ttk.Frame(frame)
         body.pack(fill='both', expand=True, pady=8)
         self.tree = ttk.Treeview(body, columns=('name', 'fatigue', 'shift', 'health', 'basis', 'work_forecast', 'rest_forecast'), show='headings', selectmode='browse')
@@ -46,8 +54,8 @@ class CafeShiftWindow:
                              forecast['previous_actions'] if forecast['previous_actions'] is not None else '記録なし',
                              '出勤不可' if forecast['sick'] else estimate_text(forecast['work']), estimate_text(forecast['rest'])))
         self.tree.selection_set(next(iter(session.core.cats)))
-        ttk.Label(frame, textvariable=self.forecast_note, wraplength=460).pack(anchor='w', pady=(0,8))
-        controls = ttk.Frame(frame)
+        ttk.Label(footer, textvariable=self.forecast_note, wraplength=460).pack(anchor='w', pady=(0,8))
+        controls = ttk.Frame(footer)
         controls.pack(fill='x')
         self.work_button=ttk.Button(controls, text='選択した猫を出勤', command=lambda: self.set_selected(True))
         self.work_button.pack(side='left')
@@ -58,6 +66,7 @@ class CafeShiftWindow:
         self.save_button.pack(side='right')
         ttk.Button(controls, text='キャンセル', command=self.window.destroy).pack(side='right', padx=4)
         self.window.bind('<Escape>', lambda event: self.window.destroy())
+        self.refresh_schedule()
 
     def refresh_selection(self):
         selected=self.tree.selection()
@@ -74,6 +83,19 @@ class CafeShiftWindow:
             else:
                 self.working.discard(key)
             self.tree.set(key, 'shift', '出勤' if working else '休養')
+        self.refresh_schedule()
+
+    def refresh_schedule(self):
+        for key in self.session.core.cats:
+            self.tree.set(key, 'shift', '出勤' if key in self.working else '休養')
+        if not self.working:
+            self.schedule_note.set('全員休養の予定です。保存後、営業画面の「今日は休業する」で来客なしに休めます。')
+        else:
+            self.schedule_note.set(f'出勤 {len(self.working)}匹 / 休養 {len(self.session.core.cats)-len(self.working)}匹。設定を保存するまで営業には反映されません。')
+
+    def propose_rest(self):
+        self.working = set(fatigue_rest_schedule(self.session.core.cats))
+        self.refresh_schedule()
 
     def save(self):
         from tkinter import messagebox
