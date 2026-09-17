@@ -3,6 +3,7 @@
 営業前の「今日は休業する」で、来客なしに全猫を1日休ませて翌日へ進めます。出勤予定がある場合も利用できます。[休業日の仕様](Docs/HumanToCatCafeDayOffPlan.md)を参照してください。
 
 全猫出勤・交代休養・疲労による休業を比較する[100日営業の検証](Docs/HumanToCatLongTermEvaluation.md)に、測定条件・結果と今後の調整案をまとめています。
+続く[疲労を優先した休養・割り当ての比較](Docs/HumanToCatFatiguePriorityEvaluation.md)では、疲労順に1匹／2匹を休ませる方針と、負担の低い猫から割り当てる方針を検証しています。
 
 営業セーブを軽量な形式2に変更しました。旧セーブも読み込めます。別名での変換方法と詳細ログの扱いは[営業セーブの軽量化](Docs/HumanToCatCompactSaves.md)を参照してください。
 

@@ -20,7 +20,9 @@ from .storage.playtest_cats import add_playtest_cats
 from .storage.relationships import RelationshipStore
 from .cafe_history import comparison_rows
 
-POLICIES = ('all_work', 'rotating_rest', 'fatigue_closure')
+BASELINE_POLICIES = ('all_work', 'rotating_rest', 'fatigue_closure')
+FATIGUE_POLICIES = ('fatigue_rest_one', 'fatigue_rest_two', 'fatigue_assignment')
+POLICIES = BASELINE_POLICIES + FATIGUE_POLICIES
 
 
 def choose_schedule(core, policy):
@@ -35,7 +37,29 @@ def choose_schedule(core, policy):
     if policy == 'rotating_rest':
         off = roster[(core.day - 1) % len(roster)]
         healthy = [key for key in healthy if key != off]
+    if policy in ('fatigue_rest_one', 'fatigue_rest_two'):
+        count = 1 if policy == 'fatigue_rest_one' else 2
+        resting = set(sorted(healthy, key=lambda key: (-core.cats[key].fatigue, key))[:count])
+        healthy = [key for key in healthy if key not in resting]
     return healthy or None
+
+
+def choose_fatigue_cat(session):
+    """朝の疲労と当日の接客量から閉店時疲労を見積もり、低い猫を優先する。"""
+    core = session.core
+    return min(session.available_cats(), key=lambda cat: (
+        min(core.shift_rules.max_fatigue,
+            cat.fatigue + core.cat_service_ticks[cat.id] * core.shift_rules.fatigue_per_service_tick),
+        -cat.stamina, cat.id))
+
+
+def evaluation_step(session, policy):
+    if policy == 'fatigue_assignment':
+        while session.free_seats and session.core.queue and session.available_cats():
+            cat = choose_fatigue_cat(session)
+            session.start(session.core.queue[0], cat.id, session.free_seats[0])
+        return session.automatic_step(auto_assign=False)
+    return session.automatic_step()
 
 
 def evaluate(policy, seed, days, output, progress=None):
@@ -67,7 +91,7 @@ def evaluate(policy, seed, days, output, progress=None):
             else:
                 session.set_shifts(schedule)
                 while not core.closed:
-                    session.automatic_step()
+                    evaluation_step(session, policy)
                 session.next_day()
             elapsed = time.perf_counter() - day_started
             simulation_seconds += elapsed
@@ -126,7 +150,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--days', type=int, default=100)
     parser.add_argument('--seeds', type=int, nargs='+', default=[0,1,2])
-    parser.add_argument('--policies', nargs='+', choices=POLICIES, default=list(POLICIES))
+    parser.add_argument('--policies', nargs='+', choices=POLICIES, default=list(BASELINE_POLICIES))
     parser.add_argument('--output', type=Path, default=Path('reports/long_term'))
     args = parser.parse_args()
     if args.days < 1:parser.error('--days must be positive')
