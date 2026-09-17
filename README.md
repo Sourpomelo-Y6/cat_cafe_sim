@@ -1,5 +1,7 @@
 # 猫カフェシミュレーター
 
+現在はゲーム全体の流れを固めることを優先し、回復量などの細かなバランス調整は後回しにします。[開発方針](Docs/CatCafeSimulation_ImplementationGuide.md)を参照してください。
+
 営業前の「今日は休業する」で、来客なしに全猫を1日休ませて翌日へ進めます。出勤予定がある場合も利用できます。[休業日の仕様](Docs/HumanToCatCafeDayOffPlan.md)を参照してください。
 
 全猫出勤・交代休養・疲労による休業を比較する[100日営業の検証](Docs/HumanToCatLongTermEvaluation.md)に、測定条件・結果と今後の調整案をまとめています。
