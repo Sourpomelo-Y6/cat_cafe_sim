@@ -681,6 +681,31 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertEqual(self.app.session.core.day,2)
         self.assertEqual(self.app.session.core.day_results[-1]['day_type'],'day_off')
 
+    def test_cat_details_selection_pause_switch_and_small_layout(self):
+        ids=list(self.session.core.cats)
+        self.app.roster.selection_set(ids[1])
+        before=self.session.core.log()
+        saved=self.store.path.read_bytes()
+        self.app.toggle()
+        self.app.cat_details_button.invoke()
+        dialog=self.app.cat_details_window
+        self.assertFalse(self.app.running)
+        self.assertIsNone(self.app.timer)
+        self.assertEqual(dialog.ids[dialog.selector.current()],ids[1])
+        dialog.selector.current(0);dialog.refresh()
+        values=[dialog.tables['basic'].item(key,'values') for key in dialog.tables['basic'].get_children()]
+        self.assertIn(('猫ID',ids[0]),values)
+        self.root.deiconify();dialog.window.geometry('500x400');self.root.update()
+        for index,key in enumerate(('basic','relationships','history')):
+            dialog.notebook.select(index);self.root.update()
+            self.assertGreater(dialog.tables[key].winfo_height(),40)
+        self.assertLess(dialog.close_button.winfo_rooty()+dialog.close_button.winfo_height(),
+                        dialog.window.winfo_rooty()+dialog.window.winfo_height())
+        dialog.close_button.invoke()
+        self.assertFalse(self.app.running)
+        self.assertEqual(self.session.core.log(),before)
+        self.assertEqual(self.store.path.read_bytes(),saved)
+
     def test_shift_forecasts_show_basis_and_do_not_change_state(self):
         while not self.session.core.closed:self.session.automatic_step()
         self.session.next_day();self.app.refresh()

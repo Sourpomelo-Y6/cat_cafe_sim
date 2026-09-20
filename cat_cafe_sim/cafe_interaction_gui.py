@@ -181,6 +181,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.day_off_button.pack(side='left',padx=4)
         roster_frame = ttk.Frame(automation)
         roster_frame.pack(fill='x',pady=4)
+        self.cat_details_button = ttk.Button(roster_frame, text='猫の詳細…', command=self.show_cat_details)
+        self.cat_details_button.pack(side='right', padx=4)
         self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status','fatigue','health'),show='headings',height=3)
         for key,title,width in (('cat','営業中の猫',170),('personality','個性',100),('stamina','体力',60),('affinity','選んだお客への親しみ',170),('status','状態',80),('fatigue','疲労',60),('health','体調',115)):
             self.roster.heading(key,text=title)
@@ -255,11 +257,14 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         rows = self.session.cat_choices(self.customer.get())
         selected = next((row for row in rows if row['cat_id']==self.cat_labels.get(self.cat_choice.get())),None)
         self.start_button.state(['!disabled'] if manual and core.queue and selected and selected['available'] else ['disabled'])
+        roster_selected = self.roster.selection()
         self.roster.delete(*self.roster.get_children())
         for row in rows:
             state = '療養' if row['health_status']=='sick' else '休養' if not row['working'] else '交流中' if any(active.cat_id==row['cat_id'] for active in self.session.active_interactions.values()) else '担当可能' if row['available'] else '交流不可'
-            self.roster.insert('','end',values=(f"{row['name']}（{row['cat_id']}）",row['personality'],f"{row['stamina']:g}",
+            self.roster.insert('','end',iid=row['cat_id'],values=(f"{row['name']}（{row['cat_id']}）",row['personality'],f"{row['stamina']:g}",
                                                f"{row['affinity']:g}" if self.customer.get() else '—',state,f"{row['fatigue']:g}",health_text(row['health_status'],row['recovery_days_remaining'])))
+        if roster_selected and self.roster.exists(roster_selected[0]):
+            self.roster.selection_set(roster_selected[0])
         if hasattr(core,'seats'):
             lines=[]
             for seat_id in core.seats:
@@ -297,6 +302,14 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.refresh()
         if self.session.core.can_set_shifts and not self.session.pending:
             self.shift_window = CafeShiftWindow(self.root, self.session, self.refresh)
+
+    def show_cat_details(self):
+        from .cafe_cat_details import CafeCatDetailsWindow
+        selected = self.roster.selection()
+        cat_id = selected[0] if selected else self.cat_labels.get(self.cat_choice.get(), next(iter(self.session.core.cats)))
+        self.stop()
+        self.refresh()
+        self.cat_details_window = CafeCatDetailsWindow(self.root, self.session, cat_id)
 
     def show_history(self):
         from .cafe_history import CafeHistoryWindow
