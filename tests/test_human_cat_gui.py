@@ -552,6 +552,65 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_player_play_details_buttons_save_resume_and_close(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.storage.cafe_saves import save_game, load_game
+        from cat_cafe_sim.core.cafe_player import remaining, current
+        self.app.session=CafeInteractionSession(store=self.store)
+        self.app.logged=0;self.app.refresh()
+        key=next(iter(self.app.session.core.cats))
+        self.app.roster.selection_set(key)
+        self.app.cat_details_button.invoke()
+        dialog=self.app.cat_details_window
+        self.root.deiconify();dialog.window.deiconify();self.root.update()
+        dialog.play_button.invoke()
+        play=dialog.player_window
+        play.window.geometry('600x480');self.root.update()
+        self.assertEqual(remaining(self.app.session.core),2)
+        self.assertIn('disabled',self.app.run_button.state())
+        play.selector.current(play.targets.index('voice'))
+        play.buttons['switch'].invoke()
+        self.assertIn('disabled',play.buttons['intense'].state())
+        play.buttons['direct'].invoke()
+        self.assertEqual(len(current(self.app.session.core).records),2)
+        self.assertEqual(len(play.history.get_children()),2)
+        for widget in (play.finish_button,play.close_button,play.history):
+            self.assertTrue(widget.winfo_ismapped())
+            self.assertGreater(widget.winfo_height(),15)
+            self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),
+                                 play.window.winfo_rooty()+play.window.winfo_height())
+        play.close_button.invoke()
+        self.assertFalse(play.window.winfo_exists())
+        dialog.close_button.invoke()
+        self.assertFalse(self.app.running)
+        save_game(self.app.session,self.path)
+        self.app.session,_=load_game(self.path)
+        self.app.logged=0;self.app.refresh()
+        self.app.cat_details_button.invoke();dialog=self.app.cat_details_window
+        self.assertIn('進行中',dialog.play_button.cget('text'))
+        dialog.play_button.invoke();play=dialog.player_window
+        self.assertEqual(len(play.history.get_children()),2)
+        self.assertEqual(remaining(self.app.session.core),2)
+        play.finish_button.invoke()
+        self.assertIsNone(current(self.app.session.core))
+        self.assertIn('確定',play.result.get())
+        self.assertNotIn('disabled',self.app.run_button.state())
+        play.close_button.invoke()
+        for _ in range(2):
+            dialog.play_button.invoke()
+            dialog.player_window.finish_button.invoke()
+            dialog.player_window.close_button.invoke()
+        self.assertIn('disabled',dialog.play_button.state())
+        dialog.close_button.invoke()
+        self.app.session.day_off();self.app.refresh()
+        self.app.cat_details_button.invoke();dialog=self.app.cat_details_window
+        self.assertNotIn('disabled',dialog.play_button.state())
+        dialog.close_button.invoke()
+        self.app.session.automatic_step();self.app.refresh()
+        self.app.cat_details_button.invoke();dialog=self.app.cat_details_window
+        self.assertIn('disabled',dialog.play_button.state())
+        dialog.close_button.invoke()
+
     def test_dispatch_window_departure_saved_return_and_small_layout(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         from cat_cafe_sim.storage.cafe_saves import save_game, load_game

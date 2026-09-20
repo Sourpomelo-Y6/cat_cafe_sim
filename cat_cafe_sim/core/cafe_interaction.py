@@ -29,6 +29,7 @@ class CafeInteractionCore(SimulationCore):
         self.day_results = []
         self.day_outcome_offset = 0
         self.returning_customers = set()
+        self.player_bond = None
         self.activities = None
         self.health_rules = None
         self.initial_health = {}
@@ -51,9 +52,18 @@ class CafeInteractionCore(SimulationCore):
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
                                   results=copy.deepcopy(self.health_results))} if self.health_rules else {}),
                 **({'day_results': copy.deepcopy(self.day_results)} if self.day_results else {}),
+                **({'player_bond': copy.deepcopy(self.player_bond)} if self.player_bond is not None else {}),
                 **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
                 **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None else {})}
+
+    def play_with_player(self, cat_id, config):
+        from .cafe_player import begin
+        begin(self, cat_id, config)
+
+    def player_command(self, action=None, target_type=None, *, finish=False):
+        from .cafe_player import advance
+        advance(self, action, target_type, finish=finish)
 
     def activity(self, cat_id):
         from .cafe_activities import activity
@@ -68,6 +78,9 @@ class CafeInteractionCore(SimulationCore):
         resolve(self, event_id, choice)
 
     def require_events_resolved(self):
+        from .cafe_player import active
+        if active(self):
+            raise ValueError('進行中のプレイヤー交流を終了してください。')
         from .cafe_activities import waiting_events
         if waiting_events(self):
             raise ValueError('派遣・イベント画面で帰還結果を確認してください。')
@@ -217,6 +230,8 @@ class CafeInteractionCore(SimulationCore):
         self.queue = []
         self.tick = 0
         self.day += 1
+        if self.player_bond is not None:
+            self.player_bond['today'] = dict.fromkeys(self.cats, 0)
         self.closed = False
         self.service_ticks = 0
         self.spirit_spent = 0

@@ -84,6 +84,24 @@ class CafeInteractionSession:
             raise ValueError('未保存の交流結果があります。先に保存を再試行してください。')
         self.core.require_events_resolved()
 
+    def play_with_player(self, cat_id):
+        self._ready()
+        from .core.cafe_player import SET_TICKS
+        from .core.human_cat_types import Personality
+        config = self.interaction_config
+        profile = self.profiles.get(cat_id)
+        if profile:
+            config = replace(config, personality=Personality.from_dict(profile['personality']))
+        config = replace(config, ticks=SET_TICKS, max_stamina=self.core.config.max_stamina)
+        self.core.play_with_player(cat_id, config.to_dict())
+
+    def player_command(self, action=None, target_type=None, *, finish=False):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に交流結果の保存を再試行してください。')
+        self.core.player_command(action, target_type, finish=finish)
+
     def dispatch(self, cat_id, rules=None):
         self._ready()
         self.core.dispatch(cat_id, rules)

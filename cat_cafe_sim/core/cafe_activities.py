@@ -34,6 +34,7 @@ def income(core):
 
 
 def dispatch(core, cat_id, rules=None):
+    core.require_events_resolved()
     rules = destination(rules)
     if not core.compact or not core.can_set_shifts or waiting_events(core) or not core.shift_rules or not core.health_rules:
         raise ValueError('派遣は出勤・病気ルールが有効な営業準備中に選んでください。')

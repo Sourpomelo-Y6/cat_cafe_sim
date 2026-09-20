@@ -170,6 +170,9 @@ def restore(data):
     if 'activities' in state:
         from .cafe_activities import validate
         core.activities=validate(core,state['activities'])
+    if 'player_bond' in state:
+        from .cafe_player import validate as validate_player
+        core.player_bond=validate_player(core,state['player_bond'])
     if data['seat_count']==2:
         core.seats={key:Seat(**row) for key,row in state['seats'].items()}
         if set(core.seats)!={'seat-1','seat-2'}:

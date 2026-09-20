@@ -36,7 +36,8 @@ class CafeActivityWindow:
     def buttons(self):
         from .core.cafe_activities import waiting_events
         core=self.session.core
-        self.send_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not waiting_events(core) else ['disabled'])
+        from .core.cafe_player import active
+        self.send_button.state(['!disabled'] if core.can_set_shifts and not active(core) and not self.session.pending and not waiting_events(core) else ['disabled'])
         selected=self.events.selection()
         can_receive=bool(selected) and core.activities['events'][selected[0]]['status']=='waiting' and not self.session.pending
         self.receive_button.state(['!disabled'] if can_receive else ['disabled'])

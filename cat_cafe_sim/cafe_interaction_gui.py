@@ -101,6 +101,16 @@ class ManualCafeInteractionWindow:
             elif kind=='cat_health':
                 name=self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])
                 text=f"{name}：{health_result_text(event)}"
+            elif kind=='player_started':
+                text=f"プレイヤー交流開始 {event['cat_id']} · 本日あと{event['remaining']}セット"
+            elif kind=='player_action':
+                row=history_row(event['record'])
+                text=f"プレイヤー交流 {row[1]} / {row[2]}"
+            elif kind=='player_completed':
+                result=event['result']
+                text=f"プレイヤー交流終了 {event['cat_id']} · 好感度 {result['affinity_before']:g} → {result['affinity_after']:g}"
+            elif kind=='player_played':
+                text=f"猫と遊びました {event['cat_id']} · プレイヤー好感度 {event['before']} → {event['after']} · 残り{event['remaining']}回"
             elif kind=='dispatch_started':
                 text=f"派遣出発 {event['cat_id']} → {event['destination']}"
             elif kind=='activity_event_waiting':
@@ -251,7 +261,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             return
         core = self.session.core
         from .core.cafe_activities import waiting_events, ACTIVITY_LABELS
-        events_waiting=bool(waiting_events(core))
+        from .core.cafe_player import active as player_active
+        playing = bool(player_active(core))
+        events_waiting=bool(waiting_events(core)) or playing
         self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
         self.shift_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
         self.day_button.state(['!disabled'] if core.closed and not self.session.pending and not events_waiting else ['disabled'])
@@ -295,7 +307,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if core.can_set_shifts and not core.working_cats and not self.session.pending:
             self.notice.set('在店猫は全猫が休養予定です。「今日は休業する」で来客なしに1日休めます。')
 
-        if events_waiting:
+        if playing:
+            self.notice.set('プレイヤー交流の途中です。「猫の詳細…」から再開・終了してください。')
+        elif events_waiting:
             self.notice.set('帰還結果の確認待ちです。「派遣・イベント…」で報酬を受け取ってください。')
 
     def show_activities(self):
@@ -329,7 +343,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         cat_id = selected[0] if selected else self.cat_labels.get(self.cat_choice.get(), next(iter(self.session.core.cats)))
         self.stop()
         self.refresh()
-        self.cat_details_window = CafeCatDetailsWindow(self.root, self.session, cat_id)
+        self.cat_details_window = CafeCatDetailsWindow(self.root, self.session, cat_id, self.refresh)
 
     def show_history(self):
         from .cafe_history import CafeHistoryWindow

@@ -27,6 +27,12 @@ def cat_details(session, cat_id):
              ('疲労', number(cat.fatigue) if core.shift_rules else 'ルール未導入'),
              ('体調', health_text(cat.health_status, cat.recovery_days_remaining)),
              ('活動', ACTIVITY_LABELS[core.activity(cat_id)]), ('出勤予定', '対象外' if core.activity(cat_id)!='cafe' else '出勤' if cat_id in core.working_cats else '休養'), ('担当状態', status)]
+    from .core.cafe_player import state as player_state, remaining
+    bond = player_state(core)
+    basic += [('プレイヤーへの好感度', f"{bond['affinity'][cat_id]:g} / 100"),
+              ('プレイヤー交流の累計セット数', str(bond['total'][cat_id])),
+              ('本日この猫とのセット数', str(bond['today'][cat_id])),
+              ('本日の残りセット数（店全体）', str(remaining(core)))]
     basic += [(f'好み：{kind.name}', number(value)) for kind, value in
               zip(session.interaction_config.types, personality.type_preferences)]
     basic += [(f'強さの好み：{name}', number(value)) for name, value in
@@ -62,11 +68,12 @@ def cat_details(session, cat_id):
 
 
 class CafeCatDetailsWindow:
-    def __init__(self, parent, session, cat_id):
+    def __init__(self, parent, session, cat_id, on_changed=None):
         import tkinter as tk
         from tkinter import ttk
         from .cafe_history import CafeHistoryWindow
         self.session = session
+        self.on_changed = on_changed or (lambda: None)
         self.window = tk.Toplevel(parent)
         self.window.title('猫の詳細')
         self.window.geometry('820x540')
@@ -75,8 +82,14 @@ class CafeCatDetailsWindow:
         self.window.grab_set()
         frame = ttk.Frame(self.window, padding=12)
         frame.pack(fill='both', expand=True)
-        self.close_button = ttk.Button(frame, text='閉じる', command=self.window.destroy)
-        self.close_button.pack(side='bottom', anchor='e', pady=(8, 0))
+        footer = ttk.Frame(frame)
+        footer.pack(side='bottom', fill='x', pady=(8, 0))
+        self.play_notice = tk.StringVar()
+        ttk.Label(footer, textvariable=self.play_notice, wraplength=460).pack(anchor='w')
+        self.play_button = ttk.Button(footer, text='交流を始める（1セット）', command=self.play)
+        self.play_button.pack(side='left')
+        self.close_button = ttk.Button(footer, text='閉じる', command=self.window.destroy)
+        self.close_button.pack(side='right')
         self.ids = list(session.core.cats)
         labels = [f"{session.profiles.get(key, {}).get('name', key)}（{key}）" for key in self.ids]
         self.selector = ttk.Combobox(frame, values=labels, state='readonly')
@@ -88,7 +101,7 @@ class CafeCatDetailsWindow:
         notebook.pack(fill='both', expand=True)
         self.tables = {}
         for key, title, columns, note in (
-            ('basic', '状態・個性', ('項目', '値'), '現在の状態と好みです。値はこの画面では編集しません。'),
+            ('basic', '状態・個性', ('項目', '値'), '現在の状態と好みです。準備中は下のボタンで一緒に遊べます。'),
             ('relationships', 'お客との親しみ', ('お客ID','確定済み親しみ','段階','交流経験'),
              '関係データに保存済みの値です。交流中・未保存の変化は含みません。'),
             ('history', '日次実績', ('日目','営業区分','予定','接客件数','接客行動数','体力消耗','疲労変化','体調変化','親しみ増減合計'),
@@ -103,8 +116,36 @@ class CafeCatDetailsWindow:
         self.window.bind('<Escape>', lambda event:self.window.destroy())
         self.refresh()
 
+    def play(self):
+        from tkinter import messagebox
+        from .core.cafe_player import active
+        from .cafe_player_gui import CafePlayerWindow
+        try:
+            if not active(self.session.core):
+                self.session.play_with_player(self.ids[self.selector.current()])
+        except (ValueError, OSError) as exc:
+            messagebox.showerror('猫と遊べません', str(exc), parent=self.window)
+            self.refresh()
+            return
+        self.on_changed()
+        self.refresh()
+        self.player_window = CafePlayerWindow(self.window, self.session, self.changed)
+
+    def changed(self):
+        self.on_changed()
+        if self.window.winfo_exists():
+            self.refresh()
+
     def refresh(self):
         from tkinter import messagebox
+        from .core.cafe_player import unavailable_reason, remaining, active
+        running = bool(active(self.session.core))
+        reason = ('先に交流結果の保存を再試行してください。' if self.session.pending else
+                  '' if running else unavailable_reason(self.session.core, self.ids[self.selector.current()]))
+        self.play_button.configure(text='進行中の交流を開く' if running else '交流を始める（1セット）')
+        self.play_button.state(['disabled'] if reason else ['!disabled'])
+        self.play_notice.set(f'本日の交流：残り{remaining(self.session.core)}セット（店全体） · ' +
+                             (reason or '1セット最大10ターン。コマンドを選んで遊びます。'))
         try:
             data = cat_details(self.session, self.ids[self.selector.current()])
         except (ValueError, OSError) as exc:

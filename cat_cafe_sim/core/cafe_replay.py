@@ -8,6 +8,12 @@ from .human_cat_relationship import verify_relationship
 def apply_operation(core, operation):
     kind=operation['kind']
     if kind=='dispatch':core.dispatch(operation['cat_id'],operation['rules'])
+    elif kind=='player_play':
+        from .cafe_player import legacy_play
+        legacy_play(core,operation['cat_id'])
+    elif kind=='player_begin':core.play_with_player(operation['cat_id'],operation['config'])
+    elif kind=='player_step':core.player_command(operation['action'],operation['target_type'])
+    elif kind=='player_finish':core.player_command(finish=True)
     elif kind=='resolve_activity':core.resolve_activity(operation['event_id'],operation['choice'])
     elif kind=='enable_health':core.enable_health(operation['rules'])
     elif kind=='set_shifts':core.set_shifts(operation['working_cats'],operation['rules'])
