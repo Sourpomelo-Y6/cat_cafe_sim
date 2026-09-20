@@ -3,7 +3,7 @@
 [実装予定の機能案](Docs/HumanToCatPlannedFeatures.md)に、猫の派遣・情報と履歴・譲渡・プレイヤー交流・家出・イベント・特性と、3つのクリア案を記録しています。
 
 現在はゲーム全体の流れを固めることを優先し、回復量などの細かなバランス調整は後回しにします。[開発方針](Docs/CatCafeSimulation_ImplementationGuide.md)を参照してください。
-[ゲーム全体の流れと実装順](Docs/HumanToCatGameFlowPlan.md)に、現行の遊び方・不足する経営要素・未決定事項と、次の実装順の提案を整理しています。
+[ゲーム全体の流れと実装順](Docs/HumanToCatGameFlowPlan.md)に、現行の遊び方・不足する経営要素・未決定事項と、次の実装順の提案を整理しています。派遣・イベント・終了判定を含む一日の流れへ更新し、最初の実装候補を[猫の詳細画面](Docs/HumanToCatCatDetailsPlan.md)にしています。
 
 営業前の「今日は休業する」で、来客なしに全猫を1日休ませて翌日へ進めます。出勤予定がある場合も利用できます。[休業日の仕様](Docs/HumanToCatCafeDayOffPlan.md)を参照してください。
 
