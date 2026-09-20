@@ -1,5 +1,7 @@
 # 猫カフェシミュレーター
 
+[猫の加入方法の案](Docs/HumanToCatRecruitmentPlan.md)に、受け入れ・購入・イベント加入などを整理しています。スカウトは実装負担を考慮して低優先度とします。
+
 [実装予定の機能案](Docs/HumanToCatPlannedFeatures.md)に、猫の派遣・情報と履歴・譲渡・プレイヤー交流・家出・イベント・特性と、3つのクリア案を記録しています。
 
 現在はゲーム全体の流れを固めることを優先し、回復量などの細かなバランス調整は後回しにします。[開発方針](Docs/CatCafeSimulation_ImplementationGuide.md)を参照してください。
