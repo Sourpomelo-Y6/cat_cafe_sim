@@ -7,7 +7,9 @@ from .human_cat_relationship import verify_relationship
 
 def apply_operation(core, operation):
     kind=operation['kind']
-    if kind=='enable_health':core.enable_health(operation['rules'])
+    if kind=='dispatch':core.dispatch(operation['cat_id'],operation['rules'])
+    elif kind=='resolve_activity':core.resolve_activity(operation['event_id'],operation['choice'])
+    elif kind=='enable_health':core.enable_health(operation['rules'])
     elif kind=='set_shifts':core.set_shifts(operation['working_cats'],operation['rules'])
     elif kind=='day_off':core.day_off()
     elif kind=='next_day':core.next_day()

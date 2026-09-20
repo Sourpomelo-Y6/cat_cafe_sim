@@ -552,6 +552,42 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_dispatch_window_departure_saved_return_and_small_layout(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.storage.cafe_saves import save_game, load_game
+        self.app.session=CafeInteractionSession(store=self.store)
+        self.app.logged=0
+        self.app.refresh()
+        self.app.activity_button.invoke()
+        window=self.app.activity_window
+        key=next(iter(self.app.session.core.cats))
+        window.cats.selection_set(key)
+        self.root.deiconify();window.window.geometry('500x400');self.root.update()
+        with patch('tkinter.messagebox.askyesno',return_value=True):
+            window.send_button.invoke()
+        self.assertEqual(self.app.session.core.activity(key),'dispatched')
+        self.assertEqual(window.cats.item(key,'values')[1],'派遣中')
+        for button in (window.send_button,window.receive_button,window.close_button):
+            self.assertTrue(button.winfo_ismapped())
+            self.assertLessEqual(button.winfo_rooty()+button.winfo_height(),
+                                 window.window.winfo_rooty()+window.window.winfo_height())
+        window.window.destroy()
+        self.app.session.day_off()
+        save_game(self.app.session,self.path)
+        self.app.session,_=load_game(self.path)
+        self.app.logged=0;self.app.refresh()
+        self.assertIn('disabled',self.app.day_off_button.state())
+        self.assertIn('確認待ち',self.app.notice.get())
+        self.app.activity_button.invoke();window=self.app.activity_window
+        self.assertNotIn('disabled',window.receive_button.state())
+        before=self.app.session.core.funds
+        window.receive_button.invoke();window.receive_button.invoke()
+        self.assertEqual(self.app.session.core.funds,before+100)
+        self.assertEqual(self.app.session.core.activity(key),'cafe')
+        self.assertNotIn('disabled',self.app.day_off_button.state())
+        self.assertIn('disabled',window.receive_button.state())
+        window.window.destroy()
+
     def test_health_results_sick_work_lock_and_recovered_return(self):
         from dataclasses import asdict,replace
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession

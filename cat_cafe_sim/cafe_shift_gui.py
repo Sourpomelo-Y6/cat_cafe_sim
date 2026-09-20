@@ -70,14 +70,14 @@ class CafeShiftWindow:
 
     def refresh_selection(self):
         selected=self.tree.selection()
-        available=bool(selected) and all(self.session.core.cats[key].health_status=='healthy' for key in selected)
+        available=bool(selected) and all(self.session.core.cats[key].health_status=='healthy' and self.session.core.activity(key)=='cafe' for key in selected)
         self.work_button.state(['!disabled'] if available else ['disabled'])
-        self.forecast_note.set(forecast_note(self.forecasts[selected[0]]) if selected else '猫を選ぶと予測の根拠を確認できます。')
+        self.forecast_note.set('在店していない猫は出勤・休養の対象外です。' if selected and self.session.core.activity(selected[0])!='cafe' else forecast_note(self.forecasts[selected[0]]) if selected else '猫を選ぶと予測の根拠を確認できます。')
 
     def set_selected(self, working):
         for key in self.tree.selection():
             if working:
-                if self.session.core.cats[key].health_status != 'healthy':
+                if self.session.core.cats[key].health_status != 'healthy' or self.session.core.activity(key)!='cafe':
                     return
                 self.working.add(key)
             else:
@@ -86,15 +86,20 @@ class CafeShiftWindow:
         self.refresh_schedule()
 
     def refresh_schedule(self):
+        from .core.cafe_activities import ACTIVITY_LABELS
         for key in self.session.core.cats:
-            self.tree.set(key, 'shift', '出勤' if key in self.working else '休養')
+            location=self.session.core.activity(key)
+            self.tree.set(key, 'shift', ACTIVITY_LABELS[location] if location!='cafe' else '出勤' if key in self.working else '休養')
+            if location!='cafe':
+                self.tree.set(key,'work_forecast','出勤不可')
+                self.tree.set(key,'rest_forecast','在店していません')
         if not self.working:
-            self.schedule_note.set('全員休養の予定です。保存後、営業画面の「今日は休業する」で来客なしに休めます。')
+            self.schedule_note.set('全員休養の予定です（不在猫は対象外）。保存後「今日は休業する」で在店猫を休ませます。')
         else:
-            self.schedule_note.set(f'出勤 {len(self.working)}匹 / 休養 {len(self.session.core.cats)-len(self.working)}匹。設定を保存するまで営業には反映されません。')
+            self.schedule_note.set(f'出勤 {len(self.working)}匹 / 休養 {sum(self.session.core.activity(key)=='cafe' for key in self.session.core.cats)-len(self.working)}匹。設定を保存するまで営業には反映されません。')
 
     def propose_rest(self):
-        self.working = set(fatigue_rest_schedule(self.session.core.cats))
+        self.working = set(fatigue_rest_schedule({key:cat for key,cat in self.session.core.cats.items() if self.session.core.activity(key)=='cafe'}))
         self.refresh_schedule()
 
     def save(self):

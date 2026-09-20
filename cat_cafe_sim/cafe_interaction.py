@@ -57,7 +57,7 @@ class CafeInteractionSession:
 
     def available_cats(self):
         return [cat for cat in self.core.cats.values()
-                if cat.id in self.core.working_cats and cat.health_status == 'healthy' and not cat.cannot_continue and cat.stamina > 0
+                if self.core.activity(cat.id)=='cafe' and cat.id in self.core.working_cats and cat.health_status == 'healthy' and not cat.cannot_continue and cat.stamina > 0
                 and cat.id not in {item.cat_id for item in self.active_interactions.values()}]
 
     def cat_choices(self, customer_id=None):
@@ -82,6 +82,18 @@ class CafeInteractionSession:
         check_link(self)
         if self.pending:
             raise ValueError('未保存の交流結果があります。先に保存を再試行してください。')
+        self.core.require_events_resolved()
+
+    def dispatch(self, cat_id, rules=None):
+        self._ready()
+        self.core.dispatch(cat_id, rules)
+
+    def resolve_activity(self, event_id):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に交流結果の保存を再試行してください。')
+        self.core.resolve_activity(event_id)
 
     def set_shifts(self, working_cats):
         self._ready()

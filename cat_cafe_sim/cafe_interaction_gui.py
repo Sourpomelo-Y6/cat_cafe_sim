@@ -101,12 +101,18 @@ class ManualCafeInteractionWindow:
             elif kind=='cat_health':
                 name=self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])
                 text=f"{name}：{health_result_text(event)}"
+            elif kind=='dispatch_started':
+                text=f"派遣出発 {event['cat_id']} → {event['destination']}"
+            elif kind=='activity_event_waiting':
+                text=f"帰還確認待ち {event['cat_id']} · 派遣・イベント画面で確認してください"
+            elif kind=='activity_event_resolved':
+                text=f"帰還 {event['cat_id']} · 派遣報酬 {event['reward']:g}"
             elif kind=='shifts_set':
                 text='出勤・休養を設定 · 出勤 '+('、'.join(event['working_cats']) or 'なし')
             elif kind=='day_off':
-                text=f"{event['day']}日目は休業 · 来客なしで全猫を休養"
+                text=f"{event['day']}日目は休業 · 来客なしで在店猫を休養"
             elif kind=='next_day':
-                text=f"{event['day']}日目の準備 · 猫の体力が全回復しました"
+                text=f"{event['day']}日目の準備 · 在店猫の体力が全回復しました"
             elif kind=='departure':
                 reasons={'interaction_manual':'切り上げ', 'interaction_time_limit':'交流時間終了', 'interaction_exhausted':'体力切れ', 'closing':'閉店', 'queue_full':'待機列満員', 'wait_timeout':'待機時間終了'}
                 text=f"退店 {event['customer_id']} · {reasons.get(event['reason'],event['reason'])} · 会計 {event['bill']:g}（時間 {event['base_charge']:g}＋ボーナス {event['bonus']:g}）"
@@ -183,6 +189,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         roster_frame.pack(fill='x',pady=4)
         self.cat_details_button = ttk.Button(roster_frame, text='猫の詳細…', command=self.show_cat_details)
         self.cat_details_button.pack(side='right', padx=4)
+        self.activity_button = ttk.Button(roster_frame, text='派遣・イベント…', command=self.show_activities)
+        self.activity_button.pack(side='right')
         self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status','fatigue','health'),show='headings',height=3)
         for key,title,width in (('cat','営業中の猫',170),('personality','個性',100),('stamina','体力',60),('affinity','選んだお客への親しみ',170),('status','状態',80),('fatigue','疲労',60),('health','体調',115)):
             self.roster.heading(key,text=title)
@@ -242,10 +250,12 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if not hasattr(self,'run_button'):
             return
         core = self.session.core
-        self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending else ['disabled'])
-        self.shift_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending else ['disabled'])
-        self.day_button.state(['!disabled'] if core.closed and not self.session.pending else ['disabled'])
-        blocked = bool(self.session.pending) or core.closed
+        from .core.cafe_activities import waiting_events, ACTIVITY_LABELS
+        events_waiting=bool(waiting_events(core))
+        self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
+        self.shift_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
+        self.day_button.state(['!disabled'] if core.closed and not self.session.pending and not events_waiting else ['disabled'])
+        blocked = bool(self.session.pending) or core.closed or events_waiting
         self.run_button.configure(text='一時停止' if self.running else '営業を開始・再開')
         self.run_button.state(['disabled'] if blocked else ['!disabled'])
         manual = not self.auto_assign.get() and bool(self.session.free_seats) and not blocked
@@ -261,6 +271,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.roster.delete(*self.roster.get_children())
         for row in rows:
             state = '療養' if row['health_status']=='sick' else '休養' if not row['working'] else '交流中' if any(active.cat_id==row['cat_id'] for active in self.session.active_interactions.values()) else '担当可能' if row['available'] else '交流不可'
+            if core.activity(row['cat_id'])!='cafe':state=ACTIVITY_LABELS[core.activity(row['cat_id'])]
             self.roster.insert('','end',iid=row['cat_id'],values=(f"{row['name']}（{row['cat_id']}）",row['personality'],f"{row['stamina']:g}",
                                                f"{row['affinity']:g}" if self.customer.get() else '—',state,f"{row['fatigue']:g}",health_text(row['health_status'],row['recovery_days_remaining'])))
         if roster_selected and self.roster.exists(roster_selected[0]):
@@ -282,7 +293,16 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                             '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')
 
         if core.can_set_shifts and not core.working_cats and not self.session.pending:
-            self.notice.set('全猫が休養予定です。「今日は休業する」で来客なしに1日休めます。')
+            self.notice.set('在店猫は全猫が休養予定です。「今日は休業する」で来客なしに1日休めます。')
+
+        if events_waiting:
+            self.notice.set('帰還結果の確認待ちです。「派遣・イベント…」で報酬を受け取ってください。')
+
+    def show_activities(self):
+        from .cafe_activity_gui import CafeActivityWindow
+        self.stop()
+        self.refresh()
+        self.activity_window = CafeActivityWindow(self.root,self.session,self.refresh)
 
     def take_day_off(self):
         from tkinter import messagebox
@@ -291,7 +311,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if not self.session.core.can_set_shifts or self.session.pending:
             return
         if not messagebox.askyesno('今日は休業する',
-                '来客なしで全猫を1日休ませ、翌日の準備へ進みます。休業しますか？',parent=self.root):
+                '来客なしで在店猫を1日休ませ、翌日の準備へ進みます。派遣中の猫の期間も1日進みます。休業しますか？',parent=self.root):
             return
         self.perform(self.session.day_off)
         self.refresh()
@@ -329,17 +349,20 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                 name=self.session.profiles.get(key,{}).get('name',key)
                 lines.append(f"{name}：残り {row['stamina']:g} / 消耗 {row['spent']:g}")
                 if 'shift' in row:
-                    label='出勤' if row['shift']=='work' else '休養'
+                    from .core.cafe_activities import ACTIVITY_LABELS
+                    label=ACTIVITY_LABELS[row['activity']] if row.get('activity','cafe')!='cafe' else ('出勤' if row['shift']=='work' else '休養')
                     lines.append(f"  {label} · 疲労 {row['fatigue_before']:g} → {row['fatigue_after']:g}")
                 if 'health' in row:
                     lines.append('  '+health_result_text(row['health']))
+            if 'dispatch_income' in summary:
+                lines.append(f"派遣収入（売上とは別）：{summary['dispatch_income']:g}")
             lines.append("\n親しみの変化")
             for row in result['affinity_changes']:
                 name=self.session.profiles.get(row['cat_id'],{}).get('name',row['cat_id'])
                 lines.append(f"{name} → {row['customer_id']}：{row['change']:+g}")
             if not result['affinity_changes']:
                 lines.append('交流なし')
-            lines.append("\n一晩休むと体力が全回復します。療養中の猫は復帰まで接客できません。翌日へ進みますか？")
+            lines.append("\n在店猫は一晩休むと体力が全回復します。療養中の猫は復帰まで接客できません。翌日へ進みますか？")
             if messagebox.askyesno('閉店結果', '\n'.join(lines),parent=self.root):
                 self.session.next_day()
                 self.customer.set('')

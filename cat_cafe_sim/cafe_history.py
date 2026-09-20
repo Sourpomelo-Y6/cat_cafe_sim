@@ -1,6 +1,7 @@
 """保存済みの営業履歴から表示用の比較データを作る。営業状態は変更しない。"""
 import copy
 from .cafe_health_text import health_result_text
+from .core.cafe_activities import ACTIVITY_LABELS
 
 
 def comparison_rows(core):
@@ -41,19 +42,19 @@ class CafeHistoryWindow:
             ttk.Label(frame, text='関係データへの保存が未完了です。営業画面で保存を再試行してください。').pack(anchor='w')
         if not rows:
             ttk.Label(frame, text='まだ閉店した営業日がありません。').pack(anchor='w', pady=8)
-        self.days = self.table(frame, ('日目', '売上', 'うちボーナス', '交流件数', '閉店時所持金', '営業区分'))
+        self.days = self.table(frame, ('日目', '売上', 'うちボーナス', '交流件数', '閉店時所持金', '派遣収入', '営業区分'))
         ttk.Label(frame, text='猫ごとの比較（体力消耗は営業開始時からの差、親しみは各お客への実増減の合計）',
                   wraplength=600).pack(anchor='w', pady=(10, 0))
         self.cats = self.table(frame, ('日目', '猫', '接客回数', '体力消耗', '残り体力', '親しみ増減', '出勤・休養', '疲労変化', '体調・療養'))
         for result in rows:
             summary = result['summary']
             self.days.insert('', 'end', values=(result['day'], f"{summary['revenue']:g}",
-                f"{summary['interaction_bonus']:g}", summary['completed_interactions'], f"{summary['funds']:g}", '休業日' if result.get('day_type')=='day_off' else '営業日'))
+                f"{summary['interaction_bonus']:g}", summary['completed_interactions'], f"{summary['funds']:g}", f"{summary.get('dispatch_income',0):g}", '休業日' if result.get('day_type')=='day_off' else '営業日'))
             for cat_id, cat in result['cats'].items():
                 name = session.profiles.get(cat_id, {}).get('name', cat_id)
                 self.cats.insert('', 'end', values=(result['day'], f'{name}（{cat_id}）', cat['interactions'],
                     f"{cat['spent']:g}", f"{cat['stamina']:g}", f"{cat['affinity_delta']:+g}",
-                    {'work': '出勤', 'rest': '休養'}.get(cat.get('shift'), '記録なし'),
+                    ACTIVITY_LABELS[cat['activity']] if cat.get('activity','cafe')!='cafe' else {'work': '出勤', 'rest': '休養'}.get(cat.get('shift'), '記録なし'),
                     f"{cat['fatigue_before']:g} → {cat['fatigue_after']:g}" if 'fatigue_before' in cat else '記録なし',
                     health_result_text(cat['health']) if 'health' in cat else '記録なし'))
         ttk.Button(frame, text='閉じる', command=self.window.destroy).pack(anchor='e', pady=(8, 0))

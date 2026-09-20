@@ -29,6 +29,7 @@ class CafeInteractionCore(SimulationCore):
         self.day_results = []
         self.day_outcome_offset = 0
         self.returning_customers = set()
+        self.activities = None
         self.health_rules = None
         self.initial_health = {}
         self.health_results = {}
@@ -50,8 +51,26 @@ class CafeInteractionCore(SimulationCore):
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
                                   results=copy.deepcopy(self.health_results))} if self.health_rules else {}),
                 **({'day_results': copy.deepcopy(self.day_results)} if self.day_results else {}),
+                **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
                 **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None else {})}
+
+    def activity(self, cat_id):
+        from .cafe_activities import activity
+        return activity(self, cat_id)
+
+    def dispatch(self, cat_id, rules=None):
+        from .cafe_activities import dispatch
+        dispatch(self, cat_id, rules)
+
+    def resolve_activity(self, event_id, choice='receive'):
+        from .cafe_activities import resolve
+        resolve(self, event_id, choice)
+
+    def require_events_resolved(self):
+        from .cafe_activities import waiting_events
+        if waiting_events(self):
+            raise ValueError('派遣・イベント画面で帰還結果を確認してください。')
 
     @property
     def can_set_shifts(self):
@@ -63,11 +82,14 @@ class CafeInteractionCore(SimulationCore):
 
     def set_shifts(self, working_cats, rules=None):
         from .cafe_shifts import ShiftRules
+        self.require_events_resolved()
         if not self.can_set_shifts:
             raise ValueError('出勤・休養は営業開始前に設定してください。')
         if (not isinstance(working_cats, list) or any(not isinstance(key, str) for key in working_cats)
                 or len(set(working_cats)) != len(working_cats) or not set(working_cats) <= set(self.cats)):
             raise ValueError('営業に参加している猫を重複なく指定してください。')
+        if any(self.activity(key) != 'cafe' for key in working_cats):
+            raise ValueError('在店している猫だけ出勤できます。')
         if any(self.cats[key].health_status != 'healthy' for key in working_cats):
             raise ValueError('療養中の猫は出勤できません。')
         selected_rules = ShiftRules(**rules) if rules is not None else self.shift_rules or ShiftRules.load()
@@ -101,7 +123,9 @@ class CafeInteractionCore(SimulationCore):
         for key, cat in self.cats.items():
             initial = self.initial_health[key]
             chance, draw = None, None
-            if initial['status'] == 'sick':
+            if self.activity(key) != 'cafe':
+                outcome = 'healthy' if initial['status']=='healthy' else 'recovering'
+            elif initial['status'] == 'sick':
                 cat.recovery_days_remaining = max(0, initial['remaining'] - 1)
                 cat.health_status = 'sick' if cat.recovery_days_remaining else 'healthy'
                 outcome = 'recovering' if cat.recovery_days_remaining else 'recovered'
@@ -123,12 +147,17 @@ class CafeInteractionCore(SimulationCore):
     def _emit(self, kind, **data):
         if kind == 'closed' and self.shift_rules:
             for key, cat in self.cats.items():
+                if self.activity(key) != 'cafe':
+                    continue
                 change = (self.cat_service_ticks[key] * self.shift_rules.fatigue_per_service_tick
                           if key in self.working_cats else -self.shift_rules.rest_day_recovery)
                 cat.fatigue = max(0, min(self.shift_rules.max_fatigue, self.initial_fatigue[key] + change))
         if kind == 'closed' and self.health_rules:
             self._settle_health()
         super()._emit(kind, **data)
+        if kind == 'closed':
+            from .cafe_activities import close_day
+            close_day(self)
 
     def _arrive(self):
         super()._arrive()
@@ -146,6 +175,7 @@ class CafeInteractionCore(SimulationCore):
             changes[key] = changes.get(key, 0) + result['affinity_after'] - result['affinity_before']
         return dict(day=self.day, summary=self.summary(),
                     cats={key: dict(stamina=cat.stamina,
+                         **(dict(activity=self.activities['day_locations'][key]) if self.activities else {}),
                          **(dict(interactions=sum(1 for value in list(self.outcomes.values())[self.day_outcome_offset:]
                               if outcome_result(value)['cat_id']==key)) if self.compact else {}),
                          spent=(self.start_state.stamina if self.day == 1 else self.config.max_stamina)-cat.stamina,
@@ -158,11 +188,13 @@ class CafeInteractionCore(SimulationCore):
                                       for key,value in changes.items()])
 
     def next_day(self):
+        self.require_events_resolved()
         if not self.closed or self.active or getattr(self, 'interactions', {}):
             raise ValueError('交流を終了して閉店してから翌日へ進んでください。')
         self._advance_day(self.day_result(), dict(kind='next_day'))
 
     def day_off(self):
+        self.require_events_resolved()
         if not self.can_set_shifts or not self.shift_rules or not self.health_rules:
             raise ValueError('休業は出勤・病気ルールが有効な営業準備中に選んでください。')
         planned = set(self.working_cats)
@@ -190,14 +222,18 @@ class CafeInteractionCore(SimulationCore):
         self.spirit_spent = 0
         self.interaction_bonus = 0
         for cat in self.cats.values():
+            if self.activity(cat.id) != 'cafe':
+                continue
             cat.stamina = self.config.max_stamina
             if cat.health_status == 'healthy':
                 cat.cannot_continue = False
         self._tick_events = [] if events is None else events
         self.cat_service_ticks = dict.fromkeys(self.cats, 0)
         self.initial_fatigue = {key: cat.fatigue for key, cat in self.cats.items()}
+        if self.activities:
+            self.activities['day_locations'] = dict(self.activities['cats'])
         if self.health_rules:
-            self.working_cats = {key for key in self.working_cats if self.cats[key].health_status == 'healthy'}
+            self.working_cats = {key for key in self.working_cats if self.cats[key].health_status == 'healthy' and self.activity(key) == 'cafe'}
             self.initial_health = self._health_state()
             self.health_results = {}
         self._emit('next_day', day=self.day)
@@ -214,10 +250,11 @@ class CafeInteractionCore(SimulationCore):
     def start(self, interaction):
         if self.closed or self.active or self.seat.customer_id is not None:
             raise ValueError('交流を開始できません。営業中の空席が必要です。')
+        self.require_events_resolved()
         if interaction.cat_id not in self.cats or interaction.customer_id not in self.queue:
             raise ValueError('営業中の猫と待機中のお客を選んでください。')
         cat = self.cats[interaction.cat_id]
-        if cat.id not in self.working_cats or cat.health_status != 'healthy' or cat.cannot_continue or cat.stamina <= 0:
+        if self.activity(cat.id) != 'cafe' or cat.id not in self.working_cats or cat.health_status != 'healthy' or cat.cannot_continue or cat.stamina <= 0:
             raise ValueError('この猫は現在交流できません。')
         if (interaction.records or interaction.state['end_reason'] or
                 interaction.state['stamina'] != cat.stamina or
@@ -270,6 +307,7 @@ class CafeInteractionCore(SimulationCore):
         self.active = None
 
     def step(self, action=None, target_type=None):
+        self.require_events_resolved()
         if self.closed:
             raise RuntimeError('営業は終了しています')
         if self.active:
@@ -299,6 +337,8 @@ class CafeInteractionCore(SimulationCore):
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
                     interaction_bonus=self.interaction_bonus, stamina=self.cat.stamina,
+                    **({'dispatch_income': sum(e['destination']['reward'] for e in self.activities['events'].values()
+                        if e['status']=='resolved' and e['resolved_day']==self.day)} if self.activities else {}),
                     service_ticks=self.service_ticks,
                     **({'cat_stamina': {key:cat.stamina for key,cat in self.cats.items()}} if self.roster_ids is not None else {}))
 

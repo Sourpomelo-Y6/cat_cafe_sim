@@ -19,12 +19,14 @@ def cat_details(session, cat_id):
     active = any(item.cat_id == cat_id for item in session.active_interactions.values())
     status = ('療養' if cat.health_status == 'sick' else '休養' if cat_id not in core.working_cats else
               '交流中' if active else '担当可能' if cat in session.available_cats() else '交流不可')
+    from .core.cafe_activities import ACTIVITY_LABELS
+    if core.activity(cat_id)!='cafe':status=ACTIVITY_LABELS[core.activity(cat_id)]
     basic = [('名前', profile['name'] if profile else cat_id), ('猫ID', cat_id),
              ('個性', label if profile else f'{label}（未登録・営業の既定個性）'),
              ('体力', f'{cat.stamina:g} / {core.config.max_stamina:g}'),
              ('疲労', number(cat.fatigue) if core.shift_rules else 'ルール未導入'),
              ('体調', health_text(cat.health_status, cat.recovery_days_remaining)),
-             ('出勤予定', '出勤' if cat_id in core.working_cats else '休養'), ('担当状態', status)]
+             ('活動', ACTIVITY_LABELS[core.activity(cat_id)]), ('出勤予定', '対象外' if core.activity(cat_id)!='cafe' else '出勤' if cat_id in core.working_cats else '休養'), ('担当状態', status)]
     basic += [(f'好み：{kind.name}', number(value)) for kind, value in
               zip(session.interaction_config.types, personality.type_preferences)]
     basic += [(f'強さの好み：{name}', number(value)) for name, value in
@@ -52,7 +54,7 @@ def cat_details(session, cat_id):
         fatigue = (f"{row['fatigue_before']:g} → {row['fatigue_after']:g}"
                    if 'fatigue_before' in row and 'fatigue_after' in row else MISSING)
         history.append((day['day'], '休業' if day.get('day_type') == 'day_off' else '営業',
-                        {'work':'出勤','rest':'休養'}.get(row.get('shift'), MISSING),
+                        ACTIVITY_LABELS[row['activity']] if row.get('activity','cafe')!='cafe' else {'work':'出勤','rest':'休養'}.get(row.get('shift'), MISSING),
                         number(row.get('interactions')), number(row.get('service_ticks')), number(row.get('spent')),
                         fatigue, health_result_text(row['health']) if row.get('health') else MISSING, number(delta)))
     return dict(basic=basic, relationships=relationships, history=history,

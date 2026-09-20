@@ -167,6 +167,9 @@ def restore(data):
         core.health_results=copy.deepcopy(health['results'])
         if not core.shift_rules or set(core.initial_health)!=set(core.cats):
             raise ValueError('invalid health state')
+    if 'activities' in state:
+        from .cafe_activities import validate
+        core.activities=validate(core,state['activities'])
     if data['seat_count']==2:
         core.seats={key:Seat(**row) for key,row in state['seats'].items()}
         if set(core.seats)!={'seat-1','seat-2'}:
@@ -195,12 +198,14 @@ def restore(data):
                 or interaction.customer_id not in core.visits or interaction.session_id in core.outcomes
                 or cat.stamina!=interaction.state['stamina'] or seat.cat_id!=cat.id
                 or seat.customer_id!=interaction.customer_id or cat.health_status!='healthy'
-                or cat.id not in core.working_cats or cat.cannot_continue):
+                or cat.id not in core.working_cats or cat.cannot_continue or core.activity(cat.id)!='cafe'):
             raise ValueError('invalid active interaction')
         busy_cats.add(cat.id);busy_guests.add(interaction.customer_id)
     if not set(active)<=set(seats) or snapshot(core)!=state or core.summary()!=data['summary']:
         raise ValueError('営業セーブの状態と集計が一致しません。')
     expected_funds = core.config.initial_funds + sum(row['summary']['revenue'] for row in core.day_results) + sum(v.bill for v in core.visits.values())
+    from .cafe_activities import income
+    expected_funds += income(core)
     if not math.isclose(core.funds,expected_funds,rel_tol=1e-12,abs_tol=1e-8):
         raise ValueError('会計の合計と所持金が一致しません。')
     core.recorded_digest=record_digest(core)

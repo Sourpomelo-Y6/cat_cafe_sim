@@ -1,0 +1,7 @@
+{
+  "id": "neighborhood_visit",
+  "name": "近所のお店への訪問",
+  "days": 1,
+  "reward": 100,
+  "max_fatigue": 60
+}

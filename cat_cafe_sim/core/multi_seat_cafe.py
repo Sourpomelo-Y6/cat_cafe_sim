@@ -44,6 +44,7 @@ class MultiSeatCafeCore(CafeInteractionCore):
         super()._emit(kind, **data)
 
     def start(self, interaction, seat_id=None):
+        self.require_events_resolved()
         seat_id = seat_id or next((key for key in self.seats if key not in self.interactions), None)
         if seat_id not in self.seats or seat_id in self.interactions:
             raise ValueError('空いている席を選んでください。')
@@ -66,6 +67,7 @@ class MultiSeatCafeCore(CafeInteractionCore):
         del self.interactions[seat_id]
 
     def step(self, commands=None):
+        self.require_events_resolved()
         if self.closed:
             raise RuntimeError('営業は終了しています')
         commands = {} if commands is None else commands
