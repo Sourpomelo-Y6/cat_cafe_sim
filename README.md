@@ -1,6 +1,7 @@
 # 猫カフェシミュレーター
 
 現在はゲーム全体の流れを固めることを優先し、回復量などの細かなバランス調整は後回しにします。[開発方針](Docs/CatCafeSimulation_ImplementationGuide.md)を参照してください。
+[ゲーム全体の流れと実装順](Docs/HumanToCatGameFlowPlan.md)に、現行の遊び方・不足する経営要素・未決定事項と、次の実装順の提案を整理しています。
 
 営業前の「今日は休業する」で、来客なしに全猫を1日休ませて翌日へ進めます。出勤予定がある場合も利用できます。[休業日の仕様](Docs/HumanToCatCafeDayOffPlan.md)を参照してください。
 
@@ -17,7 +18,7 @@
 
 通常営業画面では「閉店結果・翌日へ」で売上・猫の消耗・親しみの変化を確認し、所持金と親しみを引き継いで翌日へ進めます。詳しくは[閉店結果と翌日の営業](Docs/HumanToCatCafeDays.md)を参照してください。
 
-現在の設計整理は[交流の目的・終了・成果の見直し](Docs/HumanToCatInteractionPurpose.md)を参照してください。
+交流の目的・終了・成果を見直した経緯は[交流の目的・終了・成果の見直し](Docs/HumanToCatInteractionPurpose.md)を参照してください。
 単独交流の現行版4では、猫からお客への親しみを組み合わせごとに保存します。任意終了・時間終了・体力切れと、親しみ・資金・消耗の成果を分けました。
 [版4の操作・保存・検証結果](Docs/HumanToCatRelationshipImplementation.md)を参照してください。低体力から特別行動を達成することは必須要件にしません。
 [親しみ・成果確定・再会の初回仕様](Docs/HumanToCatRelationshipSpecification.md)に、暫定の増減量と保存・結果表示の扱いを具体化しています。
