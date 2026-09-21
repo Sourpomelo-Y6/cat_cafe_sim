@@ -249,3 +249,5 @@ CLIの`run`も操作列を省略すると閉店まで自動進行します。[�
 「営業を保存…」「続きから開く…」で、同じ営業日の途中から再開できます。読み込み後は一時停止状態になります。
 起動時に開く場合は`python3 -m cat_cafe_sim.cafe_interaction gui --resume saves/cafe_day.json`を使います。
 [営業セーブの操作・整合性・制限](Docs/HumanToCatCafeSaves.md)を参照してください。
+
+[お客さんの特性・猫の特徴と相性の案](Docs/HumanToCatCustomerPreferencesPlan.md)に、白猫好きなどの好みによる接客バフ、特徴と特性の区分、複数保持の検討事項を記録しています（未実装）。
