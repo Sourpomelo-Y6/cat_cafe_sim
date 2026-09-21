@@ -1127,3 +1127,99 @@ class CafeSaveWindowTests(unittest.TestCase):
             self.app.close();destroy.assert_called_once()
         self.assertEqual(load_game(self.path)[0].core.snapshot(),before)
         self.assertEqual(len(self.session.active_interactions),2)
+
+
+@unittest.skipUnless(os.environ.get('CAT_CAFE_TEST_GUI') == '1', 'GUI tests require an explicit display')
+class CafeStartWindowTests(unittest.TestCase):
+    def setUp(self):
+        import tkinter as tk
+        from cat_cafe_sim.cafe_start_gui import CafeStartWindow
+        self.temp = tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
+        self.root = tk.Tk(); self.addCleanup(self.root.destroy)
+        self.directory = Path(self.temp.name) / 'games'
+        self.start = CafeStartWindow(self.root, self.directory)
+        self.addCleanup(lambda: self.start.app.stop() if hasattr(self.start, 'app') else None)
+
+    def test_cancel_create_and_restart_failure_then_success(self):
+        from cat_cafe_sim.storage.cafe_saves import load_game
+        self.start.new_button.invoke()
+        self.start.new_window.cancel_button.invoke()
+        self.assertFalse(self.directory.exists())
+        self.start.new_button.invoke()
+        self.start.new_window.start_button.invoke()
+        app = self.start.app
+        first = app.session
+        self.assertFalse(app.running)
+        self.assertEqual(first.core.funds, 1000)
+        self.root.geometry('860x600'); self.root.update()
+        for button in (app.new_game_button, app.save_button, app.open_button, app.history_button):
+            self.assertTrue(button.winfo_ismapped())
+            self.assertLessEqual(button.winfo_rootx()+button.winfo_width(), self.root.winfo_rootx()+self.root.winfo_width())
+        app.new_game_button.invoke()
+        with patch('tkinter.messagebox.askyesnocancel', return_value=None):
+            app.new_game_window.start_button.invoke()
+        self.assertIs(app.session, first)
+        with patch('tkinter.messagebox.askyesnocancel', return_value=True), patch.object(app,'save_game',return_value=False):
+            app.new_game_window.start_button.invoke()
+        self.assertIs(app.session, first)
+        with patch('tkinter.messagebox.askyesnocancel', return_value=False), \
+                patch('cat_cafe_sim.cafe_start_gui.create_game',side_effect=OSError('full')), \
+                patch('tkinter.messagebox.showerror') as error:
+            app.new_game_window.start_button.invoke()
+            error.assert_called_once()
+        self.assertIs(app.session, first)
+        self.assertNotIn('disabled', app.new_game_window.start_button.state())
+        with patch('tkinter.messagebox.askyesnocancel', return_value=True), \
+                patch('tkinter.filedialog.asksaveasfilename',return_value=str(first.checkpoint_path)):
+            app.new_game_window.start_button.invoke()
+        self.assertIsNot(app.session, first)
+        self.assertNotEqual(app.session.store.path, first.store.path)
+        self.assertFalse(app.running)
+        self.assertIsNone(app.timer)
+        self.assertEqual(load_game(first.checkpoint_path)[0].core.snapshot(), first.core.snapshot())
+        self.assertEqual(app.session.core.funds, 1000)
+
+    def test_resume_cancel_invalid_and_game_over_restart(self):
+        from dataclasses import replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+        from cat_cafe_sim.core.human_cat_types import Personality
+        from cat_cafe_sim.core.cafe_management import rules
+        from cat_cafe_sim.storage.relationships import RelationshipStore
+        from cat_cafe_sim.storage.cafe_saves import save_game, load_game
+        with patch('tkinter.filedialog.askopenfilename', return_value=''):
+            self.start.resume_button.invoke()
+        self.assertTrue(self.start.frame.winfo_exists())
+        with patch('tkinter.filedialog.askopenfilename', return_value=str(self.directory/'absent.json')), \
+                patch('tkinter.messagebox.showerror') as error:
+            self.start.resume_button.invoke(); error.assert_called_once()
+        self.assertTrue(self.start.frame.winfo_exists())
+        store = RelationshipStore(Path(self.temp.name)/'relations.json')
+        store.register_cat('cat', '猫', Personality())
+        s = CafeInteractionSession(store=store, cafe_config=replace(Config.load(), opening_ticks=2, arrival_ticks=(0,)),
+                                   interaction_config=replace(RelationshipConfig(), ticks=1))
+        s.enable_management(dict(rules(), runaway_threshold=1, return_stress=0, popularity_loss=100))
+        while not s.core.closed: s.automatic_step()
+        self.assertIsNotNone(s.core.management['game_over'])
+        path = Path(self.temp.name)/'ended.json'
+        save_game(s,path,auto_assign=True)
+        with patch('tkinter.filedialog.askopenfilename', return_value=str(path)):
+            self.start.resume_button.invoke()
+        app = self.start.app
+        self.assertFalse(app.running)
+        self.assertTrue(app.auto_assign.get())
+        self.assertIn('ゲームオーバー', app.notice.get())
+        self.assertIn('disabled', app.run_button.state())
+        self.assertEqual(app.new_game_button.cget('text'), '結果・再開始…')
+        app.new_game_button.invoke()
+        window = app.new_game_window
+        window.window.geometry('500x430'); self.root.update()
+        for widget in (window.start_button, window.cancel_button):
+            self.assertTrue(widget.winfo_ismapped())
+            self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),window.window.winfo_rooty()+window.window.winfo_height())
+        window.start_button.invoke()
+        self.assertIsNone(app.session.core.management['game_over'])
+        self.assertEqual(app.session.core.day,1)
+        self.assertEqual(app.session.core.management['popularity'],100)
+        self.assertIsNotNone(load_game(path)[0].core.management['game_over'])

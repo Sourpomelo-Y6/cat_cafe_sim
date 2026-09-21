@@ -8,6 +8,8 @@
 
 ## 参加猫と起動
 
+現在、オプションなしの `gui` は[開始画面](HumanToCatNewGame.md)を開き、新規ゲーム専用の初期猫5匹と保存先を用意する。以下は既存の登録猫を明示的に使う試遊の起動方法。
+
 ```bash
 # 同じ保存先の単独試遊で、猫ID・名前・個性を先に登録する
 python3 -m cat_cafe_sim.human_cat_gui --relationships saves/relationships.json

@@ -192,6 +192,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.day_button.pack(side='left',padx=6)
         self.history_button=ttk.Button(self.file_controls,text='営業結果を比較…',command=self.show_history)
         self.history_button.pack(side='left',padx=6)
+        self.new_game_directory = 'saves/games'
+        self.new_game_button = ttk.Button(self.file_controls, text='新規ゲーム…', command=self.new_game)
+        self.new_game_button.pack(side='left',padx=4)
         self.auto_assign = tk.BooleanVar(value=False)
         self.cat_labels = {f"{row['name']}（{row['cat_id']}）":row['cat_id'] for row in session.cat_choices()}
         self.cat_choice = tk.StringVar(value=next(iter(self.cat_labels)))
@@ -286,6 +289,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         playing = bool(player_active(core))
         from .core.cafe_management import is_over
         ended=is_over(core)
+        self.new_game_button.configure(text='結果・再開始…' if ended else '新規ゲーム…')
         events_waiting=bool(waiting_events(core)) or playing or ended
         if core.management:
             self.status.set(self.status.get()+f" · 人気 {core.management['popularity']:g}")
@@ -454,6 +458,14 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         except (OSError,ValueError,TypeError,KeyError,RuntimeError) as error:
             messagebox.showerror('営業を開けませんでした',str(error),parent=self.root)
             return
+        self.replace_game(candidate, auto_assign)
+        from .core.cafe_management import is_over
+        if not is_over(candidate.core):
+            self.notice.set('営業を復元しました。未保存の交流結果があるため、先に結果保存を再試行してください。' if candidate.pending else
+                            '営業を復元しました。一時停止中です。「営業を開始・再開」で続けられます。')
+
+    def replace_game(self, candidate, auto_assign=False):
+        self.stop()
         self.session=candidate
         self.logged=0
         self.history.delete(*self.history.get_children())
@@ -465,8 +477,26 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.customer.set('')
         self.auto_assign.set(auto_assign)
         self.refresh()
-        self.notice.set('営業を復元しました。未保存の交流結果があるため、先に結果保存を再試行してください。' if candidate.pending else
-                        '営業を復元しました。一時停止中です。「営業を開始・再開」で続けられます。')
+
+    def new_game(self):
+        from tkinter import messagebox
+        from .cafe_start_gui import NewGameWindow
+        self.stop()
+        self.refresh()
+        try:
+            self.new_game_window = NewGameWindow(self.root, self.replace_game,
+                before_start=self.save_before_new_game, previous=self.session.core, directory=self.new_game_directory)
+        except (OSError, ValueError, TypeError, KeyError) as exc:
+            messagebox.showerror('初期条件を読み込めません',str(exc),parent=self.root)
+
+    def save_before_new_game(self):
+        from tkinter import messagebox
+        if self.session.core.operations or self.session.pending:
+            answer = messagebox.askyesnocancel('現在のゲーム',
+                '現在のゲームを保存してから新しく始めますか？\n「いいえ」は現在の営業状態を保存せず切り替えます。', parent=self.new_game_window.window)
+            if answer is None or (answer and not self.save_game()):
+                return False
+        return True
 
     def save_log(self):
         self.stop()

@@ -9,13 +9,15 @@
 
 ## 画面操作
 
+通常起動は[開始画面](HumanToCatNewGame.md)を表示する。新規ゲームは `saves/games/game-<固有文字列>/` ごとに営業セーブと関係データを分離し、旧セーブは保存された設定で再開する。
+
 ```bash
 python3 -m cat_cafe_sim.cafe_interaction gui
 # 起動時に営業セーブを開く場合
 python3 -m cat_cafe_sim.cafe_interaction gui --resume saves/cafe_day.json
 ```
 
-画面下部の「営業を保存…」で保存先を選ぶ。既定の候補は`saves/cafe_day.json`。
+画面下部の「営業を保存…」で保存先を選ぶ。既定の候補は現在の営業セーブの場所。新規ゲームは専用ディレクトリの `cafe.json`、保存先のない従来の試遊は `saves/cafe_day.json`。
 保存操作ではまず自動進行を止め、交流の切り上げ・会計・親しみの追加保存は行わない。
 両席が交流中でも、関係保存に失敗して結果が未保存でも営業セーブを作れる。
 書き込みに失敗した場合は既存の営業セーブと現在の営業状態を維持する。

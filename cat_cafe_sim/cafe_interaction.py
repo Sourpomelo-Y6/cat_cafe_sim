@@ -301,6 +301,12 @@ def main():
         if args.command == 'gui':
             import tkinter as tk
             from .cafe_interaction_gui import CafeInteractionWindow, ManualCafeInteractionWindow
+            if not (args.resume or args.manual or args.cats or args.seats is not None or args.relationships is not None):
+                from .cafe_start_gui import CafeStartWindow
+                root = tk.Tk()
+                CafeStartWindow(root)
+                root.mainloop()
+                return
             if args.manual and args.seats == 2:
                 parser.error('検証用の手動コマンド画面は1席です。通常画面で2席を試してください。')
             auto_assign=False

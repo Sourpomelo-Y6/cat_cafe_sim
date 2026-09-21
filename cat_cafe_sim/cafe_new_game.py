@@ -1,0 +1,46 @@
+"""通常ゲームの初期条件とゲームごとの独立した保存先。"""
+import json
+import shutil
+import tempfile
+from dataclasses import replace
+from pathlib import Path
+
+from .core.cafe_management import rules
+from .core.config import Config
+from .core.human_cat_types import load_presets
+from .storage.relationships import RelationshipStore
+from .storage.cafe_saves import save_game
+
+
+def starting_conditions():
+    data = json.loads((Path(__file__).resolve().parents[1] / 'config/cafe_new_game.json').read_text(encoding='utf-8'))
+    if data['seat_count'] not in (1, 2) or not data['cats']:
+        raise ValueError('新規ゲームの席・猫の設定が不正です。')
+    presets = load_presets()
+    profiles = dict(format_version=2, cats={}, pairs=[], applied={})
+    for row in data['cats']:
+        if row['cat_id'] in profiles['cats']:
+            raise ValueError('初期猫のIDが重複しています。')
+        RelationshipStore._register(profiles, row['cat_id'], row['name'], presets[row['preset']])
+    return dict(seat_count=data['seat_count'], profiles=profiles, management=rules())
+
+
+def create_game(directory='saves/games', conditions=None):
+    """新しい専用ディレクトリに初期セーブまで作成する。既存ゲームを変更しない。"""
+    from .cafe_interaction import CafeInteractionSession
+    selected = starting_conditions() if conditions is None else conditions
+    directory = Path(directory).resolve()
+    directory.mkdir(parents=True, exist_ok=True)
+    location = Path(tempfile.mkdtemp(prefix='game-', dir=directory))
+    try:
+        store = RelationshipStore(location / 'relationships.json')
+        store._write(selected['profiles'])
+        session = CafeInteractionSession(store=store, seat_count=selected['seat_count'],
+            cafe_config=replace(Config.load(), initial_funds=0))
+        session.enable_management(selected['management'])
+        save_game(session, location / 'cafe.json', auto_assign=False)
+    except Exception:
+        # Only this call's newly allocated directory belongs to the failed creation.
+        shutil.rmtree(location, ignore_errors=True)
+        raise
+    return session
