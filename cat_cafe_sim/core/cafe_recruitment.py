@@ -9,7 +9,10 @@ from .human_cat_types import Personality, load_presets
 from .models import Cat
 
 
-def candidates(used_ids):
+REFRESH_DAYS = 3
+
+
+def candidates(used_ids, batch=0):
     definitions = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_recruitment.json').read_text(encoding='utf-8'))
     presets = load_presets()
     from .cafe_traits import definitions as trait_definitions
@@ -22,7 +25,7 @@ def candidates(used_ids):
             index += 1
         key = f'rescue-{index}'
         used.add(key)
-        rows[key] = dict(name=row['name'], personality=presets[row['preset']].to_dict(), cost=row['cost'])
+        rows[key] = dict(name=row['name'] if batch == 0 else f"{row['name']}（紹介{batch + 1}）", personality=presets[row['preset']].to_dict(), cost=row['cost'])
         if row.get('trait') is not None:
             rows[key]['trait'] = copy.deepcopy(traits[row['trait']])
     return validate_candidates(rows)
@@ -63,6 +66,28 @@ def open_candidates(core, rows):
     core._tick_events = []
     core._emit('recruitment_opened')
     core._record(dict(kind='open_recruitment', candidates=rows))
+
+
+def next_candidate_day(data):
+    return data.get('last_added_day', data['opened_day']) + REFRESH_DAYS
+
+
+def add_candidates(core, rows):
+    require_preparation(core)
+    data = core.recruitment
+    if data is None or core.day < next_candidate_day(data):
+        raise ValueError('次の候補追加日までお待ちください。')
+    rows = validate_candidates(rows)
+    if set(rows) & (set(core.cats) | set(data['candidates'])):
+        raise ValueError('追加候補の猫IDが重複しています。')
+    if 'presented_days' not in data:
+        data['presented_days'] = {key: data['opened_day'] for key in data['candidates']}
+    data['candidates'].update(rows)
+    data['presented_days'].update({key: core.day for key in rows})
+    data['last_added_day'] = core.day
+    core._tick_events = []
+    core._emit('recruitment_added', count=len(rows))
+    core._record(dict(kind='add_recruitment', candidates=rows))
 
 
 def accept(core, cat_id):
@@ -106,7 +131,7 @@ def expenses(core, day=None):
 
 
 def validate(data, day, initial_ids):
-    if not isinstance(data, dict) or set(data) != {'opened_day', 'candidates', 'accepted'}:
+    if not isinstance(data, dict) or set(data) not in ({'opened_day', 'candidates', 'accepted'}, {'opened_day', 'candidates', 'accepted', 'last_added_day', 'presented_days'}):
         raise ValueError('受け入れ記録が不正です。')
     rows = validate_candidates(data['candidates'])
     if set(rows) & set(initial_ids):
@@ -117,4 +142,17 @@ def validate(data, day, initial_ids):
         raise ValueError('受け入れた猫が不正です。')
     if any(type(joined) is not int or not data['opened_day'] <= joined <= day for joined in data['accepted'].values()):
         raise ValueError('受け入れ日が不正です。')
+    if 'presented_days' in data:
+        days = data['presented_days']
+        if not isinstance(days, dict) or set(days) != set(rows):
+            raise ValueError('候補の追加日が不正です。')
+        if any(type(value) is not int or not data['opened_day'] <= value <= day for value in days.values()):
+            raise ValueError('候補の追加日が不正です。')
+        dates = sorted(set(days.values()))
+        if dates[0] != data['opened_day'] or any(b - a < REFRESH_DAYS for a, b in zip(dates, dates[1:])):
+            raise ValueError('候補の追加間隔が不正です。')
+        if type(data['last_added_day']) is not int or data['last_added_day'] != dates[-1]:
+            raise ValueError('最終追加日が不正です。')
+        if any(joined < days[key] for key, joined in data['accepted'].items()):
+            raise ValueError('提示前に受け入れた猫があります。')
     return copy.deepcopy(data)

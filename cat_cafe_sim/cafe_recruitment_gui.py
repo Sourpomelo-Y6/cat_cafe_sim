@@ -24,7 +24,9 @@ class CafeRecruitmentWindow:
         self.close_button.pack(side='right')
         self.funds = tk.StringVar()
         ttk.Label(frame, textvariable=self.funds).pack(anchor='w')
-        ttk.Label(frame, text='準備中に受け入れます。加入時は健康・体力全回復・休養予定です。候補は固定で、更新されません。', wraplength=460).pack(anchor='w')
+        ttk.Label(frame, text='準備中に受け入れます。加入時は健康・体力全回復・休養予定です。3日ごとに候補を3匹追加します。以前の候補も残ります。', wraplength=460).pack(anchor='w')
+        self.schedule = tk.StringVar()
+        ttk.Label(frame, textvariable=self.schedule, wraplength=460).pack(anchor='w')
         self.notice = tk.StringVar()
         ttk.Label(frame, textvariable=self.notice, wraplength=460).pack(anchor='w')
         self.cats = CafeHistoryWindow.table(frame, ('名前', '個性', '特性', '初期費用', '状態'))
@@ -38,6 +40,9 @@ class CafeRecruitmentWindow:
     def refresh(self):
         core = self.session.core
         self.funds.set(f'所持金：{core.funds:g}')
+        from .core.cafe_recruitment import next_candidate_day
+        due = next_candidate_day(core.recruitment)
+        self.schedule.set(f'次の候補追加：{due}日目（準備中にこの画面を開くと追加）')
         selected = self.cats.selection()
         self.cats.delete(*self.cats.get_children())
         for key, row in core.recruitment['candidates'].items():
@@ -61,7 +66,7 @@ class CafeRecruitmentWindow:
         row = core.recruitment['candidates'][key]
         personality = Personality.from_dict(row['personality'])
         from .core.cafe_traits import description
-        values = description(row.get('trait')) + [('猫ID', key), ('体力', f'{core.config.max_stamina:g} / {core.config.max_stamina:g}'),
+        values = description(row.get('trait')) + [('猫ID', key), ('提示日', f"{core.recruitment.get('presented_days', {}).get(key, core.recruitment['opened_day'])}日目"), ('体力', f'{core.config.max_stamina:g} / {core.config.max_stamina:g}'),
                   ('疲労 / ストレス', '0 / 0'), ('体調 / 出勤予定', '健康 / 休養'),
                   ('プレイヤー・お客への好感度', '0（未交流）')]
         values += [(f'好み：{kind.name}', f'{value:g}') for kind, value in zip(self.session.interaction_config.types, personality.type_preferences)]

@@ -11,6 +11,9 @@ def apply_operation(core, operation):
     elif kind=='enable_goal':core.enable_goal(operation['rules'])
     elif kind=='continue_goal':core.continue_goal()
     elif kind=='open_recruitment':core.open_recruitment(operation['candidates'])
+    elif kind=='add_recruitment':
+        from .cafe_recruitment import add_candidates
+        add_candidates(core, operation['candidates'])
     elif kind=='recruit_cat':core.recruit_cat(operation['cat_id'])
     elif kind=='dispatch':core.dispatch(operation['cat_id'],operation['rules'])
     elif kind=='player_play':

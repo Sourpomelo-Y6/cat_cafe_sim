@@ -654,6 +654,37 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertIn('disabled',window.receive_button.state())
         window.close_button.invoke();activity.close_button.invoke()
 
+    def test_periodic_recruitment_schedule_and_new_candidates(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        self.app.session = CafeInteractionSession(store=self.store)
+        self.app.logged = 0
+        self.app.refresh()
+        self.app.activity_button.invoke()
+        activity = self.app.activity_window
+        activity.recruitment_button.invoke()
+        window = activity.recruitment_window
+        self.assertIn('4日目', window.schedule.get())
+        original = set(window.cats.get_children())
+        window.close_button.invoke()
+        activity.close_button.invoke()
+        for _ in range(3):
+            self.app.session.day_off()
+        self.app.refresh()
+        self.app.activity_button.invoke()
+        activity = self.app.activity_window
+        activity.recruitment_button.invoke()
+        window = activity.recruitment_window
+        self.assertEqual(len(window.cats.get_children()), 6)
+        self.assertTrue(original <= set(window.cats.get_children()))
+        self.assertIn('7日目', window.schedule.get())
+        added = next(key for key in window.cats.get_children() if key not in original)
+        window.cats.selection_set(added)
+        window.selection_changed()
+        values = [window.details.item(key)['values'] for key in window.details.get_children()]
+        self.assertIn(['提示日', '4日目'], values)
+        window.close_button.invoke()
+        activity.close_button.invoke()
+
     def test_management_enable_missing_return_cost_game_over_and_layout(self):
         from dataclasses import replace
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession

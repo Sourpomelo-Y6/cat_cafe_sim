@@ -230,3 +230,71 @@ class RecruitmentTests(unittest.TestCase):
             bad['digest'] = digest({k: v for k, v in bad.items() if k != 'digest'})
             with self.assertRaises(ValueError):
                 restore(bad)
+
+
+    def test_periodic_candidates_preserve_old_rows_and_survive_save_replay(self):
+        s = self.session(initial_funds=3000)
+        first = self.prepare(s)
+        original = copy.deepcopy(s.core.recruitment['candidates'])
+        s.recruit_cat(first)
+        for _ in range(2):
+            s.day_off()
+            s.open_recruitment()
+            self.assertEqual(s.core.recruitment['candidates'], original)
+        s.day_off()  # day 4
+        s = self.reload(s)
+        s.open_recruitment()
+        data = s.core.recruitment
+        self.assertEqual(len(data['candidates']), 6)
+        self.assertEqual({key: data['candidates'][key] for key in original}, original)
+        added = next(key for key in data['candidates'] if key not in original)
+        self.assertEqual(data['presented_days'][added], 4)
+        s = self.reload(s)
+        with patch('cat_cafe_sim.core.cafe_recruitment.candidates', side_effect=AssertionError('reroll')):
+            s.open_recruitment()
+        s.recruit_cat(added)
+        self.rejected(s, lambda: s.recruit_cat(added))
+        self.assertEqual(expenses(s.core), 400)
+        self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(), s.core.snapshot())
+        self.reload(s)
+        for _ in range(9):
+            s.day_off()
+        s.open_recruitment()  # missed dates add only one batch
+        self.assertEqual(len(s.core.recruitment['candidates']), 9)
+        self.assertEqual(s.core.recruitment['last_added_day'], 13)
+        self.reload(s)
+
+    def test_periodic_candidates_wait_for_preparation_and_avoid_reserved_ids(self):
+        s = self.session(initial_funds=1000)
+        self.prepare(s)
+        self.store.register_cat('rescue-4', 'external', Personality())
+        for _ in range(3):
+            s.day_off()
+        s.automatic_step()
+        before = copy.deepcopy(s.core.recruitment)
+        s.open_recruitment()
+        self.assertEqual(s.core.recruitment, before)
+        self.close(s)
+        s.next_day()
+        s.open_recruitment()
+        self.assertNotIn('rescue-4', s.core.recruitment['candidates'])
+        self.assertEqual(len(s.core.recruitment['candidates']), 6)
+
+    def test_periodic_candidate_dates_are_validated_before_restore(self):
+        s = self.session(initial_funds=1000)
+        self.prepare(s)
+        for _ in range(3):
+            s.day_off()
+        s.open_recruitment()
+        source = checkpoint(s.core, set())
+        for mutate in (
+            lambda d: d.update(last_added_day=2),
+            lambda d: d['presented_days'].update({'rescue-4': 2}),
+            lambda d: d['presented_days'].pop('rescue-4'),
+            lambda d: d['presented_days'].update({'rescue-4': True}),
+        ):
+            bad = copy.deepcopy(source)
+            mutate(bad['state']['recruitment'])
+            bad['digest'] = digest({k: v for k, v in bad.items() if k != 'digest'})
+            with self.assertRaises(ValueError):
+                restore(bad)

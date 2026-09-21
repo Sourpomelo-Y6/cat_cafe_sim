@@ -115,6 +115,8 @@ class ManualCafeInteractionWindow:
                 text=f"経営ルール開始 · 開始時資金補充 {event['grant']:g}"
             elif kind=='recruitment_opened':
                 text='保護猫の受け入れ候補を確認'
+            elif kind=='recruitment_added':
+                text=f"保護猫の候補を{event['count']}匹追加"
             elif kind=='cat_recruited':
                 text=f"保護猫 {event['name']}（{event['cat_id']}）を受け入れ · 初期費用 {event['cost']:g} · 休養予定"
             elif kind=='cat_missing':

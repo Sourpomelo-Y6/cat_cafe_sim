@@ -108,13 +108,24 @@ class CafeInteractionSession:
         self.core.dispatch(cat_id, rules)
 
     def open_recruitment(self):
-        if self.core.recruitment is not None:
-            return
+        from .core.cafe_recruitment import candidates, next_candidate_day, require_preparation, add_candidates
+        recruitment = self.core.recruitment
+        if recruitment is not None:
+            if self.core.day < next_candidate_day(recruitment) or self.pending:
+                return
+            try:
+                require_preparation(self.core)
+            except ValueError:
+                return  # 営業中や終了後も既存候補を閲覧できる。
         self._ready()
-        from .core.cafe_recruitment import candidates
         data = self.store._read()
         used = set(self.core.cats) | set(data.get('cats', {})) | {row['cat_id'] for row in data['pairs']}
-        self.core.open_recruitment(candidates(used))
+        if recruitment is None:
+            self.core.open_recruitment(candidates(used))
+        else:
+            used.update(recruitment['candidates'])
+            batch = len(set(recruitment.get('presented_days', {}).values())) or 1
+            add_candidates(self.core, candidates(used, batch=batch))
 
     def recruit_cat(self, cat_id):
         import copy
