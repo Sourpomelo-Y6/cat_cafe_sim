@@ -101,6 +101,14 @@ class ManualCafeInteractionWindow:
             elif kind=='cat_health':
                 name=self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])
                 text=f"{name}：{health_result_text(event)}"
+            elif kind=='goal_enabled':
+                text='人気目標への挑戦を開始'
+            elif kind=='popularity_earned':
+                text=f"接客による人気 ＋{event['gain']:g}（対象{event['qualified']}件）"
+            elif kind=='goal_result':
+                text='人気目標クリア' if event['status']=='cleared' else '人気目標は期限内未達'
+            elif kind=='goal_continued':
+                text='目標結果を確認し、継続営業を選択'
             elif kind=='management_enabled':
                 text=f"経営ルール開始 · 開始時資金補充 {event['grant']:g}"
             elif kind=='recruitment_opened':
@@ -218,6 +226,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.shift_button.pack(side='left',padx=6)
         self.day_off_button=ttk.Button(buttons,text='今日は休業する',command=self.take_day_off)
         self.day_off_button.pack(side='left',padx=4)
+        self.goal_button=ttk.Button(buttons,text='目標・結果…',command=self.show_goal)
+        self.goal_button.pack(side='left',padx=4)
         roster_frame = ttk.Frame(automation)
         roster_frame.pack(fill='x',pady=4)
         self.cat_details_button = ttk.Button(roster_frame, text='猫の詳細…', command=self.show_cat_details)
@@ -290,7 +300,11 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .core.cafe_management import is_over
         ended=is_over(core)
         self.new_game_button.configure(text='結果・再開始…' if ended else '新規ゲーム…')
-        events_waiting=bool(waiting_events(core)) or playing or ended
+        from .core.cafe_goal import pending as goal_pending
+        from .cafe_goal_gui import progress
+        self.instructions.configure(text=progress(core))
+        goal_waiting=goal_pending(core)
+        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting
         if core.management:
             self.status.set(self.status.get()+f" · 人気 {core.management['popularity']:g}")
         self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
@@ -344,8 +358,15 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.notice.set('ゲームオーバー：'+('資金が0以下になりました。' if core.management['game_over']['reason']=='funds' else '店の人気が0になりました。')+' 閲覧・保存はできます。'+(' 接客結果の保存を再試行してください。' if self.session.pending else ''))
         elif playing:
             self.notice.set('プレイヤー交流の途中です。「猫の詳細…」から再開・終了してください。')
+        elif goal_waiting and not waiting_events(core):
+            self.notice.set('目標の結果が出ました。「目標・結果…」で確認し、継続営業を選べます。')
         elif events_waiting:
             self.notice.set('帰還・譲渡・家出イベントの確認待ちです。「派遣・イベント…」で対応してください。')
+
+    def show_goal(self):
+        from .cafe_goal_gui import CafeGoalWindow
+        self.stop();self.refresh()
+        self.goal_window=CafeGoalWindow(self.root,self.session,self.refresh)
 
     def show_activities(self):
         from .cafe_activity_gui import CafeActivityWindow

@@ -7,7 +7,9 @@ from .human_cat_relationship import verify_relationship
 
 def apply_operation(core, operation):
     kind=operation['kind']
-    if kind=='open_recruitment':core.open_recruitment(operation['candidates'])
+    if kind=='enable_goal':core.enable_goal(operation['rules'])
+    elif kind=='continue_goal':core.continue_goal()
+    elif kind=='open_recruitment':core.open_recruitment(operation['candidates'])
     elif kind=='recruit_cat':core.recruit_cat(operation['cat_id'])
     elif kind=='dispatch':core.dispatch(operation['cat_id'],operation['rules'])
     elif kind=='player_play':

@@ -57,7 +57,8 @@ class CafeManagementWindow:
                 ACTIVITY_LABELS[core.activity(key)],f"{data['stress'][key]:g}" if data else '未導入'))
         self.enable_button.state(['!disabled'] if not data and core.can_set_shifts and core.health_rules
                                  and not self.session.pending and not waiting_events(core) and not active(core) else ['disabled'])
-        self.status.set(f"所持金 {core.funds:g} · 人気 {data['popularity']:g} / 100" if data else
+        cap=core.goal['rules']['cap'] if core.goal else 100
+        self.status.set(f"所持金 {core.funds:g} · 人気 {data['popularity']:g} / {cap:g}" if data else
                         '未導入：開始するとストレス・家出・人気・費用・ゲームオーバーが有効になります。')
         if data:
             for key,event in data['events'].items():

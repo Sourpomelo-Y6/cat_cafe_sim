@@ -185,13 +185,21 @@ def restore(data):
     if 'player_bond' in state:
         from .cafe_player import validate as validate_player
         core.player_bond=validate_player(core,state['player_bond'])
+    if 'goal' in state:
+        core.goal=copy.deepcopy(state['goal'])
     if 'management' in state:
         from .cafe_management import validate as validate_management
         core.management=validate_management(core,state['management'])
+    if 'goal' in state:
+        from .cafe_goal import validate as validate_goal
+        if not core.management:
+            raise ValueError('目標には経営ルールが必要です。')
+        core.goal=validate_goal(core,state['goal'],core.management)
     from .cafe_player import active as player_active
     from .cafe_activities import waiting_events
     from .cafe_management import is_over
-    if player_active(core) and (waiting_events(core) or is_over(core)):
+    from .cafe_goal import pending as goal_pending
+    if player_active(core) and (waiting_events(core) or is_over(core) or goal_pending(core)):
         raise ValueError('プレイヤー交流と未解決イベント・終了状態が矛盾しています。')
     if data['seat_count']==2:
         core.seats={key:Seat(**row) for key,row in state['seats'].items()}
@@ -224,7 +232,7 @@ def restore(data):
                 or cat.id not in core.working_cats or cat.cannot_continue or core.activity(cat.id)!='cafe'):
             raise ValueError('invalid active interaction')
         busy_cats.add(cat.id);busy_guests.add(interaction.customer_id)
-    if is_over(core) and active:
+    if (is_over(core) or goal_pending(core)) and active:
         raise ValueError('終了後に接客が進行しています。')
     if not set(active)<=set(seats) or snapshot(core)!=state or core.summary()!=data['summary']:
         raise ValueError('営業セーブの状態と集計が一致しません。')

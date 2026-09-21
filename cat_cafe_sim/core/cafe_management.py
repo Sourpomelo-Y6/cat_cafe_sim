@@ -83,6 +83,8 @@ def close_day(core):
     if not data:
         return
     rule = data['rules']
+    from .cafe_goal import earn
+    earn(core)
     # Existing absences progress first; a cat leaving today does not consume a missing day.
     for event in data['events'].values():
         if event['status']=='missing':
@@ -159,9 +161,11 @@ def validate(core, data):
         raise ValueError('開始時資金の記録が不正です。')
     if not isinstance(data['stress'],dict) or set(data['stress'])!=set(core.cats):
         raise ValueError('ストレスの対象猫が不正です。')
-    for value in list(data['stress'].values())+[data['popularity']]:
+    for value in list(data['stress'].values()):
         if type(value) not in (int,float) or not math.isfinite(value) or not 0<=value<=100:
             raise ValueError('ストレス・人気の値が不正です。')
+    if type(data['popularity']) not in (int,float) or not math.isfinite(data['popularity']) or data['popularity']<0:
+        raise ValueError('人気の値が不正です。')
     if not isinstance(data['events'],dict):
         raise ValueError('家出イベントが不正です。')
     missing=set()
@@ -196,7 +200,7 @@ def validate(core, data):
     if missing!={key for key in core.cats if core.activity(key)=='missing'}:
         raise ValueError('行方不明の猫とイベントが一致しません。')
     expected=max(0,rule['starting_popularity']-len(data['events'])*rule['popularity_loss'])
-    if data['popularity']!=expected:
+    if core.goal is None and data['popularity']!=expected:
         raise ValueError('人気と家出の記録が一致しません。')
     reason='funds' if core.funds<=0 else 'popularity' if data['popularity']<=0 else None
     end=data['game_over']

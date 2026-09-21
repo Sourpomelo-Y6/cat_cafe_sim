@@ -31,6 +31,8 @@ class NewGameWindow:
                 ttk.Label(frame, text=f'ゲームオーバー：{reason}\n{previous.day}日目 / 資金 {previous.funds:g} / 人気 {previous.management["popularity"]:g}\n累計接客売上 {total:g}', wraplength=460).pack(anchor='w', pady=(0,12))
         rule = self.conditions['management']
         ttk.Label(frame, text=f"新しい店の初期条件\n資金 {rule['starting_funds']:g} / 人気 {rule['starting_popularity']:g} / {self.conditions['seat_count']}席", wraplength=460).pack(anchor='w')
+        goal=self.conditions['goal']
+        ttk.Label(frame,text=f"人気目標：{goal['days']}日以内に{goal['target']:g}（達成後も継続可能）",wraplength=460).pack(anchor='w')
         names = '・'.join(row['name'] for row in self.conditions['profiles']['cats'].values())
         ttk.Label(frame, text=f'所属猫：{names}\n全猫が健康・体力全回復で、出勤予定から開始します。', wraplength=460).pack(anchor='w', pady=8)
         ttk.Label(frame, text='ストレス・家出・経営ルール：有効\n資金0以下または人気0でゲームオーバー。\n譲渡イベント：初期OFF（準備中に変更できます）。', wraplength=460).pack(anchor='w')

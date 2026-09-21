@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .core.cafe_management import rules
 from .core.config import Config
+from .core.cafe_goal import rules as goal_rules
 from .core.human_cat_types import load_presets
 from .storage.relationships import RelationshipStore
 from .storage.cafe_saves import save_game
@@ -22,7 +23,7 @@ def starting_conditions():
         if row['cat_id'] in profiles['cats']:
             raise ValueError('初期猫のIDが重複しています。')
         RelationshipStore._register(profiles, row['cat_id'], row['name'], presets[row['preset']])
-    return dict(seat_count=data['seat_count'], profiles=profiles, management=rules())
+    return dict(seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules())
 
 
 def create_game(directory='saves/games', conditions=None):
@@ -38,6 +39,7 @@ def create_game(directory='saves/games', conditions=None):
         session = CafeInteractionSession(store=store, seat_count=selected['seat_count'],
             cafe_config=replace(Config.load(), initial_funds=0))
         session.enable_management(selected['management'])
+        session.enable_goal(selected.get('goal'))
         save_game(session, location / 'cafe.json', auto_assign=False)
     except Exception:
         # Only this call's newly allocated directory belongs to the failed creation.

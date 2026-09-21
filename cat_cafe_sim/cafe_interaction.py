@@ -135,6 +135,17 @@ class CafeInteractionSession:
         self.profiles = profiles
         self.checkpoint_baseline = baseline
 
+    def enable_goal(self, rules=None):
+        self._ready()
+        self.core.enable_goal(rules)
+
+    def continue_goal(self):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に接客結果の保存を再試行してください。')
+        self.core.continue_goal()
+
     def enable_management(self, rules=None):
         self._ready()
         self.core.enable_management(rules)

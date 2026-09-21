@@ -552,6 +552,50 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_goal_enable_clear_resume_and_layout(self):
+        from dataclasses import replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+        from cat_cafe_sim.core.cafe_goal import rules, pending
+        from cat_cafe_sim.storage.cafe_saves import save_game, load_game
+        self.app.session=CafeInteractionSession(store=self.store,
+            cafe_config=replace(Config.load(),opening_ticks=2,arrival_ticks=(0,)),
+            interaction_config=replace(RelationshipConfig(),ticks=1))
+        self.app.session.enable_management()
+        self.app.logged=0;self.app.refresh()
+        self.app.goal_button.invoke();window=self.app.goal_window
+        with patch('tkinter.messagebox.askyesno',return_value=False):window.enable_button.invoke()
+        self.assertIsNone(self.app.session.core.goal)
+        with patch('cat_cafe_sim.cafe_goal_gui.rules',return_value=dict(rules(),target=105)), patch('tkinter.messagebox.askyesno',return_value=True):
+            window.enable_button.invoke()
+        self.assertIn('100 / 105',self.app.instructions.cget('text'))
+        window.window.destroy()
+        while not self.app.session.core.closed:self.app.session.automatic_step()
+        self.app.refresh()
+        self.assertTrue(pending(self.app.session.core))
+        self.assertIn('disabled',self.app.day_button.state())
+        save_game(self.app.session,self.path)
+        self.app.session,_=load_game(self.path)
+        self.app.logged=0;self.app.refresh()
+        self.app.goal_button.invoke();window=self.app.goal_window
+        self.root.deiconify();self.root.geometry('860x600')
+        window.window.geometry('500x300');self.root.update()
+        self.assertIn('クリア',window.status.get())
+        for widget in (self.app.goal_button, window.continue_button):
+            self.assertTrue(widget.winfo_ismapped())
+            parent=self.root if widget==self.app.goal_button else window.window
+            self.assertLessEqual(widget.winfo_rootx()+widget.winfo_width(),parent.winfo_rootx()+parent.winfo_width())
+        self.assertLessEqual(window.continue_button.winfo_rooty()+window.continue_button.winfo_height(),window.window.winfo_rooty()+window.window.winfo_height())
+        window.continue_button.invoke()
+        self.assertFalse(pending(self.app.session.core))
+        self.assertNotIn('disabled',self.app.day_button.state())
+        self.assertIn('disabled',window.continue_button.state())
+        window.window.destroy()
+        self.app.session.next_day()
+        save_game(self.app.session,self.path)
+        self.assertTrue(load_game(self.path)[0].core.goal['continued'])
+
     def test_recruitment_confirmation_save_resume_roster_choices_and_layout(self):
         from dataclasses import replace
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession

@@ -31,6 +31,7 @@ class CafeInteractionCore(SimulationCore):
         self.returning_customers = set()
         self.player_bond = None
         self.management = None
+        self.goal = None
         self.recruitment = None
         self.adoption = None
         self.activities = None
@@ -56,6 +57,7 @@ class CafeInteractionCore(SimulationCore):
                                   results=copy.deepcopy(self.health_results))} if self.health_rules else {}),
                 **({'day_results': copy.deepcopy(self.day_results)} if self.day_results else {}),
                 **({'player_bond': copy.deepcopy(self.player_bond)} if self.player_bond is not None else {}),
+                **({'goal': copy.deepcopy(self.goal)} if self.goal is not None else {}),
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
@@ -82,6 +84,14 @@ class CafeInteractionCore(SimulationCore):
     def require_running(self):
         from .cafe_management import require_running
         require_running(self)
+
+    def enable_goal(self, rules=None):
+        from .cafe_goal import enable
+        enable(self, rules)
+
+    def continue_goal(self):
+        from .cafe_goal import continue_game
+        continue_game(self)
 
     def enable_management(self, rules=None):
         from .cafe_management import enable
@@ -113,6 +123,9 @@ class CafeInteractionCore(SimulationCore):
 
     def require_events_resolved(self):
         self.require_running()
+        from .cafe_goal import pending
+        if pending(self):
+            raise ValueError('目標画面で結果を確認し、継続営業を選んでください。')
         from .cafe_player import active
         if active(self):
             raise ValueError('進行中のプレイヤー交流を終了してください。')
@@ -208,6 +221,8 @@ class CafeInteractionCore(SimulationCore):
             close_day(self)
             from .cafe_management import close_day as management_close
             management_close(self)
+            from .cafe_goal import settle
+            settle(self)
 
     def _arrive(self):
         super()._arrive()
@@ -397,6 +412,7 @@ class CafeInteractionCore(SimulationCore):
                     departures={reason:sum(v.departure_reason == reason for v in visits)
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
+                    **({'goal_status': self.goal['status'], 'popularity_gain': next((r['gain'] for r in self.goal['days'] if r['day']==self.day),0)} if self.goal else {}),
                     **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()
