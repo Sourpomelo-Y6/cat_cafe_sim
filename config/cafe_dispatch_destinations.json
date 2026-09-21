@@ -1,0 +1,20 @@
+[
+  {
+    "id": "shopping_street_event",
+    "name": "商店街の交流会",
+    "days": 2,
+    "reward": 260,
+    "max_fatigue": 40,
+    "required_trait": "hospitality",
+    "required_trait_name": "接客好き"
+  },
+  {
+    "id": "out_of_town_visit",
+    "name": "郊外への出張訪問",
+    "days": 3,
+    "reward": 450,
+    "max_fatigue": 30,
+    "required_trait": "outgoing",
+    "required_trait_name": "外出好き"
+  }
+]

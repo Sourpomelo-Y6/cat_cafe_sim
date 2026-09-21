@@ -654,6 +654,39 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertIn('disabled',window.receive_button.state())
         window.close_button.invoke();activity.close_button.invoke()
 
+    def test_dispatch_destination_selection_conditions_and_confirmation(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.cafe_traits import definitions
+        self.app.session = CafeInteractionSession(store=self.store)
+        keys = list(self.app.session.core.cats)
+        self.app.session.core.initialize_traits({keys[1]: definitions()['outgoing']})
+        self.app.logged = 0
+        self.app.refresh()
+        self.app.activity_button.invoke()
+        window = self.app.activity_window
+        self.assertEqual(len(window.destination_choice['values']), 3)
+        window.destination_choice.current(2)
+        window.select_destination()
+        window.cats.selection_set(keys[0])
+        window.buttons()
+        self.assertIn('disabled', window.send_button.state())
+        self.assertIn('外出好き', window.selection_info.get())
+        window.cats.selection_set(keys[1])
+        window.buttons()
+        self.assertNotIn('disabled', window.send_button.state())
+        self.assertIn('562.5', window.selection_info.get())
+        with patch('tkinter.messagebox.askyesno', return_value=False) as confirm:
+            window.send_button.invoke()
+            self.assertIn('郊外への出張訪問：3日間', confirm.call_args.args[1])
+        self.assertEqual(self.app.session.core.activity(keys[1]), 'cafe')
+        with patch('tkinter.messagebox.askyesno', return_value=True):
+            window.send_button.invoke()
+        event = next(iter(self.app.session.core.activities['events'].values()))
+        self.assertEqual(event['destination']['id'], 'out_of_town_visit')
+        self.assertEqual(event['remaining'], 3)
+        self.assertEqual(window.events.set(event['id'], '報酬'), '562.5')
+        window.close_button.invoke()
+
     def test_periodic_recruitment_schedule_and_new_candidates(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         self.app.session = CafeInteractionSession(store=self.store)

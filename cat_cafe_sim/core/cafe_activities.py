@@ -10,7 +10,7 @@ ACTIVITY_LABELS = {'cafe':'在店', 'dispatched':'派遣中', 'missing':'行方�
 def destination(data=None):
     if data is None:
         data = json.loads((Path(__file__).resolve().parents[2]/'config/cafe_dispatch.json').read_text())
-    if not isinstance(data, dict) or set(data) != {'id','name','days','reward','max_fatigue'}:
+    if not isinstance(data, dict) or set(data) not in ({'id','name','days','reward','max_fatigue'}, {'id','name','days','reward','max_fatigue','required_trait','required_trait_name'}):
         raise ValueError('派遣先の設定が不正です。')
     if any(not isinstance(data[k], str) or not data[k].strip() for k in ('id','name')):
         raise ValueError('派遣先の名前が不正です。')
@@ -18,7 +18,49 @@ def destination(data=None):
         raise ValueError('派遣日数が不正です。')
     if any(type(data[k]) not in (int,float) or not math.isfinite(data[k]) or data[k] < 0 for k in ('reward','max_fatigue')):
         raise ValueError('派遣先の条件・報酬が不正です。')
+    if 'required_trait' in data and any(not isinstance(data[k], str) or not data[k].strip() for k in ('required_trait', 'required_trait_name')):
+        raise ValueError('派遣に必要な特性が不正です。')
     return copy.deepcopy(data)
+
+
+def destinations():
+    extra = json.loads((Path(__file__).resolve().parents[2]/'config/cafe_dispatch_destinations.json').read_text(encoding='utf-8'))
+    if not isinstance(extra, list):
+        raise ValueError('派遣先一覧が不正です。')
+    rows = [destination()] + [destination(row) for row in extra]
+    if len({row['id'] for row in rows}) != len(rows):
+        raise ValueError('派遣先IDが重複しています。')
+    return rows
+
+
+def dispatch_reason(core, cat_id, rules):
+    """表示と出発処理で共用する参加条件。状態は変更しない。"""
+    try:
+        core.require_events_resolved()
+    except ValueError as exc:
+        return str(exc)
+    if not core.compact or not core.can_set_shifts or waiting_events(core) or not core.shift_rules or not core.health_rules:
+        return '出勤・病気ルールが有効な営業準備中に出発できます。'
+    if cat_id not in core.cats:
+        return '参加している猫を選んでください。'
+    cat = core.cats[cat_id]
+    if activity(core, cat_id) != 'cafe':
+        return '在店していません。'
+    if cat.health_status != 'healthy':
+        return '健康な猫が対象です。'
+    if cat.cannot_continue or cat.stamina <= 0:
+        return '接客を担当できる体力・状態が必要です。'
+    if cat.fatigue > rules['max_fatigue']:
+        return f"疲労{rules['max_fatigue']:g}以下が必要です。"
+    from .cafe_traits import trait
+    if 'required_trait' in rules and (trait(core, cat_id) or {}).get('id') != rules['required_trait']:
+        return f"特性「{rules['required_trait_name']}」が必要です。"
+    available = [c for c in core.cats.values() if activity(core,c.id)=='cafe' and c.health_status=='healthy' and not c.cannot_continue and c.stamina>0]
+    if len(available) <= len(getattr(core,'seats',{core.seat.id:core.seat})):
+        return '店内の席数を超える担当可能な猫が必要です。'
+    if core.activities and f'dispatch-{core.day}-{cat_id}' in core.activities['events']:
+        return 'この猫は本日すでに派遣されています。'
+    return ''
 
 
 def activity(core, cat_id):
@@ -46,21 +88,11 @@ def ensure(core):
 
 
 def dispatch(core, cat_id, rules=None):
-    core.require_events_resolved()
     rules = destination(rules)
-    if not core.compact or not core.can_set_shifts or waiting_events(core) or not core.shift_rules or not core.health_rules:
-        raise ValueError('派遣は出勤・病気ルールが有効な営業準備中に選んでください。')
-    if cat_id not in core.cats:
-        raise ValueError('参加している猫を選んでください。')
-    cat = core.cats[cat_id]
-    if activity(core,cat_id) != 'cafe' or cat.health_status != 'healthy' or cat.cannot_continue or cat.stamina <= 0 or cat.fatigue > rules['max_fatigue']:
-        raise ValueError('この猫は派遣先の条件を満たしていません。')
-    available = [c for c in core.cats.values() if activity(core,c.id)=='cafe' and c.health_status=='healthy' and not c.cannot_continue and c.stamina>0]
-    if len(available) <= len(getattr(core,'seats',{core.seat.id:core.seat})):
-        raise ValueError('席数を超える担当可能な猫がいる場合に派遣できます。')
+    reason = dispatch_reason(core, cat_id, rules)
+    if reason:
+        raise ValueError(reason)
     event_id = f'dispatch-{core.day}-{cat_id}'
-    if core.activities and event_id in core.activities['events']:
-        raise ValueError('この猫は本日すでに派遣されています。')
     from .cafe_traits import dispatch_terms
     dispatch_terms(core,cat_id,rules['reward'])
     ensure(core)

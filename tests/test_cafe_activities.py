@@ -137,3 +137,68 @@ class ActivityTests(unittest.TestCase):
         data=checkpoint(s.core,set());data['state']['funds']+=100
         data['summary']['funds']+=100;data['digest']=digest({k:v for k,v in data.items() if k!='digest'})
         with self.assertRaises(ValueError):restore(data)
+
+
+    def test_destinations_different_durations_rewards_and_frozen_saved_rules(self):
+        from cat_cafe_sim.core.cafe_activities import destinations, dispatch_reason
+        from cat_cafe_sim.core.cafe_traits import definitions
+        s = self.session()
+        keys = list(s.core.cats)
+        traits = definitions()
+        s.core.initialize_traits({keys[1]: traits['hospitality'], keys[2]: traits['outgoing']})
+        rules = destinations()
+        self.assertEqual(len(rules), 3)
+        for key, rule in zip(keys, rules):
+            self.assertEqual(dispatch_reason(s.core, key, rule), '')
+            s.dispatch(key, rule)
+        s = self.reload(s)
+        total = 0
+        for index, expected in enumerate((100, 260, 562.5)):
+            s.day_off()
+            events = waiting_events(s.core)
+            self.assertEqual(len(events), 1)
+            self.assertEqual(events[0]['cat_id'], keys[index])
+            with patch('cat_cafe_sim.core.cafe_activities.destinations', side_effect=AssertionError('config reload')):
+                s = self.reload(s)
+            s.resolve_activity(events[0]['id'])
+            total += expected
+            self.assertEqual(s.core.funds, total)
+            s.resolve_activity(events[0]['id'])
+            self.assertEqual(s.core.funds, total)
+        self.assertEqual(len(s.core.activities['events']), 3)
+        self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(), s.core.snapshot())
+        self.reload(s)
+
+    def test_required_trait_and_fatigue_boundaries_do_not_mutate_on_rejection(self):
+        from cat_cafe_sim.core.cafe_activities import destinations, dispatch_reason
+        from cat_cafe_sim.core.cafe_traits import definitions
+        for rule in destinations()[1:]:
+            s = self.session()
+            key = next(iter(s.core.cats))
+            self.assertIn(rule['required_trait_name'], dispatch_reason(s.core, key, rule))
+            before = s.core.log()
+            with self.assertRaises(ValueError):
+                s.dispatch(key, rule)
+            self.assertEqual(s.core.log(), before)
+            s.core.initialize_traits({key: definitions()[rule['required_trait']]})
+            s.core.cats[key].fatigue = rule['max_fatigue'] + 1
+            self.assertIn('疲労', dispatch_reason(s.core, key, rule))
+            before = s.core.snapshot()
+            with self.assertRaises(ValueError):
+                s.dispatch(key, rule)
+            self.assertEqual(s.core.snapshot(), before)
+            s.core.cats[key].fatigue = rule['max_fatigue']
+            self.assertEqual(dispatch_reason(s.core, key, rule), '')
+            s.dispatch(key, rule)
+
+    def test_destination_condition_validation_and_legacy_rules(self):
+        from cat_cafe_sim.core.cafe_activities import destinations
+        legacy = destination()
+        self.assertNotIn('required_trait', legacy)
+        for change in ({'required_trait': 'outgoing'},
+                       {'required_trait': '', 'required_trait_name': '外出好き'},
+                       {'required_trait': 'outgoing', 'required_trait_name': None},
+                       {'days': True}, {'reward': float('inf')}):
+            with self.assertRaises(ValueError):
+                destination(dict(legacy, **change))
+        self.assertEqual(destinations()[0], legacy)
