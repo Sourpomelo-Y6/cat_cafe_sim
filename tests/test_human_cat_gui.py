@@ -552,6 +552,61 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_management_enable_missing_return_cost_game_over_and_layout(self):
+        from dataclasses import replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+        from cat_cafe_sim.core.cafe_management import rules, waiting, is_over
+        from cat_cafe_sim.storage.cafe_saves import save_game, load_game
+        self.app.session=CafeInteractionSession(store=self.store,
+            cafe_config=replace(Config.load(),opening_ticks=2,arrival_ticks=(0,)),
+            interaction_config=replace(RelationshipConfig(),ticks=1))
+        self.app.logged=0;self.app.refresh()
+        self.app.activity_button.invoke();activity=self.app.activity_window
+        activity.management_button.invoke();window=activity.management_window
+        selected=dict(rules(),runaway_threshold=2,return_stress=0,kitten_probability=1,kitten_cost=2000)
+        with patch('cat_cafe_sim.cafe_management_gui.rules',return_value=selected), \
+                patch('tkinter.messagebox.askyesno',return_value=False):
+            window.enable_button.invoke()
+        self.assertIsNone(self.app.session.core.management)
+        with patch('cat_cafe_sim.cafe_management_gui.rules',return_value=selected), \
+                patch('tkinter.messagebox.askyesno',return_value=True):
+            window.enable_button.invoke()
+        self.assertEqual(self.app.session.core.funds,1000)
+        self.assertIn('disabled',window.enable_button.state())
+        window.close_button.invoke();activity.close_button.invoke()
+        while not self.app.session.core.closed:self.app.session.automatic_step()
+        self.app.session.next_day();self.app.session.day_off();self.app.session.day_off()
+        save_game(self.app.session,self.path)
+        self.app.session,_=load_game(self.path)
+        self.app.logged=0;self.app.refresh()
+        self.assertTrue(waiting(self.app.session.core))
+        self.app.activity_button.invoke();activity=self.app.activity_window
+        activity.management_button.invoke();window=activity.management_window
+        self.root.deiconify();window.window.deiconify()
+        window.window.geometry('500x440');self.root.update()
+        for widget in (window.return_button,window.close_button,window.cats,window.events):
+            self.assertTrue(widget.winfo_ismapped())
+            self.assertGreater(widget.winfo_height(),15)
+            self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),
+                                 window.window.winfo_rooty()+window.window.winfo_height())
+        with patch('tkinter.messagebox.askyesno',return_value=False):
+            window.return_button.invoke()
+        self.assertFalse(is_over(self.app.session.core))
+        with patch('tkinter.messagebox.askyesno',return_value=True):
+            window.return_button.invoke()
+        self.assertTrue(is_over(self.app.session.core))
+        self.assertIn('ゲームオーバー',window.notice.get())
+        self.assertIn('ゲームオーバー',self.app.notice.get())
+        self.assertIn('disabled',self.app.run_button.state())
+        self.assertIn('disabled',self.app.day_off_button.state())
+        self.assertIn('disabled',window.return_button.state())
+        window.close_button.invoke();activity.close_button.invoke()
+        save_game(self.app.session,self.path)
+        loaded,_=load_game(self.path)
+        self.assertTrue(is_over(loaded.core))
+
     def test_adoption_toggle_offer_save_confirm_and_small_window(self):
         from dataclasses import replace
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession

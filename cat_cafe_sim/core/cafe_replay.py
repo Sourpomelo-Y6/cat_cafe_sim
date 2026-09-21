@@ -14,6 +14,8 @@ def apply_operation(core, operation):
     elif kind=='player_begin':core.play_with_player(operation['cat_id'],operation['config'])
     elif kind=='player_step':core.player_command(operation['action'],operation['target_type'])
     elif kind=='player_finish':core.player_command(finish=True)
+    elif kind=='enable_management':core.enable_management(operation['rules'])
+    elif kind=='resolve_missing':core.resolve_missing(operation['event_id'])
     elif kind=='configure_adoption':core.configure_adoption(operation['enabled'])
     elif kind=='resolve_adoption':core.resolve_adoption(operation['event_id'],operation['choice'])
     elif kind=='resolve_activity':core.resolve_activity(operation['event_id'],operation['choice'])

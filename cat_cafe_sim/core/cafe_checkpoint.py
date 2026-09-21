@@ -121,8 +121,10 @@ def restore(data):
             or not 0<=core.tick<=core.config.opening_ticks or type(core.closed) is not bool
             or core.closed!=(core.tick==core.config.opening_ticks)):
         raise ValueError('invalid business clock')
-    for value in (core.funds,core.spirit_spent,core.service_ticks,core.interaction_bonus):
-        if type(value) not in (int,float) or not math.isfinite(value) or value<0:
+    for name in ('funds','spirit_spent','service_ticks','interaction_bonus'):
+        value=getattr(core,name)
+        minimum = -float('inf') if name=='funds' and 'management' in state else 0
+        if type(value) not in (int,float) or not math.isfinite(value) or value<minimum:
             raise ValueError('invalid business totals')
     core.queue=copy.deepcopy(state['queue'])
     core.visits={row['id']:Visit(**row) for row in state['visits']}
@@ -176,10 +178,14 @@ def restore(data):
     if 'player_bond' in state:
         from .cafe_player import validate as validate_player
         core.player_bond=validate_player(core,state['player_bond'])
-        from .cafe_player import active as player_active
-        from .cafe_adoption import waiting as adoption_waiting
-        if player_active(core) and adoption_waiting(core):
-            raise ValueError('プレイヤー交流と未解決の譲渡が同時に進行しています。')
+    if 'management' in state:
+        from .cafe_management import validate as validate_management
+        core.management=validate_management(core,state['management'])
+    from .cafe_player import active as player_active
+    from .cafe_activities import waiting_events
+    from .cafe_management import is_over
+    if player_active(core) and (waiting_events(core) or is_over(core)):
+        raise ValueError('プレイヤー交流と未解決イベント・終了状態が矛盾しています。')
     if data['seat_count']==2:
         core.seats={key:Seat(**row) for key,row in state['seats'].items()}
         if set(core.seats)!={'seat-1','seat-2'}:
@@ -211,11 +217,15 @@ def restore(data):
                 or cat.id not in core.working_cats or cat.cannot_continue or core.activity(cat.id)!='cafe'):
             raise ValueError('invalid active interaction')
         busy_cats.add(cat.id);busy_guests.add(interaction.customer_id)
+    if is_over(core) and active:
+        raise ValueError('終了後に接客が進行しています。')
     if not set(active)<=set(seats) or snapshot(core)!=state or core.summary()!=data['summary']:
         raise ValueError('営業セーブの状態と集計が一致しません。')
     expected_funds = core.config.initial_funds + sum(row['summary']['revenue'] for row in core.day_results) + sum(v.bill for v in core.visits.values())
     from .cafe_activities import income
     expected_funds += income(core)
+    from .cafe_management import money_adjustment
+    expected_funds += money_adjustment(core)
     if not math.isclose(core.funds,expected_funds,rel_tol=1e-12,abs_tol=1e-8):
         raise ValueError('会計の合計と所持金が一致しません。')
     core.recorded_digest=record_digest(core)

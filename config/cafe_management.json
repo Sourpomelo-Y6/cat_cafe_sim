@@ -1,0 +1,14 @@
+{
+  "starting_funds": 1000,
+  "starting_popularity": 100,
+  "stress_per_service_tick": 2,
+  "rest_recovery": 20,
+  "player_relief": 5,
+  "player_stress": 5,
+  "runaway_threshold": 80,
+  "popularity_loss": 20,
+  "missing_days": 2,
+  "return_stress": 20,
+  "kitten_probability": 0.25,
+  "kitten_cost": 250
+}

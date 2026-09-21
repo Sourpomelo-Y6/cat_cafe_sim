@@ -30,6 +30,7 @@ class CafeInteractionCore(SimulationCore):
         self.day_outcome_offset = 0
         self.returning_customers = set()
         self.player_bond = None
+        self.management = None
         self.adoption = None
         self.activities = None
         self.health_rules = None
@@ -54,6 +55,7 @@ class CafeInteractionCore(SimulationCore):
                                   results=copy.deepcopy(self.health_results))} if self.health_rules else {}),
                 **({'day_results': copy.deepcopy(self.day_results)} if self.day_results else {}),
                 **({'player_bond': copy.deepcopy(self.player_bond)} if self.player_bond is not None else {}),
+                **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
                 **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
@@ -66,6 +68,18 @@ class CafeInteractionCore(SimulationCore):
     def player_command(self, action=None, target_type=None, *, finish=False):
         from .cafe_player import advance
         advance(self, action, target_type, finish=finish)
+
+    def require_running(self):
+        from .cafe_management import require_running
+        require_running(self)
+
+    def enable_management(self, rules=None):
+        from .cafe_management import enable
+        enable(self, rules)
+
+    def resolve_missing(self, event_id):
+        from .cafe_management import resolve
+        resolve(self, event_id)
 
     def configure_adoption(self, enabled):
         from .cafe_adoption import configure
@@ -88,12 +102,13 @@ class CafeInteractionCore(SimulationCore):
         resolve(self, event_id, choice)
 
     def require_events_resolved(self):
+        self.require_running()
         from .cafe_player import active
         if active(self):
             raise ValueError('進行中のプレイヤー交流を終了してください。')
         from .cafe_activities import waiting_events
         if waiting_events(self):
-            raise ValueError('派遣・イベント画面で帰還結果や譲渡の申し出を確認してください。')
+            raise ValueError('派遣・イベント画面で帰還結果や譲渡・家出イベントを確認してください。')
 
     @property
     def can_set_shifts(self):
@@ -181,6 +196,8 @@ class CafeInteractionCore(SimulationCore):
         if kind == 'closed':
             from .cafe_activities import close_day
             close_day(self)
+            from .cafe_management import close_day as management_close
+            management_close(self)
 
     def _arrive(self):
         super()._arrive()
@@ -198,6 +215,7 @@ class CafeInteractionCore(SimulationCore):
             changes[key] = changes.get(key, 0) + result['affinity_after'] - result['affinity_before']
         return dict(day=self.day, summary=self.summary(),
                     cats={key: dict(stamina=cat.stamina,
+                         **(dict(stress=self.management['stress'][key]) if self.management else {}),
                          **(dict(activity=self.activities['day_locations'][key]) if self.activities else {}),
                          **(dict(interactions=sum(1 for value in list(self.outcomes.values())[self.day_outcome_offset:]
                               if outcome_result(value)['cat_id']==key)) if self.compact else {}),
@@ -229,7 +247,11 @@ class CafeInteractionCore(SimulationCore):
         self._emit('closed', revenue=0)
         result = self.day_result()
         result['day_type'] = 'day_off'
-        self.working_cats = planned
+        self.working_cats = {key for key in planned if self.activity(key)=='cafe' and self.cats[key].health_status=='healthy'}
+        from .cafe_management import is_over
+        if is_over(self):
+            self._record(dict(kind='day_off'))
+            return
         self._advance_day(result, dict(kind='day_off'), list(self._tick_events))
 
     def _advance_day(self, result, operation, events=None):
@@ -364,6 +386,9 @@ class CafeInteractionCore(SimulationCore):
                     departures={reason:sum(v.departure_reason == reason for v in visits)
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
+                    **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),
+                             kitten_expenses=sum(e['cost'] for e in self.management['events'].values()
+                                                 if e['resolved_day']==self.day)) if self.management else {}),
                     interaction_bonus=self.interaction_bonus, stamina=self.cat.stamina,
                     **({'dispatch_income': sum(e['destination']['reward'] for e in self.activities['events'].values()
                         if e['status']=='resolved' and e['resolved_day']==self.day)} if self.activities else {}),

@@ -106,6 +106,17 @@ class CafeInteractionSession:
         self._ready()
         self.core.dispatch(cat_id, rules)
 
+    def enable_management(self, rules=None):
+        self._ready()
+        self.core.enable_management(rules)
+
+    def resolve_missing(self, event_id):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に接客結果の保存を再試行してください。')
+        self.core.resolve_missing(event_id)
+
     def configure_adoption(self, enabled):
         self._ready()
         self.core.configure_adoption(enabled)

@@ -48,6 +48,7 @@ def consider(core, result):
 
 
 def resolve(core, event_id, choice):
+    core.require_running()
     if (not core.adoption or event_id not in core.adoption['events']
             or choice not in ('accept','decline')):
         raise ValueError('譲渡の申し出と選択肢を確認してください。')

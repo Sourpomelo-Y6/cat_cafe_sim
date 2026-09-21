@@ -1,5 +1,6 @@
 """譲渡イベントの設定、申し出への回答、確定済み履歴の閲覧。"""
 from .core.cafe_adoption import enabled, waiting
+from .core.cafe_management import is_over
 
 
 class CafeAdoptionWindow:
@@ -53,7 +54,7 @@ class CafeAdoptionWindow:
         core = self.session.core
         selected = self.events.selection()
         self.option.set(enabled(core))
-        can_configure = core.can_set_shifts and not self.session.pending and not waiting_events(core) and not active(core)
+        can_configure = core.can_set_shifts and not is_over(core) and not self.session.pending and not waiting_events(core) and not active(core)
         self.toggle.state(['!disabled'] if can_configure else ['disabled'])
         self.events.delete(*self.events.get_children())
         if core.adoption:
@@ -78,7 +79,7 @@ class CafeAdoptionWindow:
     def selection(self):
         selected = self.events.selection()
         event = self.session.core.adoption['events'][selected[0]] if selected and self.session.core.adoption else None
-        can_resolve = event and event['status']=='waiting' and not self.session.pending
+        can_resolve = event and event['status']=='waiting' and not self.session.pending and not is_over(self.session.core)
         for button in (self.accept_button, self.decline_button):
             button.state(['!disabled'] if can_resolve else ['disabled'])
         self.details.set(f"対象：{event['cat_id']} → {event['customer_id']}。譲渡後も詳細と関係の記録は残ります。" if event else

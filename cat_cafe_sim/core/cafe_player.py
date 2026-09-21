@@ -19,6 +19,9 @@ def remaining(core):
 
 def unavailable_reason(core, cat_id):
     from .cafe_activities import waiting_events
+    from .cafe_management import is_over
+    if is_over(core):
+        return 'ゲームオーバーのため交流できません。'
     if active(core) is not None:
         return '進行中のプレイヤー交流を再開または終了してください。'
     if not core.compact or not core.can_set_shifts:
@@ -108,6 +111,7 @@ def begin(core, cat_id, config):
 
 
 def advance(core, action=None, target_type=None, *, finish=False):
+    core.require_running()
     interaction = current(core)
     if interaction is None:
         if finish:
@@ -131,6 +135,8 @@ def advance(core, action=None, target_type=None, *, finish=False):
         bond['affinity'][cat.id] = result['affinity_after']
         bond['active'] = None
         bond['last'] = interaction.log()
+        from .cafe_management import player_result
+        player_result(core,result)
         core._emit('player_completed', cat_id=cat.id, result=result)
     else:
         bond['active'] = interaction.log()

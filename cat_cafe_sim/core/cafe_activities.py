@@ -27,7 +27,8 @@ def activity(core, cat_id):
 
 def waiting_events(core):
     from .cafe_adoption import waiting
-    return ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core)
+    from .cafe_management import waiting as returns
+    return ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core) + returns(core)
 
 
 def income(core):
@@ -77,6 +78,7 @@ def close_day(core):
 
 
 def resolve(core, event_id, choice):
+    core.require_running()
     if not core.activities or event_id not in core.activities['events'] or choice != 'receive':
         raise ValueError('イベントと選択肢を確認してください。')
     event=core.activities['events'][event_id]
