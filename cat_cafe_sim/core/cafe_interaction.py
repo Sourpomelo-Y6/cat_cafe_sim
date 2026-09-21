@@ -30,6 +30,7 @@ class CafeInteractionCore(SimulationCore):
         self.day_outcome_offset = 0
         self.returning_customers = set()
         self.player_bond = None
+        self.adoption = None
         self.activities = None
         self.health_rules = None
         self.initial_health = {}
@@ -53,6 +54,7 @@ class CafeInteractionCore(SimulationCore):
                                   results=copy.deepcopy(self.health_results))} if self.health_rules else {}),
                 **({'day_results': copy.deepcopy(self.day_results)} if self.day_results else {}),
                 **({'player_bond': copy.deepcopy(self.player_bond)} if self.player_bond is not None else {}),
+                **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
                 **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
                 **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None else {})}
@@ -64,6 +66,14 @@ class CafeInteractionCore(SimulationCore):
     def player_command(self, action=None, target_type=None, *, finish=False):
         from .cafe_player import advance
         advance(self, action, target_type, finish=finish)
+
+    def configure_adoption(self, enabled):
+        from .cafe_adoption import configure
+        configure(self, enabled)
+
+    def resolve_adoption(self, event_id, choice):
+        from .cafe_adoption import resolve
+        resolve(self, event_id, choice)
 
     def activity(self, cat_id):
         from .cafe_activities import activity
@@ -83,7 +93,7 @@ class CafeInteractionCore(SimulationCore):
             raise ValueError('進行中のプレイヤー交流を終了してください。')
         from .cafe_activities import waiting_events
         if waiting_events(self):
-            raise ValueError('派遣・イベント画面で帰還結果を確認してください。')
+            raise ValueError('派遣・イベント画面で帰還結果や譲渡の申し出を確認してください。')
 
     @property
     def can_set_shifts(self):
@@ -317,6 +327,8 @@ class CafeInteractionCore(SimulationCore):
         self.events[-1].update(bonus=bonus, bill=visit.bill)
         self.outcomes[interaction.session_id] = interaction.log()
         self._emit('interaction_completed', session_id=interaction.session_id, result=result)
+        from .cafe_adoption import consider
+        consider(self, result)
         if self.cat.stamina == 0:
             self.cat.cannot_continue = True
         self.active = None
@@ -337,6 +349,7 @@ class CafeInteractionCore(SimulationCore):
         return self.observation()
 
     def finish(self):
+        self.require_events_resolved()
         if self.active is None:
             return  # 保存再試行や終了ボタンの連打では会計を繰り返さない。
         self._tick_events = []

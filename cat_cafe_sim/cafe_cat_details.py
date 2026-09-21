@@ -33,6 +33,11 @@ def cat_details(session, cat_id):
               ('プレイヤー交流の累計セット数', str(bond['total'][cat_id])),
               ('本日この猫とのセット数', str(bond['today'][cat_id])),
               ('本日の残りセット数（店全体）', str(remaining(core)))]
+    if core.adoption:
+        adopted = next((event for event in core.adoption['events'].values()
+                        if event['cat_id']==cat_id and event['choice']=='accept'), None)
+        if adopted:
+            basic += [('譲渡先', adopted['customer_id']), ('譲渡成立日', f"{adopted['resolved_day']}日目")]
     basic += [(f'好み：{kind.name}', number(value)) for kind, value in
               zip(session.interaction_config.types, personality.type_preferences)]
     basic += [(f'強さの好み：{name}', number(value)) for name, value in

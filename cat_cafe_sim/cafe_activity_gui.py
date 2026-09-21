@@ -22,6 +22,8 @@ class CafeActivityWindow:
         self.receive_button.pack(side='left',padx=4)
         self.close_button=ttk.Button(footer,text='閉じる',command=self.window.destroy)
         self.close_button.pack(side='right')
+        self.adoption_button=ttk.Button(frame,text='譲渡の設定・申し出…',command=self.show_adoption)
+        self.adoption_button.pack(anchor='w',pady=(0,4))
         self.rules=destination()
         ttk.Label(frame,text=f"{self.rules['name']}：{self.rules['days']}日 / 報酬 {self.rules['reward']:g} / 疲労 {self.rules['max_fatigue']:g}以下の健康な猫",wraplength=460).pack(anchor='w')
         ttk.Label(frame,text='準備中に出発します。店内の席数を超える担当可能な猫が必要です。帰還後は出勤設定を確認してください。',wraplength=460).pack(anchor='w')
@@ -57,11 +59,25 @@ class CafeActivityWindow:
             for key,e in core.activities['events'].items():
                 self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],labels[e['status']],e['remaining'],f"{e['destination']['reward']:g}"))
         waiting=waiting_events(core)
-        if waiting:self.events.selection_set(waiting[0]['id'])
+        dispatch_waiting=[event for event in waiting if event.get('kind')=='dispatch_return']
+        if dispatch_waiting:self.events.selection_set(dispatch_waiting[0]['id'])
+        from .core.cafe_adoption import waiting as adoption_waiting
+        offers=adoption_waiting(core)
+        self.adoption_button.configure(text=f'譲渡の設定・申し出…（回答待ち{len(offers)}件）' if offers else '譲渡の設定・申し出…')
         self.notice.set('交流結果の保存を再試行してから操作してください。' if self.session.pending else
+                        '譲渡の申し出があります。上の「譲渡の設定・申し出…」で回答してください。' if offers else
                         '帰還結果の確認待ちです。受け取るまで営業・翌日への進行は停止します。' if waiting else
                         '派遣は閉店・休業で1日進みます。画面を閉じた後も営業は一時停止します。')
         self.buttons()
+
+    def show_adoption(self):
+        from .cafe_adoption_gui import CafeAdoptionWindow
+        self.adoption_window = CafeAdoptionWindow(self.window, self.session, self.changed)
+
+    def changed(self):
+        self.on_changed()
+        if self.window.winfo_exists():
+            self.refresh()
 
     def send(self):
         from tkinter import messagebox

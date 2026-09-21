@@ -170,9 +170,16 @@ def restore(data):
     if 'activities' in state:
         from .cafe_activities import validate
         core.activities=validate(core,state['activities'])
+    if 'adoption' in state:
+        from .cafe_adoption import validate as validate_adoption
+        core.adoption=validate_adoption(core,state['adoption'])
     if 'player_bond' in state:
         from .cafe_player import validate as validate_player
         core.player_bond=validate_player(core,state['player_bond'])
+        from .cafe_player import active as player_active
+        from .cafe_adoption import waiting as adoption_waiting
+        if player_active(core) and adoption_waiting(core):
+            raise ValueError('プレイヤー交流と未解決の譲渡が同時に進行しています。')
     if data['seat_count']==2:
         core.seats={key:Seat(**row) for key,row in state['seats'].items()}
         if set(core.seats)!={'seat-1','seat-2'}:

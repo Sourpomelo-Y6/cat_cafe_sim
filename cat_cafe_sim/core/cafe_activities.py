@@ -26,11 +26,17 @@ def activity(core, cat_id):
 
 
 def waiting_events(core):
-    return [event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []
+    from .cafe_adoption import waiting
+    return ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core)
 
 
 def income(core):
     return sum(e['destination']['reward'] for e in core.activities['events'].values() if e['status']=='resolved') if core.activities else 0
+
+
+def ensure(core):
+    if core.activities is None:
+        core.activities = dict(cats=dict.fromkeys(core.cats,'cafe'), events={}, day_locations=dict.fromkeys(core.cats,'cafe'))
 
 
 def dispatch(core, cat_id, rules=None):
@@ -49,8 +55,7 @@ def dispatch(core, cat_id, rules=None):
     event_id = f'dispatch-{core.day}-{cat_id}'
     if core.activities and event_id in core.activities['events']:
         raise ValueError('この猫は本日すでに派遣されています。')
-    if core.activities is None:
-        core.activities = dict(cats=dict.fromkeys(core.cats,'cafe'), events={}, day_locations=dict.fromkeys(core.cats,'cafe'))
+    ensure(core)
     core.activities['cats'][cat_id] = 'dispatched'
     core.activities['day_locations'][cat_id] = 'dispatched'
     core.working_cats.discard(cat_id)

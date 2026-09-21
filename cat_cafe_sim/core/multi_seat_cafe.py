@@ -102,10 +102,17 @@ class MultiSeatCafeCore(CafeInteractionCore):
         return self.snapshot()
 
     def finish(self, seat_id=None):
+        self.require_events_resolved()
         if seat_id is None:
+            from .cafe_activities import waiting_events
             for key in list(self.interactions):
-                self.finish(key)
+                self._finish_seat(key)
+                if waiting_events(self):
+                    break
             return
+        self._finish_seat(seat_id)
+
+    def _finish_seat(self, seat_id):
         if seat_id not in self.seats:
             raise ValueError('不明な席です。')
         if seat_id not in self.interactions:

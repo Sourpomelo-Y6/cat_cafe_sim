@@ -101,6 +101,12 @@ class ManualCafeInteractionWindow:
             elif kind=='cat_health':
                 name=self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])
                 text=f"{name}：{health_result_text(event)}"
+            elif kind=='adoption_configured':
+                text='譲渡イベント：'+('ON' if event['enabled'] else 'OFF')
+            elif kind=='adoption_offered':
+                text=f"譲渡の申し出 {event['cat_id']} → {event['customer_id']} · 派遣・イベント画面で回答してください"
+            elif kind=='adoption_resolved':
+                text=f"譲渡{'成立' if event['choice']=='accept' else '見送り'} {event['cat_id']} → {event['customer_id']}"
             elif kind=='player_started':
                 text=f"プレイヤー交流開始 {event['cat_id']} · 本日あと{event['remaining']}セット"
             elif kind=='player_action':
@@ -247,7 +253,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             return
         try:
             progressed = self.session.automatic_step(auto_assign=self.auto_assign.get())
-            if not progressed or self.session.core.closed:
+            from .core.cafe_activities import waiting_events
+            if not progressed or self.session.core.closed or waiting_events(self.session.core):
                 self.stop()
         except (OSError,ValueError,TypeError,KeyError,RuntimeError) as error:
             self.stop()
@@ -310,7 +317,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if playing:
             self.notice.set('プレイヤー交流の途中です。「猫の詳細…」から再開・終了してください。')
         elif events_waiting:
-            self.notice.set('帰還結果の確認待ちです。「派遣・イベント…」で報酬を受け取ってください。')
+            self.notice.set('帰還・譲渡イベントの確認待ちです。「派遣・イベント…」で対応してください。')
 
     def show_activities(self):
         from .cafe_activity_gui import CafeActivityWindow

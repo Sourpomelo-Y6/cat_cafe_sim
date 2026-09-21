@@ -552,6 +552,63 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_adoption_toggle_offer_save_confirm_and_small_window(self):
+        from dataclasses import replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+        from cat_cafe_sim.core.cafe_adoption import waiting
+        from cat_cafe_sim.storage.cafe_saves import save_game, load_game
+        key=next(iter(self.session.core.cats))
+        warm=self.store.begin(replace(RelationshipConfig(),ticks=1,
+            affinity_favorable=80,affinity_enthusiastic=80),key,'guest-1')
+        warm.step('direct');self.store.apply(warm)
+        self.app.session=CafeInteractionSession(store=self.store,
+            cafe_config=replace(Config.load(),opening_ticks=4,arrival_ticks=(0,)),
+            interaction_config=replace(RelationshipConfig(),ticks=1))
+        self.app.logged=0;self.app.refresh()
+        self.app.activity_button.invoke()
+        activity=self.app.activity_window
+        activity.adoption_button.invoke()
+        adoption=activity.adoption_window
+        self.assertFalse(adoption.option.get())
+        adoption.toggle.invoke()
+        self.assertTrue(self.app.session.core.adoption['enabled'])
+        adoption.close_button.invoke();activity.close_button.invoke()
+        self.app.session.automatic_step()
+        self.app.auto_assign.set(True);self.app.running=True
+        with patch('tkinter.messagebox.showerror') as errors:
+            self.app.advance()
+            errors.assert_not_called()
+        self.assertFalse(self.app.running)
+        self.assertTrue(waiting(self.app.session.core))
+        self.assertIn('disabled',self.app.run_button.state())
+        save_game(self.app.session,self.path)
+        self.app.session,_=load_game(self.path)
+        self.app.logged=0;self.app.refresh()
+        self.app.activity_button.invoke();activity=self.app.activity_window
+        self.assertIn('回答待ち1件',activity.adoption_button.cget('text'))
+        activity.adoption_button.invoke();adoption=activity.adoption_window
+        self.root.deiconify();adoption.window.deiconify()
+        adoption.window.geometry('500x400');self.root.update()
+        self.assertIn('disabled',adoption.toggle.state())
+        self.assertNotIn('disabled',adoption.accept_button.state())
+        for widget in (adoption.accept_button,adoption.decline_button,adoption.close_button,adoption.events):
+            self.assertTrue(widget.winfo_ismapped())
+            self.assertGreater(widget.winfo_height(),15)
+            self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),
+                                 adoption.window.winfo_rooty()+adoption.window.winfo_height())
+        with patch('tkinter.messagebox.askyesno',return_value=False):
+            adoption.accept_button.invoke()
+        self.assertTrue(waiting(self.app.session.core))
+        with patch('tkinter.messagebox.askyesno',return_value=True):
+            adoption.accept_button.invoke()
+        self.assertEqual(self.app.session.core.activity(key),'adopted')
+        self.assertIn('disabled',adoption.accept_button.state())
+        self.assertEqual(adoption.events.item(adoption.events.get_children()[0],'values')[-1],'譲渡成立')
+        self.assertNotIn('disabled',self.app.run_button.state())
+        adoption.close_button.invoke();activity.close_button.invoke()
+
     def test_player_play_details_buttons_save_resume_and_close(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         from cat_cafe_sim.storage.cafe_saves import save_game, load_game

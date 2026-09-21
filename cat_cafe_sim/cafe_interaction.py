@@ -106,6 +106,17 @@ class CafeInteractionSession:
         self._ready()
         self.core.dispatch(cat_id, rules)
 
+    def configure_adoption(self, enabled):
+        self._ready()
+        self.core.configure_adoption(enabled)
+
+    def resolve_adoption(self, event_id, choice):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に交流結果の保存を再試行してください。')
+        self.core.resolve_adoption(event_id, choice)
+
     def resolve_activity(self, event_id):
         from .storage.cafe_saves import check_link
         check_link(self)
@@ -183,6 +194,7 @@ class CafeInteractionSession:
         return True
 
     def finish(self):
+        self.core.require_events_resolved()
         from .storage.cafe_saves import check_link
         check_link(self)
         self.core.finish()

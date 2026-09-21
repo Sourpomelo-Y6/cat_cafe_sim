@@ -24,7 +24,7 @@ def unavailable_reason(core, cat_id):
     if not core.compact or not core.can_set_shifts:
         return '猫と遊べるのは営業準備中です。'
     if waiting_events(core):
-        return '先に帰還結果を確認してください。'
+        return '先に帰還結果や譲渡の申し出を確認してください。'
     if cat_id not in core.cats:
         return '営業に参加している猫を選んでください。'
     cat = core.cats[cat_id]
