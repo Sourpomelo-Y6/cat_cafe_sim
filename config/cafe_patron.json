@@ -1,0 +1,12 @@
+{
+  "name": "地域の有力者",
+  "target": 100,
+  "gain": 25,
+  "destination": {
+    "id": "patron_visit",
+    "name": "地域の有力者への訪問",
+    "days": 2,
+    "reward": 200,
+    "max_fatigue": 40
+  }
+}

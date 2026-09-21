@@ -103,6 +103,14 @@ class ManualCafeInteractionWindow:
                 text=f"{name}：{health_result_text(event)}"
             elif kind=='traits_initialized':
                 text='初期猫の特性を設定'
+            elif kind=='patron_enabled':
+                text='有力者の満足度目標を開始'
+            elif kind=='patron_satisfaction':
+                text=f"有力者の満足度 ＋{event['gain']:g}（合計{event['satisfaction']:g}）"
+            elif kind=='patron_cleared':
+                text='有力者の満足度目標クリア'
+            elif kind=='patron_continued':
+                text='有力者目標の結果を確認し、継続営業を選択'
             elif kind=='goal_enabled':
                 text='人気目標への挑戦を開始'
             elif kind=='popularity_earned':
@@ -310,7 +318,10 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .core.cafe_goal import pending as goal_pending
         from .cafe_goal_gui import progress
         self.instructions.configure(text=progress(core))
-        goal_waiting=goal_pending(core)
+        from .core.cafe_patron import pending as patron_pending
+        goal_waiting=goal_pending(core) or patron_pending(core)
+        if patron_pending(core):
+            self.instructions.configure(text='有力者目標クリア！「派遣・イベント…」→「有力者目標・結果…」で結果を確認してください。')
         events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting
         if core.management:
             self.status.set(self.status.get()+f" · 人気 {core.management['popularity']:g}")

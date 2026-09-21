@@ -43,6 +43,9 @@ def dispatch_reason(core, cat_id, rules):
         return '出勤・病気ルールが有効な営業準備中に出発できます。'
     if cat_id not in core.cats:
         return '参加している猫を選んでください。'
+    from .cafe_patron import DESTINATION_ID
+    if rules['id'] == DESTINATION_ID and (not core.patron or rules != core.patron['rules']['destination']):
+        return '先に有力者目標を開始してください。派遣条件は開始時の設定を使います。'
     cat = core.cats[cat_id]
     if activity(core, cat_id) != 'cafe':
         return '在店していません。'
@@ -136,6 +139,8 @@ def resolve(core, event_id, choice):
     core._tick_events=[]
     core._emit('activity_event_resolved',event_id=event_id,cat_id=event['cat_id'],reward=terms['reward'],
                **({'stress_gain':terms['stress']} if terms['stress'] else {}))
+    from .cafe_patron import receive
+    receive(core, event)
     core._record(dict(kind='resolve_activity',event_id=event_id,choice=choice))
 
 

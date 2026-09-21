@@ -654,6 +654,51 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertIn('disabled',window.receive_button.state())
         window.close_button.invoke();activity.close_button.invoke()
 
+    def test_patron_enable_dispatch_clear_and_continue(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.cafe_patron import rules
+        self.app.session = CafeInteractionSession(store=self.store)
+        self.app.session.enable_management()
+        self.app.logged = 0
+        self.app.refresh()
+        self.app.activity_button.invoke()
+        activity = self.app.activity_window
+        activity.patron_button.invoke()
+        window = activity.patron_window
+        selected = rules()
+        selected['target'] = 25
+        with patch('cat_cafe_sim.cafe_patron_gui.rules', return_value=selected), \
+                patch('tkinter.messagebox.askyesno', return_value=False):
+            window.enable_button.invoke()
+        self.assertIsNone(self.app.session.core.patron)
+        with patch('cat_cafe_sim.cafe_patron_gui.rules', return_value=selected), \
+                patch('tkinter.messagebox.askyesno', return_value=True):
+            window.enable_button.invoke()
+        self.assertIn('0 / 25', window.status.get())
+        window.close_button.invoke()
+        activity.destination_choice.current(3)
+        activity.select_destination()
+        with patch('tkinter.messagebox.askyesno', return_value=True):
+            activity.send_button.invoke()
+        self.app.session.day_off()
+        self.app.session.day_off()
+        activity.refresh()
+        activity.receive_button.invoke()
+        self.assertIn('disabled', self.app.run_button.state())
+        activity.patron_button.invoke()
+        window = activity.patron_window
+        self.assertIn('25 / 25', window.status.get())
+        self.assertIn('目標達成', window.notice.get())
+        self.root.deiconify()
+        window.window.geometry('500x320')
+        self.root.update()
+        self.assertTrue(window.continue_button.winfo_ismapped())
+        window.continue_button.invoke()
+        self.assertTrue(self.app.session.core.patron['continued'])
+        self.assertNotIn('disabled', self.app.run_button.state())
+        window.close_button.invoke()
+        activity.close_button.invoke()
+
     def test_dispatch_destination_selection_conditions_and_confirmation(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         from cat_cafe_sim.core.cafe_traits import definitions

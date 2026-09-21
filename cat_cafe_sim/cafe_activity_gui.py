@@ -31,9 +31,14 @@ class CafeActivityWindow:
         self.adoption_button.pack(side='left')
         self.management_button=ttk.Button(event_controls,text='ストレス・家出・経営…',command=self.show_management)
         self.management_button.pack(side='left',padx=4)
-        self.recruitment_button=ttk.Button(frame,text='保護猫の受け入れ…',command=self.show_recruitment)
-        self.recruitment_button.pack(anchor='w',pady=(0,4))
-        self.destinations = destinations()
+        extra_controls = ttk.Frame(frame)
+        extra_controls.pack(fill='x', pady=(0,4))
+        self.patron_button = ttk.Button(extra_controls, text='有力者目標・結果…', command=self.show_patron)
+        self.patron_button.pack(side='right')
+        self.recruitment_button=ttk.Button(extra_controls,text='保護猫の受け入れ…',command=self.show_recruitment)
+        self.recruitment_button.pack(side='left')
+        self.base_destinations = destinations()
+        self.destinations = list(self.base_destinations)
         self.destination_choice = ttk.Combobox(frame, state='readonly', values=[row['name'] for row in self.destinations])
         self.destination_choice.pack(fill='x')
         self.destination_choice.current(0)
@@ -89,6 +94,15 @@ class CafeActivityWindow:
         from .cafe_health_text import health_text
         from .core.cafe_activities import waiting_events
         core=self.session.core
+        selected_id = self.rules['id']
+        self.destinations = list(self.base_destinations)
+        if core.patron:
+            self.destinations.append(core.patron['rules']['destination'])
+        self.destination_choice.configure(values=[row['name'] for row in self.destinations])
+        index = next((i for i, row in enumerate(self.destinations) if row['id'] == selected_id), 0)
+        self.destination_choice.current(index)
+        self.rules = self.destinations[index]
+        self.patron_button.configure(text=(f"有力者 {core.patron['satisfaction']:g}/{core.patron['rules']['target']:g}・結果…" if core.patron else '有力者目標・結果…'))
         required = self.rules.get('required_trait_name', '指定なし')
         self.destination_info.set(f"{self.rules['days']}日 / 基本報酬 {self.rules['reward']:g} / 疲労{self.rules['max_fatigue']:g}以下 / 必要特性：{required}")
         selected=self.cats.selection()
@@ -117,6 +131,10 @@ class CafeActivityWindow:
                         '帰還結果の確認待ちです。受け取るまで営業・翌日への進行は停止します。' if waiting else
                         '派遣は閉店・休業で1日進みます。画面を閉じた後も営業は一時停止します。')
         self.buttons()
+
+    def show_patron(self):
+        from .cafe_patron_gui import CafePatronWindow
+        self.patron_window = CafePatronWindow(self.window, self.session, self.changed)
 
     def show_management(self):
         from .cafe_management_gui import CafeManagementWindow

@@ -8,6 +8,8 @@ from .human_cat_relationship import verify_relationship
 def apply_operation(core, operation):
     kind=operation['kind']
     if kind=='initialize_traits':core.initialize_traits(operation['traits'])
+    elif kind=='enable_patron':core.enable_patron(operation['rules'])
+    elif kind=='continue_patron':core.continue_patron()
     elif kind=='enable_goal':core.enable_goal(operation['rules'])
     elif kind=='continue_goal':core.continue_goal()
     elif kind=='open_recruitment':core.open_recruitment(operation['candidates'])
