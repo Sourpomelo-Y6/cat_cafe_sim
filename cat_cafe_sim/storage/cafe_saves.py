@@ -23,6 +23,11 @@ def validate_progress(core, baseline, current):
     from ..core.cafe_checkpoint import receipt, is_receipt
     expected = MemoryRelationships(baseline)
     actual = MemoryRelationships(current)
+    if core.recruitment:
+        for key in core.recruitment['accepted']:
+            row = core.recruitment['candidates'][key]
+            if baseline.get('cats', {}).get(key) != dict(name=row['name'], personality=row['personality']):
+                raise RelationshipConflict('受け入れた猫の名前・個性と関係データが一致しません。')
     matched = expected.data == current
     persisted = set()
     for session_id, log in core.outcomes.items():

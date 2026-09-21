@@ -31,6 +31,7 @@ class CafeInteractionCore(SimulationCore):
         self.returning_customers = set()
         self.player_bond = None
         self.management = None
+        self.recruitment = None
         self.adoption = None
         self.activities = None
         self.health_rules = None
@@ -56,10 +57,19 @@ class CafeInteractionCore(SimulationCore):
                 **({'day_results': copy.deepcopy(self.day_results)} if self.day_results else {}),
                 **({'player_bond': copy.deepcopy(self.player_bond)} if self.player_bond is not None else {}),
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
+                **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
                 **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
-                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None else {})}
+                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None else {})}
+
+    def open_recruitment(self, candidates):
+        from .cafe_recruitment import open_candidates
+        open_candidates(self, candidates)
+
+    def recruit_cat(self, cat_id):
+        from .cafe_recruitment import accept
+        accept(self, cat_id)
 
     def play_with_player(self, cat_id, config):
         from .cafe_player import begin
@@ -219,7 +229,7 @@ class CafeInteractionCore(SimulationCore):
                          **(dict(activity=self.activities['day_locations'][key]) if self.activities else {}),
                          **(dict(interactions=sum(1 for value in list(self.outcomes.values())[self.day_outcome_offset:]
                               if outcome_result(value)['cat_id']==key)) if self.compact else {}),
-                         spent=(self.start_state.stamina if self.day == 1 else self.config.max_stamina)-cat.stamina,
+                         spent=(self.start_state.stamina if self.day == 1 and not (self.recruitment and key in self.recruitment['accepted']) else self.config.max_stamina)-cat.stamina,
                          **(dict(shift='work' if key in self.working_cats else 'rest',
                                  fatigue_before=self.initial_fatigue[key], fatigue_after=cat.fatigue,
                                  service_ticks=self.cat_service_ticks[key]) if self.shift_rules else {}),
@@ -380,12 +390,14 @@ class CafeInteractionCore(SimulationCore):
         self._record(dict(kind='finish'))
 
     def summary(self):
+        from .cafe_recruitment import expenses
         visits = list(self.visits.values())
         return dict(ticks=self.tick, closed=self.closed, arrivals=len(visits),
                     completed_interactions=len(self.outcomes)-self.day_outcome_offset,
                     departures={reason:sum(v.departure_reason == reason for v in visits)
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
+                    **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()
                                                  if e['resolved_day']==self.day)) if self.management else {}),

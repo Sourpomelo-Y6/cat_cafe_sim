@@ -1,0 +1,109 @@
+"""準備中の保護猫受け入れ。候補と費用を固定し、加入を一度だけ記録する。"""
+import copy
+import json
+import math
+from pathlib import Path
+
+from .human_cat_relationship import identity
+from .human_cat_types import Personality, load_presets
+from .models import Cat
+
+
+def candidates(used_ids):
+    definitions = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_recruitment.json').read_text(encoding='utf-8'))
+    presets = load_presets()
+    used = set(used_ids)
+    rows = {}
+    index = 1
+    for row in definitions:
+        while f'rescue-{index}' in used:
+            index += 1
+        key = f'rescue-{index}'
+        used.add(key)
+        rows[key] = dict(name=row['name'], personality=presets[row['preset']].to_dict(), cost=row['cost'])
+    return validate_candidates(rows)
+
+
+def validate_candidates(rows):
+    if not isinstance(rows, dict) or not rows:
+        raise ValueError('受け入れ候補が不正です。')
+    for key, row in rows.items():
+        identity(key)
+        if not isinstance(row, dict) or set(row) != {'name', 'personality', 'cost'}:
+            raise ValueError('候補の項目が不正です。')
+        identity(row['name'])
+        Personality.from_dict(row['personality'])
+        cost = row['cost']
+        if type(cost) not in (int, float) or not math.isfinite(cost) or cost < 0:
+            raise ValueError('受け入れ費用が不正です。')
+    return copy.deepcopy(rows)
+
+
+def require_preparation(core):
+    core.require_events_resolved()
+    if not core.compact or not core.can_set_shifts or not core.shift_rules or not core.health_rules:
+        raise ValueError('受け入れは出勤・病気ルールが有効な営業準備中に行ってください。')
+
+
+def open_candidates(core, rows):
+    require_preparation(core)
+    if core.recruitment is not None:
+        raise ValueError('受け入れ候補はすでに決まっています。')
+    rows = validate_candidates(rows)
+    if set(rows) & set(core.cats):
+        raise ValueError('候補の猫IDが所属猫と重複しています。')
+    core.recruitment = dict(opened_day=core.day, candidates=rows, accepted={})
+    core._tick_events = []
+    core._emit('recruitment_opened')
+    core._record(dict(kind='open_recruitment', candidates=rows))
+
+
+def accept(core, cat_id):
+    require_preparation(core)
+    data = core.recruitment
+    if not data or cat_id not in data['candidates']:
+        raise ValueError('受け入れる候補を選んでください。')
+    if cat_id in data['accepted'] or cat_id in core.cats:
+        raise ValueError('この猫はすでに受け入れています。')
+    row = data['candidates'][cat_id]
+    if core.funds <= row['cost']:
+        raise ValueError('受け入れ後に資金が残る必要があります。')
+    cat = Cat(id=cat_id, stamina=core.config.max_stamina, spirit=core.config.max_spirit)
+    core.cats[cat_id] = cat
+    core.cat_service_ticks[cat_id] = 0
+    core.initial_fatigue[cat_id] = 0
+    core.initial_health[cat_id] = dict(status='healthy', remaining=0)
+    if core.activities is not None:
+        core.activities['cats'][cat_id] = 'cafe'
+        core.activities['day_locations'][cat_id] = 'cafe'
+    if core.player_bond is not None:
+        for field in ('affinity', 'today', 'total'):
+            core.player_bond[field][cat_id] = 0
+    if core.management is not None:
+        core.management['stress'][cat_id] = 0
+    data['accepted'][cat_id] = core.day
+    core.funds -= row['cost']
+    core._tick_events = []
+    core._emit('cat_recruited', cat_id=cat_id, name=row['name'], cost=row['cost'])
+    core._record(dict(kind='recruit_cat', cat_id=cat_id))
+
+
+def expenses(core, day=None):
+    data = core.recruitment
+    return sum(data['candidates'][key]['cost'] for key, joined in data['accepted'].items()
+               if day is None or joined == day) if data else 0
+
+
+def validate(data, day, initial_ids):
+    if not isinstance(data, dict) or set(data) != {'opened_day', 'candidates', 'accepted'}:
+        raise ValueError('受け入れ記録が不正です。')
+    rows = validate_candidates(data['candidates'])
+    if set(rows) & set(initial_ids):
+        raise ValueError('候補と初期所属猫が重複しています。')
+    if type(data['opened_day']) is not int or not 1 <= data['opened_day'] <= day:
+        raise ValueError('候補の提示日が不正です。')
+    if not isinstance(data['accepted'], dict) or not set(data['accepted']) <= set(rows):
+        raise ValueError('受け入れた猫が不正です。')
+    if any(type(joined) is not int or not data['opened_day'] <= joined <= day for joined in data['accepted'].values()):
+        raise ValueError('受け入れ日が不正です。')
+    return copy.deepcopy(data)

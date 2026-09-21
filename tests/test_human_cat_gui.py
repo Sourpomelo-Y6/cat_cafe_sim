@@ -552,6 +552,64 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_recruitment_confirmation_save_resume_roster_choices_and_layout(self):
+        from dataclasses import replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.storage.cafe_saves import save_game, load_game
+        self.app.session=CafeInteractionSession(store=self.store,
+            cafe_config=replace(Config.load(),initial_funds=401))
+        self.app.logged=0;self.app.refresh()
+        self.app.activity_button.invoke();activity=self.app.activity_window
+        activity.recruitment_button.invoke();window=activity.recruitment_window
+        self.root.deiconify();window.window.deiconify()
+        window.window.geometry('500x440');self.root.update()
+        for widget in (window.receive_button,window.close_button,window.cats,window.details):
+            self.assertTrue(widget.winfo_ismapped())
+            self.assertGreater(widget.winfo_height(),15)
+            self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),
+                                 window.window.winfo_rooty()+window.window.winfo_height())
+        key=window.cats.selection()[0]
+        self.assertIn('201',window.notice.get())
+        with patch('tkinter.messagebox.askyesno',return_value=False):
+            window.receive_button.invoke()
+        self.assertNotIn(key,self.app.session.core.cats)
+        with patch.object(self.store,'_write',side_effect=OSError('full')), \
+                patch('tkinter.messagebox.askyesno',return_value=True), \
+                patch('tkinter.messagebox.showerror') as error:
+            window.receive_button.invoke()
+            error.assert_called_once()
+        self.assertEqual(self.app.session.core.funds,401)
+        with patch('tkinter.messagebox.askyesno',return_value=True):
+            window.receive_button.invoke()
+        self.assertEqual(self.app.session.core.funds,201)
+        self.assertIn(key,self.app.roster.get_children())
+        self.assertIn(key,self.app.cat_labels.values())
+        self.assertIn('disabled',window.receive_button.state())
+        window.close_button.invoke();activity.close_button.invoke()
+        self.app.roster.selection_set(key)
+        self.app.cat_details_button.invoke()
+        details=self.app.cat_details_window
+        self.assertIn('ハル',str([details.tables['basic'].item(i)['values'] for i in details.tables['basic'].get_children()]))
+        details.window.destroy()
+        self.app.session.set_shifts([key])
+        self.app.refresh()
+        self.app.session.automatic_step()
+        label=next(label for label,value in self.app.cat_labels.items() if value==key)
+        self.app.cat_choice.set(label);self.app.refresh()
+        self.app.start_button.invoke()
+        self.assertEqual(next(iter(self.app.session.active_interactions.values())).cat_id,key)
+        save_game(self.app.session,self.path)
+        self.app.session,_=load_game(self.path)
+        self.app.logged=0;self.app.refresh()
+        self.app.activity_button.invoke();activity=self.app.activity_window
+        activity.recruitment_button.invoke();window=activity.recruitment_window
+        self.assertIn('受入済み',str(window.cats.item(key)['values']))
+        other=next(k for k in window.cats.get_children() if k!=key)
+        window.cats.selection_set(other);window.selection_changed()
+        self.assertIn('disabled',window.receive_button.state())
+        window.close_button.invoke();activity.close_button.invoke()
+
     def test_management_enable_missing_return_cost_game_over_and_layout(self):
         from dataclasses import replace
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession

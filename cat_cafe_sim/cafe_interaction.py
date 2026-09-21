@@ -106,6 +106,35 @@ class CafeInteractionSession:
         self._ready()
         self.core.dispatch(cat_id, rules)
 
+    def open_recruitment(self):
+        if self.core.recruitment is not None:
+            return
+        self._ready()
+        from .core.cafe_recruitment import candidates
+        data = self.store._read()
+        used = set(self.core.cats) | set(data.get('cats', {})) | {row['cat_id'] for row in data['pairs']}
+        self.core.open_recruitment(candidates(used))
+
+    def recruit_cat(self, cat_id):
+        import copy
+        from .core.human_cat_types import Personality
+        from .storage.relationships import RelationshipConflict
+        self._ready()
+        # Validate the complete change before touching the shared relationship file.
+        updated = copy.deepcopy(self.core)
+        updated.recruit_cat(cat_id)
+        row = updated.recruitment['candidates'][cat_id]
+        data = self.store._read()
+        if cat_id in data.get('cats', {}) or any(p['cat_id'] == cat_id for p in data['pairs']):
+            raise RelationshipConflict('この候補の猫IDはすでに関係データに登録されています。')
+        profile = self.store._register(data, cat_id, row['name'], Personality.from_dict(row['personality']))
+        profiles = dict(self.profiles, **{cat_id: dict(cat_id=cat_id, **profile)})
+        baseline = copy.deepcopy(data) if self.checkpoint_baseline is not None else None
+        self.store._write(data)
+        self.core = updated
+        self.profiles = profiles
+        self.checkpoint_baseline = baseline
+
     def enable_management(self, rules=None):
         self._ready()
         self.core.enable_management(rules)

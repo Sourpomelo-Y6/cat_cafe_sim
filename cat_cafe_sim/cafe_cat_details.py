@@ -34,6 +34,8 @@ def cat_details(session, cat_id):
               ('本日この猫とのセット数', str(bond['today'][cat_id])),
               ('本日の残りセット数（店全体）', str(remaining(core)))]
     basic += [('ストレス', f"{core.management['stress'][cat_id]:g} / 100" if core.management else 'ルール未導入')]
+    if core.recruitment and cat_id in core.recruitment['accepted']:
+        basic += [('加入経路', '保護猫の受け入れ'), ('加入日', f"{core.recruitment['accepted'][cat_id]}日目")]
     if core.adoption:
         adopted = next((event for event in core.adoption['events'].values()
                         if event['cat_id']==cat_id and event['choice']=='accept'), None)

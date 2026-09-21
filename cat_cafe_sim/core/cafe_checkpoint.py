@@ -101,6 +101,11 @@ def restore(data):
     state, resume=data['state'],data['resume']
     if set(resume)!={'cat_id','returning_customers','day_outcome_offset','events','pending'}:
         raise ValueError('invalid resume fields')
+    if 'recruitment' in state:
+        from .cafe_recruitment import validate as validate_recruitment
+        core.recruitment = validate_recruitment(state['recruitment'], state['day'], core.cats)
+        for key in core.recruitment['accepted']:
+            core.cats[key] = Cat(id=key)
     cats=state.get('cats',{state.get('cat',{}).get('id'):state.get('cat')})
     if set(cats)!=set(core.cats):
         raise ValueError('invalid cat roster')
@@ -172,6 +177,8 @@ def restore(data):
     if 'activities' in state:
         from .cafe_activities import validate
         core.activities=validate(core,state['activities'])
+    if core.recruitment is not None and (not core.shift_rules or not core.health_rules):
+        raise ValueError('受け入れに必要な出勤・病気ルールがありません。')
     if 'adoption' in state:
         from .cafe_adoption import validate as validate_adoption
         core.adoption=validate_adoption(core,state['adoption'])
@@ -226,6 +233,8 @@ def restore(data):
     expected_funds += income(core)
     from .cafe_management import money_adjustment
     expected_funds += money_adjustment(core)
+    from .cafe_recruitment import expenses
+    expected_funds -= expenses(core)
     if not math.isclose(core.funds,expected_funds,rel_tol=1e-12,abs_tol=1e-8):
         raise ValueError('会計の合計と所持金が一致しません。')
     core.recorded_digest=record_digest(core)

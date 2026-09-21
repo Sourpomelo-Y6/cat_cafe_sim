@@ -28,6 +28,8 @@ class CafeActivityWindow:
         self.adoption_button.pack(side='left')
         self.management_button=ttk.Button(event_controls,text='ストレス・家出・経営…',command=self.show_management)
         self.management_button.pack(side='left',padx=4)
+        self.recruitment_button=ttk.Button(frame,text='保護猫の受け入れ…',command=self.show_recruitment)
+        self.recruitment_button.pack(anchor='w',pady=(0,4))
         self.rules=destination()
         ttk.Label(frame,text=f"{self.rules['name']}：{self.rules['days']}日 / 報酬 {self.rules['reward']:g} / 疲労 {self.rules['max_fatigue']:g}以下の健康な猫",wraplength=460).pack(anchor='w')
         ttk.Label(frame,text='準備中に出発します。店内の席数を超える担当可能な猫が必要です。帰還後は出勤設定を確認してください。',wraplength=460).pack(anchor='w')
@@ -48,6 +50,8 @@ class CafeActivityWindow:
         selected=self.events.selection()
         can_receive=bool(selected) and core.activities['events'][selected[0]]['status']=='waiting' and not self.session.pending and not is_over(core)
         self.receive_button.state(['!disabled'] if can_receive else ['disabled'])
+        can_open = core.recruitment is not None or (core.can_set_shifts and not is_over(core) and not active(core) and not self.session.pending and not waiting_events(core))
+        self.recruitment_button.state(['!disabled'] if can_open else ['disabled'])
 
     def refresh(self):
         from .cafe_health_text import health_text
@@ -83,6 +87,17 @@ class CafeActivityWindow:
     def show_management(self):
         from .cafe_management_gui import CafeManagementWindow
         self.management_window = CafeManagementWindow(self.window,self.session,self.changed)
+
+    def show_recruitment(self):
+        from tkinter import messagebox
+        from .cafe_recruitment_gui import CafeRecruitmentWindow
+        try:
+            self.session.open_recruitment()
+        except (ValueError,OSError) as exc:
+            messagebox.showerror('受け入れ候補を表示できません',str(exc),parent=self.window)
+            return
+        self.changed()
+        self.recruitment_window = CafeRecruitmentWindow(self.window,self.session,self.changed)
 
     def show_adoption(self):
         from .cafe_adoption_gui import CafeAdoptionWindow

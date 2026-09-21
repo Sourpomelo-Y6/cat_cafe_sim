@@ -103,6 +103,10 @@ class ManualCafeInteractionWindow:
                 text=f"{name}：{health_result_text(event)}"
             elif kind=='management_enabled':
                 text=f"経営ルール開始 · 開始時資金補充 {event['grant']:g}"
+            elif kind=='recruitment_opened':
+                text='保護猫の受け入れ候補を確認'
+            elif kind=='cat_recruited':
+                text=f"保護猫 {event['name']}（{event['cat_id']}）を受け入れ · 初期費用 {event['cost']:g} · 休養予定"
             elif kind=='cat_missing':
                 text=f"家出 {event['cat_id']} · 店の人気 {event['popularity']:g}"
             elif kind=='missing_return_waiting':
@@ -298,6 +302,10 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if self.seat_choice.get() not in self.session.free_seats:
             self.seat_choice.set(self.session.free_seats[0] if self.session.free_seats else '')
         rows = self.session.cat_choices(self.customer.get())
+        self.cat_labels = {f"{row['name']}（{row['cat_id']}）": row['cat_id'] for row in rows}
+        self.cat_selector.configure(values=tuple(self.cat_labels))
+        if self.cat_choice.get() not in self.cat_labels:
+            self.cat_choice.set(next(iter(self.cat_labels)))
         selected = next((row for row in rows if row['cat_id']==self.cat_labels.get(self.cat_choice.get())),None)
         self.start_button.state(['!disabled'] if manual and core.queue and selected and selected['available'] else ['disabled'])
         roster_selected = self.roster.selection()
