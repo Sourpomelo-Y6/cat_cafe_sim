@@ -667,7 +667,7 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app.logged=0;self.app.refresh()
         self.app.activity_button.invoke();activity=self.app.activity_window
         activity.management_button.invoke();window=activity.management_window
-        selected=dict(rules(),runaway_threshold=2,return_stress=0,kitten_probability=1,kitten_cost=2000)
+        selected=dict(rules(),stress_per_service_tick=2,runaway_threshold=2,return_stress=0,kitten_probability=1,kitten_cost=2000)
         with patch('cat_cafe_sim.cafe_management_gui.rules',return_value=selected), \
                 patch('tkinter.messagebox.askyesno',return_value=False):
             window.enable_button.invoke()
@@ -676,6 +676,8 @@ class CafeSaveWindowTests(unittest.TestCase):
                 patch('tkinter.messagebox.askyesno',return_value=True):
             window.enable_button.invoke()
         self.assertEqual(self.app.session.core.funds,1000)
+        key=next(iter(self.app.session.core.cats))
+        self.assertEqual(self.app.roster.set(key,'stress'),'0')
         self.assertIn('disabled',window.enable_button.state())
         window.close_button.invoke();activity.close_button.invoke()
         while not self.app.session.core.closed:self.app.session.automatic_step()
@@ -880,6 +882,7 @@ class CafeSaveWindowTests(unittest.TestCase):
         row=self.app.roster.item(self.app.roster.get_children()[0],'values')
         self.assertEqual(row[4],'療養')
         self.assertEqual(row[6],'療養あと2日')
+        self.assertEqual(self.app.roster.set(self.app.roster.get_children()[0],'stress'),'未導入')
         with patch('tkinter.messagebox.askyesno',return_value=False) as dialog:
             self.app.day_button.invoke()
         self.assertIn('発症',dialog.call_args.args[1])

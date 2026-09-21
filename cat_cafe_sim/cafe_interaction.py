@@ -69,6 +69,7 @@ class CafeInteractionSession:
             label = next((name for name,value in self.presets.items() if value == personality), 'カスタム')
             rows.append(dict(cat_id=cat_id,name=profile['name'] if profile else cat_id,personality=label,
                              stamina=cat.stamina,fatigue=cat.fatigue,health_status=cat.health_status,
+                             stress=self.core.management['stress'][cat_id] if self.core.management else None,
                              recovery_days_remaining=cat.recovery_days_remaining,working=cat_id in self.core.working_cats,affinity=self.affinities.get((cat_id,customer_id),0),
                              available=cat in self.available_cats()))
         return rows

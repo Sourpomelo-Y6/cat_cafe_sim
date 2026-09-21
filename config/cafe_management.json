@@ -1,7 +1,7 @@
 {
   "starting_funds": 1000,
   "starting_popularity": 100,
-  "stress_per_service_tick": 2,
+  "stress_per_service_tick": 1,
   "rest_recovery": 20,
   "player_relief": 5,
   "player_stress": 5,

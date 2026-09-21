@@ -234,10 +234,11 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.cat_details_button.pack(side='right', padx=4)
         self.activity_button = ttk.Button(roster_frame, text='派遣・イベント…', command=self.show_activities)
         self.activity_button.pack(side='right')
-        self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status','fatigue','health'),show='headings',height=3)
-        for key,title,width in (('cat','営業中の猫',170),('personality','個性',100),('stamina','体力',60),('affinity','選んだお客への親しみ',170),('status','状態',80),('fatigue','疲労',60),('health','体調',115)):
+        self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status','fatigue','health','stress'),
+                                   displaycolumns=('cat','personality','stamina','affinity','status','fatigue','stress','health'),show='headings',height=3)
+        for key,title,width in (('cat','営業中の猫',170),('personality','個性',100),('stamina','体力',60),('affinity','選んだお客への親しみ',170),('status','状態',80),('fatigue','疲労',60),('health','体調',115),('stress','ストレス',75)):
             self.roster.heading(key,text=title)
-            self.roster.column(key,width=width,minwidth=50)
+            self.roster.column(key,width=width,minwidth=70 if key=='stress' else 50)
         scrollbar=ttk.Scrollbar(roster_frame,orient='vertical',command=self.roster.yview)
         scrollbar.pack(side='right',fill='y')
         self.roster.configure(yscrollcommand=scrollbar.set)
@@ -332,7 +333,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             state = '療養' if row['health_status']=='sick' else '休養' if not row['working'] else '交流中' if any(active.cat_id==row['cat_id'] for active in self.session.active_interactions.values()) else '担当可能' if row['available'] else '交流不可'
             if core.activity(row['cat_id'])!='cafe':state=ACTIVITY_LABELS[core.activity(row['cat_id'])]
             self.roster.insert('','end',iid=row['cat_id'],values=(f"{row['name']}（{row['cat_id']}）",row['personality'],f"{row['stamina']:g}",
-                                               f"{row['affinity']:g}" if self.customer.get() else '—',state,f"{row['fatigue']:g}",health_text(row['health_status'],row['recovery_days_remaining'])))
+                                               f"{row['affinity']:g}" if self.customer.get() else '—',state,f"{row['fatigue']:g}",health_text(row['health_status'],row['recovery_days_remaining']), '未導入' if row['stress'] is None else f"{row['stress']:g}"))
         if roster_selected and self.roster.exists(roster_selected[0]):
             self.roster.selection_set(roster_selected[0])
         if hasattr(core,'seats'):

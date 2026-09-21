@@ -34,7 +34,7 @@ class ManagementTests(unittest.TestCase):
             interaction_config=replace(RelationshipConfig(),ticks=1))
 
     def enable(self,s,**changes):
-        selected=dict(rules(),runaway_threshold=2,return_stress=0,kitten_probability=0)
+        selected=dict(rules(),stress_per_service_tick=2,runaway_threshold=2,return_stress=0,kitten_probability=0)
         selected.update(changes)
         s.enable_management(selected)
 
@@ -52,6 +52,19 @@ class ManagementTests(unittest.TestCase):
         before=s.core.log()
         with self.assertRaises(ValueError):action()
         self.assertEqual(before,s.core.log())
+
+    def test_default_stress_gain_one_and_saved_old_rule_is_preserved(self):
+        s=self.session();s.enable_management()
+        self.assertEqual(s.core.management['rules']['stress_per_service_tick'],1)
+        self.close(s)
+        self.assertEqual(s.core.management['stress']['a'],1)
+        self.assertEqual(s.cat_choices()[0]['stress'],1)
+        self.reload(s)
+        old=self.session();self.enable(old)
+        old=self.reload(old)
+        self.assertEqual(old.core.management['rules']['stress_per_service_tick'],2)
+        self.close(old)
+        self.assertEqual(old.core.management['stress']['a'],2)
 
     def test_explicit_start_grants_once_and_old_saves_stay_unmodified(self):
         s=self.session()
