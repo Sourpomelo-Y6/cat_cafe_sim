@@ -18,12 +18,17 @@ def starting_conditions():
     if data['seat_count'] not in (1, 2) or not data['cats']:
         raise ValueError('新規ゲームの席・猫の設定が不正です。')
     presets = load_presets()
+    from .core.cafe_traits import definitions
+    traits = definitions()
+    initial_traits = {}
     profiles = dict(format_version=2, cats={}, pairs=[], applied={})
     for row in data['cats']:
         if row['cat_id'] in profiles['cats']:
             raise ValueError('初期猫のIDが重複しています。')
         RelationshipStore._register(profiles, row['cat_id'], row['name'], presets[row['preset']])
-    return dict(seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules())
+        if row.get('trait') is not None:
+            initial_traits[row['cat_id']] = traits[row['trait']]
+    return dict(seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits)
 
 
 def create_game(directory='saves/games', conditions=None):
@@ -38,6 +43,7 @@ def create_game(directory='saves/games', conditions=None):
         store._write(selected['profiles'])
         session = CafeInteractionSession(store=store, seat_count=selected['seat_count'],
             cafe_config=replace(Config.load(), initial_funds=0))
+        session.core.initialize_traits(selected.get('traits', {}))
         session.enable_management(selected['management'])
         session.enable_goal(selected.get('goal'))
         save_game(session, location / 'cafe.json', auto_assign=False)

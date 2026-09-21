@@ -174,6 +174,13 @@ def restore(data):
         core.health_results=copy.deepcopy(health['results'])
         if not core.shift_rules or set(core.initial_health)!=set(core.cats):
             raise ValueError('invalid health state')
+    if 'traits' in state:
+        from .cafe_traits import validate as validate_traits
+        core.traits = validate_traits(core,state['traits'])
+    if core.recruitment:
+        for key in core.recruitment['accepted']:
+            if (core.traits or {}).get(key) != core.recruitment['candidates'][key].get('trait'):
+                raise ValueError('加入した猫の特性が候補と一致しません。')
     if 'activities' in state:
         from .cafe_activities import validate
         core.activities=validate(core,state['activities'])

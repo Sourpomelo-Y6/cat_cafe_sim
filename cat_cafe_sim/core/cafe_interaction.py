@@ -32,6 +32,7 @@ class CafeInteractionCore(SimulationCore):
         self.player_bond = None
         self.management = None
         self.goal = None
+        self.traits = None
         self.recruitment = None
         self.adoption = None
         self.activities = None
@@ -57,6 +58,7 @@ class CafeInteractionCore(SimulationCore):
                                   results=copy.deepcopy(self.health_results))} if self.health_rules else {}),
                 **({'day_results': copy.deepcopy(self.day_results)} if self.day_results else {}),
                 **({'player_bond': copy.deepcopy(self.player_bond)} if self.player_bond is not None else {}),
+                **({'traits': copy.deepcopy(self.traits)} if self.traits is not None else {}),
                 **({'goal': copy.deepcopy(self.goal)} if self.goal is not None else {}),
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
@@ -84,6 +86,10 @@ class CafeInteractionCore(SimulationCore):
     def require_running(self):
         from .cafe_management import require_running
         require_running(self)
+
+    def initialize_traits(self, traits):
+        from .cafe_traits import initialize
+        initialize(self, traits)
 
     def enable_goal(self, rules=None):
         from .cafe_goal import enable
@@ -210,8 +216,8 @@ class CafeInteractionCore(SimulationCore):
             for key, cat in self.cats.items():
                 if self.activity(key) != 'cafe':
                     continue
-                change = (self.cat_service_ticks[key] * self.shift_rules.fatigue_per_service_tick
-                          if key in self.working_cats else -self.shift_rules.rest_day_recovery)
+                from .cafe_traits import fatigue_change
+                change = fatigue_change(self, key, key in self.working_cats, self.cat_service_ticks[key])
                 cat.fatigue = max(0, min(self.shift_rules.max_fatigue, self.initial_fatigue[key] + change))
         if kind == 'closed' and self.health_rules:
             self._settle_health()
@@ -406,6 +412,7 @@ class CafeInteractionCore(SimulationCore):
 
     def summary(self):
         from .cafe_recruitment import expenses
+        from .cafe_activities import reward
         visits = list(self.visits.values())
         return dict(ticks=self.tick, closed=self.closed, arrivals=len(visits),
                     completed_interactions=len(self.outcomes)-self.day_outcome_offset,
@@ -418,7 +425,7 @@ class CafeInteractionCore(SimulationCore):
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()
                                                  if e['resolved_day']==self.day)) if self.management else {}),
                     interaction_bonus=self.interaction_bonus, stamina=self.cat.stamina,
-                    **({'dispatch_income': sum(e['destination']['reward'] for e in self.activities['events'].values()
+                    **({'dispatch_income': sum(reward(self,e) for e in self.activities['events'].values()
                         if e['status']=='resolved' and e['resolved_day']==self.day)} if self.activities else {}),
                     service_ticks=self.service_ticks,
                     **({'cat_stamina': {key:cat.stamina for key,cat in self.cats.items()}} if self.roster_ids is not None else {}))

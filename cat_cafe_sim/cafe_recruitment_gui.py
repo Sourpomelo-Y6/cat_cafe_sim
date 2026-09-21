@@ -27,7 +27,7 @@ class CafeRecruitmentWindow:
         ttk.Label(frame, text='準備中に受け入れます。加入時は健康・体力全回復・休養予定です。候補は固定で、更新されません。', wraplength=460).pack(anchor='w')
         self.notice = tk.StringVar()
         ttk.Label(frame, textvariable=self.notice, wraplength=460).pack(anchor='w')
-        self.cats = CafeHistoryWindow.table(frame, ('名前', '個性', '初期費用', '状態'))
+        self.cats = CafeHistoryWindow.table(frame, ('名前', '個性', '特性', '初期費用', '状態'))
         self.details = CafeHistoryWindow.table(frame, ('項目', '値'))
         self.details.column('項目', width=230)
         self.details.column('値', width=220)
@@ -44,7 +44,7 @@ class CafeRecruitmentWindow:
             personality = Personality.from_dict(row['personality'])
             label = next((name for name, value in self.session.presets.items() if value == personality), 'カスタム')
             day = core.recruitment['accepted'].get(key)
-            self.cats.insert('', 'end', iid=key, values=(row['name'], label, f"{row['cost']:g}", f'{day}日目に受入済み' if day else '候補'))
+            self.cats.insert('', 'end', iid=key, values=(row['name'], label, row.get('trait',{}).get('name','なし'), f"{row['cost']:g}", f'{day}日目に受入済み' if day else '候補'))
         self.cats.selection_set(selected[0] if selected else next(iter(core.recruitment['candidates'])))
         self.selection_changed()
 
@@ -60,7 +60,8 @@ class CafeRecruitmentWindow:
         key = selected[0]
         row = core.recruitment['candidates'][key]
         personality = Personality.from_dict(row['personality'])
-        values = [('猫ID', key), ('体力', f'{core.config.max_stamina:g} / {core.config.max_stamina:g}'),
+        from .core.cafe_traits import description
+        values = description(row.get('trait')) + [('猫ID', key), ('体力', f'{core.config.max_stamina:g} / {core.config.max_stamina:g}'),
                   ('疲労 / ストレス', '0 / 0'), ('体調 / 出勤予定', '健康 / 休養'),
                   ('プレイヤー・お客への好感度', '0（未交流）')]
         values += [(f'好み：{kind.name}', f'{value:g}') for kind, value in zip(self.session.interaction_config.types, personality.type_preferences)]

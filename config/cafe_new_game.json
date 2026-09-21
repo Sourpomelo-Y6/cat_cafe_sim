@@ -1,10 +1,33 @@
 {
   "seat_count": 2,
   "cats": [
-    {"cat_id": "cat-mike", "name": "ミケ", "preset": "穏やかな甘えん坊"},
-    {"cat_id": "cat-tama", "name": "タマ", "preset": "活発な探検家"},
-    {"cat_id": "cat-sora", "name": "ソラ", "preset": "距離を大切にする猫"},
-    {"cat_id": "cat-kohaku", "name": "コハク", "preset": "遊び好きで繊細な猫"},
-    {"cat_id": "cat-mugi", "name": "ムギ", "preset": "中立"}
+    {
+      "cat_id": "cat-mike",
+      "name": "ミケ",
+      "preset": "穏やかな甘えん坊",
+      "trait": "hospitality"
+    },
+    {
+      "cat_id": "cat-tama",
+      "name": "タマ",
+      "preset": "活発な探検家",
+      "trait": "outgoing"
+    },
+    {
+      "cat_id": "cat-sora",
+      "name": "ソラ",
+      "preset": "距離を大切にする猫"
+    },
+    {
+      "cat_id": "cat-kohaku",
+      "name": "コハク",
+      "preset": "遊び好きで繊細な猫",
+      "trait": "relaxed"
+    },
+    {
+      "cat_id": "cat-mugi",
+      "name": "ムギ",
+      "preset": "中立"
+    }
   ]
 }

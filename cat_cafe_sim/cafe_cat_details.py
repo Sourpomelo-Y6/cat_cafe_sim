@@ -27,6 +27,8 @@ def cat_details(session, cat_id):
              ('疲労', number(cat.fatigue) if core.shift_rules else 'ルール未導入'),
              ('体調', health_text(cat.health_status, cat.recovery_days_remaining)),
              ('活動', ACTIVITY_LABELS[core.activity(cat_id)]), ('出勤予定', '対象外' if core.activity(cat_id)!='cafe' else '出勤' if cat_id in core.working_cats else '休養'), ('担当状態', status)]
+    from .core.cafe_traits import trait, description
+    basic += description(trait(core,cat_id))
     from .core.cafe_player import state as player_state, remaining
     bond = player_state(core)
     basic += [('プレイヤーへの好感度', f"{bond['affinity'][cat_id]:g} / 100"),

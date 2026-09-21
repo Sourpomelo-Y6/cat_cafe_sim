@@ -12,6 +12,8 @@ from .models import Cat
 def candidates(used_ids):
     definitions = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_recruitment.json').read_text(encoding='utf-8'))
     presets = load_presets()
+    from .cafe_traits import definitions as trait_definitions
+    traits = trait_definitions()
     used = set(used_ids)
     rows = {}
     index = 1
@@ -21,6 +23,8 @@ def candidates(used_ids):
         key = f'rescue-{index}'
         used.add(key)
         rows[key] = dict(name=row['name'], personality=presets[row['preset']].to_dict(), cost=row['cost'])
+        if row.get('trait') is not None:
+            rows[key]['trait'] = copy.deepcopy(traits[row['trait']])
     return validate_candidates(rows)
 
 
@@ -29,8 +33,11 @@ def validate_candidates(rows):
         raise ValueError('受け入れ候補が不正です。')
     for key, row in rows.items():
         identity(key)
-        if not isinstance(row, dict) or set(row) != {'name', 'personality', 'cost'}:
+        if not isinstance(row, dict) or set(row) not in ({'name', 'personality', 'cost'}, {'name', 'personality', 'cost', 'trait'}):
             raise ValueError('候補の項目が不正です。')
+        if 'trait' in row:
+            from .cafe_traits import validate_trait
+            validate_trait(row['trait'])
         identity(row['name'])
         Personality.from_dict(row['personality'])
         cost = row['cost']
@@ -81,6 +88,10 @@ def accept(core, cat_id):
             core.player_bond[field][cat_id] = 0
     if core.management is not None:
         core.management['stress'][cat_id] = 0
+    if 'trait' in row:
+        if core.traits is None:
+            core.traits = {}
+        core.traits[cat_id] = copy.deepcopy(row['trait'])
     data['accepted'][cat_id] = core.day
     core.funds -= row['cost']
     core._tick_events = []

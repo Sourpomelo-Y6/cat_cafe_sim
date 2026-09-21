@@ -101,6 +101,8 @@ class ManualCafeInteractionWindow:
             elif kind=='cat_health':
                 name=self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])
                 text=f"{name}：{health_result_text(event)}"
+            elif kind=='traits_initialized':
+                text='初期猫の特性を設定'
             elif kind=='goal_enabled':
                 text='人気目標への挑戦を開始'
             elif kind=='popularity_earned':
@@ -145,6 +147,8 @@ class ManualCafeInteractionWindow:
                 text=f"帰還確認待ち {event['cat_id']} · 派遣・イベント画面で確認してください"
             elif kind=='activity_event_resolved':
                 text=f"帰還 {event['cat_id']} · 派遣報酬 {event['reward']:g}"
+                if event.get('stress_gain'):
+                    text+=f" · ストレス ＋{event['stress_gain']:g}（上限100）"
             elif kind=='shifts_set':
                 text='出勤・休養を設定 · 出勤 '+('、'.join(event['working_cats']) or 'なし')
             elif kind=='day_off':

@@ -98,7 +98,8 @@ def close_day(core):
         if core.activity(key) != 'cafe':
             continue
         service = core.cat_service_ticks[key]
-        change = (service*rule['stress_per_service_tick'] if key in core.working_cats else -rule['rest_recovery'])
+        from .cafe_traits import effect
+        change = (service*rule['stress_per_service_tick']*effect(core,key,'service_stress') if key in core.working_cats else -rule['rest_recovery'])
         data['stress'][key] = max(0,min(100,data['stress'][key]+change))
         if service == 0 or data['stress'][key] < rule['runaway_threshold'] or key in reserved:
             continue

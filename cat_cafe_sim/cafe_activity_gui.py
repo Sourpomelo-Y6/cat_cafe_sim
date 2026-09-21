@@ -1,5 +1,6 @@
 """派遣の出発と帰還イベントを確認する画面。"""
-from .core.cafe_activities import destination, ACTIVITY_LABELS
+from .core.cafe_activities import destination, ACTIVITY_LABELS, reward
+from .core.cafe_traits import trait, dispatch_terms
 
 
 class CafeActivityWindow:
@@ -31,12 +32,12 @@ class CafeActivityWindow:
         self.recruitment_button=ttk.Button(frame,text='保護猫の受け入れ…',command=self.show_recruitment)
         self.recruitment_button.pack(anchor='w',pady=(0,4))
         self.rules=destination()
-        ttk.Label(frame,text=f"{self.rules['name']}：{self.rules['days']}日 / 報酬 {self.rules['reward']:g} / 疲労 {self.rules['max_fatigue']:g}以下の健康な猫",wraplength=460).pack(anchor='w')
+        ttk.Label(frame,text=f"{self.rules['name']}：{self.rules['days']}日 / 基本報酬 {self.rules['reward']:g} / 疲労 {self.rules['max_fatigue']:g}以下の健康な猫",wraplength=460).pack(anchor='w')
         ttk.Label(frame,text='準備中に出発します。店内の席数を超える担当可能な猫が必要です。帰還後は出勤設定を確認してください。',wraplength=460).pack(anchor='w')
         self.notice=tk.StringVar()
         ttk.Label(frame,textvariable=self.notice,wraplength=460).pack(anchor='w')
-        self.cats=CafeHistoryWindow.table(frame,('猫','活動','体調','疲労'))
-        self.events=CafeHistoryWindow.table(frame,('対象猫','派遣先','状態','残り日数','報酬'))
+        self.cats=CafeHistoryWindow.table(frame,('猫','活動','体調','疲労','特性'))
+        self.events=CafeHistoryWindow.table(frame,('対象猫','派遣先','状態','残り日数','報酬','帰還ストレス増加'))
         self.events.bind('<<TreeviewSelect>>',lambda event:self.buttons())
         self.window.bind('<Escape>',lambda event:self.window.destroy())
         self.refresh()
@@ -60,13 +61,13 @@ class CafeActivityWindow:
         selected=self.cats.selection()
         self.cats.delete(*self.cats.get_children());self.events.delete(*self.events.get_children())
         for key,cat in core.cats.items():
-            self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),ACTIVITY_LABELS[core.activity(key)],health_text(cat.health_status,cat.recovery_days_remaining),f'{cat.fatigue:g}'))
+            self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),ACTIVITY_LABELS[core.activity(key)],health_text(cat.health_status,cat.recovery_days_remaining),f'{cat.fatigue:g}',(trait(core,key) or {}).get('name','なし')))
         if selected:self.cats.selection_set(selected[0])
         elif core.cats:self.cats.selection_set(next(iter(core.cats)))
         labels={'travelling':'派遣中','waiting':'帰還・確認待ち','resolved':'受取済み'}
         if core.activities:
             for key,e in core.activities['events'].items():
-                self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],labels[e['status']],e['remaining'],f"{e['destination']['reward']:g}"))
+                self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],labels[e['status']],e['remaining'],f"{reward(core,e):g}", f"{dispatch_terms(core,e['cat_id'],e['destination']['reward'])['stress']:g}" if e['status']!='resolved' else '確定済み'))
         waiting=waiting_events(core)
         dispatch_waiting=[event for event in waiting if event.get('kind')=='dispatch_return']
         if dispatch_waiting:self.events.selection_set(dispatch_waiting[0]['id'])
@@ -112,7 +113,8 @@ class CafeActivityWindow:
         from tkinter import messagebox
         selected=self.cats.selection()
         if not selected:return
-        if not messagebox.askyesno('派遣の出発', '今から派遣し、帰還まで店内接客から外します。出発しますか？',parent=self.window):return
+        terms=dispatch_terms(self.session.core,selected[0],self.rules['reward'])
+        if not messagebox.askyesno('派遣の出発', f"報酬 {terms['reward']:g} / 帰還時ストレス ＋{terms['stress']:g}（現在の経営ルール）\n今から派遣し、帰還まで店内接客から外します。出発しますか？",parent=self.window):return
         self.perform(lambda:self.session.dispatch(selected[0],self.rules))
 
     def receive(self):

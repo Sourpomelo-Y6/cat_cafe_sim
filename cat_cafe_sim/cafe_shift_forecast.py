@@ -17,12 +17,13 @@ def shift_forecast(core, cat_id):
                        if core.health_rules and not result['sick'] else None)
         return dict(fatigue=fatigue, probability=probability)
 
-    result['rest'] = estimate(-rules.rest_day_recovery)
+    from .core.cafe_traits import fatigue_change
+    result['rest'] = estimate(fatigue_change(core,cat_id,False,0))
     if result['sick']:
         if core.health_rules:
             result['recovery_after'] = max(0, cat.recovery_days_remaining - 1)
     elif actions is not None:
-        result['work'] = estimate(actions * rules.fatigue_per_service_tick)
+        result['work'] = estimate(fatigue_change(core,cat_id,True,actions))
     return result
 
 

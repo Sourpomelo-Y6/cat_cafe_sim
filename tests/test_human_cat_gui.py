@@ -1226,6 +1226,44 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertEqual(load_game(first.checkpoint_path)[0].core.snapshot(), first.core.snapshot())
         self.assertEqual(app.session.core.funds, 1000)
 
+    def test_traits_details_dispatch_preview_return_and_recruitment(self):
+        self.start.new_button.invoke();self.start.new_window.start_button.invoke()
+        app=self.start.app
+        app.roster.selection_set('cat-mike');app.cat_details_button.invoke()
+        details=app.cat_details_window
+        rows=[details.tables['basic'].item(i,'values') for i in details.tables['basic'].get_children()]
+        self.assertIn(('特性','接客好き'),rows)
+        self.assertIn(('接客ストレス','通常の0.5倍'),rows)
+        self.assertIn(('接客疲労','通常の1.25倍'),rows)
+        details.window.destroy()
+        app.activity_button.invoke();activity=app.activity_window
+        activity.cats.selection_set('cat-tama')
+        with patch('tkinter.messagebox.askyesno',return_value=False) as confirm:
+            activity.send_button.invoke()
+        self.assertIn('報酬 125',confirm.call_args.args[1])
+        self.assertIn('ストレス ＋10',confirm.call_args.args[1])
+        self.assertEqual(app.session.core.activity('cat-tama'),'cafe')
+        with patch('tkinter.messagebox.askyesno',return_value=True):activity.send_button.invoke()
+        app.session.day_off();activity.refresh();app.refresh()
+        activity.window.geometry('500x400');self.root.update()
+        self.assertEqual(activity.events.set('dispatch-1-cat-tama','報酬'),'125')
+        self.assertEqual(activity.events.set('dispatch-1-cat-tama','帰還ストレス増加'),'10')
+        for widget in (activity.receive_button,activity.cats,activity.events):
+            self.assertTrue(widget.winfo_ismapped())
+            self.assertGreater(widget.winfo_height(),15)
+            self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),activity.window.winfo_rooty()+activity.window.winfo_height())
+        activity.receive_button.invoke()
+        self.assertEqual(app.session.core.funds,1125)
+        self.assertEqual(app.roster.set('cat-tama','stress'),'10')
+        activity.recruitment_button.invoke();window=activity.recruitment_window
+        self.root.update()
+        selected=window.cats.selection()[0]
+        self.assertEqual(window.cats.set(selected,'特性'),'接客好き')
+        rows=[window.details.item(i,'values') for i in window.details.get_children()]
+        self.assertIn(('接客ストレス','通常の0.5倍'),rows)
+        self.assertIn(('接客疲労','通常の1.25倍'),rows)
+        window.close_button.invoke();activity.close_button.invoke()
+
     def test_resume_cancel_invalid_and_game_over_restart(self):
         from dataclasses import replace
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession

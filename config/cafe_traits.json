@@ -1,0 +1,5 @@
+{
+  "hospitality": {"id": "hospitality", "name": "接客好き", "service_stress": 0.5, "service_fatigue": 1.25, "rest_fatigue": 1, "dispatch_reward": 1, "return_stress": 0},
+  "relaxed": {"id": "relaxed", "name": "のんびり屋", "service_stress": 1, "service_fatigue": 1.25, "rest_fatigue": 1.5, "dispatch_reward": 1, "return_stress": 0},
+  "outgoing": {"id": "outgoing", "name": "外出好き", "service_stress": 1, "service_fatigue": 1, "rest_fatigue": 1, "dispatch_reward": 1.25, "return_stress": 10}
+}

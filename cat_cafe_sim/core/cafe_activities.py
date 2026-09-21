@@ -31,8 +31,13 @@ def waiting_events(core):
     return ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core) + returns(core)
 
 
+def reward(core, event):
+    from .cafe_traits import dispatch_terms
+    return dispatch_terms(core,event['cat_id'],event['destination']['reward'])['reward']
+
+
 def income(core):
-    return sum(e['destination']['reward'] for e in core.activities['events'].values() if e['status']=='resolved') if core.activities else 0
+    return sum(reward(core,e) for e in core.activities['events'].values() if e['status']=='resolved') if core.activities else 0
 
 
 def ensure(core):
@@ -56,6 +61,8 @@ def dispatch(core, cat_id, rules=None):
     event_id = f'dispatch-{core.day}-{cat_id}'
     if core.activities and event_id in core.activities['events']:
         raise ValueError('この猫は本日すでに派遣されています。')
+    from .cafe_traits import dispatch_terms
+    dispatch_terms(core,cat_id,rules['reward'])
     ensure(core)
     core.activities['cats'][cat_id] = 'dispatched'
     core.activities['day_locations'][cat_id] = 'dispatched'
@@ -84,13 +91,19 @@ def resolve(core, event_id, choice):
     event=core.activities['events'][event_id]
     if event['status']=='resolved':return
     if event['status']!='waiting':raise ValueError('この派遣はまだ帰還していません。')
+    from .cafe_traits import dispatch_terms
+    terms=dispatch_terms(core,event['cat_id'],event['destination']['reward'])
     event.update(status='resolved',resolved_day=core.day,choice=choice)
     core.activities['cats'][event['cat_id']]='cafe'
     if core.can_set_shifts:
         core.activities['day_locations'][event['cat_id']]='cafe'
-    core.funds += event['destination']['reward']
+    core.funds += terms['reward']
+    if core.management:
+        key=event['cat_id']
+        core.management['stress'][key]=min(100,core.management['stress'][key]+terms['stress'])
     core._tick_events=[]
-    core._emit('activity_event_resolved',event_id=event_id,cat_id=event['cat_id'],reward=event['destination']['reward'])
+    core._emit('activity_event_resolved',event_id=event_id,cat_id=event['cat_id'],reward=terms['reward'],
+               **({'stress_gain':terms['stress']} if terms['stress'] else {}))
     core._record(dict(kind='resolve_activity',event_id=event_id,choice=choice))
 
 
