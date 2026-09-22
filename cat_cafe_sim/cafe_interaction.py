@@ -148,6 +148,14 @@ class CafeInteractionSession:
         self.profiles = profiles
         self.checkpoint_baseline = baseline
 
+    def purchase_seat_equipment(self, seat_id, rules):
+        self._ready()
+        self.core.purchase_seat_equipment(seat_id, rules)
+
+    def equip_seat(self, seat_id, item_id=None):
+        self._ready()
+        self.core.equip_seat(seat_id, item_id)
+
     def purchase_rest_space(self, rules=None):
         self._ready()
         self.core.purchase_rest_space(rules)
@@ -244,7 +252,9 @@ class CafeInteractionSession:
         if cat_id not in self.core.cats:
             raise ValueError('営業に参加している猫を選んでください。')
         from .core.cafe_preferences import match
-        config = replace(self.interaction_config, customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
+        from .core.cafe_seat_equipment import effects
+        actual_seat = seat_id or next(iter(self.free_seats), self.core.seat.id)
+        config = replace(self.interaction_config, **effects(self.core, actual_seat), customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
                          ticks=min(self.interaction_config.ticks, self.core.config.opening_ticks-self.core.tick))
         interaction = self.store.begin(config, cat_id, customer_id, stamina=self.core.cats[cat_id].stamina)
         if isinstance(self.core,MultiSeatCafeCore):

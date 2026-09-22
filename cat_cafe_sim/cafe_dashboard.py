@@ -109,11 +109,24 @@ def build(app):
     horizontal.grid(row=1,column=0,sticky='ew')
     app.roster.configure(xscrollcommand=horizontal.set, yscrollcommand=roster_frame.grid_slaves(row=0,column=1)[0].set)
     app.details = tk.StringVar()
-    app.seat_details = ttk.Label(page, textvariable=app.details, wraplength=760)
-    app.seat_details.grid(row=3, column=0, sticky='ew', pady=(6,0))
+    seat_info = ttk.Frame(page)
+    seat_info.grid(row=3, column=0, sticky='ew', pady=(6,0))
+    app.seat_details = tk.Text(seat_info, height=3, width=1, wrap='word', font='TkDefaultFont',
+                               state='disabled', relief='flat', background='#f4f3ee', foreground='#253d36')
+    app.seat_details.pack(side='left', fill='x', expand=True)
+    seat_scroll = ttk.Scrollbar(seat_info, orient='vertical', command=app.seat_details.yview)
+    seat_scroll.pack(side='right', fill='y')
+    app.seat_details.configure(yscrollcommand=seat_scroll.set)
+    def update_seat_details(*args):
+        app.seat_details.configure(state='normal')
+        app.seat_details.delete('1.0', 'end')
+        app.seat_details.insert('1.0', app.details.get())
+        app.seat_details.configure(state='disabled')
+    app.details.trace_add('write', update_seat_details)
     app.roster.bind('<Double-1>', lambda event: app.show_cat_details())
     app.cat_selector.bind('<<ComboboxSelected>>', lambda event: app.refresh())
     app.queue.bind('<<ComboboxSelected>>', lambda event: app.select_customer())
+    app.seat_selector.bind('<<ComboboxSelected>>', lambda event: app.refresh())
 
     def card(parent, column, title, hint, actions):
         parent.columnconfigure(column, weight=1, uniform='cards')
@@ -141,6 +154,7 @@ def build(app):
     card(app.preparation_page, 1, 'お店への投資', '費用と効果を確認してから購入できます。', (
         ('expansion_button','席を増やす…',app.show_expansion),
         ('equipment_button','休養スペースを購入する…',app.show_equipment),
+        ('seat_equipment_button','席の接客設備を整える…',app.show_seat_equipment),
     ))
 
     app.results_summary = tk.StringVar()

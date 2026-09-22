@@ -110,6 +110,10 @@ class ManualCafeInteractionWindow:
                 text=f"{event['seat_count']}席に増設 · 費用 {event['cost']:g}"
             elif kind=='preferences_initialized':
                 text='猫の特徴・お客さんの好みを設定'
+            elif kind=='seat_equipment_purchased':
+                text=f"{event['seat']}に{event['name']}を購入・設置：費用{event['cost']:g}"
+            elif kind=='seat_equipment_changed':
+                text=f"{event['seat']}の接客設備を変更"
             elif kind=='weekdays_initialized':
                 text='曜日ごとの来店予定を設定'
             elif kind=='bond_goal_enabled':
@@ -244,6 +248,12 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         else:
             self.recruitment_window = CafeRecruitmentWindow(self.root, self.session, self.refresh)
         self.refresh()
+
+    def show_seat_equipment(self):
+        self.pages.select(self.preparation_page)
+        from .cafe_seat_equipment_gui import CafeSeatEquipmentWindow
+        self.stop(); self.refresh()
+        self.seat_equipment_window = CafeSeatEquipmentWindow(self.root, self.session, self.refresh)
 
     def show_equipment(self):
         self.pages.select(self.preparation_page)
@@ -426,6 +436,10 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.notice.set('帰還・譲渡・家出イベントの確認待ちです。「確認する」から対応してください。')
         self.queue.configure(values=tuple(customer_label(key) for key in core.queue))
         self.customer_display.set(customer_label(self.customer.get()) if self.customer.get() else "")
+        from .core.cafe_seat_equipment import description, seats
+        selected_seat = self.seat_choice.get()
+        if self.session.core.equipment_store is not None and selected_seat in seats(core):
+            self.details.set('選択席 ' + selected_seat + '：' + description(core, selected_seat) + '\n' + self.details.get())
         self.refresh_dashboard()
 
     def refresh_dashboard(self):

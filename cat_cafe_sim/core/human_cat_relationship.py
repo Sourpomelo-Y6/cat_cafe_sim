@@ -20,6 +20,8 @@ def identity(value):
 @dataclass(frozen=True)
 class RelationshipConfig(TypesConfig):
     customer_tension_multiplier: float = 1
+    equipment_engagement_multiplier: float = 1
+    equipment_tension_multiplier: float = 1
     affinity_enthusiastic: float = 1
     affinity_favorable: float = .5
     affinity_turn_away_loss: float = 1
@@ -31,7 +33,11 @@ class RelationshipConfig(TypesConfig):
     def __post_init__(self):
         super().__post_init__()
         bounded(self.customer_tension_multiplier, 1, 2, 'customer tension multiplier')
-        if not math.isfinite(max(self.tension_enthusiastic, self.tension_favorable, self.tension_neutral) * self.customer_tension_multiplier):
+        bounded(self.equipment_engagement_multiplier, 1, 2, 'equipment engagement multiplier')
+        bounded(self.equipment_tension_multiplier, 1, 2, 'equipment tension multiplier')
+        if any(not math.isfinite(value * self.equipment_engagement_multiplier) for key,value in vars(self).items() if key.endswith('_gain') and isinstance(value,(int,float))):
+            raise ValueError('equipment engagement overflow')
+        if not math.isfinite(max(self.tension_enthusiastic, self.tension_favorable, self.tension_neutral) * self.customer_tension_multiplier * self.equipment_tension_multiplier):
             raise ValueError('customer tension overflow')
         maximum = sum(getattr(self, key) for key in ('affinity_enthusiastic','affinity_favorable',
                       'affinity_turn_away_loss','affinity_connect','affinity_open_up','affinity_simultaneous','affinity_exhausted_loss'))
@@ -42,6 +48,9 @@ class RelationshipConfig(TypesConfig):
         data = super().to_dict()
         if self.customer_tension_multiplier == 1:
             data['rules'].pop('customer_tension_multiplier')
+        for key in ("equipment_engagement_multiplier", "equipment_tension_multiplier"):
+            if getattr(self,key) == 1:
+                data["rules"].pop(key)
         return data
 
     @classmethod
@@ -64,7 +73,14 @@ class RelationshipInteraction(TypesInteraction):
         self.finish_event = None
 
     def _tension_effect(self, delta, opened):
-        return delta * self.config.customer_tension_multiplier if delta > 0 and not opened else delta
+        return delta * self.config.customer_tension_multiplier * self.config.equipment_tension_multiplier if delta > 0 and not opened else delta
+
+    def _normal_effect(self, action):
+        cost, score, reaction, diagnostic = super()._normal_effect(action)
+        if action in INTERACTIONS and score > 0 and self.config.equipment_engagement_multiplier != 1:
+            score *= self.config.equipment_engagement_multiplier
+            diagnostic = dict(diagnostic, equipment_multiplier=self.config.equipment_engagement_multiplier)
+        return cost, score, reaction, diagnostic
 
     def _end_reason(self):
         return 'exhausted' if self.state['stamina'] == 0 else 'time_limit' if self.state['remaining_ticks'] == 0 else None

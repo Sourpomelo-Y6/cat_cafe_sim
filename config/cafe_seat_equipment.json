@@ -1,0 +1,4 @@
+[
+  {"id":"toys","name":"おもちゃセット","cost":300,"engagement":1.2,"tension":1},
+  {"id":"cushion","name":"くつろぎクッション","cost":300,"engagement":1,"tension":1.2}
+]

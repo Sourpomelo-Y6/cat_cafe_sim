@@ -37,6 +37,7 @@ class CafeInteractionCore(SimulationCore):
         self.bond_goal = None
         self.expansion = None
         self.rest_space = None
+        self.equipment_store = None
         self.traits = None
         self.cat_features = None
         self.customer_preferences = None
@@ -61,6 +62,7 @@ class CafeInteractionCore(SimulationCore):
         return {**super().snapshot(),
                 'interaction': self.active.log() if self.active else None,
                 **({'weekdays': copy.deepcopy(self.weekdays)} if self.weekdays is not None else {}),
+                **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
                                   results=copy.deepcopy(self.health_results))} if self.health_rules else {}),
@@ -278,6 +280,14 @@ class CafeInteractionCore(SimulationCore):
             from .cafe_goal import settle
             settle(self)
 
+    def purchase_seat_equipment(self, seat_id, rules):
+        from .cafe_seat_equipment import purchase
+        purchase(self, seat_id, rules)
+
+    def equip_seat(self, seat_id, item_id=None):
+        from .cafe_seat_equipment import equip
+        equip(self, seat_id, item_id)
+
     def initialize_weekdays(self, rules=None):
         from .cafe_weekdays import initialize
         initialize(self, rules)
@@ -411,6 +421,8 @@ class CafeInteractionCore(SimulationCore):
             raise ValueError('交流の開始条件が営業状態と一致しません。')
         from .cafe_preferences import check_interaction
         check_interaction(self, interaction)
+        from .cafe_seat_equipment import check_interaction as check_equipment
+        check_equipment(self, interaction, self.seat.id)
         self._tick_events = []
         self.cat = cat
         self._apply(Command('assign', interaction.customer_id, interaction.cat_id, self.seat.id))
@@ -486,12 +498,14 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_expansion import expenses as expansion_expenses
         from .cafe_equipment import expenses as equipment_expenses
         from .cafe_activities import reward
+        from .cafe_seat_equipment import expenses as seat_expenses
         visits = list(self.visits.values())
         return dict(ticks=self.tick, closed=self.closed, arrivals=len(visits),
                     completed_interactions=len(self.outcomes)-self.day_outcome_offset,
                     departures={reason:sum(v.departure_reason == reason for v in visits)
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
+                    **({'seat_equipment_expenses': seat_expenses(self, self.day)} if self.equipment_store is not None else {}),
                     **({'goal_status': self.goal['status'], 'popularity_gain': next((r['gain'] for r in self.goal['days'] if r['day']==self.day),0)} if self.goal else {}),
                     **({'equipment_expenses': equipment_expenses(self, self.day)} if self.rest_space is not None else {}),
                     **({'expansion_expenses': expansion_expenses(self, self.day)} if self.expansion is not None else {}),

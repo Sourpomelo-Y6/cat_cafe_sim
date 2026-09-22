@@ -253,6 +253,11 @@ def restore(data):
         core.expansion = validate_expansion(core, state['expansion'], data['seat_count'])
     elif data['seat_count'] == 3:
         raise ValueError('3席の営業には増設記録が必要です。')
+    from .cafe_seat_equipment import validate as validate_seat_equipment, expenses as seat_expenses, check_interaction as check_equipment
+    if 'equipment_store' in state:
+        core.equipment_store = validate_seat_equipment(core, state['equipment_store'])
+    elif any(seat.equipment is not None for seat in seats.values()):
+        raise ValueError('席の設備に購入記録がありません。')
     busy_cats,busy_guests=set(),set()
     for key,seat in seats.items():
         if seat.id!=key:
@@ -263,6 +268,7 @@ def restore(data):
             continue
         interaction=active[key]
         check_interaction(core, interaction)
+        check_equipment(core, interaction, key)
         cat=core.cats[interaction.cat_id]
         if (interaction.state['end_reason'] or core.closed or interaction.cat_id in busy_cats
                 or interaction.customer_id in busy_guests or interaction.customer_id in core.queue
@@ -282,7 +288,7 @@ def restore(data):
     from .cafe_management import money_adjustment
     expected_funds += money_adjustment(core)
     from .cafe_recruitment import expenses
-    expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core)
+    expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core) + seat_expenses(core)
     if not math.isclose(core.funds,expected_funds,rel_tol=1e-12,abs_tol=1e-8):
         raise ValueError('会計の合計と所持金が一致しません。')
     core.recorded_digest=record_digest(core)

@@ -42,7 +42,7 @@ class CafeHistoryWindow:
             ttk.Label(frame, text='関係データへの保存が未完了です。営業画面で保存を再試行してください。').pack(anchor='w')
         if not rows:
             ttk.Label(frame, text='まだ閉店した営業日がありません。').pack(anchor='w', pady=8)
-        self.days = self.table(frame, ('日目', '売上', 'うちボーナス', '交流件数', '閉店時所持金', '派遣収入', '子猫費用', '人気', '受入費用', '獲得人気', '目標結果', '席数', '増設費用', '設備費用', '営業区分'))
+        self.days = self.table(frame, ('日目', '売上', 'うちボーナス', '交流件数', '閉店時所持金', '派遣収入', '子猫費用', '人気', '受入費用', '獲得人気', '目標結果', '席数', '増設費用', '設備費用', '接客設備費用', '営業区分'))
         ttk.Label(frame, text='猫ごとの比較（体力消耗は営業開始時からの差、親しみは各お客への実増減の合計）',
                   wraplength=600).pack(anchor='w', pady=(10, 0))
         self.cats = self.table(frame, ('日目', '猫', '接客回数', '体力消耗', '残り体力', '親しみ増減', '出勤・休養', '疲労変化', '体調・療養'))
@@ -50,7 +50,7 @@ class CafeHistoryWindow:
             summary = result['summary']
             self.days.insert('', 'end', values=(result['day'], f"{summary['revenue']:g}",
                 f"{summary['interaction_bonus']:g}", summary['completed_interactions'], f"{summary['funds']:g}", f"{summary.get('dispatch_income',0):g}", f"{summary.get('kitten_expenses',0):g}",
-                f"{summary['popularity']:g}" if 'popularity' in summary else '未導入', f"{summary.get('recruitment_expenses',0):g}", f"{summary.get('popularity_gain',0):g}", {'active':'挑戦中','cleared':'クリア','expired':'期限内未達'}.get(summary.get('goal_status'),'未導入'), summary.get('seat_count', 1), f"{summary.get('expansion_expenses',0):g}", f"{summary.get('equipment_expenses',0):g}", '休業日' if result.get('day_type')=='day_off' else '営業日'))
+                f"{summary['popularity']:g}" if 'popularity' in summary else '未導入', f"{summary.get('recruitment_expenses',0):g}", f"{summary.get('popularity_gain',0):g}", {'active':'挑戦中','cleared':'クリア','expired':'期限内未達'}.get(summary.get('goal_status'),'未導入'), summary.get('seat_count', 1), f"{summary.get('expansion_expenses',0):g}", f"{summary.get('equipment_expenses',0):g}", f"{summary.get('seat_equipment_expenses',0):g}", '休業日' if result.get('day_type')=='day_off' else '営業日'))
             for cat_id, cat in result['cats'].items():
                 name = session.profiles.get(cat_id, {}).get('name', cat_id)
                 self.cats.insert('', 'end', values=(result['day'], f'{name}（{cat_id}）', cat['interactions'],

@@ -618,6 +618,45 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertTrue(app.session.core.bond_goal['continued'])
         self.assertNotIn('disabled', app.run_button.state())
 
+    def test_seat_equipment_purchase_cancel_move_and_layout(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        app = self.app
+        app.replace_game(CafeInteractionSession(store=self.store))
+        app.session.enable_management()
+        self.root.deiconify()
+        self.root.geometry('860x660')
+        app.show_seat_equipment()
+        window = app.seat_equipment_window
+        window.window.geometry('620x460')
+        self.root.update()
+        self.assertEqual(app.pages.select(), str(app.preparation_page))
+        self.assertTrue(app.seat_equipment_button.winfo_ismapped())
+        self.assertGreaterEqual(app.history.winfo_height(),120)
+        for widget in (window.purchase_button,window.equip_button,window.remove_button):
+            self.assertTrue(widget.winfo_ismapped())
+            self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),
+                                 window.window.winfo_rooty()+window.window.winfo_height())
+        with patch('tkinter.messagebox.askyesno',return_value=False):
+            window.purchase_button.invoke()
+        self.assertIsNone(app.session.core.equipment_store)
+        with patch('tkinter.messagebox.askyesno',return_value=True):
+            window.purchase_button.invoke()
+        self.assertEqual(app.session.core.funds,700)
+        self.assertIn('おもちゃセット',window.layout.get())
+        window.seat.set('seat-2')
+        window.equip_button.invoke()
+        self.assertIsNone(app.session.core.seats['seat-1'].equipment)
+        self.assertEqual(app.session.core.seats['seat-2'].equipment,'equipment-1')
+        window.remove_button.invoke()
+        self.assertIsNone(app.session.core.seats['seat-2'].equipment)
+        window.equip_button.invoke()
+        window.window.destroy()
+        app.session.step()
+        app.seat_choice.set('seat-2')
+        app.refresh()
+        self.assertIn('おもちゃセット',app.details.get())
+        self.assertIn('関心×1.2',app.details.get())
+
     def test_weekday_today_tomorrow_preview_is_readonly(self):
         import copy
         from cat_cafe_sim.cafe_new_game import create_game
