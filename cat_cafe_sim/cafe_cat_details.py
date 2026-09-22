@@ -29,6 +29,8 @@ def cat_details(session, cat_id):
              ('活動', ACTIVITY_LABELS[core.activity(cat_id)]), ('出勤予定', '対象外' if core.activity(cat_id)!='cafe' else '出勤' if cat_id in core.working_cats else '休養'), ('担当状態', status)]
     from .core.cafe_traits import trait, description
     basic += description(trait(core,cat_id))
+    from .core.cafe_preferences import feature_text
+    basic += [('特徴', feature_text((getattr(core, 'cat_features', None) or {}).get(cat_id, [])))]
     from .core.cafe_player import state as player_state, remaining
     bond = player_state(core)
     basic += [('プレイヤーへの好感度', f"{bond['affinity'][cat_id]:g} / 100"),

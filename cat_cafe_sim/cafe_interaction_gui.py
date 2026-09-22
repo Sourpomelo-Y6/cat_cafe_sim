@@ -103,6 +103,8 @@ class ManualCafeInteractionWindow:
                 text=f"{name}：{health_result_text(event)}"
             elif kind=='traits_initialized':
                 text='初期猫の特性を設定'
+            elif kind=='preferences_initialized':
+                text='猫の特徴・お客さんの好みを設定'
             elif kind=='patron_enabled':
                 text='有力者の満足度目標を開始'
             elif kind=='patron_satisfaction':
@@ -244,6 +246,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.goal_button.pack(side='left',padx=4)
         roster_frame = ttk.Frame(automation)
         roster_frame.pack(fill='x',pady=4)
+        self.compatibility_button = ttk.Button(roster_frame, text='お客との相性…', command=self.show_compatibility)
+        self.compatibility_button.pack(side='right', padx=4)
         self.cat_details_button = ttk.Button(roster_frame, text='猫の詳細…', command=self.show_cat_details)
         self.cat_details_button.pack(side='right', padx=4)
         self.activity_button = ttk.Button(roster_frame, text='派遣・イベント…', command=self.show_activities)
@@ -260,6 +264,12 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.cat_selector.bind('<<ComboboxSelected>>', lambda event:self.refresh())
         self.queue.bind('<<ComboboxSelected>>', lambda event:self.refresh())
         self.refresh()
+
+    def show_compatibility(self):
+        from .cafe_preferences_gui import CafePreferencesWindow
+        self.stop()
+        self.refresh()
+        self.compatibility_window = CafePreferencesWindow(self.root, self.session, self.customer.get())
 
     def stop(self):
         self.running = False
@@ -365,6 +375,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                     last=next((event for event in reversed(core.events) if event['kind']=='departure' and event.get('seat_id')==seat_id),None)
                     lines.append(f"{seat_id}：空席"+(f" · 直近の会計 {last['bill']:g}" if last else ''))
             self.details.set('\n'.join(lines))
+        if selected and self.customer.get():
+            self.details.set(self.details.get() + '\n' + selected['name'] + '：' + selected['compatibility']['features'] + ' / ' + selected['compatibility']['text'])
         if not self.session.pending:
             self.notice.set('自動進行中：交流コマンドは自動で選ばれます。' if self.running else
                             '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')

@@ -91,6 +91,7 @@ class SpecialInteraction(HumanCatInteraction):
                      ('enthusiastic', 'favorable', 'neutral') else -getattr(c, 'tension_' + normal_reaction + '_loss'))
         else:
             delta = 0
+        delta = self._tension_effect(delta, opened)
         raw_tension = s['tension'] + delta
         s['tension'] = max(0, min(c.target, raw_tension))
         bonuses = dict(connect=c.connect_bonus if connect else 0, open_up=c.open_up_bonus if opened else 0,
@@ -119,6 +120,9 @@ class SpecialInteraction(HumanCatInteraction):
                       bonuses=bonuses, expired_reservations={k: bool(v and s['end_reason']) for k, v in pending.items()})
         self.records[-1] = record
         return copy.deepcopy(record)
+
+    def _tension_effect(self, delta, opened):
+        return delta
 
     def _end_reason(self):
         s = self.state

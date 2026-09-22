@@ -66,7 +66,8 @@ class CafeRecruitmentWindow:
         row = core.recruitment['candidates'][key]
         personality = Personality.from_dict(row['personality'])
         from .core.cafe_traits import description
-        values = description(row.get('trait')) + [('猫ID', key), ('提示日', f"{core.recruitment.get('presented_days', {}).get(key, core.recruitment['opened_day'])}日目"), ('体力', f'{core.config.max_stamina:g} / {core.config.max_stamina:g}'),
+        from .core.cafe_preferences import feature_text
+        values = [('特徴', feature_text(row.get('features', [])))] + description(row.get('trait')) + [('猫ID', key), ('提示日', f"{core.recruitment.get('presented_days', {}).get(key, core.recruitment['opened_day'])}日目"), ('体力', f'{core.config.max_stamina:g} / {core.config.max_stamina:g}'),
                   ('疲労 / ストレス', '0 / 0'), ('体調 / 出勤予定', '健康 / 休養'),
                   ('プレイヤー・お客への好感度', '0（未交流）')]
         values += [(f'好み：{kind.name}', f'{value:g}') for kind, value in zip(self.session.interaction_config.types, personality.type_preferences)]

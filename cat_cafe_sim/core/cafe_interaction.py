@@ -34,6 +34,8 @@ class CafeInteractionCore(SimulationCore):
         self.goal = None
         self.patron = None
         self.traits = None
+        self.cat_features = None
+        self.customer_preferences = None
         self.recruitment = None
         self.adoption = None
         self.activities = None
@@ -59,6 +61,8 @@ class CafeInteractionCore(SimulationCore):
                                   results=copy.deepcopy(self.health_results))} if self.health_rules else {}),
                 **({'day_results': copy.deepcopy(self.day_results)} if self.day_results else {}),
                 **({'player_bond': copy.deepcopy(self.player_bond)} if self.player_bond is not None else {}),
+                **({'cat_features': copy.deepcopy(self.cat_features)} if self.cat_features is not None else {}),
+                **({'customer_preferences': copy.deepcopy(self.customer_preferences)} if self.customer_preferences is not None else {}),
                 **({'traits': copy.deepcopy(self.traits)} if self.traits is not None else {}),
                 **({'patron': copy.deepcopy(self.patron)} if self.patron is not None else {}),
                 **({'goal': copy.deepcopy(self.goal)} if self.goal is not None else {}),
@@ -88,6 +92,10 @@ class CafeInteractionCore(SimulationCore):
     def require_running(self):
         from .cafe_management import require_running
         require_running(self)
+
+    def initialize_preferences(self, cats, rules=None):
+        from .cafe_preferences import initialize
+        initialize(self, cats, rules)
 
     def initialize_traits(self, traits):
         from .cafe_traits import initialize
@@ -245,6 +253,8 @@ class CafeInteractionCore(SimulationCore):
 
     def _arrive(self):
         super()._arrive()
+        from .cafe_preferences import arrive
+        arrive(self)
         for visit in self.visits.values():
             visit.first_visit = visit.id not in self.returning_customers
 
@@ -353,6 +363,8 @@ class CafeInteractionCore(SimulationCore):
                 interaction.config.ticks > self.config.opening_ticks - self.tick or
                 interaction.session_id in self.outcomes):
             raise ValueError('交流の開始条件が営業状態と一致しません。')
+        from .cafe_preferences import check_interaction
+        check_interaction(self, interaction)
         self._tick_events = []
         self.cat = cat
         self._apply(Command('assign', interaction.customer_id, interaction.cat_id, self.seat.id))

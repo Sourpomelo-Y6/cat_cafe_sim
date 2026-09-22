@@ -19,6 +19,7 @@ def identity(value):
 
 @dataclass(frozen=True)
 class RelationshipConfig(TypesConfig):
+    customer_tension_multiplier: float = 1
     affinity_enthusiastic: float = 1
     affinity_favorable: float = .5
     affinity_turn_away_loss: float = 1
@@ -29,10 +30,19 @@ class RelationshipConfig(TypesConfig):
 
     def __post_init__(self):
         super().__post_init__()
+        bounded(self.customer_tension_multiplier, 1, 2, 'customer tension multiplier')
+        if not math.isfinite(max(self.tension_enthusiastic, self.tension_favorable, self.tension_neutral) * self.customer_tension_multiplier):
+            raise ValueError('customer tension overflow')
         maximum = sum(getattr(self, key) for key in ('affinity_enthusiastic','affinity_favorable',
                       'affinity_turn_away_loss','affinity_connect','affinity_open_up','affinity_simultaneous','affinity_exhausted_loss'))
         if not math.isfinite(maximum * self.ticks):
             raise ValueError('affinity accumulation overflow')
+
+    def to_dict(self):
+        data = super().to_dict()
+        if self.customer_tension_multiplier == 1:
+            data['rules'].pop('customer_tension_multiplier')
+        return data
 
     @classmethod
     def load(cls, path=RELATIONSHIP_CONFIG):
@@ -52,6 +62,9 @@ class RelationshipInteraction(TypesInteraction):
                                          session_id=self.session_id, affinity=affinity, revision=revision)
         self.state.update(affinity_start=affinity, affinity_pending=0)
         self.finish_event = None
+
+    def _tension_effect(self, delta, opened):
+        return delta * self.config.customer_tension_multiplier if delta > 0 and not opened else delta
 
     def _end_reason(self):
         return 'exhausted' if self.state['stamina'] == 0 else 'time_limit' if self.state['remaining_ticks'] == 0 else None

@@ -181,6 +181,17 @@ def restore(data):
         for key in core.recruitment['accepted']:
             if (core.traits or {}).get(key) != core.recruitment['candidates'][key].get('trait'):
                 raise ValueError('加入した猫の特性が候補と一致しません。')
+    from .cafe_preferences import validate_cats, validate_customers, check_interaction
+    if 'cat_features' in state:
+        core.cat_features = validate_cats(core, state['cat_features'])
+    if 'customer_preferences' in state:
+        if core.cat_features is None:
+            raise ValueError('お客さんの好みには猫の特徴設定が必要です。')
+        core.customer_preferences = validate_customers(core, state['customer_preferences'])
+    if core.recruitment:
+        for key in core.recruitment['accepted']:
+            if (core.cat_features or {}).get(key) != core.recruitment['candidates'][key].get('features'):
+                raise ValueError('加入猫の特徴が候補と一致しません。')
     if 'activities' in state:
         from .cafe_activities import validate
         core.activities=validate(core,state['activities'])
@@ -235,6 +246,7 @@ def restore(data):
                 raise ValueError('occupied seat without interaction')
             continue
         interaction=active[key]
+        check_interaction(core, interaction)
         cat=core.cats[interaction.cat_id]
         if (interaction.state['end_reason'] or core.closed or interaction.cat_id in busy_cats
                 or interaction.customer_id in busy_guests or interaction.customer_id in core.queue

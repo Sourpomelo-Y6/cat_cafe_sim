@@ -26,6 +26,9 @@ def candidates(used_ids, batch=0):
         key = f'rescue-{index}'
         used.add(key)
         rows[key] = dict(name=row['name'] if batch == 0 else f"{row['name']}（紹介{batch + 1}）", personality=presets[row['preset']].to_dict(), cost=row['cost'])
+        if 'features' in row:
+            from .cafe_preferences import validate_features
+            rows[key]['features'] = validate_features(row['features'])
         if row.get('trait') is not None:
             rows[key]['trait'] = copy.deepcopy(traits[row['trait']])
     return validate_candidates(rows)
@@ -36,8 +39,11 @@ def validate_candidates(rows):
         raise ValueError('受け入れ候補が不正です。')
     for key, row in rows.items():
         identity(key)
-        if not isinstance(row, dict) or set(row) not in ({'name', 'personality', 'cost'}, {'name', 'personality', 'cost', 'trait'}):
+        if not isinstance(row, dict) or not {'name', 'personality', 'cost'} <= set(row) <= {'name', 'personality', 'cost', 'trait', 'features'}:
             raise ValueError('候補の項目が不正です。')
+        if 'features' in row:
+            from .cafe_preferences import validate_features
+            validate_features(row['features'])
         if 'trait' in row:
             from .cafe_traits import validate_trait
             validate_trait(row['trait'])
@@ -117,6 +123,10 @@ def accept(core, cat_id):
         if core.traits is None:
             core.traits = {}
         core.traits[cat_id] = copy.deepcopy(row['trait'])
+    if 'features' in row:
+        if core.cat_features is None:
+            core.cat_features = {}
+        core.cat_features[cat_id] = list(row['features'])
     data['accepted'][cat_id] = core.day
     core.funds -= row['cost']
     core._tick_events = []

@@ -654,6 +654,44 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertIn('disabled',window.receive_button.state())
         window.close_button.invoke();activity.close_button.invoke()
 
+    def test_customer_preferences_preview_details_candidates_and_layout(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        self.app.session = CafeInteractionSession(store=self.store)
+        keys = list(self.app.session.core.cats)
+        self.app.session.core.initialize_preferences({keys[0]: ['white', 'long_hair'], keys[1]: ['black', 'short_hair']},
+                                                    dict(pool=['white'], tension_multiplier=1.25))
+        self.app.session.step()
+        self.app.logged = 0
+        self.app.refresh()
+        self.assertIn('白猫好き', self.app.details.get())
+        self.assertIn('1.25', self.app.details.get())
+        before = self.app.session.core.snapshot()
+        self.app.compatibility_button.invoke()
+        window = self.app.compatibility_window
+        self.assertIn('白猫好き', window.notice.get())
+        self.assertIn('一致：', window.cats.set(keys[0], '相性'))
+        self.assertIn('一致なし', window.cats.set(keys[1], '相性'))
+        self.root.deiconify()
+        window.window.geometry('500x320')
+        self.root.update()
+        for widget in (window.cats, window.close_button):
+            self.assertTrue(widget.winfo_ismapped())
+            self.assertGreater(widget.winfo_height(), 15)
+            self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(), window.window.winfo_rooty()+window.window.winfo_height())
+        self.assertEqual(self.app.session.core.snapshot(), before)
+        window.close_button.invoke()
+        self.app.roster.selection_set(keys[0])
+        self.app.cat_details_button.invoke()
+        details = self.app.cat_details_window
+        self.assertIn('白猫・長毛', str([details.tables['basic'].item(i)['values'] for i in details.tables['basic'].get_children()]))
+        details.window.destroy()
+        self.app.session.start('guest-1', keys[0])
+        self.assertEqual(self.app.session.core.active.config.customer_tension_multiplier, 1.25)
+        self.app.refresh()
+        self.root.geometry('860x600')
+        self.root.update()
+        self.assertGreaterEqual(self.app.history.winfo_height(), 100)
+
     def test_patron_enable_dispatch_clear_and_continue(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         from cat_cafe_sim.core.cafe_patron import rules

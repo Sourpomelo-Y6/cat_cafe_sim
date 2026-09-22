@@ -250,6 +250,6 @@ CLIの`run`も操作列を省略すると閉店まで自動進行します。[�
 起動時に開く場合は`python3 -m cat_cafe_sim.cafe_interaction gui --resume saves/cafe_day.json`を使います。
 [営業セーブの操作・整合性・制限](Docs/HumanToCatCafeSaves.md)を参照してください。
 
-[お客さんの特性・猫の特徴と相性の案](Docs/HumanToCatCustomerPreferencesPlan.md)に、白猫好きなどの好みによる接客バフ、特徴と特性の区分、複数保持の検討事項を記録しています（未実装）。
+[お客さんの特性・猫の特徴と相性の案](Docs/HumanToCatCustomerPreferencesPlan.md)に、特徴と特性の区分や複数保持を整理しています。[初回仕様](Docs/HumanToCatCustomerPreferences.md)として、新規ゲームの猫の特徴とお客さんの好み、一致時のテンション上昇1.25倍、配置前の相性比較を実装済みです。
 
 「派遣・イベント…」→「有力者目標・結果…」から、[有力者への派遣と満足度目標](Docs/HumanToCatPatronGoal.md)を開始できます。2日の派遣帰還で満足度＋25、100でクリア。人気目標とは独立し、結果確認後も営業を続けられます。

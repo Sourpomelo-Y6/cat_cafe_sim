@@ -67,7 +67,8 @@ class CafeInteractionSession:
             profile = self.profiles.get(cat_id)
             personality = Personality.from_dict(profile['personality']) if profile else self.interaction_config.personality
             label = next((name for name,value in self.presets.items() if value == personality), 'カスタム')
-            rows.append(dict(cat_id=cat_id,name=profile['name'] if profile else cat_id,personality=label,
+            from .core.cafe_preferences import match
+            rows.append(dict(compatibility=match(self.core, cat_id, customer_id), cat_id=cat_id,name=profile['name'] if profile else cat_id,personality=label,
                              stamina=cat.stamina,fatigue=cat.fatigue,health_status=cat.health_status,
                              stress=self.core.management['stress'][cat_id] if self.core.management else None,
                              recovery_days_remaining=cat.recovery_days_remaining,working=cat_id in self.core.working_cats,affinity=self.affinities.get((cat_id,customer_id),0),
@@ -223,7 +224,8 @@ class CafeInteractionSession:
         cat_id = self.core.cat.id if cat_id is None else cat_id
         if cat_id not in self.core.cats:
             raise ValueError('営業に参加している猫を選んでください。')
-        config = replace(self.interaction_config,
+        from .core.cafe_preferences import match
+        config = replace(self.interaction_config, customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
                          ticks=min(self.interaction_config.ticks, self.core.config.opening_ticks-self.core.tick))
         interaction = self.store.begin(config, cat_id, customer_id, stamina=self.core.cats[cat_id].stamina)
         if isinstance(self.core,MultiSeatCafeCore):

@@ -1,0 +1,4 @@
+{
+  "pool": ["white", "black", "calico", "orange_tabby", "brown_tabby", "black_white", "short_hair", "long_hair"],
+  "tension_multiplier": 1.25
+}
