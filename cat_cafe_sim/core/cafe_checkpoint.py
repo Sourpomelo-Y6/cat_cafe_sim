@@ -184,6 +184,11 @@ def restore(data):
         for key in core.recruitment['accepted']:
             if (core.traits or {}).get(key) != core.recruitment['candidates'][key].get('trait'):
                 raise ValueError('加入した猫の特性が候補と一致しません。')
+    if 'weekdays' in state:
+        from .cafe_weekdays import validate as validate_weekdays
+        core.weekdays = validate_weekdays(core, state['weekdays'])
+    elif any('customer_visits' in row for row in core.day_results):
+        raise ValueError('曜日別の来店実績に曜日設定がありません。')
     from .cafe_preferences import validate_cats, validate_customers, check_interaction
     if 'cat_features' in state:
         core.cat_features = validate_cats(core, state['cat_features'])

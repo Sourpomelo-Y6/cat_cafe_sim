@@ -39,13 +39,17 @@ def preference(core, customer_id):
 
 def directory(session):
     core = session.core
-    schedule = {f'guest-{i+1}': tick for i, tick in enumerate(core.config.arrival_ticks)}
-    known = set(schedule) | set(core.visits) | core.returning_customers | {guest for _, guest in session.affinities}
+    from .core.cafe_weekdays import schedule as arrival_schedule, customer_days, DAYS
+    schedule = arrival_schedule(core)
+    tomorrow = arrival_schedule(core, core.day + 1)
+    all_customers = {f'guest-{i+1}' for i in range(len(core.config.arrival_ticks))}
+    known = all_customers | set(core.visits) | core.returning_customers | {guest for _, guest in session.affinities}
     rows = []
     for key in sorted(known, key=lambda key: (number(key) is None, number(key) or 0, key)):
         index = number(key)
-        # 通常営業は毎日同じ順序で guest-N が来店する。休業は arrivals=0。
-        count = sum(1 for day in core.day_results if index is not None and index <= day['summary']['arrivals'])
+        # 曜日導入後は実際の来店IDを集計。旧セーブは固定順序の来店数から復元。
+        count = sum(int(key in day['customer_visits']) if core.weekdays is not None else
+                    int(index is not None and index <= day['summary']['arrivals']) for day in core.day_results)
         count += int(key in core.visits)
         visit = core.visits.get(key)
         planned = schedule.get(key)
@@ -57,7 +61,9 @@ def directory(session):
         else:
             status = '本日の予定なし'
         rows.append(dict(customer_id=key, name=customer_name(key), visits=count,
-                         arrival_tick=planned, status=status, preference=preferred,
+                         arrival_tick=planned, tomorrow_tick=tomorrow.get(key),
+                         weekdays='・'.join(DAYS[d] for d in customer_days(core, index-1)) if key in all_customers and core.weekdays else '毎日' if key in all_customers else '—',
+                         status=status, preference=preferred,
                          preference_text=FEATURES[preferred][0]+'好き' if preferred else '未設定'))
     return rows
 

@@ -618,6 +618,38 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertTrue(app.session.core.bond_goal['continued'])
         self.assertNotIn('disabled', app.run_button.state())
 
+    def test_weekday_today_tomorrow_preview_is_readonly(self):
+        import copy
+        from cat_cafe_sim.cafe_new_game import create_game
+        app = self.app
+        app.replace_game(create_game(self.temp.name))
+        self.root.deiconify()
+        self.root.geometry('860x660')
+        app.show_customers()
+        window = app.customers_window
+        window.window.geometry('660x520')
+        self.root.update()
+        before = copy.deepcopy(app.session.core.snapshot())
+        self.assertIn('月', app.phase.get())
+        self.assertEqual(window.customers.item('guest-1', 'values')[3], '0')
+        self.assertEqual(window.customers.item('guest-2', 'values')[3], '—')
+        window.customers.selection_set('guest-2')
+        window.view_day.set(window.day_choices[1])
+        window.day_selector.event_generate('<<ComboboxSelected>>')
+        self.root.update()
+        self.assertIn('火', window.view_day.get())
+        self.assertEqual(window.customers.item('guest-1', 'values')[3], '—')
+        self.assertEqual(window.customers.item('guest-2', 'values')[3], '6')
+        self.assertEqual(window.customers.selection(), ('guest-2',))
+        self.assertIn('火・木・土・日', window.details.get())
+        self.assertEqual(app.session.core.snapshot(), before)
+        for table in (window.customers, window.cats):
+            self.assertGreaterEqual(table.winfo_height(), 100)
+        window.window.destroy()
+        app.session.day_off()
+        app.refresh()
+        self.assertIn('2日目（火）', app.phase.get())
+
     def test_customer_directory_pause_layout_and_named_assignment(self):
         import copy
         from cat_cafe_sim.cafe_customers import customer_label

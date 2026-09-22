@@ -8,6 +8,7 @@ from .human_cat_relationship import verify_relationship
 def apply_operation(core, operation):
     kind=operation['kind']
     if kind=='initialize_traits':core.initialize_traits(operation['traits'])
+    elif kind=='initialize_weekdays':core.initialize_weekdays(operation['rules'])
     elif kind=='purchase_rest_space':core.purchase_rest_space(operation['rules'])
     elif kind=='expand_seats':core.expand_seats(operation['rules'])
     elif kind=='initialize_preferences':core.initialize_preferences(operation['cats'], operation['rules'])

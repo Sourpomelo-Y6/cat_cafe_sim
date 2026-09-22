@@ -29,6 +29,7 @@ class CafeInteractionCore(SimulationCore):
         self.day_results = []
         self.day_outcome_offset = 0
         self.returning_customers = set()
+        self.weekdays = None
         self.player_bond = None
         self.management = None
         self.goal = None
@@ -59,6 +60,7 @@ class CafeInteractionCore(SimulationCore):
     def _full_snapshot(self):
         return {**super().snapshot(),
                 'interaction': self.active.log() if self.active else None,
+                **({'weekdays': copy.deepcopy(self.weekdays)} if self.weekdays is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
                                   results=copy.deepcopy(self.health_results))} if self.health_rules else {}),
@@ -276,8 +278,26 @@ class CafeInteractionCore(SimulationCore):
             from .cafe_goal import settle
             settle(self)
 
+    def initialize_weekdays(self, rules=None):
+        from .cafe_weekdays import initialize
+        initialize(self, rules)
+
     def _arrive(self):
-        super()._arrive()
+        if self.weekdays is None:
+            super()._arrive()
+        else:
+            from .cafe_weekdays import schedule
+            from .models import Visit
+            for key, tick in schedule(self).items():
+                if tick != self.tick:
+                    continue
+                visit = Visit(key, tick)
+                self.visits[key] = visit
+                self._emit('arrival', customer_id=key)
+                if len(self.queue) >= self.config.queue_capacity:
+                    self._depart(visit, 'queue_full')
+                else:
+                    self.queue.append(key)
         from .cafe_preferences import arrive
         arrive(self)
         for visit in self.visits.values():
@@ -293,6 +313,7 @@ class CafeInteractionCore(SimulationCore):
             key = (result['cat_id'], result['customer_id'])
             changes[key] = changes.get(key, 0) + result['affinity_after'] - result['affinity_before']
         return dict(day=self.day, summary=self.summary(),
+                    **({"customer_visits": sorted(self.visits)} if self.weekdays is not None else {}),
                     cats={key: dict(stamina=cat.stamina,
                          **(dict(stress=self.management['stress'][key]) if self.management else {}),
                          **(dict(activity=self.activities['day_locations'][key]) if self.activities else {}),

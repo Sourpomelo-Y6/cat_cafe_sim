@@ -110,6 +110,8 @@ class ManualCafeInteractionWindow:
                 text=f"{event['seat_count']}席に増設 · 費用 {event['cost']:g}"
             elif kind=='preferences_initialized':
                 text='猫の特徴・お客さんの好みを設定'
+            elif kind=='weekdays_initialized':
+                text='曜日ごとの来店予定を設定'
             elif kind=='bond_goal_enabled':
                 text='猫との好感度目標を開始'
             elif kind=='bond_goal_cleared':
@@ -436,7 +438,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .core.cafe_player import active
         core = self.session.core
         phase = '営業終了' if is_over(core) else '閉店' if core.closed else '営業準備' if core.can_set_shifts else '営業中' if self.running else '営業・一時停止'
-        self.phase.set(f'{core.day}日目　{phase}')
+        from .core.cafe_weekdays import day_label
+        self.phase.set(f'{day_label(core)}　{phase}')
         seats = len(core.seats) if hasattr(core, 'seats') else 1
         self.status.set(f"資金 {core.funds:g}　 /　{seats}席　 /　猫 {len(core.cats)}匹" + (f"　 /　人気 {core.management['popularity']:g}" if core.management else ''))
         if core.closed:

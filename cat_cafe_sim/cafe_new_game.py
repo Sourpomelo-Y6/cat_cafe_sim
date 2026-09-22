@@ -31,7 +31,8 @@ def starting_conditions():
         initial_features[row['cat_id']] = validate_features(row.get('features', []))
         if row.get('trait') is not None:
             initial_traits[row['cat_id']] = traits[row['trait']]
-    return dict(seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
+    from .core.cafe_weekdays import rules as weekday_rules
+    return dict(weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
 
 
 def create_game(directory='saves/games', conditions=None):
@@ -46,6 +47,8 @@ def create_game(directory='saves/games', conditions=None):
         store._write(selected['profiles'])
         session = CafeInteractionSession(store=store, seat_count=selected['seat_count'],
             cafe_config=replace(Config.load(), initial_funds=0))
+        if 'weekdays' in selected:
+            session.core.initialize_weekdays(selected['weekdays'])
         session.core.initialize_traits(selected.get('traits', {}))
         if 'preferences' in selected:
             session.core.initialize_preferences(selected.get('features', {}), selected['preferences'])
