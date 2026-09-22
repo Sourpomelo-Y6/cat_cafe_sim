@@ -4,13 +4,14 @@ from .core.cafe_traits import trait, dispatch_terms
 
 
 class CafeActivityWindow:
-    def __init__(self, parent, session, on_changed):
+    def __init__(self, parent, session, on_changed, *, show_navigation=True):
         import tkinter as tk
         from tkinter import ttk
         from .cafe_history import CafeHistoryWindow
         self.session, self.on_changed = session, on_changed
         self.window = tk.Toplevel(parent)
-        self.window.title('派遣・イベント')
+        self.window.title('派遣・帰還')
+        self.show_navigation = show_navigation
         self.window.geometry('800x520')
         self.window.minsize(500,400)
         self.window.transient(parent)
@@ -26,13 +27,15 @@ class CafeActivityWindow:
         self.close_button=ttk.Button(footer,text='閉じる',command=self.window.destroy)
         self.close_button.pack(side='right')
         event_controls=ttk.Frame(frame)
-        event_controls.pack(fill='x',pady=(0,4))
+        if show_navigation:
+            event_controls.pack(fill='x',pady=(0,4))
         self.adoption_button=ttk.Button(event_controls,text='譲渡の設定・申し出…',command=self.show_adoption)
         self.adoption_button.pack(side='left')
         self.management_button=ttk.Button(event_controls,text='ストレス・家出・経営…',command=self.show_management)
         self.management_button.pack(side='left',padx=4)
         extra_controls = ttk.Frame(frame)
-        extra_controls.pack(fill='x', pady=(0,4))
+        if show_navigation:
+            extra_controls.pack(fill='x', pady=(0,4))
         self.patron_button = ttk.Button(extra_controls, text='有力者目標・結果…', command=self.show_patron)
         self.patron_button.pack(side='right')
         self.recruitment_button=ttk.Button(extra_controls,text='保護猫の受け入れ…',command=self.show_recruitment)
@@ -130,6 +133,8 @@ class CafeActivityWindow:
                         '譲渡の申し出があります。上の「譲渡の設定・申し出…」で回答してください。' if offers else
                         '帰還結果の確認待ちです。受け取るまで営業・翌日への進行は停止します。' if waiting else
                         '派遣は閉店・休業で1日進みます。画面を閉じた後も営業は一時停止します。')
+        if not self.show_navigation and (returns or offers):
+            self.notice.set('家出・譲渡の確認待ちです。この画面を閉じ、営業画面の「確認する」から対応できます。')
         self.buttons()
 
     def show_patron(self):

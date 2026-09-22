@@ -3,13 +3,13 @@ from .core.cafe_expansion import rules, reason
 
 
 class CafeExpansionWindow:
-    def __init__(self, parent, session, on_changed):
+    def __init__(self, parent, session, on_changed, *, show_navigation=True):
         import tkinter as tk
         from tkinter import ttk
         self.session, self.on_changed = session, on_changed
         self.selected = rules()
         self.window = tk.Toplevel(parent)
-        self.window.title('店の増設・設備')
+        self.window.title('席の増設')
         self.window.geometry('540x320')
         self.window.minsize(500, 300)
         self.window.transient(parent)
@@ -21,7 +21,8 @@ class CafeExpansionWindow:
         self.purchase_button = ttk.Button(footer, text='3席に増設する', command=self.purchase)
         self.purchase_button.pack(side='left')
         self.equipment_button = ttk.Button(footer, text='休養設備…', command=self.show_equipment)
-        self.equipment_button.pack(side='left', padx=6)
+        if show_navigation:
+            self.equipment_button.pack(side='left', padx=6)
         self.close_button = ttk.Button(footer, text='閉じる', command=self.window.destroy)
         self.close_button.pack(side='right')
         self.status, self.details, self.notice = tk.StringVar(), tk.StringVar(), tk.StringVar()

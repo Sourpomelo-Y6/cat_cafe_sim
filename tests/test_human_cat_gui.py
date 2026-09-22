@@ -552,6 +552,42 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app=CafeInteractionWindow(self.root,self.session);self.addCleanup(self.app.stop)
         self.path=Path(self.temp.name)/'day.json'
 
+    def test_dashboard_tabs_preserve_state_keep_log_visible_and_pause(self):
+        import copy
+        app = self.app
+        self.root.deiconify()
+        self.root.geometry('860x600')
+        self.root.update()
+        before = copy.deepcopy(self.session.core.log())
+        for page in (app.preparation_page, app.results_page, app.business_page):
+            app.pages.select(page)
+            self.root.update()
+            self.assertEqual(self.session.core.log(), before)
+            self.assertTrue(app.history.winfo_ismapped())
+            self.assertGreaterEqual(app.history.winfo_height(), 120)
+            self.assertLessEqual(app.history.winfo_rooty() + app.history.winfo_height(),
+                                 self.root.winfo_rooty() + self.root.winfo_height())
+        self.assertGreaterEqual(app.roster.winfo_height(), 100)
+        app.running = True
+        app.timer = self.root.after(10000, lambda: None)
+        app.pages.select(app.preparation_page)
+        self.root.update()
+        self.assertFalse(app.running)
+        self.assertIsNone(app.timer)
+        app.pages.select(app.business_page)
+        self.root.update()
+        self.assertFalse(app.running)
+
+    def test_dashboard_direct_equipment_and_event_routes(self):
+        app = self.app
+        app.show_equipment()
+        self.assertEqual(app.pages.select(), str(app.preparation_page))
+        self.assertEqual(app.equipment_window.window.master, self.root)
+        app.equipment_window.window.destroy()
+        app.show_adoption()
+        self.assertEqual(app.pages.select(), str(app.results_page))
+        self.assertEqual(app.adoption_window.window.master, self.root)
+
     def test_goal_enable_clear_resume_and_layout(self):
         from dataclasses import replace
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
@@ -1351,7 +1387,7 @@ class CafeSaveWindowTests(unittest.TestCase):
         with patch('tkinter.messagebox.askyesno',return_value=True):
             self.app.day_button.invoke()
         self.assertEqual(self.session.core.day,2)
-        self.assertIn('2日目',self.app.status.get())
+        self.assertIn('2日目',self.app.phase.get())
         self.assertIn('disabled',self.app.day_button.state())
         self.assertFalse(self.app.running)
         self.assertIsNone(self.app.timer)

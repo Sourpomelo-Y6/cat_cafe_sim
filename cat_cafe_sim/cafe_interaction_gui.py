@@ -144,7 +144,7 @@ class ManualCafeInteractionWindow:
             elif kind=='adoption_configured':
                 text='譲渡イベント：'+('ON' if event['enabled'] else 'OFF')
             elif kind=='adoption_offered':
-                text=f"譲渡の申し出 {event['cat_id']} → {event['customer_id']} · 派遣・イベント画面で回答してください"
+                text=f"譲渡の申し出 {event['cat_id']} → {event['customer_id']} · 「結果・記録」の譲渡画面で回答してください"
             elif kind=='adoption_resolved':
                 text=f"譲渡{'成立' if event['choice']=='accept' else '見送り'} {event['cat_id']} → {event['customer_id']}"
             elif kind=='player_started':
@@ -160,7 +160,7 @@ class ManualCafeInteractionWindow:
             elif kind=='dispatch_started':
                 text=f"派遣出発 {event['cat_id']} → {event['destination']}"
             elif kind=='activity_event_waiting':
-                text=f"帰還確認待ち {event['cat_id']} · 派遣・イベント画面で確認してください"
+                text=f"帰還確認待ち {event['cat_id']} · 「準備・お店」の派遣画面で確認してください"
             elif kind=='activity_event_resolved':
                 text=f"帰還 {event['cat_id']} · 派遣報酬 {event['reward']:g}"
                 if event.get('stress_gain'):
@@ -204,78 +204,68 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
 
     def __init__(self, root, session):
         import tkinter as tk
-        from tkinter import ttk
-        self.running = False
-        self.timer = None
-        super().__init__(root, session)
-        self.instructions.configure(text='担当猫を割り当てると交流は自動で進みます。「営業を保存」で中断し、後で続きから開けます。')
-        self.actions_frame.grid_remove()
-        self.wait_button.pack_forget()
-        self.finish_button.pack_forget()
-        self.save_button=ttk.Button(self.file_controls,text='営業を保存…',command=self.save_game)
-        self.save_button.pack(side='left')
-        self.open_button=ttk.Button(self.file_controls,text='続きから開く…',command=self.open_game)
-        self.open_button.pack(side='left',padx=6)
-        self.day_button=ttk.Button(self.file_controls,text='閉店結果・翌日へ',command=self.show_day_result)
-        self.day_button.pack(side='left',padx=6)
-        self.history_button=ttk.Button(self.file_controls,text='営業結果を比較…',command=self.show_history)
-        self.history_button.pack(side='left',padx=6)
+        from .cafe_dashboard import build
+        self.root, self.session = root, session
+        self.running, self.timer, self.logged = False, None, 0
         self.new_game_directory = 'saves/games'
-        self.new_game_button = ttk.Button(self.file_controls, text='新規ゲーム…', command=self.new_game)
-        self.new_game_button.pack(side='left',padx=4)
         self.auto_assign = tk.BooleanVar(value=False)
         self.cat_labels = {f"{row['name']}（{row['cat_id']}）":row['cat_id'] for row in session.cat_choices()}
-        self.cat_choice = tk.StringVar(value=next(iter(self.cat_labels)))
-        self.cat_selector = ttk.Combobox(self.controls,textvariable=self.cat_choice,
-                                       values=tuple(self.cat_labels),state='readonly',width=18)
-        self.cat_selector.pack(side='left',before=self.start_button,padx=4)
-        self.start_button.configure(text='担当猫を割り当てる',command=self.assign)
-        automation = ttk.Frame(self.actions_frame.master)
-        automation.grid(row=4,sticky='ew',pady=6)
-        buttons = self.automation_buttons = ttk.Frame(automation)
-        buttons.pack(fill='x')
-        self.run_button = ttk.Button(buttons,text='営業を開始・再開',command=self.toggle)
-        self.run_button.pack(side='left',padx=4)
-        self.assignment_button = ttk.Checkbutton(buttons,text='自動割り当て',variable=self.auto_assign,command=self.refresh)
-        self.assignment_button.pack(side='left')
-        ttk.Label(buttons,text='割り当て先').pack(side='left',padx=6)
-        self.seat_choice=tk.StringVar(value=session.free_seats[0] if session.free_seats else '')
-        self.seat_selector=ttk.Combobox(buttons,textvariable=self.seat_choice,values=tuple(session.free_seats),state='readonly',width=10)
-        self.seat_selector.pack(side='left')
-        self.shift_button=ttk.Button(buttons,text='出勤・休養…',command=self.show_shifts)
-        self.shift_button.pack(side='left',padx=6)
-        self.day_off_button=ttk.Button(buttons,text='今日は休業する',command=self.take_day_off)
-        self.day_off_button.pack(side='left',padx=4)
-        self.goal_button=ttk.Button(buttons,text='目標・結果…',command=self.show_goal)
-        self.goal_button.pack(side='left',padx=4)
-        roster_frame = ttk.Frame(automation)
-        roster_frame.pack(fill='x',pady=4)
-        self.expansion_button = ttk.Button(roster_frame, text='店の増設・設備…', command=self.show_expansion)
-        self.expansion_button.pack(side='right', padx=4)
-        self.compatibility_button = ttk.Button(roster_frame, text='お客との相性…', command=self.show_compatibility)
-        self.compatibility_button.pack(side='right', padx=4)
-        self.cat_details_button = ttk.Button(roster_frame, text='猫の詳細…', command=self.show_cat_details)
-        self.cat_details_button.pack(side='right', padx=4)
-        self.activity_button = ttk.Button(roster_frame, text='派遣・イベント…', command=self.show_activities)
-        self.activity_button.pack(side='right')
-        self.roster = ttk.Treeview(roster_frame,columns=('cat','personality','stamina','affinity','status','fatigue','health','stress'),
-                                   displaycolumns=('cat','personality','stamina','affinity','status','fatigue','stress','health'),show='headings',height=3)
-        for key,title,width in (('cat','営業中の猫',170),('personality','個性',100),('stamina','体力',60),('affinity','選んだお客への親しみ',170),('status','状態',80),('fatigue','疲労',60),('health','体調',115),('stress','ストレス',75)):
-            self.roster.heading(key,text=title)
-            self.roster.column(key,width=width,minwidth=70 if key=='stress' else 50)
-        scrollbar=ttk.Scrollbar(roster_frame,orient='vertical',command=self.roster.yview)
-        scrollbar.pack(side='right',fill='y')
-        self.roster.configure(yscrollcommand=scrollbar.set)
-        self.roster.pack(fill='x')
-        self.cat_selector.bind('<<ComboboxSelected>>', lambda event:self.refresh())
-        self.queue.bind('<<ComboboxSelected>>', lambda event:self.refresh())
+        self._attention = None
+        build(self)
         self.refresh()
 
+    def page_changed(self):
+        if hasattr(self, 'history') and self.pages.select() != str(self.business_page):
+            self.stop()
+            self.refresh()
+
+    def open_attention(self):
+        if self._attention:
+            self._attention()
+
+    def show_recruitment(self):
+        self.pages.select(self.preparation_page)
+        from tkinter import messagebox
+        from .cafe_recruitment_gui import CafeRecruitmentWindow
+        self.stop()
+        try:
+            self.session.open_recruitment()
+        except (ValueError, OSError) as exc:
+            messagebox.showerror('受け入れ候補を表示できません', str(exc), parent=self.root)
+        else:
+            self.recruitment_window = CafeRecruitmentWindow(self.root, self.session, self.refresh)
+        self.refresh()
+
+    def show_equipment(self):
+        self.pages.select(self.preparation_page)
+        from .cafe_equipment_gui import CafeEquipmentWindow
+        self.stop(); self.refresh()
+        self.equipment_window = CafeEquipmentWindow(self.root, self.session, self.refresh)
+
+    def show_patron(self):
+        self.pages.select(self.results_page)
+        from .cafe_patron_gui import CafePatronWindow
+        self.stop(); self.refresh()
+        self.patron_window = CafePatronWindow(self.root, self.session, self.refresh)
+
+    def show_adoption(self):
+        self.pages.select(self.results_page)
+        from .cafe_adoption_gui import CafeAdoptionWindow
+        self.stop(); self.refresh()
+        self.adoption_window = CafeAdoptionWindow(self.root, self.session, self.refresh)
+
+    def show_management(self):
+        self.pages.select(self.results_page)
+        from .cafe_management_gui import CafeManagementWindow
+        self.stop(); self.refresh()
+        self.management_window = CafeManagementWindow(self.root, self.session, self.refresh)
+
     def show_expansion(self):
+        self.pages.select(self.preparation_page)
         from .cafe_expansion_gui import CafeExpansionWindow
         self.stop()
         self.refresh()
-        self.expansion_window = CafeExpansionWindow(self.root, self.session, self.refresh)
+        self.expansion_window = CafeExpansionWindow(self.root, self.session, self.refresh, show_navigation=False)
 
     def show_compatibility(self):
         from .cafe_preferences_gui import CafePreferencesWindow
@@ -294,6 +284,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.timer = self.root.after(self.interval_ms, self.advance)
 
     def toggle(self):
+        self.pages.select(self.business_page)
         if self.running:
             self.stop()
         elif not self.session.pending and not self.session.core.closed:
@@ -343,7 +334,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .core.cafe_patron import pending as patron_pending
         goal_waiting=goal_pending(core) or patron_pending(core)
         if patron_pending(core):
-            self.instructions.configure(text='有力者目標クリア！「派遣・イベント…」→「有力者目標・結果…」で結果を確認してください。')
+            self.instructions.configure(text='有力者目標クリア！「結果・記録」→「有力者目標・結果…」で結果を確認してください。')
         events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting
         if core.management:
             self.status.set(self.status.get()+f" · 人気 {core.management['popularity']:g}")
@@ -403,18 +394,80 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif goal_waiting and not waiting_events(core):
             self.notice.set('目標の結果が出ました。「目標・結果…」で確認し、継続営業を選べます。')
         elif events_waiting:
-            self.notice.set('帰還・譲渡・家出イベントの確認待ちです。「派遣・イベント…」で対応してください。')
+            self.notice.set('帰還・譲渡・家出イベントの確認待ちです。「確認する」から対応してください。')
+        self.refresh_dashboard()
+
+    def refresh_dashboard(self):
+        from .core.cafe_activities import waiting_events
+        from .core.cafe_adoption import waiting as adoptions
+        from .core.cafe_management import waiting as returns, is_over
+        from .core.cafe_goal import pending as goal_pending
+        from .core.cafe_patron import pending as patron_pending, progress as patron_progress
+        from .core.cafe_player import active
+        core = self.session.core
+        phase = '営業終了' if is_over(core) else '閉店' if core.closed else '営業準備' if core.can_set_shifts else '営業中' if self.running else '営業・一時停止'
+        self.phase.set(f'{core.day}日目　{phase}')
+        seats = len(core.seats) if hasattr(core, 'seats') else 1
+        self.status.set(f"資金 {core.funds:g}　 /　{seats}席　 /　猫 {len(core.cats)}匹" + (f"　 /　人気 {core.management['popularity']:g}" if core.management else ''))
+        if core.closed:
+            self.run_button.grid_remove(); self.day_button.grid()
+        else:
+            self.day_button.grid_remove(); self.run_button.grid()
+        if core.can_set_shifts and not is_over(core):
+            self.day_off_button.grid()
+        else:
+            self.day_off_button.grid_remove()
+        working = sum(core.activity(key)=='cafe' and key in core.working_cats for key in core.cats)
+        resting = sum(core.activity(key)=='cafe' and key not in core.working_cats for key in core.cats)
+        self.preparation_summary.set(f'今日の予定：出勤 {working}匹 / 在店休養 {resting}匹。' + ('準備の変更は営業開始前に行えます。' if not core.can_set_shifts else '体調を確認してから担当を決めましょう。'))
+        self.results_summary.set(f"今日の接客売上 {core.summary()['revenue']:g} / 終了した交流 {core.summary()['completed_interactions']}件。\n" + patron_progress(core))
+        self._attention = None
+        if self.session.pending:
+            self.notice.set('交流結果の保存が完了していません。再試行してから営業を続けてください。')
+            self._attention = lambda: self.perform(self.session.persist)
+        elif is_over(core):
+            self._attention = self.new_game
+        elif returns(core):
+            self.notice.set('家出していた猫が帰還しています。帰還と費用を確認してください。')
+            self._attention = self.show_management
+        elif adoptions(core):
+            self.notice.set('猫の譲渡の申し出が届いています。承諾するか見送るかを選んでください。')
+            self._attention = self.show_adoption
+        elif waiting_events(core):
+            self.notice.set('派遣から帰還した猫が確認待ちです。帰還と報酬を確認してください。')
+            self._attention = self.show_activities
+        elif patron_pending(core):
+            self.notice.set('有力者目標を達成しました。結果を確認すると営業を続けられます。')
+            self._attention = self.show_patron
+        elif goal_pending(core):
+            self.notice.set('人気目標の結果が出ました。確認すると営業を続けられます。')
+            self._attention = self.show_goal
+        elif active(core):
+            self.notice.set('プレイヤーとの交流が途中です。猫の詳細から再開できます。')
+            def resume_play():
+                self.roster.selection_set(active(core)['initial_relationship']['cat_id'])
+                self.show_cat_details()
+            self._attention = resume_play
+        elif core.can_set_shifts and working:
+            self.notice.set('「準備・お店」で予定を確認し、営業を開始してください。接客コマンドは自動で進みます。')
+        if self._attention:
+            self.attention_button.grid()
+        else:
+            self.attention_button.grid_remove()
+        self.recruitment_button.state(['!disabled'] if core.recruitment is not None or (core.can_set_shifts and not self._attention) else ['disabled'])
 
     def show_goal(self):
+        self.pages.select(self.results_page)
         from .cafe_goal_gui import CafeGoalWindow
         self.stop();self.refresh()
         self.goal_window=CafeGoalWindow(self.root,self.session,self.refresh)
 
     def show_activities(self):
+        self.pages.select(self.preparation_page)
         from .cafe_activity_gui import CafeActivityWindow
         self.stop()
         self.refresh()
-        self.activity_window = CafeActivityWindow(self.root,self.session,self.refresh)
+        self.activity_window = CafeActivityWindow(self.root,self.session,self.refresh, show_navigation=False)
 
     def take_day_off(self):
         from tkinter import messagebox
@@ -530,6 +583,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
     def replace_game(self, candidate, auto_assign=False):
         self.stop()
         self.session=candidate
+        self.pages.select(self.business_page)
         self.logged=0
         self.history.delete(*self.history.get_children())
         self.types={t.name:t.id for t in candidate.interaction_config.types}

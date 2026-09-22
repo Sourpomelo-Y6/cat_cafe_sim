@@ -211,3 +211,7 @@ flowchart TD
 
 既存の[複数日テスト](../tests/test_cafe_days.py)、[休業テスト](../tests/test_cafe_day_off.py)、[保存テスト](../tests/test_cafe_saves.py)も照合対象にした。
 初回の資料整理時はゲームのテストを再実行していない。後から追加した猫の詳細画面の検証結果は[実装記録](HumanToCatCatDetailsPlan.md)を参照。
+
+## 現在の画面構成
+
+通常営業UIは「営業」「準備・お店」「結果・記録」に整理。操作経路と一時停止の扱いは[通常営業UIの構成](HumanToCatUIFlow.md)を参照。
