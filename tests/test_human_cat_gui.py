@@ -1024,6 +1024,52 @@ class CafeSaveWindowTests(unittest.TestCase):
         window.close_button.invoke()
         activity.close_button.invoke()
 
+    def test_items_inventory_use_history_and_small_layout(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.cafe_traits import definitions
+        from cat_cafe_sim.core.cafe_items import inventory
+        app = self.app
+        app.replace_game(CafeInteractionSession(store=self.store))
+        key = next(iter(app.session.core.cats))
+        app.session.core.initialize_traits({key: definitions()['outgoing']})
+        app.session.enable_management()
+        self.root.deiconify()
+        self.root.geometry('860x660')
+        app.pages.select(app.preparation_page)
+        self.root.update()
+        self.assertTrue(app.items_button.winfo_ismapped())
+        self.assertTrue(app.shift_button.winfo_ismapped())
+        self.assertEqual(app.shift_button.master, app.items_button.master)
+        self.assertLessEqual(app.shift_button.winfo_rootx()+app.shift_button.winfo_width(), app.items_button.winfo_rootx())
+        self.assertGreaterEqual(app.history.winfo_height(), 120)
+        app.items_button.invoke()
+        window = app.items_window
+        self.assertTrue(window.use_button.instate(['disabled']))
+        self.assertIn('所持品はありません', window.notice.get())
+        window.window.destroy()
+        app.session.dispatch(key)
+        app.session.day_off()
+        app.session.resolve_activity(f'dispatch-1-{key}')
+        app.refresh()
+        app.items_button.invoke()
+        window = app.items_window
+        window.window.geometry('580x460')
+        self.root.update()
+        for button in (window.use_button, window.close_button):
+            self.assertTrue(button.winfo_ismapped())
+            self.assertLessEqual(button.winfo_rooty()+button.winfo_height(), window.window.winfo_rooty()+window.window.winfo_height())
+        self.assertIn('10 → 0', window.notice.get())
+        with patch('tkinter.messagebox.askyesno', return_value=False):
+            window.use_button.invoke()
+        self.assertEqual(len(inventory(app.session.core)), 1)
+        with patch('tkinter.messagebox.askyesno', return_value=True):
+            window.use_button.invoke()
+        self.assertEqual(app.session.core.management['stress'][key], 0)
+        self.assertEqual(inventory(app.session.core), {})
+        self.assertEqual(len(window.history.get_children()), 1)
+        self.assertTrue(window.use_button.instate(['disabled']))
+        self.assertIn('10 → 0', window.result.get())
+
     def test_intake_request_attention_answer_and_small_layout(self):
         from cat_cafe_sim.cafe_new_game import create_game
         app = self.app
@@ -1761,7 +1807,7 @@ class CafeStartWindowTests(unittest.TestCase):
         with patch('tkinter.messagebox.askyesno',return_value=True):activity.send_button.invoke()
         app.session.day_off();activity.refresh();app.refresh()
         activity.window.geometry('500x400');self.root.update()
-        self.assertEqual(activity.events.set('dispatch-1-cat-tama','報酬'),'125')
+        self.assertEqual(activity.events.set('dispatch-1-cat-tama','報酬'),'125 + ケア用品 ×1')
         self.assertEqual(activity.events.set('dispatch-1-cat-tama','帰還ストレス増加'),'10')
         for widget in (activity.receive_button,activity.cats,activity.events):
             self.assertTrue(widget.winfo_ismapped())

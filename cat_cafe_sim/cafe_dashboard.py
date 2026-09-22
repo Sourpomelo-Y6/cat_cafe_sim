@@ -135,8 +135,16 @@ def build(app):
         if hint:
             ttk.Label(box, text=hint, wraplength=320).pack(anchor='w', pady=(0,10))
         for attr, label, command in actions:
-            button = ttk.Button(box, text=label, command=command, style='Cafe.TButton')
-            button.pack(fill='x', pady=3)
+            if attr == 'shift_button':
+                row = ttk.Frame(box)
+                row.pack(fill='x', pady=3)
+                button = ttk.Button(row, text=label, command=command, style='Cafe.TButton')
+                button.pack(side='left', fill='x', expand=True)
+                app.items_button = ttk.Button(row, text='所持品・ケア…', command=app.show_items, style='Cafe.TButton')
+                app.items_button.pack(side='left', padx=(6, 0))
+            else:
+                button = ttk.Button(box, text=label, command=command, style='Cafe.TButton')
+                button.pack(fill='x', pady=3)
             setattr(app, attr, button)
         return box
 

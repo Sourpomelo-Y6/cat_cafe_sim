@@ -186,6 +186,10 @@ class ManualCafeInteractionWindow:
                 text=f"帰還 {event['cat_id']} · 派遣報酬 {event['reward']:g}"
                 if event.get('stress_gain'):
                     text+=f" · ストレス ＋{event['stress_gain']:g}（上限100）"
+                if event.get('item_reward'):
+                    text+=f" · {event['item_reward']['name']} ×1 を入手"
+            elif kind=='item_used':
+                text=f"{event['cat_id']}に{event['name']}を使用 · ストレス {event['before']:g} → {event['after']:g}"
             elif kind=='shifts_set':
                 text='出勤・休養を設定 · 出勤 '+('、'.join(event['working_cats']) or 'なし')
             elif kind=='day_off':
@@ -243,6 +247,13 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
     def open_attention(self):
         if self._attention:
             self._attention()
+
+    def show_items(self):
+        self.pages.select(self.preparation_page)
+        from .cafe_items_gui import CafeItemsWindow
+        self.stop()
+        self.refresh()
+        self.items_window = CafeItemsWindow(self.root, self.session, self.refresh)
 
     def show_intake_request(self):
         self.pages.select(self.preparation_page)

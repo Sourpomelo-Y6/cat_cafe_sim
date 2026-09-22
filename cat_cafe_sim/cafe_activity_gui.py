@@ -1,6 +1,7 @@
 """派遣の出発と帰還イベントを確認する画面。"""
 from .core.cafe_activities import destinations, dispatch_reason, ACTIVITY_LABELS, reward
 from .core.cafe_traits import trait, dispatch_terms
+from .core.cafe_items import for_destination as item_reward
 
 
 class CafeActivityWindow:
@@ -118,6 +119,9 @@ class CafeActivityWindow:
         self.patron_button.configure(text=(f"有力者 {core.patron['satisfaction']:g}/{core.patron['rules']['target']:g}・結果…" if core.patron else '有力者目標・結果…'))
         required = self.rules.get('required_trait_name', '指定なし')
         self.destination_info.set(f"{self.rules['days']}日 / 基本報酬 {self.rules['reward']:g} / 疲労{self.rules['max_fatigue']:g}以下 / 必要特性：{required}")
+        item = item_reward(self.rules)
+        if item:
+            self.destination_info.set(self.destination_info.get()+f" / {item['name']} ×1（ストレス −{item['stress_relief']:g}）")
         selected=self.cats.selection()
         self.cats.delete(*self.cats.get_children());self.events.delete(*self.events.get_children())
         for key,cat in core.cats.items():
@@ -127,7 +131,7 @@ class CafeActivityWindow:
         labels={'travelling':'派遣中','waiting':'帰還・確認待ち','resolved':'受取済み'}
         if core.activities:
             for key,e in core.activities['events'].items():
-                self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],('派遣中・回答待ち' if e.get('encounter',{}).get('status')=='waiting' else labels[e['status']]),e['remaining'],f"{reward(core,e):g}", f"{dispatch_terms(core,e['cat_id'],e['destination']['reward'])['stress']:g}" if e['status']!='resolved' else '確定済み'))
+                self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],('派遣中・回答待ち' if e.get('encounter',{}).get('status')=='waiting' else labels[e['status']]),e['remaining'],f"{reward(core,e):g}" + (f" + {e['item_reward']['name']} ×1" if 'item_reward' in e else ''), f"{dispatch_terms(core,e['cat_id'],e['destination']['reward'])['stress']:g}" if e['status']!='resolved' else '確定済み'))
         waiting=waiting_events(core)
         dispatch_waiting=[event for event in waiting if event.get('kind')=='dispatch_return']
         if dispatch_waiting:self.events.selection_set(dispatch_waiting[0]['id'])
@@ -186,6 +190,9 @@ class CafeActivityWindow:
         from .core.cafe_dispatch_encounters import for_destination
         encounter=for_destination(self.rules)
         note=f"\n1日目終了時に選択イベント：{encounter['title']}" if encounter else ''
+        item = item_reward(self.rules)
+        if item:
+            note += f"\n帰還時に {item['name']} ×1（準備中に在店猫のストレス −{item['stress_relief']:g}）"
         if not messagebox.askyesno('派遣の出発', f"{self.rules['name']}：{self.rules['days']}日間\n報酬 {terms['reward']:g} / 帰還時ストレス ＋{terms['stress']:g}（現在の経営ルール）\n今から派遣し、帰還まで店内接客から外します。出発しますか？{note}",parent=self.window):return
         self.perform(lambda:self.session.dispatch(selected[0],self.rules))
 

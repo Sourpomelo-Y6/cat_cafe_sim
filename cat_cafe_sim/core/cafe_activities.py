@@ -92,7 +92,7 @@ def ensure(core):
         core.activities = dict(cats=dict.fromkeys(core.cats,'cafe'), events={}, day_locations=dict.fromkeys(core.cats,'cafe'))
 
 
-def dispatch(core, cat_id, rules=None, *, encounter=None):
+def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None):
     rules = destination(rules)
     reason = dispatch_reason(core, cat_id, rules)
     if reason:
@@ -104,6 +104,9 @@ def dispatch(core, cat_id, rules=None, *, encounter=None):
         destination=rules, started_day=core.day, remaining=rules['days'], status='travelling', occurred_day=None, resolved_day=None, choice=None)
     from .cafe_dispatch_encounters import attach
     attach(event, encounter)
+    if item_reward is not None:
+        from .cafe_items import definition
+        event['item_reward'] = definition(item_reward)
     ensure(core)
     core.activities['cats'][cat_id] = 'dispatched'
     core.activities['day_locations'][cat_id] = 'dispatched'
@@ -111,7 +114,8 @@ def dispatch(core, cat_id, rules=None, *, encounter=None):
     core.activities['events'][event_id] = event
     core._tick_events=[]
     core._emit('dispatch_started', event_id=event_id, cat_id=cat_id, destination=rules['name'])
-    core._record(dict(kind='dispatch',cat_id=cat_id,rules=rules, **({'encounter':copy.deepcopy(event['encounter']['rules'])} if encounter is not None else {})))
+    core._record(dict(kind='dispatch',cat_id=cat_id,rules=rules, **({'encounter':copy.deepcopy(event['encounter']['rules'])} if encounter is not None else {}),
+                      **({'item_reward':copy.deepcopy(event['item_reward'])} if item_reward is not None else {})))
 
 
 def close_day(core):
@@ -148,7 +152,8 @@ def resolve(core, event_id, choice):
         core.management['stress'][key]=min(100,core.management['stress'][key]+terms['stress'])
     core._tick_events=[]
     core._emit('activity_event_resolved',event_id=event_id,cat_id=event['cat_id'],reward=received,
-               **({'stress_gain':terms['stress']} if terms['stress'] else {}))
+               **({'stress_gain':terms['stress']} if terms['stress'] else {}),
+               **({'item_reward':copy.deepcopy(event['item_reward'])} if 'item_reward' in event else {}))
     from .cafe_patron import receive
     receive(core, event)
     core._record(dict(kind='resolve_activity',event_id=event_id,choice=choice))
@@ -162,8 +167,11 @@ def validate(core, data):
             raise ValueError('猫の活動状態が不正です。')
     busy=set()
     for key,e in data['events'].items():
-        if set(e)-{'encounter'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
+        if set(e)-{'encounter','item_reward'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
             raise ValueError('イベントの記録が不正です。')
+        if 'item_reward' in e:
+            from .cafe_items import definition
+            definition(e['item_reward'])
         rule=destination(e['destination'])
         if e['cat_id'] not in core.cats or e['kind']!='dispatch_return' or e['id']!=key or key!=f"dispatch-{e['started_day']}-{e['cat_id']}":
             raise ValueError('イベントの対象が不正です。')

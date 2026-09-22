@@ -230,6 +230,9 @@ def restore(data):
     if 'management' in state:
         from .cafe_management import validate as validate_management
         core.management=validate_management(core,state['management'])
+    if 'item_uses' in state:
+        from .cafe_items import validate_uses
+        core.item_uses=validate_uses(core,state['item_uses'])
     if 'goal' in state:
         from .cafe_goal import validate as validate_goal
         if not core.management:

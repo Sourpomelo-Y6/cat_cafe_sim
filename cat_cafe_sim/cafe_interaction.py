@@ -104,12 +104,17 @@ class CafeInteractionSession:
             raise ValueError('先に交流結果の保存を再試行してください。')
         self.core.player_command(action, target_type, finish=finish)
 
+    def use_item(self, source, cat_id):
+        self._ready()
+        self.core.use_item(source, cat_id)
+
     def dispatch(self, cat_id, rules=None):
         self._ready()
         from .core.cafe_activities import destination
         from .core.cafe_dispatch_encounters import for_destination
         selected = destination(rules)
-        self.core.dispatch(cat_id, selected, encounter=for_destination(selected))
+        from .core.cafe_items import for_destination as item_reward
+        self.core.dispatch(cat_id, selected, encounter=for_destination(selected), item_reward=item_reward(selected))
 
     def open_recruitment(self):
         from .core.cafe_recruitment import candidates, next_candidate_day, require_preparation, add_candidates

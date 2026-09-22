@@ -45,6 +45,7 @@ class CafeInteractionCore(SimulationCore):
         self.intake_request = None
         self.adoption = None
         self.activities = None
+        self.item_uses = []
         self.health_rules = None
         self.initial_health = {}
         self.health_results = {}
@@ -81,6 +82,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
+                **({'item_uses': copy.deepcopy(self.item_uses)} if self.item_uses else {}),
                 **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
                 **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None or self.intake_request is not None else {})}
@@ -177,9 +179,13 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_dispatch_encounters import resolve
         resolve(self,event_id,choice)
 
-    def dispatch(self, cat_id, rules=None, *, encounter=None):
+    def use_item(self, source, cat_id):
+        from .cafe_items import use
+        use(self, source, cat_id)
+
+    def dispatch(self, cat_id, rules=None, *, encounter=None, item_reward=None):
         from .cafe_activities import dispatch
-        dispatch(self, cat_id, rules, encounter=encounter)
+        dispatch(self, cat_id, rules, encounter=encounter, item_reward=item_reward)
 
     def resolve_activity(self, event_id, choice='receive'):
         from .cafe_activities import resolve
