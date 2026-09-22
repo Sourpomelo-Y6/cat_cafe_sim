@@ -73,12 +73,14 @@ def activity(core, cat_id):
 def waiting_events(core):
     from .cafe_adoption import waiting
     from .cafe_management import waiting as returns
-    return ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core) + returns(core)
+    from .cafe_dispatch_encounters import waiting as choices
+    return choices(core) + ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core) + returns(core)
 
 
 def reward(core, event):
     from .cafe_traits import dispatch_terms
-    return dispatch_terms(core,event['cat_id'],event['destination']['reward'])['reward']
+    from .cafe_dispatch_encounters import reward_delta
+    return max(0,dispatch_terms(core,event['cat_id'],event['destination']['reward'])['reward']+reward_delta(event))
 
 
 def income(core):
@@ -90,7 +92,7 @@ def ensure(core):
         core.activities = dict(cats=dict.fromkeys(core.cats,'cafe'), events={}, day_locations=dict.fromkeys(core.cats,'cafe'))
 
 
-def dispatch(core, cat_id, rules=None):
+def dispatch(core, cat_id, rules=None, *, encounter=None):
     rules = destination(rules)
     reason = dispatch_reason(core, cat_id, rules)
     if reason:
@@ -98,15 +100,18 @@ def dispatch(core, cat_id, rules=None):
     event_id = f'dispatch-{core.day}-{cat_id}'
     from .cafe_traits import dispatch_terms
     dispatch_terms(core,cat_id,rules['reward'])
+    event = dict(id=event_id, kind='dispatch_return',cat_id=cat_id,
+        destination=rules, started_day=core.day, remaining=rules['days'], status='travelling', occurred_day=None, resolved_day=None, choice=None)
+    from .cafe_dispatch_encounters import attach
+    attach(event, encounter)
     ensure(core)
     core.activities['cats'][cat_id] = 'dispatched'
     core.activities['day_locations'][cat_id] = 'dispatched'
     core.working_cats.discard(cat_id)
-    core.activities['events'][event_id] = dict(id=event_id, kind='dispatch_return',cat_id=cat_id,
-        destination=rules, started_day=core.day, remaining=rules['days'], status='travelling', occurred_day=None, resolved_day=None, choice=None)
+    core.activities['events'][event_id] = event
     core._tick_events=[]
     core._emit('dispatch_started', event_id=event_id, cat_id=cat_id, destination=rules['name'])
-    core._record(dict(kind='dispatch',cat_id=cat_id,rules=rules))
+    core._record(dict(kind='dispatch',cat_id=cat_id,rules=rules, **({'encounter':copy.deepcopy(event['encounter']['rules'])} if encounter is not None else {})))
 
 
 def close_day(core):
@@ -114,6 +119,8 @@ def close_day(core):
     for event in core.activities['events'].values():
         if event['status'] != 'travelling':continue
         event['remaining'] -= 1
+        from .cafe_dispatch_encounters import close_day as encounter_close
+        encounter_close(core,event)
         if event['remaining'] == 0:
             event.update(status='waiting', occurred_day=core.day)
             core._emit('activity_event_waiting',event_id=event['id'],cat_id=event['cat_id'])
@@ -128,16 +135,19 @@ def resolve(core, event_id, choice):
     if event['status']!='waiting':raise ValueError('この派遣はまだ帰還していません。')
     from .cafe_traits import dispatch_terms
     terms=dispatch_terms(core,event['cat_id'],event['destination']['reward'])
+    received=reward(core,event)
+    if not math.isfinite(core.funds+received):
+        raise ValueError('派遣報酬と所持金の合計が大きすぎます。')
     event.update(status='resolved',resolved_day=core.day,choice=choice)
     core.activities['cats'][event['cat_id']]='cafe'
     if core.can_set_shifts:
         core.activities['day_locations'][event['cat_id']]='cafe'
-    core.funds += terms['reward']
+    core.funds += received
     if core.management:
         key=event['cat_id']
         core.management['stress'][key]=min(100,core.management['stress'][key]+terms['stress'])
     core._tick_events=[]
-    core._emit('activity_event_resolved',event_id=event_id,cat_id=event['cat_id'],reward=terms['reward'],
+    core._emit('activity_event_resolved',event_id=event_id,cat_id=event['cat_id'],reward=received,
                **({'stress_gain':terms['stress']} if terms['stress'] else {}))
     from .cafe_patron import receive
     receive(core, event)
@@ -152,7 +162,7 @@ def validate(core, data):
             raise ValueError('猫の活動状態が不正です。')
     busy=set()
     for key,e in data['events'].items():
-        if set(e)!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
+        if set(e)-{'encounter'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
             raise ValueError('イベントの記録が不正です。')
         rule=destination(e['destination'])
         if e['cat_id'] not in core.cats or e['kind']!='dispatch_return' or e['id']!=key or key!=f"dispatch-{e['started_day']}-{e['cat_id']}":
@@ -168,6 +178,8 @@ def validate(core, data):
             if e['status']=='waiting' and (e['resolved_day'] is not None or e['choice'] is not None):raise ValueError('未解決イベントが不正です。')
             if e['status']=='resolved' and (type(e['resolved_day']) is not int or not e['occurred_day']<=e['resolved_day']<=core.day or e['choice']!='receive'):raise ValueError('解決済みイベントが不正です。')
         else:raise ValueError('未知のイベント状態です。')
+        from .cafe_dispatch_encounters import validate as validate_encounter
+        validate_encounter(core,e)
         if e['status']!='resolved':
             if e['cat_id'] in busy or data['cats'][e['cat_id']]!='dispatched':raise ValueError('派遣が重複しています。')
             busy.add(e['cat_id'])

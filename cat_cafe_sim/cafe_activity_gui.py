@@ -89,7 +89,17 @@ class CafeActivityWindow:
             self.selection_info.set(f"参加できます：報酬 {terms['reward']:g} / 帰還時ストレス ＋{terms['stress']:g}")
         selected=self.events.selection()
         can_receive=bool(selected) and core.activities['events'][selected[0]]['status']=='waiting' and not self.session.pending and not is_over(core)
-        self.receive_button.state(['!disabled'] if can_receive else ['disabled'])
+        from .core.cafe_dispatch_encounters import pending as choice_pending, selected as answered
+        event = core.activities['events'][selected[0]] if selected else None
+        if event and choice_pending(event):
+            self.receive_button.configure(text='出来事に回答…')
+            self.receive_button.state(['!disabled'] if not self.session.pending and not is_over(core) else ['disabled'])
+        elif event and answered(event) and event['status']!='waiting':
+            self.receive_button.configure(text='出来事の記録…')
+            self.receive_button.state(['!disabled'])
+        else:
+            self.receive_button.configure(text='帰還・報酬を受け取る')
+            self.receive_button.state(['!disabled'] if can_receive else ['disabled'])
         can_open = core.recruitment is not None or (core.can_set_shifts and not is_over(core) and not active(core) and not self.session.pending and not waiting_events(core))
         self.recruitment_button.state(['!disabled'] if can_open else ['disabled'])
 
@@ -117,7 +127,7 @@ class CafeActivityWindow:
         labels={'travelling':'派遣中','waiting':'帰還・確認待ち','resolved':'受取済み'}
         if core.activities:
             for key,e in core.activities['events'].items():
-                self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],labels[e['status']],e['remaining'],f"{reward(core,e):g}", f"{dispatch_terms(core,e['cat_id'],e['destination']['reward'])['stress']:g}" if e['status']!='resolved' else '確定済み'))
+                self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],('派遣中・回答待ち' if e.get('encounter',{}).get('status')=='waiting' else labels[e['status']]),e['remaining'],f"{reward(core,e):g}", f"{dispatch_terms(core,e['cat_id'],e['destination']['reward'])['stress']:g}" if e['status']!='resolved' else '確定済み'))
         waiting=waiting_events(core)
         dispatch_waiting=[event for event in waiting if event.get('kind')=='dispatch_return']
         if dispatch_waiting:self.events.selection_set(dispatch_waiting[0]['id'])
@@ -133,6 +143,9 @@ class CafeActivityWindow:
                         '譲渡の申し出があります。上の「譲渡の設定・申し出…」で回答してください。' if offers else
                         '帰還結果の確認待ちです。受け取るまで営業・翌日への進行は停止します。' if waiting else
                         '派遣は閉店・休業で1日進みます。画面を閉じた後も営業は一時停止します。')
+        from .core.cafe_dispatch_encounters import waiting as choice_waiting
+        if choice_waiting(core) and not is_over(core) and not self.session.pending:
+            self.notice.set('派遣中の出来事が回答待ちです。対象を選び「出来事に回答…」から回答してください。')
         if not self.show_navigation and (returns or offers):
             self.notice.set('家出・譲渡の確認待ちです。この画面を閉じ、営業画面の「確認する」から対応できます。')
         self.buttons()
@@ -170,12 +183,21 @@ class CafeActivityWindow:
         selected=self.cats.selection()
         if not selected:return
         terms=dispatch_terms(self.session.core,selected[0],self.rules['reward'])
-        if not messagebox.askyesno('派遣の出発', f"{self.rules['name']}：{self.rules['days']}日間\n報酬 {terms['reward']:g} / 帰還時ストレス ＋{terms['stress']:g}（現在の経営ルール）\n今から派遣し、帰還まで店内接客から外します。出発しますか？",parent=self.window):return
+        from .core.cafe_dispatch_encounters import for_destination
+        encounter=for_destination(self.rules)
+        note=f"\n1日目終了時に選択イベント：{encounter['title']}" if encounter else ''
+        if not messagebox.askyesno('派遣の出発', f"{self.rules['name']}：{self.rules['days']}日間\n報酬 {terms['reward']:g} / 帰還時ストレス ＋{terms['stress']:g}（現在の経営ルール）\n今から派遣し、帰還まで店内接客から外します。出発しますか？{note}",parent=self.window):return
         self.perform(lambda:self.session.dispatch(selected[0],self.rules))
 
     def receive(self):
         selected=self.events.selection()
-        if selected:self.perform(lambda:self.session.resolve_activity(selected[0]))
+        if not selected:return
+        event=self.session.core.activities['events'][selected[0]]
+        if event.get('encounter') and event['status']!='waiting':
+            from .cafe_dispatch_choice_gui import CafeDispatchChoiceWindow
+            self.choice_window=CafeDispatchChoiceWindow(self.window,self.session,selected[0],self.changed)
+        else:
+            self.perform(lambda:self.session.resolve_activity(selected[0]))
 
     def perform(self, action):
         from tkinter import messagebox

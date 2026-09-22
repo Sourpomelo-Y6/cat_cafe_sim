@@ -25,7 +25,8 @@ def apply_operation(core, operation):
         from .cafe_recruitment import add_candidates
         add_candidates(core, operation['candidates'])
     elif kind=='recruit_cat':core.recruit_cat(operation['cat_id'])
-    elif kind=='dispatch':core.dispatch(operation['cat_id'],operation['rules'])
+    elif kind=='dispatch':core.dispatch(operation['cat_id'],operation['rules'],encounter=operation.get('encounter'))
+    elif kind=='resolve_dispatch_choice':core.resolve_dispatch_choice(operation['event_id'],operation['choice'])
     elif kind=='player_play':
         from .cafe_player import legacy_play
         legacy_play(core,operation['cat_id'])

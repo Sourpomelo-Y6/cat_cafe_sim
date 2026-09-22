@@ -110,6 +110,10 @@ class ManualCafeInteractionWindow:
                 text=f"{event['seat_count']}席に増設 · 費用 {event['cost']:g}"
             elif kind=='preferences_initialized':
                 text='猫の特徴・お客さんの好みを設定'
+            elif kind=='dispatch_choice_waiting':
+                text=f"派遣イベント回答待ち：{event['title']}（{event['cat_id']}）"
+            elif kind=='dispatch_choice_resolved':
+                text=f"派遣イベント回答：{event['label']} / 帰還報酬の増減 {event['reward_delta']:+g}"
             elif kind=='seat_equipment_purchased':
                 text=f"{event['seat']}に{event['name']}を購入・設置：費用{event['cost']:g}"
             elif kind=='seat_equipment_changed':
@@ -481,8 +485,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.notice.set('猫の譲渡の申し出が届いています。承諾するか見送るかを選んでください。')
             self._attention = self.show_adoption
         elif waiting_events(core):
-            self.notice.set('派遣から帰還した猫が確認待ちです。帰還と報酬を確認してください。')
-            self._attention = self.show_activities
+            from .core.cafe_dispatch_encounters import waiting as choice_waiting
+            self.notice.set('派遣中の出来事が回答待ちです。選択肢と効果を確認してください。' if choice_waiting(core) else '派遣から帰還した猫が確認待ちです。帰還と報酬を確認してください。')
+            self._attention = self.show_dispatch_choice if choice_waiting(core) else self.show_activities
         elif patron_pending(core):
             self.notice.set('有力者目標を達成しました。結果を確認すると営業を続けられます。')
             self._attention = self.show_patron
@@ -511,6 +516,15 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .cafe_goal_gui import CafeGoalWindow
         self.stop();self.refresh()
         self.goal_window=CafeGoalWindow(self.root,self.session,self.refresh)
+
+    def show_dispatch_choice(self):
+        from .core.cafe_dispatch_encounters import waiting
+        from .cafe_dispatch_choice_gui import CafeDispatchChoiceWindow
+        self.pages.select(self.preparation_page)
+        self.stop(); self.refresh()
+        events=waiting(self.session.core)
+        if events:
+            self.dispatch_choice_window=CafeDispatchChoiceWindow(self.root,self.session,events[0]['id'],self.refresh)
 
     def show_activities(self):
         self.pages.select(self.preparation_page)

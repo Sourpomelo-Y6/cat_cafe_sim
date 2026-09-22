@@ -1,0 +1,10 @@
+[
+  {"id":"extra_work","destination":"shopping_street_event","title":"追加の交流をお願いされました","choices":[
+    {"id":"accept","label":"追加の仕事を引き受ける","reward":100,"fatigue":10,"stress":5},
+    {"id":"decline","label":"予定どおりの仕事を終える","reward":0,"fatigue":0,"stress":0}
+  ]},
+  {"id":"rest_stop","destination":"out_of_town_visit","title":"移動の途中で休憩できます","choices":[
+    {"id":"rest","label":"報酬の一部を使って休憩する","reward":-50,"fatigue":-10,"stress":-10},
+    {"id":"continue","label":"予定どおり進む","reward":0,"fatigue":0,"stress":0}
+  ]}
+]

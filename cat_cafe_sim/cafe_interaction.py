@@ -106,7 +106,10 @@ class CafeInteractionSession:
 
     def dispatch(self, cat_id, rules=None):
         self._ready()
-        self.core.dispatch(cat_id, rules)
+        from .core.cafe_activities import destination
+        from .core.cafe_dispatch_encounters import for_destination
+        selected = destination(rules)
+        self.core.dispatch(cat_id, selected, encounter=for_destination(selected))
 
     def open_recruitment(self):
         from .core.cafe_recruitment import candidates, next_candidate_day, require_preparation, add_candidates
@@ -218,6 +221,13 @@ class CafeInteractionSession:
         if self.pending:
             raise ValueError('先に交流結果の保存を再試行してください。')
         self.core.resolve_adoption(event_id, choice)
+
+    def resolve_dispatch_choice(self, event_id, choice):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に交流結果の保存を再試行してください。')
+        self.core.resolve_dispatch_choice(event_id, choice)
 
     def resolve_activity(self, event_id):
         from .storage.cafe_saves import check_link

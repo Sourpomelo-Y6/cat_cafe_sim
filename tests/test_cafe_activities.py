@@ -155,6 +155,9 @@ class ActivityTests(unittest.TestCase):
         total = 0
         for index, expected in enumerate((100, 260, 562.5)):
             s.day_off()
+            from cat_cafe_sim.core.cafe_dispatch_encounters import waiting as choices
+            for event in choices(s.core):
+                s.resolve_dispatch_choice(event['id'], event['encounter']['rules']['choices'][1]['id'])
             events = waiting_events(s.core)
             self.assertEqual(len(events), 1)
             self.assertEqual(events[0]['cat_id'], keys[index])

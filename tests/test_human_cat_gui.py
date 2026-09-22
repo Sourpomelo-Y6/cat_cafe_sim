@@ -1024,6 +1024,54 @@ class CafeSaveWindowTests(unittest.TestCase):
         window.close_button.invoke()
         activity.close_button.invoke()
 
+    def test_dispatch_choice_attention_answer_history_and_small_layout(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.cafe_traits import definitions
+        from cat_cafe_sim.core.cafe_activities import destinations
+        app=self.app
+        app.replace_game(CafeInteractionSession(store=self.store))
+        key=next(iter(app.session.core.cats))
+        app.session.core.initialize_traits({key:definitions()['hospitality']})
+        app.session.enable_management()
+        app.session.dispatch(key,destinations()[1])
+        app.session.day_off()
+        app.refresh()
+        self.root.deiconify()
+        self.root.update()
+        self.assertIn('回答待ち',app.notice.get())
+        self.assertIn('disabled',app.run_button.state())
+        app.attention_button.invoke()
+        window=app.dispatch_choice_window
+        window.window.geometry('560x360')
+        self.root.update()
+        for button in window.buttons.values():
+            self.assertTrue(button.winfo_ismapped())
+            self.assertLessEqual(button.winfo_rooty()+button.winfo_height(),
+                                 window.window.winfo_rooty()+window.window.winfo_height())
+        window.close()
+        app.refresh()
+        self.assertIn('回答待ち',app.notice.get())
+        app.attention_button.invoke()
+        window=app.dispatch_choice_window
+        window.buttons['accept'].invoke()
+        self.assertEqual(app.session.core.cats[key].fatigue,10)
+        self.assertEqual(app.session.core.management['stress'][key],5)
+        self.assertTrue(all(b.instate(['disabled']) for b in window.buttons.values()))
+        self.assertIn('回答',window.notice.get())
+        window.close()
+        app.session.day_off()
+        app.refresh()
+        app.show_activities()
+        activity=app.activity_window
+        activity.receive_button.invoke()
+        self.assertEqual(app.session.core.funds,1360)
+        event_id=f'dispatch-1-{key}'
+        activity.events.selection_set(event_id)
+        activity.buttons()
+        self.assertEqual(activity.receive_button.cget('text'),'出来事の記録…')
+        activity.receive_button.invoke()
+        self.assertIn('360',activity.choice_window.notice.get())
+
     def test_dispatch_destination_selection_conditions_and_confirmation(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         from cat_cafe_sim.core.cafe_traits import definitions

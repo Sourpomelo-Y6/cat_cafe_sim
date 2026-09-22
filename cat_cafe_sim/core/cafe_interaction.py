@@ -163,9 +163,13 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_activities import activity
         return activity(self, cat_id)
 
-    def dispatch(self, cat_id, rules=None):
+    def resolve_dispatch_choice(self, event_id, choice):
+        from .cafe_dispatch_encounters import resolve
+        resolve(self,event_id,choice)
+
+    def dispatch(self, cat_id, rules=None, *, encounter=None):
         from .cafe_activities import dispatch
-        dispatch(self, cat_id, rules)
+        dispatch(self, cat_id, rules, encounter=encounter)
 
     def resolve_activity(self, event_id, choice='receive'):
         from .cafe_activities import resolve
