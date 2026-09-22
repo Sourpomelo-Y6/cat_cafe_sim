@@ -20,6 +20,8 @@ def apply_operation(core, operation):
     elif kind=='continue_patron':core.continue_patron()
     elif kind=='enable_goal':core.enable_goal(operation['rules'])
     elif kind=='continue_goal':core.continue_goal()
+    elif kind=='initialize_intake_request':core.initialize_intake_request(operation['rules'])
+    elif kind=='resolve_intake_request':core.resolve_intake_request(operation['choice'])
     elif kind=='open_recruitment':core.open_recruitment(operation['candidates'])
     elif kind=='add_recruitment':
         from .cafe_recruitment import add_candidates

@@ -1024,6 +1024,39 @@ class CafeSaveWindowTests(unittest.TestCase):
         window.close_button.invoke()
         activity.close_button.invoke()
 
+    def test_intake_request_attention_answer_and_small_layout(self):
+        from cat_cafe_sim.cafe_new_game import create_game
+        app = self.app
+        app.replace_game(create_game(Path(self.temp.name)/'intake-games'))
+        for _ in range(3):
+            app.session.day_off()
+        app.refresh()
+        self.root.deiconify()
+        self.root.update()
+        self.assertIn('受け入れ依頼', app.notice.get())
+        self.assertTrue(app.run_button.instate(['disabled']))
+        app.attention_button.invoke()
+        window = app.intake_request_window
+        window.window.geometry('560x420')
+        self.root.update()
+        for button in (window.accept_button, window.decline_button, window.close_button):
+            self.assertTrue(button.winfo_ismapped())
+            self.assertLessEqual(button.winfo_rooty()+button.winfo_height(), window.window.winfo_rooty()+window.window.winfo_height())
+        window.close()
+        app.attention_button.invoke()
+        window = app.intake_request_window
+        with patch('tkinter.messagebox.askyesno', return_value=True):
+            window.accept_button.invoke()
+        self.assertEqual(len(app.session.core.cats), 6)
+        self.assertEqual(app.session.core.funds, 800)
+        self.assertTrue(window.accept_button.instate(['disabled']))
+        self.assertTrue(window.decline_button.instate(['disabled']))
+        self.assertIn('迎えました', window.notice.get())
+        window.close()
+        app.show_recruitment()
+        app.recruitment_window.show_request()
+        self.assertIn('迎えました', app.recruitment_window.request_window.notice.get())
+
     def test_dispatch_choice_attention_answer_history_and_small_layout(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         from cat_cafe_sim.core.cafe_traits import definitions

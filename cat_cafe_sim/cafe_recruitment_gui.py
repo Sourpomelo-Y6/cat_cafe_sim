@@ -20,6 +20,8 @@ class CafeRecruitmentWindow:
         footer.pack(side='bottom', fill='x')
         self.receive_button = ttk.Button(footer, text='選んだ猫を受け入れる', command=self.receive)
         self.receive_button.pack(side='left')
+        if session.core.intake_request:
+            ttk.Button(footer, text='依頼・回答履歴…', command=self.show_request).pack(side='left', padx=6)
         self.close_button = ttk.Button(footer, text='閉じる', command=self.window.destroy)
         self.close_button.pack(side='right')
         self.funds = tk.StringVar()
@@ -36,6 +38,10 @@ class CafeRecruitmentWindow:
         self.cats.bind('<<TreeviewSelect>>', lambda event: self.selection_changed())
         self.window.bind('<Escape>', lambda event: self.window.destroy())
         self.refresh()
+
+    def show_request(self):
+        from .cafe_intake_request_gui import CafeIntakeRequestWindow
+        self.request_window = CafeIntakeRequestWindow(self.window, self.session, lambda: (self.on_changed(), self.refresh()))
 
     def refresh(self):
         core = self.session.core

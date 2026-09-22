@@ -32,7 +32,8 @@ def starting_conditions():
         if row.get('trait') is not None:
             initial_traits[row['cat_id']] = traits[row['trait']]
     from .core.cafe_weekdays import rules as weekday_rules
-    return dict(weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
+    from .core.cafe_intake_request import rules as intake_rules
+    return dict(intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
 
 
 def create_game(directory='saves/games', conditions=None):
@@ -54,6 +55,8 @@ def create_game(directory='saves/games', conditions=None):
             session.core.initialize_preferences(selected.get('features', {}), selected['preferences'])
         session.enable_management(selected['management'])
         session.enable_goal(selected.get('goal'))
+        if 'intake_request' in selected:
+            session.core.initialize_intake_request(selected['intake_request'])
         save_game(session, location / 'cafe.json', auto_assign=False)
     except Exception:
         # Only this call's newly allocated directory belongs to the failed creation.

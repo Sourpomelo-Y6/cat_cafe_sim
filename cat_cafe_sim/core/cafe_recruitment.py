@@ -66,9 +66,9 @@ def open_candidates(core, rows):
     if core.recruitment is not None:
         raise ValueError('受け入れ候補はすでに決まっています。')
     rows = validate_candidates(rows)
-    if set(rows) & set(core.cats):
+    if set(rows) & (set(core.cats) | ({core.intake_request['rules']['cat_id']} if core.intake_request else set())):
         raise ValueError('候補の猫IDが所属猫と重複しています。')
-    core.recruitment = dict(opened_day=core.day, candidates=rows, accepted={})
+    core.recruitment = dict(opened_day=core.day, candidates=copy.deepcopy(rows), accepted={})
     core._tick_events = []
     core._emit('recruitment_opened')
     core._record(dict(kind='open_recruitment', candidates=rows))
@@ -84,7 +84,7 @@ def add_candidates(core, rows):
     if data is None or core.day < next_candidate_day(data):
         raise ValueError('次の候補追加日までお待ちください。')
     rows = validate_candidates(rows)
-    if set(rows) & (set(core.cats) | set(data['candidates'])):
+    if set(rows) & (set(core.cats) | set(data['candidates']) | ({core.intake_request['rules']['cat_id']} if core.intake_request else set())):
         raise ValueError('追加候補の猫IDが重複しています。')
     if 'presented_days' not in data:
         data['presented_days'] = {key: data['opened_day'] for key in data['candidates']}
@@ -104,6 +104,17 @@ def accept(core, cat_id):
     if cat_id in data['accepted'] or cat_id in core.cats:
         raise ValueError('この猫はすでに受け入れています。')
     row = data['candidates'][cat_id]
+    join_cat(core,cat_id,row)
+    data['accepted'][cat_id] = core.day
+    core._tick_events = []
+    core._emit('cat_recruited', cat_id=cat_id, name=row['name'], cost=row['cost'])
+    core._record(dict(kind='recruit_cat', cat_id=cat_id))
+
+
+def join_cat(core,cat_id,row):
+    validate_candidates({cat_id:row})
+    if cat_id in core.cats:
+        raise ValueError('この猫はすでに加入しています。')
     if core.funds <= row['cost']:
         raise ValueError('受け入れ後に資金が残る必要があります。')
     cat = Cat(id=cat_id, stamina=core.config.max_stamina, spirit=core.config.max_spirit)
@@ -127,17 +138,14 @@ def accept(core, cat_id):
         if core.cat_features is None:
             core.cat_features = {}
         core.cat_features[cat_id] = list(row['features'])
-    data['accepted'][cat_id] = core.day
     core.funds -= row['cost']
-    core._tick_events = []
-    core._emit('cat_recruited', cat_id=cat_id, name=row['name'], cost=row['cost'])
-    core._record(dict(kind='recruit_cat', cat_id=cat_id))
 
 
 def expenses(core, day=None):
     data = core.recruitment
-    return sum(data['candidates'][key]['cost'] for key, joined in data['accepted'].items()
-               if day is None or joined == day) if data else 0
+    from .cafe_intake_request import expenses as request_expenses
+    return (sum(data['candidates'][key]['cost'] for key, joined in data['accepted'].items()
+               if day is None or joined == day) if data else 0) + request_expenses(core,day)
 
 
 def validate(data, day, initial_ids):

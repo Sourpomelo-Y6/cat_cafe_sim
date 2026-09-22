@@ -124,6 +124,8 @@ class CafeInteractionSession:
         self._ready()
         data = self.store._read()
         used = set(self.core.cats) | set(data.get('cats', {})) | {row['cat_id'] for row in data['pairs']}
+        if self.core.intake_request:
+            used.add(self.core.intake_request['rules']['cat_id'])
         if recruitment is None:
             self.core.open_recruitment(candidates(used))
         else:
@@ -133,13 +135,17 @@ class CafeInteractionSession:
 
     def recruit_cat(self, cat_id):
         import copy
-        from .core.human_cat_types import Personality
-        from .storage.relationships import RelationshipConflict
         self._ready()
         # Validate the complete change before touching the shared relationship file.
         updated = copy.deepcopy(self.core)
         updated.recruit_cat(cat_id)
         row = updated.recruitment['candidates'][cat_id]
+        self._commit_recruited(updated, cat_id, row)
+
+    def _commit_recruited(self, updated, cat_id, row):
+        import copy
+        from .core.human_cat_types import Personality
+        from .storage.relationships import RelationshipConflict
         data = self.store._read()
         if cat_id in data.get('cats', {}) or any(p['cat_id'] == cat_id for p in data['pairs']):
             raise RelationshipConflict('この候補の猫IDはすでに関係データに登録されています。')
@@ -150,6 +156,22 @@ class CafeInteractionSession:
         self.core = updated
         self.profiles = profiles
         self.checkpoint_baseline = baseline
+
+    def resolve_intake_request(self, choice):
+        import copy
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に接客結果の保存を再試行してください。')
+        updated=copy.deepcopy(self.core)
+        updated.resolve_intake_request(choice)
+        if self.core.intake_request==updated.intake_request:
+            return
+        if choice=='accept':
+            rule=updated.intake_request['rules']
+            self._commit_recruited(updated,rule['cat_id'],rule['candidate'])
+        else:
+            self.core=updated
 
     def purchase_seat_equipment(self, seat_id, rules):
         self._ready()

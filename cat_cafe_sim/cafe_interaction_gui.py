@@ -144,6 +144,10 @@ class ManualCafeInteractionWindow:
                 text='目標結果を確認し、継続営業を選択'
             elif kind=='management_enabled':
                 text=f"経営ルール開始 · 開始時資金補充 {event['grant']:g}"
+            elif kind=='intake_request_waiting':
+                text=f"保護猫 {event['name']} の受け入れ依頼が届きました。"
+            elif kind=='intake_request_resolved':
+                text=f"保護猫 {event['name']}：" + ('迎えました。' if event['choice']=='accept' else '見送りました。')
             elif kind=='recruitment_opened':
                 text='保護猫の受け入れ候補を確認'
             elif kind=='recruitment_added':
@@ -240,7 +244,18 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if self._attention:
             self._attention()
 
+    def show_intake_request(self):
+        self.pages.select(self.preparation_page)
+        from .cafe_intake_request_gui import CafeIntakeRequestWindow
+        self.stop()
+        self.refresh()
+        self.intake_request_window = CafeIntakeRequestWindow(self.root, self.session, self.refresh)
+
     def show_recruitment(self):
+        from .core.cafe_intake_request import pending
+        if pending(self.session.core):
+            self.show_intake_request()
+            return
         self.pages.select(self.preparation_page)
         from tkinter import messagebox
         from .cafe_recruitment_gui import CafeRecruitmentWindow
@@ -378,7 +393,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         goal_waiting=goal_pending(core) or patron_pending(core) or bond_pending(core)
         if patron_pending(core):
             self.instructions.configure(text='有力者目標クリア！「結果・記録」→「有力者目標・結果…」で結果を確認してください。')
-        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting
+        from .core.cafe_intake_request import pending as intake_pending
+        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core)
         if core.management:
             self.status.set(self.status.get()+f" · 人気 {core.management['popularity']:g}")
         self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
@@ -497,6 +513,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif goal_pending(core):
             self.notice.set('人気目標の結果が出ました。確認すると営業を続けられます。')
             self._attention = self.show_goal
+        elif core.intake_request and core.intake_request['status']=='waiting':
+            self.notice.set('保護猫の受け入れ依頼が届いています。猫と費用を確認し、迎えるか見送るか選んでください。')
+            self._attention = self.show_intake_request
         elif active(core):
             self.notice.set('プレイヤーとの交流が途中です。猫の詳細から再開できます。')
             def resume_play():
@@ -509,7 +528,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.attention_button.grid()
         else:
             self.attention_button.grid_remove()
-        self.recruitment_button.state(['!disabled'] if core.recruitment is not None or (core.can_set_shifts and not self._attention) else ['disabled'])
+        self.recruitment_button.state(['!disabled'] if (core.intake_request and core.intake_request['status']=='waiting') or core.recruitment is not None or (core.can_set_shifts and not self._attention) else ['disabled'])
 
     def show_goal(self):
         self.pages.select(self.results_page)

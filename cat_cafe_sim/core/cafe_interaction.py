@@ -42,6 +42,7 @@ class CafeInteractionCore(SimulationCore):
         self.cat_features = None
         self.customer_preferences = None
         self.recruitment = None
+        self.intake_request = None
         self.adoption = None
         self.activities = None
         self.health_rules = None
@@ -61,6 +62,7 @@ class CafeInteractionCore(SimulationCore):
     def _full_snapshot(self):
         return {**super().snapshot(),
                 'interaction': self.active.log() if self.active else None,
+                **({'intake_request': copy.deepcopy(self.intake_request)} if self.intake_request is not None else {}),
                 **({'weekdays': copy.deepcopy(self.weekdays)} if self.weekdays is not None else {}),
                 **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
@@ -81,7 +83,15 @@ class CafeInteractionCore(SimulationCore):
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
                 **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
-                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None else {})}
+                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None or self.intake_request is not None else {})}
+
+    def initialize_intake_request(self, rules=None):
+        from .cafe_intake_request import initialize
+        initialize(self,rules)
+
+    def resolve_intake_request(self, choice):
+        from .cafe_intake_request import resolve
+        resolve(self,choice)
 
     def open_recruitment(self, candidates):
         from .cafe_recruitment import open_candidates
@@ -175,8 +185,11 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_activities import resolve
         resolve(self, event_id, choice)
 
-    def require_events_resolved(self):
+    def require_events_resolved(self, *, ignore_intake=False):
         self.require_running()
+        from .cafe_intake_request import pending as intake_pending
+        if not ignore_intake and intake_pending(self):
+            raise ValueError('保護猫の受け入れ依頼に回答してください。')
         from .cafe_bond_goal import pending as bond_pending
         if bond_pending(self):
             raise ValueError("好感度目標の結果を確認して継続営業を選んでください。")
@@ -398,6 +411,8 @@ class CafeInteractionCore(SimulationCore):
             self.initial_health = self._health_state()
             self.health_results = {}
         self._emit('next_day', day=self.day)
+        from .cafe_intake_request import present
+        present(self)
         self._record(operation)
 
     def _record(self, operation):
@@ -513,7 +528,7 @@ class CafeInteractionCore(SimulationCore):
                     **({'goal_status': self.goal['status'], 'popularity_gain': next((r['gain'] for r in self.goal['days'] if r['day']==self.day),0)} if self.goal else {}),
                     **({'equipment_expenses': equipment_expenses(self, self.day)} if self.rest_space is not None else {}),
                     **({'expansion_expenses': expansion_expenses(self, self.day)} if self.expansion is not None else {}),
-                    **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None else {}),
+                    **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()
                                                  if e['resolved_day']==self.day)) if self.management else {}),
