@@ -578,6 +578,46 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.root.update()
         self.assertFalse(app.running)
 
+    def test_bond_goal_start_cancel_progress_attention_and_continue(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        self.app.replace_game(CafeInteractionSession(store=self.store), False)
+        app = self.app
+        self.root.deiconify()
+        self.root.geometry('860x660')
+        app.session.enable_management()
+        app.show_bond_goal()
+        window = app.bond_goal_window
+        window.window.geometry('580x420')
+        self.root.update()
+        self.assertEqual(app.pages.select(), str(app.results_page))
+        self.assertTrue(app.bond_goal_button.winfo_ismapped())
+        self.assertLessEqual(app.instructions.winfo_rooty() + app.instructions.winfo_height(),
+                             app.results_page.winfo_rooty() + app.results_page.winfo_height())
+        self.assertGreaterEqual(app.history.winfo_height(), 120)
+        self.assertGreaterEqual(window.cats.winfo_height(), 100)
+        with patch('tkinter.messagebox.askyesno', return_value=False):
+            window.enable_button.invoke()
+        self.assertIsNone(app.session.core.bond_goal)
+        with patch('cat_cafe_sim.cafe_bond_goal_gui.rules', return_value=dict(target=1, affinity=.5)), \
+                patch('tkinter.messagebox.askyesno', return_value=True):
+            window.enable_button.invoke()
+        window.window.destroy()
+        key = next(iter(app.session.core.cats))
+        app.session.play_with_player(key)
+        app.session.player_command('direct')
+        app.session.player_command(finish=True)
+        app.refresh()
+        self.root.update()
+        self.assertIn('disabled', app.run_button.state())
+        app.attention_button.invoke()
+        window = app.bond_goal_window
+        self.root.update()
+        self.assertIn('1 / 1', window.status.get())
+        self.assertEqual(window.cats.item(key, 'values')[-1], '対象')
+        window.continue_button.invoke()
+        self.assertTrue(app.session.core.bond_goal['continued'])
+        self.assertNotIn('disabled', app.run_button.state())
+
     def test_dashboard_direct_equipment_and_event_routes(self):
         app = self.app
         app.show_equipment()

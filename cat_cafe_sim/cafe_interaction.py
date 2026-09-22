@@ -156,6 +156,17 @@ class CafeInteractionSession:
         self._ready()
         self.core.expand_seats(rules)
 
+    def enable_bond_goal(self, rules=None):
+        self._ready()
+        self.core.enable_bond_goal(rules)
+
+    def continue_bond_goal(self):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に接客結果の保存を再試行してください。')
+        self.core.continue_bond_goal()
+
     def enable_patron(self, rules=None):
         self._ready()
         self.core.enable_patron(rules)

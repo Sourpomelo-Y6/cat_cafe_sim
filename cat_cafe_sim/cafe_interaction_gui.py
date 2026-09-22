@@ -109,6 +109,12 @@ class ManualCafeInteractionWindow:
                 text=f"{event['seat_count']}席に増設 · 費用 {event['cost']:g}"
             elif kind=='preferences_initialized':
                 text='猫の特徴・お客さんの好みを設定'
+            elif kind=='bond_goal_enabled':
+                text='猫との好感度目標を開始'
+            elif kind=='bond_goal_cleared':
+                text='猫との好感度目標を達成！'
+            elif kind=='bond_goal_continued':
+                text='好感度目標の結果を確認して継続営業'
             elif kind=='patron_enabled':
                 text='有力者の満足度目標を開始'
             elif kind=='patron_satisfaction':
@@ -242,6 +248,12 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.stop(); self.refresh()
         self.equipment_window = CafeEquipmentWindow(self.root, self.session, self.refresh)
 
+    def show_bond_goal(self):
+        self.pages.select(self.results_page)
+        from .cafe_bond_goal_gui import CafeBondGoalWindow
+        self.stop(); self.refresh()
+        self.bond_goal_window = CafeBondGoalWindow(self.root, self.session, self.refresh)
+
     def show_patron(self):
         self.pages.select(self.results_page)
         from .cafe_patron_gui import CafePatronWindow
@@ -332,7 +344,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .cafe_goal_gui import progress
         self.instructions.configure(text=progress(core))
         from .core.cafe_patron import pending as patron_pending
-        goal_waiting=goal_pending(core) or patron_pending(core)
+        from .core.cafe_bond_goal import pending as bond_pending
+        goal_waiting=goal_pending(core) or patron_pending(core) or bond_pending(core)
         if patron_pending(core):
             self.instructions.configure(text='有力者目標クリア！「結果・記録」→「有力者目標・結果…」で結果を確認してください。')
         events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting
@@ -403,6 +416,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .core.cafe_management import waiting as returns, is_over
         from .core.cafe_goal import pending as goal_pending
         from .core.cafe_patron import pending as patron_pending, progress as patron_progress
+        from .core.cafe_bond_goal import pending as bond_pending, progress as bond_progress
         from .core.cafe_player import active
         core = self.session.core
         phase = '営業終了' if is_over(core) else '閉店' if core.closed else '営業準備' if core.can_set_shifts else '営業中' if self.running else '営業・一時停止'
@@ -420,7 +434,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         working = sum(core.activity(key)=='cafe' and key in core.working_cats for key in core.cats)
         resting = sum(core.activity(key)=='cafe' and key not in core.working_cats for key in core.cats)
         self.preparation_summary.set(f'今日の予定：出勤 {working}匹 / 在店休養 {resting}匹。' + ('準備の変更は営業開始前に行えます。' if not core.can_set_shifts else '体調を確認してから担当を決めましょう。'))
-        self.results_summary.set(f"今日の接客売上 {core.summary()['revenue']:g} / 終了した交流 {core.summary()['completed_interactions']}件。\n" + patron_progress(core))
+        self.results_summary.set(f"今日の接客売上 {core.summary()['revenue']:g} / 終了した交流 {core.summary()['completed_interactions']}件。\n" + patron_progress(core) + '\n' + bond_progress(core))
         self._attention = None
         if self.session.pending:
             self.notice.set('交流結果の保存が完了していません。再試行してから営業を続けてください。')
@@ -439,6 +453,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif patron_pending(core):
             self.notice.set('有力者目標を達成しました。結果を確認すると営業を続けられます。')
             self._attention = self.show_patron
+        elif bond_pending(core):
+            self.notice.set('猫との好感度目標を達成しました。結果を確認すると営業を続けられます。')
+            self._attention = self.show_bond_goal
         elif goal_pending(core):
             self.notice.set('人気目標の結果が出ました。確認すると営業を続けられます。')
             self._attention = self.show_goal

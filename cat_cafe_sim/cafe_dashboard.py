@@ -118,7 +118,8 @@ def build(app):
         parent.columnconfigure(column, weight=1, uniform='cards')
         box = ttk.LabelFrame(parent, text=title, padding=14)
         box.grid(row=1, column=column, sticky='nsew', padx=(0,12) if column==0 else 0, pady=10)
-        ttk.Label(box, text=hint, wraplength=320).pack(anchor='w', pady=(0,10))
+        if hint:
+            ttk.Label(box, text=hint, wraplength=320).pack(anchor='w', pady=(0,10))
         for attr, label, command in actions:
             button = ttk.Button(box, text=label, command=command, style='Cafe.TButton')
             button.pack(fill='x', pady=3)
@@ -140,9 +141,10 @@ def build(app):
 
     app.results_summary = tk.StringVar()
     ttk.Label(app.results_page, textvariable=app.results_summary, wraplength=760).grid(row=0,column=0,columnspan=2,sticky='w')
-    goals = card(app.results_page, 0, '目標と営業の記録', '目標の進捗や、これまでの売上・支出を確認します。', (
+    goals = card(app.results_page, 0, '目標と営業の記録', '', (
         ('goal_button','人気目標・結果…',app.show_goal),
         ('patron_button','有力者目標・結果…',app.show_patron),
+        ('bond_goal_button','猫との好感度目標・結果…',app.show_bond_goal),
     ))
     app.instructions = ttk.Label(goals, text='', wraplength=320)
     app.instructions.pack(anchor='w',pady=8)

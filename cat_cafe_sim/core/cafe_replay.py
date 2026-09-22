@@ -11,6 +11,8 @@ def apply_operation(core, operation):
     elif kind=='purchase_rest_space':core.purchase_rest_space(operation['rules'])
     elif kind=='expand_seats':core.expand_seats(operation['rules'])
     elif kind=='initialize_preferences':core.initialize_preferences(operation['cats'], operation['rules'])
+    elif kind=='enable_bond_goal':core.enable_bond_goal(operation['rules'])
+    elif kind=='continue_bond_goal':core.continue_bond_goal()
     elif kind=='enable_patron':core.enable_patron(operation['rules'])
     elif kind=='continue_patron':core.continue_patron()
     elif kind=='enable_goal':core.enable_goal(operation['rules'])

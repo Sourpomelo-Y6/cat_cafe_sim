@@ -33,6 +33,7 @@ class CafeInteractionCore(SimulationCore):
         self.management = None
         self.goal = None
         self.patron = None
+        self.bond_goal = None
         self.expansion = None
         self.rest_space = None
         self.traits = None
@@ -69,6 +70,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'expansion': copy.deepcopy(self.expansion)} if self.expansion is not None else {}),
                 **({'traits': copy.deepcopy(self.traits)} if self.traits is not None else {}),
                 **({'patron': copy.deepcopy(self.patron)} if self.patron is not None else {}),
+                **({'bond_goal': copy.deepcopy(self.bond_goal)} if self.bond_goal is not None else {}),
                 **({'goal': copy.deepcopy(self.goal)} if self.goal is not None else {}),
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
@@ -112,6 +114,14 @@ class CafeInteractionCore(SimulationCore):
     def initialize_traits(self, traits):
         from .cafe_traits import initialize
         initialize(self, traits)
+
+    def enable_bond_goal(self, rules=None):
+        from .cafe_bond_goal import enable
+        enable(self, rules)
+
+    def continue_bond_goal(self):
+        from .cafe_bond_goal import continue_game
+        continue_game(self)
 
     def enable_patron(self, rules=None):
         from .cafe_patron import enable
@@ -159,6 +169,9 @@ class CafeInteractionCore(SimulationCore):
 
     def require_events_resolved(self):
         self.require_running()
+        from .cafe_bond_goal import pending as bond_pending
+        if bond_pending(self):
+            raise ValueError("好感度目標の結果を確認して継続営業を選んでください。")
         from .cafe_patron import pending as patron_pending
         if patron_pending(self):
             raise ValueError('派遣・イベントの「有力者目標・結果…」で継続営業を選んでください。')

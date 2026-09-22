@@ -20,6 +20,9 @@ def remaining(core):
 def unavailable_reason(core, cat_id):
     from .cafe_activities import waiting_events
     from .cafe_management import is_over
+    from .cafe_bond_goal import pending as bond_pending
+    if bond_pending(core):
+        return '好感度目標の結果を確認してから交流してください。'
     if is_over(core):
         return 'ゲームオーバーのため交流できません。'
     if active(core) is not None:
@@ -54,6 +57,8 @@ def legacy_play(core, cat_id):
     core._tick_events = []
     core._emit('player_played', cat_id=cat_id, before=before,
                after=bond['affinity'][cat_id], remaining=remaining(core))
+    from .cafe_bond_goal import evaluate
+    evaluate(core)
     core._record(dict(kind='player_play', cat_id=cat_id))
 
 
@@ -138,6 +143,8 @@ def advance(core, action=None, target_type=None, *, finish=False):
         from .cafe_management import player_result
         player_result(core,result)
         core._emit('player_completed', cat_id=cat.id, result=result)
+        from .cafe_bond_goal import evaluate
+        evaluate(core)
     else:
         bond['active'] = interaction.log()
     core._record(dict(kind='player_finish') if finish else
