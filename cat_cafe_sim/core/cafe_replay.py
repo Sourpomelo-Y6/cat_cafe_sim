@@ -8,6 +8,7 @@ from .human_cat_relationship import verify_relationship
 def apply_operation(core, operation):
     kind=operation['kind']
     if kind=='initialize_traits':core.initialize_traits(operation['traits'])
+    elif kind=='expand_seats':core.expand_seats(operation['rules'])
     elif kind=='initialize_preferences':core.initialize_preferences(operation['cats'], operation['rules'])
     elif kind=='enable_patron':core.enable_patron(operation['rules'])
     elif kind=='continue_patron':core.continue_patron()
@@ -51,7 +52,7 @@ def replay_log(core):
     return dict(mode_id='cafe-human-cat',format_version=4,
                 config=json.loads(json.dumps(core.config.to_dict())),seed=core.seed,
                 start_state=asdict(core.start_state),cat_ids=core.roster_ids,
-                seat_count=2 if hasattr(core,'seats') else 1,
+                seat_count=len(core.seats) if hasattr(core,'seats') else 1,
                 base=copy.deepcopy(core.replay_base),operations=copy.deepcopy(core.operations),summary=core.summary())
 
 
@@ -64,8 +65,8 @@ def verify(data):
     if data['base'] is not None:
         core=restore(data['base'])
     else:
-        if data['seat_count'] not in (1,2):raise ValueError('invalid seat count')
-        cls=MultiSeatCafeCore if data['seat_count']==2 else CafeInteractionCore
+        if data['seat_count'] not in (1,2,3):raise ValueError('invalid seat count')
+        cls=MultiSeatCafeCore if data['seat_count']>=2 else CafeInteractionCore
         core=cls(Config.from_dict(data['config']),seed=data['seed'],start_state=StartState(**data['start_state']),
                  cat_ids=data['cat_ids'],compact=True)
     for item in data['operations']:

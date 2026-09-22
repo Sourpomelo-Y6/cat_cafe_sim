@@ -1,4 +1,4 @@
-"""2席の交流を同じ営業時計で進める。旧営業ログは従来coreで再生する。"""
+"""複数席の交流を同じ営業時計で進める。旧営業ログは従来coreで再生する。"""
 import copy
 from dataclasses import asdict
 
@@ -130,7 +130,7 @@ class MultiSeatCafeCore(CafeInteractionCore):
         result=super().summary()
         result.pop('stamina',None)
         result['cat_stamina']={key:cat.stamina for key,cat in self.cats.items()}
-        result['seat_count']=2
+        result['seat_count']=len(self.seats)
         return result
 
     def log(self):

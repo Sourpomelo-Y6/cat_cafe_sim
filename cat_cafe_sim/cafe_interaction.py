@@ -148,6 +148,10 @@ class CafeInteractionSession:
         self.profiles = profiles
         self.checkpoint_baseline = baseline
 
+    def expand_seats(self, rules=None):
+        self._ready()
+        self.core.expand_seats(rules)
+
     def enable_patron(self, rules=None):
         self._ready()
         self.core.enable_patron(rules)

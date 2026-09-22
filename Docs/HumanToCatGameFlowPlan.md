@@ -68,7 +68,7 @@ flowchart TD
 
 | 要素 | 状態 | 確認できた内容／残る範囲 |
 |---|---|---|
-| 複数猫・席への割り当て | 実装済み | 既定2席。猫・客の二重配置を拒否。体力優先の自動割り当てもある |
+| 複数猫・席への割り当て | 実装済み | 既定2席、資金で3席へ増設可能。猫・客の二重配置を拒否。体力優先の自動割り当てもある |
 | 交流と個性 | 実装済み | 固定方策が働きかけを選び、猫の好み・反応を反映。通常営業は学習済み猫AIではない |
 | 出勤・休養・休業 | 実装済み | 疲労順2匹休養の編集可能な提案、全猫休養、来客なしの休業 |
 | 健康管理 | 実装済み | 疲労持ち越し、発症、療養と復帰。翌日の体力全回復は維持 |
@@ -80,7 +80,7 @@ flowchart TD
 | 顧客名簿・曜日・常連 | 未実装／詳細未決定 | 顧客の表示名や来店曜日、常連度、将来の来店予定を判断材料にする仕組みがない |
 | 客満足・不満 | 一部のみ実装済み／接続未決定 | 待機期限・列満杯の不満は記録。版4交流の成果を独立した客満足や累積不満・離脱へ接続していない |
 | 設備の購入・設置・効果 | 未実装／効果未決定 | 席の `equipment` 欄はあるが、購入処理や効果はない。設備名・補正は原案の候補 |
-| 席の増設 | 未実装／上限未決定 | 1席／2席の起動選択は検証設定であり、営業資金での増設ではない |
+| 席の増設 | 2席→3席を初回実装 | 準備中に暫定500で一度購入。接客・派遣条件・支出履歴・保存再開に反映。[仕様](HumanToCatExpansion.md)。4席以上と1席からの拡張は後続 |
 | 猫の特性・能力成長 | 特性3種類を実装／能力成長は未実装 | 接客・休養・派遣に長所と短所を適用。経験値、レベル、能力強化は後続。個性の編集を成長として扱わない |
 | 支出・経営の失敗 | 明示導入する初回ルールを実装 | 子猫は預け先・譲渡費用のみとし、資金0でゲームオーバーとする追加方針。家出時の人気低下と、人気が下がりきった場合のゲームオーバー案も追加。家賃等は未導入 |
 | 長期目標・終了条件 | 人気目標1段階・有力者目標とゲームオーバーを実装 | 10日以内に人気150でクリアし、結果確認後も継続可能。資金0以下・人気0で終了。有力者への派遣帰還でも独立してクリア可能。多段階化・22匹案は後続 |
@@ -203,7 +203,7 @@ flowchart TD
 
 | 確認対象 | 資料 | 主な実装 |
 |---|---|---|
-| 通常操作・役割分担 | [自動交流](HumanToCatAutomaticCafe.md)、[複数席](HumanToCatMultiSeatCafe.md)、[参加猫](HumanToCatCafeRoster.md) | [営業セッション](../cat_cafe_sim/cafe_interaction.py)、[営業画面](../cat_cafe_sim/cafe_interaction_gui.py)、[2席core](../cat_cafe_sim/core/multi_seat_cafe.py) |
+| 通常操作・役割分担 | [自動交流](HumanToCatAutomaticCafe.md)、[複数席](HumanToCatMultiSeatCafe.md)、[参加猫](HumanToCatCafeRoster.md) | [営業セッション](../cat_cafe_sim/cafe_interaction.py)、[営業画面](../cat_cafe_sim/cafe_interaction_gui.py)、[複数席core](../cat_cafe_sim/core/multi_seat_cafe.py) |
 | 交流・関係・会計 | [営業接続](HumanToCatCafeIntegration.md)、[親しみの表現](HumanToCatRelationshipPresentation.md) | [営業core](../cat_cafe_sim/core/cafe_interaction.py)、[親しみ計算](../cat_cafe_sim/core/human_cat_relationship.py)、[自動方策](../cat_cafe_sim/policies/human_cat.py) |
 | 日程・健康・休業 | [翌日と比較](HumanToCatCafeDays.md)、[出勤・休養](HumanToCatCafeShifts.md)、[病気](HumanToCatCafeHealth.md)、[休業](HumanToCatCafeDayOffPlan.md) | 営業coreの `next_day`・`day_off`・閉店処理、[休養提案画面](../cat_cafe_sim/cafe_shift_gui.py) |
 | 保存と再開 | [営業セーブ](HumanToCatCafeSaves.md)、[軽量形式](HumanToCatCompactSaves.md) | [営業保存](../cat_cafe_sim/storage/cafe_saves.py)、[関係保存](../cat_cafe_sim/storage/relationships.py) |

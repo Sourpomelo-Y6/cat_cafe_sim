@@ -76,7 +76,7 @@ def checkpoint(core, pending):
                   if core.events[i]['kind'] == 'next_day'), 0)
     data = dict(kind='cafe-checkpoint', version=1, config=json.loads(json.dumps(core.config.to_dict())),
                 seed=core.seed, start_state=asdict(core.start_state), cat_ids=core.roster_ids,
-                seat_count=2 if hasattr(core, 'seats') else 1, state=snapshot(core), summary=core.summary(),
+                seat_count=len(core.seats) if hasattr(core, 'seats') else 1, state=snapshot(core), summary=core.summary(),
                 resume=dict(cat_id=core.cat.id, returning_customers=sorted(core.returning_customers),
                             day_outcome_offset=core.day_outcome_offset,
                             events=copy.deepcopy([event for event in core.events[start:] if event['kind']!='human_cat_action']),
@@ -92,10 +92,10 @@ def restore(data):
     fields={'kind','version','config','seed','start_state','cat_ids','seat_count','state','summary','resume','digest'}
     if (not isinstance(data,dict) or set(data)!=fields or data['kind']!='cafe-checkpoint'
             or type(data['version']) is not int or data['version']!=1
-            or type(data['seat_count']) is not int or data['seat_count'] not in (1,2)
+            or type(data['seat_count']) is not int or data['seat_count'] not in (1,2,3)
             or digest({k:v for k,v in data.items() if k!='digest'})!=data['digest']):
         raise ValueError('営業セーブの現在状態が破損しています。')
-    cls=MultiSeatCafeCore if data['seat_count']==2 else CafeInteractionCore
+    cls=MultiSeatCafeCore if data['seat_count']>=2 else CafeInteractionCore
     core=cls(Config.from_dict(data['config']),seed=data['seed'],start_state=StartState(**data['start_state']),
              cat_ids=data['cat_ids'],compact=True)
     state, resume=data['state'],data['resume']
@@ -224,9 +224,9 @@ def restore(data):
     from .cafe_goal import pending as goal_pending
     if player_active(core) and (waiting_events(core) or is_over(core) or goal_pending(core) or patron_pending(core)):
         raise ValueError('プレイヤー交流と未解決イベント・終了状態が矛盾しています。')
-    if data['seat_count']==2:
+    if data['seat_count']>=2:
         core.seats={key:Seat(**row) for key,row in state['seats'].items()}
-        if set(core.seats)!={'seat-1','seat-2'}:
+        if set(core.seats)!={f'seat-{i}' for i in range(1, data['seat_count']+1)}:
             raise ValueError('invalid seats')
         core.interactions={key:verify_relationship(log) for key,log in state['interactions'].items()}
         core._sync()
@@ -237,6 +237,11 @@ def restore(data):
         core.active=verify_relationship(state['interaction']) if state['interaction'] else None
         active={core.seat.id:core.active} if core.active else {}
         seats={core.seat.id:core.seat}
+    from .cafe_expansion import validate as validate_expansion, expenses as expansion_expenses
+    if 'expansion' in state:
+        core.expansion = validate_expansion(core, state['expansion'], data['seat_count'])
+    elif data['seat_count'] == 3:
+        raise ValueError('3席の営業には増設記録が必要です。')
     busy_cats,busy_guests=set(),set()
     for key,seat in seats.items():
         if seat.id!=key:
@@ -266,7 +271,7 @@ def restore(data):
     from .cafe_management import money_adjustment
     expected_funds += money_adjustment(core)
     from .cafe_recruitment import expenses
-    expected_funds -= expenses(core)
+    expected_funds -= expenses(core) + expansion_expenses(core)
     if not math.isclose(core.funds,expected_funds,rel_tol=1e-12,abs_tol=1e-8):
         raise ValueError('会計の合計と所持金が一致しません。')
     core.recorded_digest=record_digest(core)

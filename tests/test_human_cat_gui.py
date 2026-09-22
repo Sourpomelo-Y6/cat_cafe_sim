@@ -654,6 +654,50 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertIn('disabled',window.receive_button.state())
         window.close_button.invoke();activity.close_button.invoke()
 
+    def test_expansion_confirmation_three_seats_layout_and_history(self):
+        from dataclasses import replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+        self.app.session = CafeInteractionSession(store=self.store,
+            cafe_config=replace(Config.load(), initial_funds=1000, opening_ticks=4, arrival_ticks=(0,0,0)),
+            interaction_config=replace(RelationshipConfig(), ticks=2))
+        self.app.logged = 0
+        self.app.refresh()
+        self.app.expansion_button.invoke()
+        window = self.app.expansion_window
+        self.assertIn('2席 → 3席', window.details.get())
+        self.assertIn('500', window.details.get())
+        with patch('tkinter.messagebox.askyesno', return_value=False):
+            window.purchase_button.invoke()
+        self.assertEqual(len(self.app.session.core.seats), 2)
+        self.assertEqual(self.app.session.core.funds, 1000)
+        with patch('tkinter.messagebox.askyesno', return_value=True):
+            window.purchase_button.invoke()
+        self.assertIn('購入済み', window.notice.get())
+        self.assertIn('disabled', window.purchase_button.state())
+        self.assertIn('seat-3', self.app.seat_selector['values'])
+        self.assertEqual(self.app.session.core.funds, 500)
+        window.close_button.invoke()
+        self.app.session.step()
+        for i, key in enumerate(list(self.app.session.core.cats)[:3], 1):
+            self.app.session.start(f'guest-{i}', key, f'seat-{i}')
+        self.app.refresh()
+        self.root.deiconify()
+        self.root.geometry('860x600')
+        self.root.update()
+        self.assertIn('seat-3', self.app.details.get())
+        self.assertGreaterEqual(self.app.history.winfo_height(), 100)
+        while not self.app.session.core.closed:
+            self.app.session.automatic_step()
+        self.app.refresh()
+        self.app.history_button.invoke()
+        history = self.app.history_window
+        row = history.days.get_children()[0]
+        self.assertEqual(history.days.set(row, '席数'), '3')
+        self.assertEqual(history.days.set(row, '増設費用'), '500')
+        history.window.destroy()
+
     def test_customer_preferences_preview_details_candidates_and_layout(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         self.app.session = CafeInteractionSession(store=self.store)

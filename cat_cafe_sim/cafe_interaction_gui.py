@@ -103,6 +103,8 @@ class ManualCafeInteractionWindow:
                 text=f"{name}：{health_result_text(event)}"
             elif kind=='traits_initialized':
                 text='初期猫の特性を設定'
+            elif kind=='seats_expanded':
+                text=f"{event['seat_count']}席に増設 · 費用 {event['cost']:g}"
             elif kind=='preferences_initialized':
                 text='猫の特徴・お客さんの好みを設定'
             elif kind=='patron_enabled':
@@ -246,6 +248,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.goal_button.pack(side='left',padx=4)
         roster_frame = ttk.Frame(automation)
         roster_frame.pack(fill='x',pady=4)
+        self.expansion_button = ttk.Button(roster_frame, text='店の増設…', command=self.show_expansion)
+        self.expansion_button.pack(side='right', padx=4)
         self.compatibility_button = ttk.Button(roster_frame, text='お客との相性…', command=self.show_compatibility)
         self.compatibility_button.pack(side='right', padx=4)
         self.cat_details_button = ttk.Button(roster_frame, text='猫の詳細…', command=self.show_cat_details)
@@ -264,6 +268,12 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.cat_selector.bind('<<ComboboxSelected>>', lambda event:self.refresh())
         self.queue.bind('<<ComboboxSelected>>', lambda event:self.refresh())
         self.refresh()
+
+    def show_expansion(self):
+        from .cafe_expansion_gui import CafeExpansionWindow
+        self.stop()
+        self.refresh()
+        self.expansion_window = CafeExpansionWindow(self.root, self.session, self.refresh)
 
     def show_compatibility(self):
         from .cafe_preferences_gui import CafePreferencesWindow
