@@ -618,6 +618,49 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertTrue(app.session.core.bond_goal['continued'])
         self.assertNotIn('disabled', app.run_button.state())
 
+    def test_customer_directory_pause_layout_and_named_assignment(self):
+        import copy
+        from cat_cafe_sim.cafe_customers import customer_label
+        app = self.app
+        self.root.deiconify()
+        self.root.geometry('860x660')
+        app.running = True
+        app.timer = self.root.after(10000, lambda: None)
+        before = copy.deepcopy(app.session.core.log())
+        store_before = self.store.path.read_bytes()
+        app.show_customers()
+        window = app.customers_window
+        window.window.geometry('660x520')
+        self.root.update()
+        self.assertFalse(app.running)
+        self.assertIsNone(app.timer)
+        self.assertEqual(app.session.core.log(), before)
+        self.assertEqual(self.store.path.read_bytes(), store_before)
+        self.assertEqual(app.pages.select(), str(app.preparation_page))
+        for table in (window.customers, window.cats):
+            self.assertGreaterEqual(table.winfo_height(), 100)
+            self.assertLessEqual(table.winfo_rooty() + table.winfo_height(),
+                                 window.window.winfo_rooty() + window.window.winfo_height())
+        self.assertIn('佐藤', window.customers.item('guest-1', 'values')[0])
+        self.assertGreaterEqual(app.history.winfo_height(), 120)
+        window.customers.selection_set('guest-2')
+        window.select()
+        self.assertIn('guest-2', window.details.get())
+        window.window.destroy()
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        app.replace_game(CafeInteractionSession(store=self.store))
+        app.session.step()
+        app.pages.select(app.business_page)
+        app.refresh()
+        customer_id = app.session.core.queue[0]
+        app.queue.set(customer_label(customer_id))
+        app.queue.event_generate('<<ComboboxSelected>>')
+        self.root.update()
+        self.assertEqual(app.customer.get(), customer_id)
+        self.assertEqual(app.queue.get(), customer_label(customer_id))
+        app.start_button.invoke()
+        self.assertTrue(any(item.customer_id == customer_id for item in app.session.active_interactions.values()))
+
     def test_dashboard_direct_equipment_and_event_routes(self):
         app = self.app
         app.show_equipment()

@@ -69,6 +69,7 @@ class ManualCafeInteractionWindow:
         self.refresh()
 
     def refresh(self):
+        from .cafe_customers import customer_label
         core=self.session.core
         self.status.set(f'{core.day}日目 · 営業 {core.tick}/{core.config.opening_ticks} tick · '+('閉店' if core.closed else '営業中')+
                         f' · 資金 {core.funds:g} · 猫 {self.session.cat_name}（{core.cat.id}） · 体力 {core.cat.stamina:g}')
@@ -86,7 +87,7 @@ class ManualCafeInteractionWindow:
             button.state(['!disabled'] if enabled and active and action in active.valid_actions() else ['disabled'])
         if active:
             state=active.summary()
-            self.details.set(greeting_text(active)+f"\nお客 {active.customer_id} · {active.type_map[active.state['mode']].name} · 残り {active.state['remaining_ticks']} 行動 · 関心 {state['engagement']:g} · テンション {state['tension']:g} · 親しみ {state['affinity_before']:g} → {state['affinity_after']:g}（見込み）")
+            self.details.set(greeting_text(active)+f"\nお客 {customer_label(active.customer_id)} · {active.type_map[active.state['mode']].name} · 残り {active.state['remaining_ticks']} 行動 · 関心 {state['engagement']:g} · テンション {state['tension']:g} · 親しみ {state['affinity_before']:g} → {state['affinity_after']:g}（見込み）")
         else:
             self.details.set('交流するお客を選んでください。' if not core.closed else '本日の営業は終了しました。')
         self.notice.set('会計・体力は反映済みです。関係保存が未完了のため、保存を再試行してください。' if pending else
@@ -150,9 +151,9 @@ class ManualCafeInteractionWindow:
             elif kind=='adoption_configured':
                 text='譲渡イベント：'+('ON' if event['enabled'] else 'OFF')
             elif kind=='adoption_offered':
-                text=f"譲渡の申し出 {event['cat_id']} → {event['customer_id']} · 「結果・記録」の譲渡画面で回答してください"
+                text=f"譲渡の申し出 {event['cat_id']} → {customer_label(event['customer_id'])} · 「結果・記録」の譲渡画面で回答してください"
             elif kind=='adoption_resolved':
-                text=f"譲渡{'成立' if event['choice']=='accept' else '見送り'} {event['cat_id']} → {event['customer_id']}"
+                text=f"譲渡{'成立' if event['choice']=='accept' else '見送り'} {event['cat_id']} → {customer_label(event['customer_id'])}"
             elif kind=='player_started':
                 text=f"プレイヤー交流開始 {event['cat_id']} · 本日あと{event['remaining']}セット"
             elif kind=='player_action':
@@ -179,12 +180,12 @@ class ManualCafeInteractionWindow:
                 text=f"{event['day']}日目の準備 · 在店猫の体力が全回復しました"
             elif kind=='departure':
                 reasons={'interaction_manual':'切り上げ', 'interaction_time_limit':'交流時間終了', 'interaction_exhausted':'体力切れ', 'closing':'閉店', 'queue_full':'待機列満員', 'wait_timeout':'待機時間終了'}
-                text=f"退店 {event['customer_id']} · {reasons.get(event['reason'],event['reason'])} · 会計 {event['bill']:g}（時間 {event['base_charge']:g}＋ボーナス {event['bonus']:g}）"
+                text=f"退店 {customer_label(event['customer_id'])} · {reasons.get(event['reason'],event['reason'])} · 会計 {event['bill']:g}（時間 {event['base_charge']:g}＋ボーナス {event['bonus']:g}）"
             elif kind=='interaction_completed':
                 r=event['result'];text=f"親しみ {r['affinity_before']:g} → {r['affinity_after']:g} · 残り体力 {r['stamina']:g}"
             else:
                 names={'arrival':'来店','assigned':'着席','interaction_started':'交流開始','closed':'閉店'}
-                text=f"{names.get(kind,kind)} {event.get('customer_id','')}"
+                text=f"{names.get(kind,kind)} {customer_label(event.get('customer_id',''))}"
             item=self.history.insert('','end',values=(event['tick'],(event.get('seat_id','')+' '+text).strip()));self.history.see(item)
         self.logged=len(core.events)
 
@@ -247,6 +248,18 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .cafe_equipment_gui import CafeEquipmentWindow
         self.stop(); self.refresh()
         self.equipment_window = CafeEquipmentWindow(self.root, self.session, self.refresh)
+
+    def select_customer(self):
+        from .cafe_customers import customer_label
+        labels = {customer_label(key): key for key in self.session.core.queue}
+        self.customer.set(labels.get(self.customer_display.get(), ''))
+        self.refresh()
+
+    def show_customers(self):
+        self.pages.select(self.preparation_page)
+        from .cafe_customers_gui import CafeCustomersWindow
+        self.stop(); self.refresh()
+        self.customers_window = CafeCustomersWindow(self.root, self.session)
 
     def show_bond_goal(self):
         self.pages.select(self.results_page)
@@ -330,6 +343,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.schedule()
 
     def refresh(self):
+        from .cafe_customers import customer_label
         super().refresh()
         if not hasattr(self,'run_button'):
             return
@@ -386,7 +400,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                 if active:
                     r=active.summary()
                     name=self.session.profiles.get(active.cat_id,{}).get('name',active.cat_id)
-                    lines.append(f"{seat_id}：{active.customer_id} / {name} · 体力 {r['stamina']:g} · 関心 {r['engagement']:g} · テンション {r['tension']:g} · 親しみ {r['affinity_after']:g} · 資金 {r['bonus_funds']:g}（見込み）")
+                    lines.append(f"{seat_id}：{customer_label(active.customer_id)} / {name} · 体力 {r['stamina']:g} · 関心 {r['engagement']:g} · テンション {r['tension']:g} · 親しみ {r['affinity_after']:g} · 資金 {r['bonus_funds']:g}（見込み）")
                 else:
                     last=next((event for event in reversed(core.events) if event['kind']=='departure' and event.get('seat_id')==seat_id),None)
                     lines.append(f"{seat_id}：空席"+(f" · 直近の会計 {last['bill']:g}" if last else ''))
@@ -408,6 +422,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.notice.set('目標の結果が出ました。「目標・結果…」で確認し、継続営業を選べます。')
         elif events_waiting:
             self.notice.set('帰還・譲渡・家出イベントの確認待ちです。「確認する」から対応してください。')
+        self.queue.configure(values=tuple(customer_label(key) for key in core.queue))
+        self.customer_display.set(customer_label(self.customer.get()) if self.customer.get() else "")
         self.refresh_dashboard()
 
     def refresh_dashboard(self):
@@ -433,7 +449,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.day_off_button.grid_remove()
         working = sum(core.activity(key)=='cafe' and key in core.working_cats for key in core.cats)
         resting = sum(core.activity(key)=='cafe' and key not in core.working_cats for key in core.cats)
-        self.preparation_summary.set(f'今日の予定：出勤 {working}匹 / 在店休養 {resting}匹。' + ('準備の変更は営業開始前に行えます。' if not core.can_set_shifts else '体調を確認してから担当を決めましょう。'))
+        self.preparation_summary.set(f'今日の予定：出勤 {working}匹 / 在店休養 {resting}匹')
         self.results_summary.set(f"今日の接客売上 {core.summary()['revenue']:g} / 終了した交流 {core.summary()['completed_interactions']}件。\n" + patron_progress(core) + '\n' + bond_progress(core))
         self._attention = None
         if self.session.pending:

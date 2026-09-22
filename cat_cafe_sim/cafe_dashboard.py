@@ -75,7 +75,8 @@ def build(app):
     app.seat_choice = tk.StringVar(value=next(iter(app.session.free_seats), ''))
     for col, label in enumerate(('お客さん', '担当する猫', '席')):
         ttk.Label(app.controls, text=label).grid(row=0, column=col, sticky='w')
-    app.queue = ttk.Combobox(app.controls, textvariable=app.customer, state='readonly', width=14)
+    app.customer_display = tk.StringVar()
+    app.queue = ttk.Combobox(app.controls, textvariable=app.customer_display, state='readonly', width=14)
     app.cat_selector = ttk.Combobox(app.controls, textvariable=app.cat_choice, state='readonly', width=20)
     app.seat_selector = ttk.Combobox(app.controls, textvariable=app.seat_choice, state='readonly', width=9)
     for col, widget in enumerate((app.queue, app.cat_selector, app.seat_selector)):
@@ -112,7 +113,7 @@ def build(app):
     app.seat_details.grid(row=3, column=0, sticky='ew', pady=(6,0))
     app.roster.bind('<Double-1>', lambda event: app.show_cat_details())
     app.cat_selector.bind('<<ComboboxSelected>>', lambda event: app.refresh())
-    app.queue.bind('<<ComboboxSelected>>', lambda event: app.refresh())
+    app.queue.bind('<<ComboboxSelected>>', lambda event: app.select_customer())
 
     def card(parent, column, title, hint, actions):
         parent.columnconfigure(column, weight=1, uniform='cards')
@@ -127,7 +128,11 @@ def build(app):
         return box
 
     app.preparation_summary = tk.StringVar()
-    ttk.Label(app.preparation_page, textvariable=app.preparation_summary, wraplength=760).grid(row=0,column=0,columnspan=2,sticky='w')
+    preparation_header = ttk.Frame(app.preparation_page)
+    preparation_header.grid(row=0,column=0,columnspan=2,sticky='ew')
+    ttk.Label(preparation_header, textvariable=app.preparation_summary, wraplength=440).pack(side='left')
+    app.customers_button = ttk.Button(preparation_header, text='お客さんの名簿・来店予定…', command=app.show_customers)
+    app.customers_button.pack(side='right')
     card(app.preparation_page, 0, '猫の準備', '猫の体調を確認して、その日の担当を決めます。', (
         ('shift_button','出勤・休養を決める…',app.show_shifts),
         ('recruitment_button','保護猫を迎える…',app.show_recruitment),
@@ -137,7 +142,6 @@ def build(app):
         ('expansion_button','席を増やす…',app.show_expansion),
         ('equipment_button','休養スペースを購入する…',app.show_equipment),
     ))
-    ttk.Label(app.preparation_page, text='準備ができたら上の「営業を開始・再開」へ。\n全員を休ませる日は「今日は休業する」を選べます。',wraplength=760).grid(row=2,column=0,columnspan=2,sticky='w')
 
     app.results_summary = tk.StringVar()
     ttk.Label(app.results_page, textvariable=app.results_summary, wraplength=760).grid(row=0,column=0,columnspan=2,sticky='w')
