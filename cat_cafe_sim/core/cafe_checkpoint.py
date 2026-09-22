@@ -174,6 +174,9 @@ def restore(data):
         core.health_results=copy.deepcopy(health['results'])
         if not core.shift_rules or set(core.initial_health)!=set(core.cats):
             raise ValueError('invalid health state')
+    from .cafe_equipment import validate as validate_equipment, expenses as equipment_expenses
+    if 'rest_space' in state:
+        core.rest_space = validate_equipment(core, state['rest_space'])
     if 'traits' in state:
         from .cafe_traits import validate as validate_traits
         core.traits = validate_traits(core,state['traits'])
@@ -271,7 +274,7 @@ def restore(data):
     from .cafe_management import money_adjustment
     expected_funds += money_adjustment(core)
     from .cafe_recruitment import expenses
-    expected_funds -= expenses(core) + expansion_expenses(core)
+    expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core)
     if not math.isclose(core.funds,expected_funds,rel_tol=1e-12,abs_tol=1e-8):
         raise ValueError('会計の合計と所持金が一致しません。')
     core.recorded_digest=record_digest(core)

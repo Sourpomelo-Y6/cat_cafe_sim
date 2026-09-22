@@ -60,7 +60,8 @@ def effect(core, cat_id, field):
 def fatigue_change(core, cat_id, working, service_ticks):
     if working:
         return service_ticks * core.shift_rules.fatigue_per_service_tick * effect(core, cat_id, 'service_fatigue')
-    return -core.shift_rules.rest_day_recovery * effect(core, cat_id, 'rest_fatigue')
+    from .cafe_equipment import bonus
+    return -(core.shift_rules.rest_day_recovery * effect(core, cat_id, 'rest_fatigue') + bonus(core, cat_id))
 
 
 def dispatch_terms(core, cat_id, base_reward):

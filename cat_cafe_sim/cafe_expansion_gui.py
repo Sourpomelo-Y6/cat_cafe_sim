@@ -9,7 +9,7 @@ class CafeExpansionWindow:
         self.session, self.on_changed = session, on_changed
         self.selected = rules()
         self.window = tk.Toplevel(parent)
-        self.window.title('店の増設')
+        self.window.title('店の増設・設備')
         self.window.geometry('540x320')
         self.window.minsize(500, 300)
         self.window.transient(parent)
@@ -20,6 +20,8 @@ class CafeExpansionWindow:
         footer.pack(side='bottom', fill='x')
         self.purchase_button = ttk.Button(footer, text='3席に増設する', command=self.purchase)
         self.purchase_button.pack(side='left')
+        self.equipment_button = ttk.Button(footer, text='休養設備…', command=self.show_equipment)
+        self.equipment_button.pack(side='left', padx=6)
         self.close_button = ttk.Button(footer, text='閉じる', command=self.window.destroy)
         self.close_button.pack(side='right')
         self.status, self.details, self.notice = tk.StringVar(), tk.StringVar(), tk.StringVar()
@@ -39,6 +41,14 @@ class CafeExpansionWindow:
         problem = '先に接客結果の保存を再試行してください。' if self.session.pending else reason(core, self.selected)
         self.notice.set(problem or '増設した席は今日から使用できます。来客数・猫の出勤予定はそのままです。')
         self.purchase_button.state(['disabled'] if problem else ['!disabled'])
+
+    def show_equipment(self):
+        from .cafe_equipment_gui import CafeEquipmentWindow
+        self.equipment_window = CafeEquipmentWindow(self.window, self.session, self.changed)
+
+    def changed(self):
+        self.on_changed()
+        self.refresh()
 
     def purchase(self):
         from tkinter import messagebox

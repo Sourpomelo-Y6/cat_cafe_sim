@@ -654,6 +654,59 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertIn('disabled',window.receive_button.state())
         window.close_button.invoke();activity.close_button.invoke()
 
+    def test_rest_space_purchase_forecast_and_history(self):
+        from dataclasses import asdict, replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.multi_seat_cafe import MultiSeatCafeCore
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.core.cafe_health import HealthRules
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+        keys = list(self.session.core.cats)
+        core = MultiSeatCafeCore(replace(Config.load(), initial_funds=1000, opening_ticks=2, arrival_ticks=(0,0)), cat_ids=keys, compact=True)
+        core.set_shifts(keys, dict(max_fatigue=100, fatigue_per_service_tick=40, rest_day_recovery=20))
+        core.enable_health(asdict(HealthRules(max_probability=0)))
+        self.app.session = CafeInteractionSession(core=core, store=self.store, interaction_config=replace(RelationshipConfig(), ticks=1))
+        while not core.closed:
+            self.app.session.automatic_step()
+        self.app.session.next_day()
+        key = next(k for k in keys if core.cats[k].fatigue == 40)
+        self.app.logged = 0
+        self.app.refresh()
+        funds = core.funds
+        self.app.expansion_button.invoke()
+        expansion = self.app.expansion_window
+        expansion.equipment_button.invoke()
+        window = expansion.equipment_window
+        self.assertIn('疲労回復＋10', window.details.get())
+        with patch('tkinter.messagebox.askyesno', return_value=False):
+            window.purchase_button.invoke()
+        self.assertIsNone(core.rest_space)
+        with patch('tkinter.messagebox.askyesno', return_value=True):
+            window.purchase_button.invoke()
+        self.assertEqual(core.funds, funds-400)
+        self.assertEqual(core.cats[key].fatigue, 40)
+        self.assertIn('disabled', window.purchase_button.state())
+        self.assertIn('設置済み', window.status.get())
+        self.root.deiconify()
+        window.window.geometry('500x340')
+        self.root.update()
+        self.assertTrue(window.purchase_button.winfo_ismapped())
+        self.assertLessEqual(window.close_button.winfo_rooty()+window.close_button.winfo_height(), window.window.winfo_rooty()+window.window.winfo_height())
+        window.close_button.invoke()
+        expansion.close_button.invoke()
+        self.app.shift_button.invoke()
+        shifts = self.app.shift_window
+        self.assertEqual(shifts.forecasts[key]['rest']['fatigue'], 10)
+        shifts.window.destroy()
+        self.app.session.day_off()
+        self.assertEqual(core.cats[key].fatigue, 10)
+        self.app.refresh()
+        self.app.history_button.invoke()
+        history = self.app.history_window
+        row = history.days.get_children()[-1]
+        self.assertEqual(history.days.set(row, '設備費用'), '400')
+        history.window.destroy()
+
     def test_expansion_confirmation_three_seats_layout_and_history(self):
         from dataclasses import replace
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession

@@ -103,6 +103,8 @@ class ManualCafeInteractionWindow:
                 text=f"{name}：{health_result_text(event)}"
             elif kind=='traits_initialized':
                 text='初期猫の特性を設定'
+            elif kind=='rest_space_purchased':
+                text=f"休養スペースを設置 · 費用 {event['cost']:g} · 休養時の疲労回復＋{event['recovery_bonus']:g}"
             elif kind=='seats_expanded':
                 text=f"{event['seat_count']}席に増設 · 費用 {event['cost']:g}"
             elif kind=='preferences_initialized':
@@ -248,7 +250,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.goal_button.pack(side='left',padx=4)
         roster_frame = ttk.Frame(automation)
         roster_frame.pack(fill='x',pady=4)
-        self.expansion_button = ttk.Button(roster_frame, text='店の増設…', command=self.show_expansion)
+        self.expansion_button = ttk.Button(roster_frame, text='店の増設・設備…', command=self.show_expansion)
         self.expansion_button.pack(side='right', padx=4)
         self.compatibility_button = ttk.Button(roster_frame, text='お客との相性…', command=self.show_compatibility)
         self.compatibility_button.pack(side='right', padx=4)

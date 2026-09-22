@@ -34,6 +34,7 @@ class CafeInteractionCore(SimulationCore):
         self.goal = None
         self.patron = None
         self.expansion = None
+        self.rest_space = None
         self.traits = None
         self.cat_features = None
         self.customer_preferences = None
@@ -64,6 +65,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'player_bond': copy.deepcopy(self.player_bond)} if self.player_bond is not None else {}),
                 **({'cat_features': copy.deepcopy(self.cat_features)} if self.cat_features is not None else {}),
                 **({'customer_preferences': copy.deepcopy(self.customer_preferences)} if self.customer_preferences is not None else {}),
+                **({'rest_space': copy.deepcopy(self.rest_space)} if self.rest_space is not None else {}),
                 **({'expansion': copy.deepcopy(self.expansion)} if self.expansion is not None else {}),
                 **({'traits': copy.deepcopy(self.traits)} if self.traits is not None else {}),
                 **({'patron': copy.deepcopy(self.patron)} if self.patron is not None else {}),
@@ -94,6 +96,10 @@ class CafeInteractionCore(SimulationCore):
     def require_running(self):
         from .cafe_management import require_running
         require_running(self)
+
+    def purchase_rest_space(self, rules=None):
+        from .cafe_equipment import purchase
+        purchase(self, rules)
 
     def expand_seats(self, rules=None):
         from .cafe_expansion import purchase
@@ -444,6 +450,7 @@ class CafeInteractionCore(SimulationCore):
     def summary(self):
         from .cafe_recruitment import expenses
         from .cafe_expansion import expenses as expansion_expenses
+        from .cafe_equipment import expenses as equipment_expenses
         from .cafe_activities import reward
         visits = list(self.visits.values())
         return dict(ticks=self.tick, closed=self.closed, arrivals=len(visits),
@@ -452,6 +459,7 @@ class CafeInteractionCore(SimulationCore):
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
                     **({'goal_status': self.goal['status'], 'popularity_gain': next((r['gain'] for r in self.goal['days'] if r['day']==self.day),0)} if self.goal else {}),
+                    **({'equipment_expenses': equipment_expenses(self, self.day)} if self.rest_space is not None else {}),
                     **({'expansion_expenses': expansion_expenses(self, self.day)} if self.expansion is not None else {}),
                     **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),

@@ -148,6 +148,10 @@ class CafeInteractionSession:
         self.profiles = profiles
         self.checkpoint_baseline = baseline
 
+    def purchase_rest_space(self, rules=None):
+        self._ready()
+        self.core.purchase_rest_space(rules)
+
     def expand_seats(self, rules=None):
         self._ready()
         self.core.expand_seats(rules)
