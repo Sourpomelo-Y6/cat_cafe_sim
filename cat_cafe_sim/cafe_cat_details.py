@@ -40,6 +40,9 @@ def cat_details(session, cat_id):
     basic += [('ストレス', f"{core.management['stress'][cat_id]:g} / 100" if core.management else 'ルール未導入')]
     if core.recruitment and cat_id in core.recruitment['accepted']:
         basic += [('加入経路', '保護猫の受け入れ'), ('加入日', f"{core.recruitment['accepted'][cat_id]}日目")]
+    request = core.intake_request
+    if request and request['status']=='accepted' and request['rules']['cat_id']==cat_id:
+        basic += [('加入経路', '保護猫の受け入れ依頼'), ('加入日', f"{request['resolved_day']}日目")]
     if core.adoption:
         adopted = next((event for event in core.adoption['events'].values()
                         if event['cat_id']==cat_id and event['choice']=='accept'), None)
@@ -75,7 +78,8 @@ def cat_details(session, cat_id):
                         ACTIVITY_LABELS[row['activity']] if row.get('activity','cafe')!='cafe' else {'work':'出勤','rest':'休養'}.get(row.get('shift'), MISSING),
                         number(row.get('interactions')), number(row.get('service_ticks')), number(row.get('spent')),
                         fatigue, health_result_text(row['health']) if row.get('health') else MISSING, number(delta)))
-    return dict(basic=basic, relationships=relationships, history=history,
+    from .cafe_cat_events import cat_events
+    return dict(basic=basic, relationships=relationships, history=history, events=cat_events(core, cat_id),
                 pending=bool(session.pending))
 
 
@@ -117,16 +121,35 @@ class CafeCatDetailsWindow:
             ('relationships', 'お客との親しみ', ('お客ID','確定済み親しみ','段階','交流経験'),
              '関係データに保存済みの値です。交流中・未保存の変化は含みません。'),
             ('history', '日次実績', ('日目','営業区分','予定','接客件数','接客行動数','体力消耗','疲労変化','体調変化','親しみ増減合計'),
-             '閉店済みの日次実績です。個々の行動履歴ではありません。体力消耗は回復を差し引いた値です。')):
+             '閉店済みの日次実績です。個々の行動履歴ではありません。体力消耗は回復を差し引いた値です。'),
+            ('events', 'できごと', ('日目','できごと','相手・場所','結果'),
+             '保存済みの出来事を日付順に表示します。同日の行順は発生順を示しません。記録のない過去は補いません。')):
             tab = ttk.Frame(notebook, padding=4)
             notebook.add(tab, text=title)
             ttk.Label(tab, text=note, wraplength=440).pack(anchor='w')
+            if key == 'events':
+                from tkinter.scrolledtext import ScrolledText
+                self.event_detail = ScrolledText(tab, height=3, wrap='word', state='disabled')
+                self.event_detail.pack(side='bottom', fill='x', pady=(4, 0))
             self.tables[key] = CafeHistoryWindow.table(tab, columns)
+        for column, width in (('日目', 60), ('できごと', 170), ('相手・場所', 180), ('結果', 470)):
+            self.tables['events'].column(column, width=width, stretch=False)
         self.tables['basic'].column('項目', width=220)
         self.tables['basic'].column('値', width=400)
+        self.tables['events'].bind('<<TreeviewSelect>>', lambda event: self.show_event_detail())
         self.selector.bind('<<ComboboxSelected>>', lambda event:self.refresh())
         self.window.bind('<Escape>', lambda event:self.window.destroy())
         self.refresh()
+
+    def show_event_detail(self):
+        tree = self.tables['events']
+        selected = tree.selection()
+        values = tree.item(selected[0], 'values') if selected else ()
+        text = f"{values[0]}日目 · {values[1]} · {values[2]}\n{values[3]}" if len(values) == 4 else '記録なし'
+        self.event_detail.configure(state='normal')
+        self.event_detail.delete('1.0', 'end')
+        self.event_detail.insert('1.0', text)
+        self.event_detail.configure(state='disabled')
 
     def play(self):
         from tkinter import messagebox
@@ -163,6 +186,7 @@ class CafeCatDetailsWindow:
         except (ValueError, OSError) as exc:
             for tree in self.tables.values():
                 tree.delete(*tree.get_children())
+            self.show_event_detail()
             self.notice.set('情報を読み込めません。営業画面で保存状態を確認してください。')
             messagebox.showerror('猫の情報を表示できません', str(exc), parent=self.window)
             return
@@ -174,3 +198,5 @@ class CafeCatDetailsWindow:
                 tree.insert('', 'end', values=row)
             if not data[key]:
                 tree.insert('', 'end', values=('記録なし',))
+        self.tables['events'].selection_set(self.tables['events'].get_children()[0])
+        self.show_event_detail()

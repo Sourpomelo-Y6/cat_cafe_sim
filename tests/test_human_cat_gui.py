@@ -1591,6 +1591,32 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertEqual(self.app.session.core.day,2)
         self.assertEqual(self.app.session.core.day_results[-1]['day_type'],'day_off')
 
+    def test_cat_event_tab_selection_detail_and_readonly(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.cafe_traits import definitions
+        s = CafeInteractionSession(store=self.store)
+        key = next(iter(s.core.cats))
+        s.core.initialize_traits({key:definitions()['outgoing']});s.enable_management()
+        s.dispatch(key);s.day_off();s.resolve_activity(f'dispatch-1-{key}');s.use_item(f'dispatch-1-{key}',key)
+        app = self.app
+        app.replace_game(s);app.roster.selection_set(key);app.show_cat_details()
+        window = app.cat_details_window
+        self.root.deiconify();window.window.geometry('500x400')
+        window.notebook.select(3);self.root.update()
+        before, saved = s.core.log(), self.store.path.read_bytes()
+        tree = window.tables['events']
+        self.assertEqual(len(tree.get_children()), 4)
+        tree.selection_set(tree.get_children()[-1]);self.root.update()
+        self.assertIn('ストレス 10 → 0',window.event_detail.get('1.0','end'))
+        self.assertEqual(window.event_detail.cget('state'),'disabled')
+        self.assertGreater(tree.winfo_height(),40)
+        self.assertTrue(window.close_button.winfo_ismapped())
+        window.selector.current(1);window.refresh();self.root.update()
+        self.assertEqual(tree.item(tree.get_children()[0],'values'),('記録なし',))
+        self.assertIn('記録なし',window.event_detail.get('1.0','end'))
+        self.assertEqual(s.core.log(),before)
+        self.assertEqual(self.store.path.read_bytes(),saved)
+
     def test_cat_details_selection_pause_switch_and_small_layout(self):
         ids=list(self.session.core.cats)
         self.app.roster.selection_set(ids[1])
@@ -1606,7 +1632,7 @@ class CafeSaveWindowTests(unittest.TestCase):
         values=[dialog.tables['basic'].item(key,'values') for key in dialog.tables['basic'].get_children()]
         self.assertIn(('猫ID',ids[0]),values)
         self.root.deiconify();dialog.window.geometry('500x400');self.root.update()
-        for index,key in enumerate(('basic','relationships','history')):
+        for index,key in enumerate(('basic','relationships','history','events')):
             dialog.notebook.select(index);self.root.update()
             self.assertGreater(dialog.tables[key].winfo_height(),40)
         self.assertLess(dialog.close_button.winfo_rooty()+dialog.close_button.winfo_height(),
