@@ -1024,6 +1024,43 @@ class CafeSaveWindowTests(unittest.TestCase):
         window.close_button.invoke()
         activity.close_button.invoke()
 
+    def test_popularity_stages_choice_history_and_small_layout(self):
+        from dataclasses import replace
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.config import Config
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+        from cat_cafe_sim.core.cafe_goal import rules, current_start
+        s = CafeInteractionSession(store=self.store,
+            cafe_config=replace(Config.load(), opening_ticks=2, arrival_ticks=(0,)),
+            interaction_config=replace(RelationshipConfig(), ticks=1))
+        s.enable_management()
+        s.enable_goal(dict(rules(), target=105, stages=[dict(target=110, days=2), dict(target=115, days=2)]))
+        while not s.core.closed:
+            s.automatic_step()
+        app = self.app
+        app.replace_game(s)
+        self.root.deiconify()
+        app.show_goal()
+        window = app.goal_window
+        window.window.geometry('500x400')
+        self.root.update()
+        self.assertEqual(len(window.history.get_children()), 3)
+        self.assertIn('第1/3段階', window.status.get())
+        for button in (window.continue_button, window.next_button):
+            self.assertTrue(button.winfo_ismapped())
+            self.assertFalse(button.instate(['disabled']))
+            self.assertLessEqual(button.winfo_rootx()+button.winfo_width(), window.window.winfo_rootx()+window.window.winfo_width())
+        with patch('tkinter.messagebox.askyesno', return_value=False):
+            window.next_button.invoke()
+        self.assertEqual(len(s.core.goal['history']), 0)
+        with patch('tkinter.messagebox.askyesno', return_value=True):
+            window.next_button.invoke()
+        self.assertEqual(current_start(s.core.goal), 2)
+        self.assertIn('第2/3段階', window.status.get())
+        self.assertIn('3日目まで', window.status.get())
+        self.assertIn('達成', window.history.item(window.history.get_children()[0], 'values')[-1])
+        self.assertTrue(window.next_button.instate(['disabled']))
+
     def test_items_inventory_use_history_and_small_layout(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         from cat_cafe_sim.core.cafe_traits import definitions

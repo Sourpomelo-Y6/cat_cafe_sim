@@ -140,6 +140,8 @@ class ManualCafeInteractionWindow:
                 text=f"接客による人気 ＋{event['gain']:g}（対象{event['qualified']}件）"
             elif kind=='goal_result':
                 text='人気目標クリア' if event['status']=='cleared' else '人気目標は期限内未達'
+            elif kind=='goal_advanced':
+                text=f"人気目標 第{event['stage']}段階：人気{event['target']:g} · {event['started_day']}日目から挑戦"
             elif kind=='goal_continued':
                 text='目標結果を確認し、継続営業を選択'
             elif kind=='management_enabled':

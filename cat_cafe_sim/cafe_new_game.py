@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .core.cafe_management import rules
 from .core.config import Config
-from .core.cafe_goal import rules as goal_rules
+from .core.cafe_goal import progression_rules as goal_rules
 from .core.human_cat_types import load_presets
 from .storage.relationships import RelationshipStore
 from .storage.cafe_saves import save_game

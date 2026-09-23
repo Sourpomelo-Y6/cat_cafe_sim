@@ -218,7 +218,17 @@ class CafeInteractionSession:
 
     def enable_goal(self, rules=None):
         self._ready()
+        if rules is None:
+            from .core.cafe_goal import progression_rules
+            rules = progression_rules()
         self.core.enable_goal(rules)
+
+    def advance_goal(self):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に交流結果の保存を再試行してください。')
+        self.core.advance_goal()
 
     def continue_goal(self):
         from .storage.cafe_saves import check_link

@@ -19,6 +19,7 @@ def apply_operation(core, operation):
     elif kind=='enable_patron':core.enable_patron(operation['rules'])
     elif kind=='continue_patron':core.continue_patron()
     elif kind=='enable_goal':core.enable_goal(operation['rules'])
+    elif kind=='advance_goal':core.advance_goal()
     elif kind=='continue_goal':core.continue_goal()
     elif kind=='initialize_intake_request':core.initialize_intake_request(operation['rules'])
     elif kind=='resolve_intake_request':core.resolve_intake_request(operation['choice'])

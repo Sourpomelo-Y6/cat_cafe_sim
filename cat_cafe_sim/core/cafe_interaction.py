@@ -151,6 +151,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_goal import enable
         enable(self, rules)
 
+    def advance_goal(self):
+        from .cafe_goal import advance
+        advance(self)
+
     def continue_goal(self):
         from .cafe_goal import continue_game
         continue_game(self)
@@ -519,6 +523,7 @@ class CafeInteractionCore(SimulationCore):
         self._record(dict(kind='finish'))
 
     def summary(self):
+        from .cafe_goal import summary_status
         from .cafe_recruitment import expenses
         from .cafe_expansion import expenses as expansion_expenses
         from .cafe_equipment import expenses as equipment_expenses
@@ -531,7 +536,7 @@ class CafeInteractionCore(SimulationCore):
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
                     **({'seat_equipment_expenses': seat_expenses(self, self.day)} if self.equipment_store is not None else {}),
-                    **({'goal_status': self.goal['status'], 'popularity_gain': next((r['gain'] for r in self.goal['days'] if r['day']==self.day),0)} if self.goal else {}),
+                    **({'goal_status': summary_status(self.goal, self.day), 'popularity_gain': next((r['gain'] for r in self.goal['days'] if r['day']==self.day),0)} if self.goal else {}),
                     **({'equipment_expenses': equipment_expenses(self, self.day)} if self.rest_space is not None else {}),
                     **({'expansion_expenses': expansion_expenses(self, self.day)} if self.expansion is not None else {}),
                     **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
