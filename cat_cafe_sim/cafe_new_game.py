@@ -13,7 +13,10 @@ from .storage.relationships import RelationshipStore
 from .storage.cafe_saves import save_game
 
 
-def starting_conditions():
+def starting_conditions(mode="popularity"):
+    from .core.cafe_objective import MODES
+    if mode not in MODES:
+        raise ValueError("目標を選んでください。")
     data = json.loads((Path(__file__).resolve().parents[1] / 'config/cafe_new_game.json').read_text(encoding='utf-8'))
     if data['seat_count'] not in (1, 2) or not data['cats']:
         raise ValueError('新規ゲームの席・猫の設定が不正です。')
@@ -33,7 +36,9 @@ def starting_conditions():
             initial_traits[row['cat_id']] = traits[row['trait']]
     from .core.cafe_weekdays import rules as weekday_rules
     from .core.cafe_intake_request import rules as intake_rules
-    return dict(intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
+    from .core.cafe_patron import rules as patron_rules
+    from .core.cafe_bond_goal import rules as bond_rules
+    return dict(objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
 
 
 def create_game(directory='saves/games', conditions=None):
@@ -54,9 +59,25 @@ def create_game(directory='saves/games', conditions=None):
         if 'preferences' in selected:
             session.core.initialize_preferences(selected.get('features', {}), selected['preferences'])
         session.enable_management(selected['management'])
-        session.enable_goal(selected.get('goal'))
+        mode = selected.get('objective', 'popularity')
+        from .core.cafe_objective import MODES
+        if mode not in MODES:
+            raise ValueError('目標を選んでください。')
+        if mode == 'popularity':
+            session.enable_goal(selected.get('goal'))
+        else:
+            from .core.cafe_goal import rules as popularity_rules
+            growth = dict(selected.get('goal') or popularity_rules())
+            growth.pop('stages', None)
+            session.core.enable_goal(growth, tracking_only=True)
+            if mode == 'patron':
+                session.enable_patron(selected['patron'])
+            elif mode == 'bond':
+                session.enable_bond_goal(selected['bond'])
         if 'intake_request' in selected:
             session.core.initialize_intake_request(selected['intake_request'])
+        if 'objective' in selected:
+            session.core.initialize_objective(mode)
         save_game(session, location / 'cafe.json', auto_assign=False)
     except Exception:
         # Only this call's newly allocated directory belongs to the failed creation.

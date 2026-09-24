@@ -94,17 +94,21 @@ def pending(core):
     return bool(core.goal and core.goal['status'] != 'active' and not core.goal['continued'] and not is_over(core))
 
 
-def enable(core, selected=None):
+def enable(core, selected=None, *, tracking_only=False):
     core.require_events_resolved()
     if not core.compact or not core.can_set_shifts or not core.management or core.goal:
         raise ValueError('経営ルールが有効な準備中に一度だけ目標を開始できます。')
     selected = rules(selected)
+    if type(tracking_only) is not bool or (tracking_only and 'stages' in selected):
+        raise ValueError('人気の集計設定が不正です。')
     core.goal = dict(rules=selected, started_day=core.day, days=[], status='active', resolved_day=None, continued=False)
+    if tracking_only:
+        core.goal['tracking_only'] = True
     if 'stages' in selected:
         core.goal.update(history=[], stage_started_day=core.day)
     core._tick_events=[]
-    core._emit('goal_enabled')
-    core._record(dict(kind='enable_goal', rules=selected))
+    core._emit('goal_enabled', **({'tracking_only':True} if tracking_only else {}))
+    core._record(dict(kind='enable_goal', rules=selected, **({'tracking_only':True} if tracking_only else {})))
 
 
 def earn(core):
@@ -122,7 +126,7 @@ def earn(core):
 def settle(core):
     from .cafe_management import is_over
     data=core.goal
-    if not data or data['status']!='active' or is_over(core):
+    if not data or data.get('tracking_only') or data['status']!='active' or is_over(core):
         return
     selected = current_rules(data)
     if core.day < current_start(data):
@@ -148,9 +152,11 @@ def continue_game(core):
 
 
 def validate(core, data, management):
-    if not isinstance(data,dict) or set(data) not in ({'rules','started_day','days','status','resolved_day','continued'}, {'rules','started_day','days','status','resolved_day','continued','history','stage_started_day'}):
+    if not isinstance(data,dict) or set(data) not in ({'rules','started_day','days','status','resolved_day','continued'}, {'rules','started_day','days','status','resolved_day','continued','history','stage_started_day'}, {'rules','started_day','days','status','resolved_day','continued','tracking_only'}):
         raise ValueError('目標の状態が不正です。')
     rule=rules(data['rules'])
+    if 'tracking_only' in data and (data['tracking_only'] is not True or 'stages' in rule):
+        raise ValueError('人気集計のみの状態が不正です。')
     if data['status'] not in ('active','cleared','expired') or (data['resolved_day'] is not None and type(data['resolved_day']) is not int):
         raise ValueError('目標結果の種類・日付が不正です。')
     start=data['started_day']
@@ -211,7 +217,7 @@ def validate(core, data, management):
         last = attempts[index+1]['started_day']-1 if index+1 < len(attempts) else end
         for day in range(attempt['started_day'], last+1):
             ended = management['game_over'] and management['game_over']['reason']=='popularity' and management['game_over']['day']==day
-            if status == 'active' and not ended:
+            if status == 'active' and not ended and not data.get('tracking_only'):
                 status = 'cleared' if daily_popularity[day] >= selected['target'] else 'expired' if day >= attempt['started_day']+selected['days']-1 else 'active'
                 if status != 'active':
                     resolved = day

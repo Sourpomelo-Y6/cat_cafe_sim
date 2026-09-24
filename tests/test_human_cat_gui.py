@@ -1811,6 +1811,32 @@ class CafeStartWindowTests(unittest.TestCase):
         self.start = CafeStartWindow(self.root, self.directory)
         self.addCleanup(lambda: self.start.app.stop() if hasattr(self.start, 'app') else None)
 
+    def test_new_game_objective_selection_description_and_resume(self):
+        from cat_cafe_sim.core.cafe_objective import MODES
+        from cat_cafe_sim.storage.cafe_saves import load_game
+        self.start.new_button.invoke()
+        window=self.start.new_window
+        self.root.deiconify();window.window.geometry('500x460');self.root.update()
+        for index,mode in enumerate(MODES):
+            window.objective_choice.current(index);window.select_objective();self.root.update()
+            self.assertEqual(window.conditions['objective'],mode)
+            self.assertTrue(window.objective_description.get())
+            self.assertFalse(self.directory.exists())
+            self.assertTrue(window.start_button.winfo_ismapped())
+            self.assertLessEqual(window.start_button.winfo_rooty()+window.start_button.winfo_height(),window.window.winfo_rooty()+window.window.winfo_height())
+        window.objective_choice.current(2);window.start_button.invoke()
+        app=self.start.app
+        self.assertEqual(app.session.core.objective,'bond')
+        self.assertIn('好感度目標',app.objective_progress.get())
+        self.root.geometry('860x660');self.root.update()
+        self.assertGreaterEqual(app.history.winfo_height(),120)
+        loaded,_=load_game(app.session.checkpoint_path)
+        self.assertEqual(loaded.core.objective,'bond')
+        app.show_goal()
+        self.assertIn('期限付き目標なし',app.goal_window.status.get())
+        self.assertEqual(app.goal_window.history.get_children(),())
+        self.assertTrue(app.goal_window.enable_button.instate(['disabled']))
+
     def test_cancel_create_and_restart_failure_then_success(self):
         from cat_cafe_sim.storage.cafe_saves import load_game
         self.start.new_button.invoke()

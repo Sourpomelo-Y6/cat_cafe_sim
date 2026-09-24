@@ -134,8 +134,13 @@ class ManualCafeInteractionWindow:
                 text='有力者の満足度目標クリア'
             elif kind=='patron_continued':
                 text='有力者目標の結果を確認し、継続営業を選択'
+            elif kind=='objective_selected':
+                from .core.cafe_objective import MODES
+                text='開始時の目標：'+MODES[event['mode']]
+            elif kind=='intake_request_initialized':
+                text='保護猫の受け入れ依頼の予定を設定'
             elif kind=='goal_enabled':
-                text='人気目標への挑戦を開始'
+                text='接客による人気の集計を開始（期限付き目標なし）' if event.get('tracking_only') else '人気目標への挑戦を開始'
             elif kind=='popularity_earned':
                 text=f"接客による人気 ＋{event['gain']:g}（対象{event['qualified']}件）"
             elif kind=='goal_result':
@@ -399,7 +404,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         ended=is_over(core)
         self.new_game_button.configure(text='結果・再開始…' if ended else '新規ゲーム…')
         from .core.cafe_goal import pending as goal_pending
-        from .cafe_goal_gui import progress
+        from .cafe_objective import progress
         self.instructions.configure(text=progress(core))
         from .core.cafe_patron import pending as patron_pending
         from .core.cafe_bond_goal import pending as bond_pending
@@ -487,6 +492,11 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         phase = '営業終了' if is_over(core) else '閉店' if core.closed else '営業準備' if core.can_set_shifts else '営業中' if self.running else '営業・一時停止'
         from .core.cafe_weekdays import day_label
         self.phase.set(f'{day_label(core)}　{phase}')
+        if core.objective is not None:
+            from .cafe_objective import progress
+            self.objective_progress.set(progress(core))
+        else:
+            self.objective_progress.set('猫の状態')
         seats = len(core.seats) if hasattr(core, 'seats') else 1
         self.status.set(f"資金 {core.funds:g}　 /　{seats}席　 /　猫 {len(core.cats)}匹" + (f"　 /　人気 {core.management['popularity']:g}" if core.management else ''))
         if core.closed:
@@ -501,6 +511,12 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         resting = sum(core.activity(key)=='cafe' and key not in core.working_cats for key in core.cats)
         self.preparation_summary.set(f'今日の予定：出勤 {working}匹 / 在店休養 {resting}匹')
         self.results_summary.set(f"今日の接客売上 {core.summary()['revenue']:g} / 終了した交流 {core.summary()['completed_interactions']}件。\n" + patron_progress(core) + '\n' + bond_progress(core))
+        if core.objective is not None:
+            from .cafe_objective import progress
+            self.results_summary.set(f"今日の接客売上 {core.summary()['revenue']:g} / 終了した交流 {core.summary()['completed_interactions']}件。\n" + progress(core))
+            self.goal_button.configure(text='人気目標・結果…' if not core.goal.get('tracking_only') else '人気の増減ルール…')
+        else:
+            self.goal_button.configure(text='人気目標・結果…')
         self._attention = None
         if self.session.pending:
             self.notice.set('交流結果の保存が完了していません。再試行してから営業を続けてください。')

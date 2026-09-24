@@ -246,6 +246,9 @@ def restore(data):
     from .cafe_bond_goal import validate as validate_bond, pending as bond_pending
     if 'bond_goal' in state:
         core.bond_goal = validate_bond(core, state['bond_goal'])
+    if 'objective' in state:
+        from .cafe_objective import validate as validate_objective
+        core.objective = validate_objective(core, state['objective'])
     from .cafe_player import active as player_active
     from .cafe_activities import waiting_events
     from .cafe_management import is_over

@@ -1,0 +1,31 @@
+"""開始画面の目標説明と、選んだ目標の進捗表示。"""
+from .core.cafe_objective import MODES
+
+
+def description(conditions, mode):
+    if mode == 'popularity':
+        rules = conditions['goal']
+        stages = [rules] + rules.get('stages', [])
+        return ' → '.join(f"人気{r['target']:g}（{r['days']}日間）" for r in stages) + '。段階ごとに次の挑戦か自由営業を選べます。'
+    if mode == 'patron':
+        rules = conditions['patron']
+        return f"{rules['name']}への派遣で満足度{rules['target']:g}を目指します。期限なし。帰還報酬の受取時に加算します。"
+    if mode == 'bond':
+        rules = conditions['bond']
+        return f"プレイヤーへの好感度{rules['affinity']:g}以上の在籍猫を同時に{rules['target']}匹。期限なし。猫を迎え、準備中の交流で親しくなります。"
+    if mode == 'free':
+        return '開始時のクリア目標・期限はありません。営業、猫との交流、派遣などを自由に続けられます。'
+    raise ValueError('目標を選んでください。')
+
+
+def progress(core):
+    if core.objective == 'patron':
+        from .core.cafe_patron import progress
+        return progress(core)
+    if core.objective == 'bond':
+        from .core.cafe_bond_goal import progress
+        return progress(core)
+    if core.objective == 'free':
+        return '自由営業 · クリア目標・期限なし'
+    from .cafe_goal_gui import progress
+    return progress(core)

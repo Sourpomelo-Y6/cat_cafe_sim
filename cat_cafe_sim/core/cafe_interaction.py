@@ -33,6 +33,7 @@ class CafeInteractionCore(SimulationCore):
         self.player_bond = None
         self.management = None
         self.goal = None
+        self.objective = None
         self.patron = None
         self.bond_goal = None
         self.expansion = None
@@ -78,6 +79,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'traits': copy.deepcopy(self.traits)} if self.traits is not None else {}),
                 **({'patron': copy.deepcopy(self.patron)} if self.patron is not None else {}),
                 **({'bond_goal': copy.deepcopy(self.bond_goal)} if self.bond_goal is not None else {}),
+                **({'objective': self.objective} if self.objective is not None else {}),
                 **({'goal': copy.deepcopy(self.goal)} if self.goal is not None else {}),
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
@@ -147,9 +149,13 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_patron import continue_game
         continue_game(self)
 
-    def enable_goal(self, rules=None):
+    def initialize_objective(self, mode):
+        from .cafe_objective import initialize
+        initialize(self, mode)
+
+    def enable_goal(self, rules=None, *, tracking_only=False):
         from .cafe_goal import enable
-        enable(self, rules)
+        enable(self, rules, tracking_only=tracking_only)
 
     def advance_goal(self):
         from .cafe_goal import advance
@@ -536,7 +542,7 @@ class CafeInteractionCore(SimulationCore):
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
                     **({'seat_equipment_expenses': seat_expenses(self, self.day)} if self.equipment_store is not None else {}),
-                    **({'goal_status': summary_status(self.goal, self.day), 'popularity_gain': next((r['gain'] for r in self.goal['days'] if r['day']==self.day),0)} if self.goal else {}),
+                    **({**({'goal_status': summary_status(self.goal, self.day)} if not self.goal.get('tracking_only') else {}), 'popularity_gain': next((r['gain'] for r in self.goal['days'] if r['day']==self.day),0)} if self.goal else {}),
                     **({'equipment_expenses': equipment_expenses(self, self.day)} if self.rest_space is not None else {}),
                     **({'expansion_expenses': expansion_expenses(self, self.day)} if self.expansion is not None else {}),
                     **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),

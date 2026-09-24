@@ -11,8 +11,8 @@ class NewGameWindow:
         self.conditions = starting_conditions()
         self.window = tk.Toplevel(parent)
         self.window.title('新しいゲーム')
-        self.window.geometry('580x460')
-        self.window.minsize(500, 430)
+        self.window.geometry('600x520')
+        self.window.minsize(500, 460)
         self.window.transient(parent)
         self.window.grab_set()
         frame = ttk.Frame(self.window, padding=16)
@@ -29,18 +29,40 @@ class NewGameWindow:
                 reason = '資金が0以下になりました' if previous.management['game_over']['reason'] == 'funds' else '人気が0になりました'
                 total = sum(row['summary']['revenue'] for row in previous.day_results) + previous.summary()['revenue']
                 ttk.Label(frame, text=f'ゲームオーバー：{reason}\n{previous.day}日目 / 資金 {previous.funds:g} / 人気 {previous.management["popularity"]:g}\n累計接客売上 {total:g}', wraplength=460).pack(anchor='w', pady=(0,12))
+        from .core.cafe_objective import MODES
+        pages = ttk.Notebook(frame)
+        pages.pack(fill='both', expand=True)
+        goal_page = ttk.Frame(pages, padding=12)
+        setup_page = ttk.Frame(pages, padding=12)
+        pages.add(goal_page, text='挑戦する目標')
+        pages.add(setup_page, text='初期条件')
+        ttk.Label(goal_page, text='今回の店で目指す目標を選んでください。', wraplength=430).pack(anchor='w', pady=8)
+        self.objective_ids = list(MODES)
+        self.objective_choice = ttk.Combobox(goal_page, state='readonly', values=list(MODES.values()))
+        self.objective_choice.pack(fill='x', pady=8)
+        self.objective_choice.current(0)
+        self.objective_description = tk.StringVar()
+        ttk.Label(goal_page, textvariable=self.objective_description, wraplength=430).pack(anchor='w', pady=12)
+        ttk.Label(goal_page, text='どの目標でも資金0以下・人気0でゲームオーバー。\n達成後は営業を続けられます。接客による人気の増加は全モード共通です。', wraplength=430).pack(anchor='w', pady=8)
         rule = self.conditions['management']
-        ttk.Label(frame, text=f"新しい店の初期条件\n資金 {rule['starting_funds']:g} / 人気 {rule['starting_popularity']:g} / {self.conditions['seat_count']}席", wraplength=460).pack(anchor='w')
-        goal=self.conditions['goal']
-        ttk.Label(frame,text=f"人気目標：{goal['days']}日以内に{goal['target']:g}（達成後も継続可能）",wraplength=460).pack(anchor='w')
+        ttk.Label(setup_page, text=f"資金 {rule['starting_funds']:g} / 人気 {rule['starting_popularity']:g} / {self.conditions['seat_count']}席", wraplength=430).pack(anchor='w', pady=8)
         names = '・'.join(row['name'] for row in self.conditions['profiles']['cats'].values())
-        ttk.Label(frame, text=f'所属猫：{names}\n全猫が健康・体力全回復で、出勤予定から開始します。', wraplength=460).pack(anchor='w', pady=8)
-        ttk.Label(frame, text='ストレス・家出・経営ルール：有効\n資金0以下または人気0でゲームオーバー。\n譲渡イベント：初期OFF（準備中に変更できます）。', wraplength=460).pack(anchor='w')
-        ttk.Label(frame, text='新しい店は1日目の準備から始まります。猫との関係や資金は引き継ぎません。以前のゲームは保存先を分けて残します。', wraplength=460).pack(anchor='w', pady=8)
+        ttk.Label(setup_page, text=f'所属猫：{names}\n全猫が健康・体力全回復で、出勤予定から開始します。', wraplength=430).pack(anchor='w', pady=8)
+        ttk.Label(setup_page, text='ストレス・家出・経営ルール：有効\n譲渡イベント：初期OFF（準備中に変更できます）。', wraplength=430).pack(anchor='w', pady=8)
+        ttk.Label(setup_page, text='新しい店は1日目の準備から始まります。猫との関係や資金は引き継ぎません。以前のゲームは保存先を分けて残します。', wraplength=430).pack(anchor='w', pady=8)
+        self.objective_choice.bind('<<ComboboxSelected>>', lambda event: self.select_objective())
+        self.select_objective()
         self.window.bind('<Escape>', lambda event: self.window.destroy())
+
+    def select_objective(self):
+        from .cafe_objective import description
+        mode = self.objective_ids[self.objective_choice.current()]
+        self.conditions["objective"] = mode
+        self.objective_description.set(description(self.conditions, mode))
 
     def start(self):
         from tkinter import messagebox
+        self.select_objective()
         if not self.before_start():
             return
         self.start_button.state(['disabled'])

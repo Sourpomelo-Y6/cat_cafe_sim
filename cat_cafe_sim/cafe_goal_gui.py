@@ -7,6 +7,8 @@ def progress(core):
     data=core.goal
     if not data:
         return '人気目標：未導入（準備中に「目標・結果…」から開始できます）'
+    if data.get('tracking_only'):
+        return f"人気 {core.management['popularity']:g} / 上限{data['rules']['cap']:g} · 期限付き目標なし"
     selected = current_rules(data)
     deadline=current_start(data)+selected['days']-1
     remaining=min(selected['days'], max(0,deadline-core.day+int(not core.closed)))
@@ -47,6 +49,15 @@ class CafeGoalWindow:
         core=self.session.core;data=core.goal
         selected=current_rules(data) if data else rules()
         base=data['rules'] if data else selected
+        if data and data.get('tracking_only'):
+            self.status.set(progress(core))
+            self.details.set(f"好感度につながる反応合計がプラスの接客1件につき人気＋{base['gain_per_success']:g}。上限{base['cap']:g}。家出による人気低下と、人気0のゲームオーバーは有効です。")
+            self.notice.set('開始時に選んだ目標では、人気の期限判定はありません。')
+            self.history.delete(*self.history.get_children())
+            for button in (self.enable_button,self.continue_button,self.next_button):
+                button.pack_forget()
+                button.state(['disabled'])
+            return
         self.status.set(progress(core))
         self.details.set(f"開始日を含む{selected['days']}日以内に人気{selected['target']:g}が目標です。\n好感度につながる反応合計がプラスの接客1件につき＋{base['gain_per_success']:g}。閉店時に加算（上限{base['cap']:g}）し、家出の減少を反映後に判定します。休業も日数に含みます。")
         self.history.delete(*self.history.get_children())
