@@ -136,6 +136,8 @@ def settle(core):
     if status!='active':
         data.update(status=status, resolved_day=core.day)
         core._emit('goal_result', status=status)
+        from .cafe_clear_results import capture
+        capture(core, 'popularity')
 
 
 def continue_game(core):

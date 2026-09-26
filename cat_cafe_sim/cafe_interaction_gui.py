@@ -311,12 +311,16 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.customers_window = CafeCustomersWindow(self.root, self.session)
 
     def show_bond_goal(self):
+        if 'bond' in (self.session.core.clear_results or {}):
+            return self.show_clear_results('bond')
         self.pages.select(self.results_page)
         from .cafe_bond_goal_gui import CafeBondGoalWindow
         self.stop(); self.refresh()
         self.bond_goal_window = CafeBondGoalWindow(self.root, self.session, self.refresh)
 
     def show_patron(self):
+        if 'patron' in (self.session.core.clear_results or {}):
+            return self.show_clear_results('patron')
         self.pages.select(self.results_page)
         from .cafe_patron_gui import CafePatronWindow
         self.stop(); self.refresh()
@@ -559,7 +563,15 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.attention_button.grid_remove()
         self.recruitment_button.state(['!disabled'] if (core.intake_request and core.intake_request['status']=='waiting') or core.recruitment is not None or (core.can_set_shifts and not self._attention) else ['disabled'])
 
+    def show_clear_results(self, mode=None):
+        from .cafe_clear_results_gui import CafeClearResultsWindow
+        self.pages.select(self.results_page)
+        self.stop(); self.refresh()
+        self.clear_results_window=CafeClearResultsWindow(self.root,self.session,self.refresh,self.new_game,mode)
+
     def show_goal(self):
+        if 'popularity' in (self.session.core.clear_results or {}):
+            return self.show_clear_results('popularity')
         self.pages.select(self.results_page)
         from .cafe_goal_gui import CafeGoalWindow
         self.stop();self.refresh()

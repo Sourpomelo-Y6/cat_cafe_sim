@@ -34,6 +34,7 @@ class CafeInteractionCore(SimulationCore):
         self.management = None
         self.goal = None
         self.objective = None
+        self.clear_results = None
         self.patron = None
         self.bond_goal = None
         self.expansion = None
@@ -79,6 +80,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'traits': copy.deepcopy(self.traits)} if self.traits is not None else {}),
                 **({'patron': copy.deepcopy(self.patron)} if self.patron is not None else {}),
                 **({'bond_goal': copy.deepcopy(self.bond_goal)} if self.bond_goal is not None else {}),
+                **({'clear_results': copy.deepcopy(self.clear_results)} if self.clear_results is not None else {}),
                 **({'objective': self.objective} if self.objective is not None else {}),
                 **({'goal': copy.deepcopy(self.goal)} if self.goal is not None else {}),
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
@@ -148,6 +150,10 @@ class CafeInteractionCore(SimulationCore):
     def continue_patron(self):
         from .cafe_patron import continue_game
         continue_game(self)
+
+    def initialize_clear_results(self):
+        from .cafe_clear_results import initialize
+        initialize(self)
 
     def initialize_objective(self, mode):
         from .cafe_objective import initialize

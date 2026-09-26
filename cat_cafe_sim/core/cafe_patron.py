@@ -52,6 +52,8 @@ def receive(core, event):
     if data['status'] == 'active' and data['satisfaction'] >= data['rules']['target'] and not is_over(core):
         data.update(status='cleared', resolved_day=core.day)
         core._emit('patron_cleared')
+        from .cafe_clear_results import capture
+        capture(core, 'patron')
 
 
 def continue_game(core):

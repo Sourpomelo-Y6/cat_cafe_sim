@@ -38,6 +38,8 @@ def evaluate(core):
     if len(cats) >= data['rules']['target']:
         data.update(status='cleared', resolved_day=core.day, achieved_cats=cats)
         core._emit('bond_goal_cleared', cat_ids=cats)
+        from .cafe_clear_results import capture
+        capture(core, 'bond')
 
 
 def enable(core, selected=None):

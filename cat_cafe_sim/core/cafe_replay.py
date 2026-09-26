@@ -19,6 +19,7 @@ def apply_operation(core, operation):
     elif kind=='enable_patron':core.enable_patron(operation['rules'])
     elif kind=='continue_patron':core.continue_patron()
     elif kind=='enable_goal':core.enable_goal(operation['rules'],tracking_only=operation.get('tracking_only',False))
+    elif kind=='initialize_clear_results':core.initialize_clear_results()
     elif kind=='initialize_objective':core.initialize_objective(operation['mode'])
     elif kind=='advance_goal':core.advance_goal()
     elif kind=='continue_goal':core.continue_goal()

@@ -1811,6 +1811,36 @@ class CafeStartWindowTests(unittest.TestCase):
         self.start = CafeStartWindow(self.root, self.directory)
         self.addCleanup(lambda: self.start.app.stop() if hasattr(self.start, 'app') else None)
 
+    def test_clear_results_continue_history_restart_and_small_layout(self):
+        from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
+        from cat_cafe_sim.cafe_clear_results_gui import CafeClearResultsWindow
+        selected=starting_conditions('bond');selected['bond']=dict(target=1,affinity=.5)
+        s=create_game(self.directory,selected)
+        s.play_with_player('cat-mugi');s.player_command('direct');s.player_command(finish=True)
+        self.start.show_game(s,False)
+        app=self.start.app
+        app.attention_button.invoke()
+        window=app.clear_results_window
+        window.window.geometry('540x400');self.root.update()
+        self.assertIn('クリア',window.status.get())
+        self.assertEqual(len(window.table.get_children()),6)
+        frozen=[window.table.item(key,'values') for key in window.table.get_children()]
+        for button in (window.continue_button,window.new_button,window.close_button):
+            self.assertTrue(button.winfo_ismapped())
+            self.assertLessEqual(button.winfo_rootx()+button.winfo_width(),window.window.winfo_rootx()+window.window.winfo_width())
+        window.continue_button.invoke()
+        self.assertTrue(s.core.bond_goal['continued'])
+        self.assertTrue(window.continue_button.instate(['disabled']))
+        window.close_button.invoke()
+        s.day_off();app.refresh();app.clear_results_button.invoke()
+        window=app.clear_results_window
+        self.assertEqual([window.table.item(key,'values') for key in window.table.get_children()],frozen)
+        window.new_button.invoke()
+        self.assertTrue(app.new_game_window.window.winfo_exists())
+        app.new_game_window.cancel_button.invoke()
+        self.assertIs(app.session,s)
+        self.assertTrue(s.core.clear_results['bond'])
+
     def test_new_game_objective_selection_description_and_resume(self):
         from cat_cafe_sim.core.cafe_objective import MODES
         from cat_cafe_sim.storage.cafe_saves import load_game

@@ -167,7 +167,11 @@ def build(app):
     ))
 
     app.results_summary = tk.StringVar()
-    ttk.Label(app.results_page, textvariable=app.results_summary, wraplength=760).grid(row=0,column=0,columnspan=2,sticky='w')
+    result_header = ttk.Frame(app.results_page)
+    result_header.grid(row=0,column=0,columnspan=2,sticky='ew')
+    ttk.Label(result_header, textvariable=app.results_summary, wraplength=550).pack(side='left')
+    app.clear_results_button=ttk.Button(result_header,text='クリア記録…',command=app.show_clear_results)
+    app.clear_results_button.pack(side='right')
     goals = card(app.results_page, 0, '目標と営業の記録', '', (
         ('goal_button','人気目標・結果…',app.show_goal),
         ('patron_button','有力者目標・結果…',app.show_patron),

@@ -59,6 +59,7 @@ def create_game(directory='saves/games', conditions=None):
         if 'preferences' in selected:
             session.core.initialize_preferences(selected.get('features', {}), selected['preferences'])
         session.enable_management(selected['management'])
+        session.core.initialize_clear_results()
         mode = selected.get('objective', 'popularity')
         from .core.cafe_objective import MODES
         if mode not in MODES:
