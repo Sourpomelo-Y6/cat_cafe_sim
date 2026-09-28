@@ -92,7 +92,9 @@ def validate(core, data):
             satisfaction = evaluate_satisfaction(core, result, evaluation)
             from .cafe_reservation import evaluate as reservation_evaluate
             reservation=reservation_evaluate(core,result)
-            total += result['bonus_funds'] + (evaluation['bonus'] if evaluation else 0) + (reservation['bonus'] if reservation else 0) + (satisfaction['bonus'] if satisfaction else 0)
+            from .cafe_vip_customer import evaluate as vip_evaluate
+            vip=vip_evaluate(core,result)
+            total += result['bonus_funds'] + (evaluation['bonus'] if evaluation else 0) + (reservation['bonus'] if reservation else 0) + (vip['bonus'] if vip else 0) + (satisfaction['bonus'] if satisfaction else 0)
         if day['summary']['interaction_bonus'] != total:
             raise ValueError('高難度客を含む追加料金と接客記録が一致しません。')
     return selected

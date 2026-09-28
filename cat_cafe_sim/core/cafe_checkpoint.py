@@ -212,6 +212,9 @@ def restore(data):
         if 'reservation' in state:
             from .cafe_reservation import prepare as prepare_reservation
             core.reservation=prepare_reservation(core,state['reservation'])
+        if 'vip_customer' in state:
+            from .cafe_vip_customer import rules as vip_rules
+            core.vip_customer=vip_rules(state['vip_customer'])
         from .cafe_weekdays import validate as validate_weekdays
         core.weekdays = validate_weekdays(core, state['weekdays'])
     elif any('customer_visits' in row for row in core.day_results):
@@ -273,6 +276,9 @@ def restore(data):
     if 'reservation' in state:
         from .cafe_reservation import validate as validate_reservation
         core.reservation=validate_reservation(core,state['reservation'])
+    if 'vip_customer' in state:
+        from .cafe_vip_customer import validate as validate_vip
+        core.vip_customer=validate_vip(core,state['vip_customer'])
     if 'customer_satisfaction' in state:
         from .cafe_customer_satisfaction import validate as validate_satisfaction
         core.customer_satisfaction = validate_satisfaction(core, state['customer_satisfaction'])

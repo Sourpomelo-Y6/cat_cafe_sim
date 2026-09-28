@@ -43,7 +43,8 @@ def evaluate(core, result, advanced=None):
         if advanced is not None:
             preferred = core.advanced_customers['feature']
         else:
-            preferred = core.customer_preferences['customers'].get(result['customer_id'])
+            from .cafe_vip_customer import CUSTOMER_ID as VIP_ID
+            preferred = core.vip_customer['feature'] if core.vip_customer is not None and result['customer_id']==VIP_ID else core.customer_preferences['customers'].get(result['customer_id'])
             if preferred is None:
                 preferred = preference_for(core.seed, result['customer_id'], core.customer_preferences['rules']['pool'])
     matched = preferred is not None and preferred in (core.cat_features or {}).get(result['cat_id'], [])
@@ -60,6 +61,11 @@ def evaluate(core, result, advanced=None):
     if reservation is not None:
         score += 1 if reservation['success'] else -1
         reasons.append('予約条件達成' if reservation['success'] else '予約条件未達')
+    from .cafe_vip_customer import evaluate as vip_evaluate
+    vip=vip_evaluate(core,result)
+    if vip is not None:
+        score += 1 if vip['success'] else -1
+        reasons.append('VIP条件達成' if vip['success'] else 'VIP条件未達')
     if result['end_reason'] == 'exhausted':
         score -= 2
         reasons.append('体力切れ')
@@ -118,7 +124,9 @@ def validate(core, data):
             advanced = advanced_evaluate(core, outcome)
             from .cafe_reservation import evaluate as reservation_evaluate
             reservation=reservation_evaluate(core,outcome)
-            bonus += outcome['bonus_funds'] + (advanced['bonus'] if advanced else 0) + (reservation['bonus'] if reservation else 0) + evaluate(core, outcome, advanced)['bonus']
+            from .cafe_vip_customer import evaluate as vip_evaluate
+            vip=vip_evaluate(core,outcome)
+            bonus += outcome['bonus_funds'] + (advanced['bonus'] if advanced else 0) + (reservation['bonus'] if reservation else 0) + (vip['bonus'] if vip else 0) + evaluate(core, outcome, advanced)['bonus']
         if day['summary']['interaction_bonus'] != bonus:
             raise ValueError('接客評価の追加料金と接客記録が一致しません。')
         if index < len(core.day_results):

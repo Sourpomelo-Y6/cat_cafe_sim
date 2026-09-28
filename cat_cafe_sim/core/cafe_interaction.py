@@ -36,6 +36,7 @@ class CafeInteractionCore(SimulationCore):
         self.customer_discontent = None
         self.customer_trust = None
         self.reservation = None
+        self.vip_customer = None
         self.player_bond = None
         self.management = None
         self.goal = None
@@ -79,6 +80,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'customer_discontent': copy.deepcopy(self.customer_discontent)} if self.customer_discontent is not None else {}),
                 **({'customer_trust': copy.deepcopy(self.customer_trust)} if self.customer_trust is not None else {}),
                 **({'reservation': copy.deepcopy(self.reservation)} if self.reservation is not None else {}),
+                **({'vip_customer': copy.deepcopy(self.vip_customer)} if self.vip_customer is not None else {}),
                 **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
@@ -371,6 +373,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_reservation import initialize
         initialize(self,rules)
 
+    def initialize_vip_customer(self,rules=None):
+        from .cafe_vip_customer import initialize
+        initialize(self,rules)
+
     def resolve_reservation(self,choice):
         from .cafe_reservation import resolve
         resolve(self,choice)
@@ -565,6 +571,9 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_reservation import evaluate as evaluate_reservation
         reservation=evaluate_reservation(self,result)
         if reservation is not None:bonus+=reservation['bonus']
+        from .cafe_vip_customer import evaluate as evaluate_vip, result_text as vip_result_text
+        vip=evaluate_vip(self,result)
+        if vip is not None:bonus+=vip['bonus']
         from .cafe_customer_satisfaction import evaluate as evaluate_satisfaction
         satisfaction = evaluate_satisfaction(self, result, evaluation)
         if satisfaction is not None:
@@ -578,6 +587,7 @@ class CafeInteractionCore(SimulationCore):
         if reservation is not None:
             from .cafe_reservation import apply_result
             apply_result(self,result,reservation)
+        if vip is not None:self._emit('vip_customer_result',customer_id=visit.id,text=vip_result_text(self,result))
         if satisfaction is not None:
             self._emit('customer_satisfaction_result', customer_id=visit.id, **satisfaction)
         self.outcomes[interaction.session_id] = interaction.log()

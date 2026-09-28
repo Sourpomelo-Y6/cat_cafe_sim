@@ -245,6 +245,10 @@ class ManualCafeInteractionWindow:
                 text='特別予約は接客されず終了'
             elif kind=='advanced_customer_unlocked':
                 text=f"白猫好きのこだわり客を解放 · {event['first_day']}日目から来店。条件は「お客さんの名簿・来店予定…」で確認できます。"
+            elif kind=='vip_customer_unlocked':
+                text=f"VIP客を解放 · {event['first_day']}日目から来店。複合条件は「お客さんの名簿・来店予定…」で確認できます。"
+            elif kind=='vip_customer_result':
+                text='VIP客の満足条件 · '+event['text']
             elif kind=='interaction_completed':
                 r=event['result'];text=f"親しみ {r['affinity_before']:g} → {r['affinity_after']:g} · 残り体力 {r['stamina']:g}"
             else:

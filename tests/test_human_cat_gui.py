@@ -1825,6 +1825,11 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertIn('心をつかむ', window.details.get())
         self.assertIn('追加料金＋100', window.details.get())
         self.assertGreater(window.cats.winfo_height(), 50)
+        from cat_cafe_sim.core.cafe_vip_customer import CUSTOMER_ID as VIP_ID
+        window.customers.selection_set(VIP_ID);window.select();self.root.update()
+        self.assertIn('未解放（人気最終段階）',str(window.customers.item(VIP_ID,'values')))
+        self.assertIn('同時発動を1回以上',window.details.get())
+        self.assertIn('追加料金＋400・人気＋10',window.details.get())
         before = s.core.snapshot(); window.fill()
         self.assertEqual(s.core.snapshot(), before)
         window.window.destroy()

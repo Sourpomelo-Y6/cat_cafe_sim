@@ -98,6 +98,14 @@ class CafeCustomersWindow:
             rules=self.session.core.reservation['rules'];request=self.session.core.reservation['request']
             state='依頼前' if request is None else {'waiting':'回答待ち','accepted':'受け入れ','declined':'見送り'}[request['status']]
             self.details.set(f"特別予約：{state}。長毛の猫を担当し、心を開く{rules['open_up_count']}回以上で追加料金＋{rules['bonus']:g}・人気＋{rules['popularity_bonus']:g}。\n"+self.details.get())
+        from .core.cafe_vip_customer import CUSTOMER_ID as VIP_ID,description as vip_description,result_text as vip_result_text
+        if key==VIP_ID and self.session.core.vip_customer is not None:
+            from .core.cafe_checkpoint import outcome_result
+            latest=next((outcome_result(value) for value in reversed(list(self.session.core.outcomes.values()))
+                         if outcome_result(value)['customer_id']==key),None)
+            self.details.set(vip_description(self.session.core)+'\n'+
+                             ('直近の接客：'+vip_result_text(self.session.core,latest) if latest else '接客結果はまだありません。')+
+                             '\n'+self.details.get())
         for row in cat_rows(self.session, key):
             status = ACTIVITY_LABELS[row['activity']] if row['activity'] != 'cafe' else ('出勤予定' if row['working'] else '休養予定')
             from .cafe_health_text import health_text
