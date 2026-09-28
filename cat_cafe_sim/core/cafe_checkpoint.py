@@ -367,6 +367,8 @@ def restore(data):
     expected_funds-=operating_charged(core)
     if not math.isclose(core.funds,expected_funds,rel_tol=1e-12,abs_tol=1e-8):
         raise ValueError('会計の合計と所持金が一致しません。')
+    from .cafe_finance import validate as validate_finance
+    validate_finance(core)
     core.recorded_digest=record_digest(core)
     core.replay_base=copy.deepcopy(data)
     return core

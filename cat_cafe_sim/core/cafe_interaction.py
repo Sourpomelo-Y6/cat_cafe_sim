@@ -648,7 +648,7 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_checkpoint import outcome_result
         from .cafe_customer_satisfaction import counts as satisfaction_counts
         today_outcomes = [outcome_result(value) for value in list(self.outcomes.values())[self.day_outcome_offset:]]
-        return dict(ticks=self.tick, closed=self.closed, arrivals=len(visits),
+        result=dict(ticks=self.tick, closed=self.closed, arrivals=len(visits),
                     completed_interactions=len(self.outcomes)-self.day_outcome_offset,
                     departures={reason:sum(v.departure_reason == reason for v in visits)
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
@@ -668,6 +668,10 @@ class CafeInteractionCore(SimulationCore):
                         if e['status']=='resolved' and e['resolved_day']==self.day)} if self.activities else {}),
                     service_ticks=self.service_ticks,
                     **({'cat_stamina': {key:cat.stamina for key,cat in self.cats.items()}} if self.roster_ids is not None else {}))
+        if self.operating_cost is not None:
+            from .cafe_finance import add
+            add(result)
+        return result
 
     def log(self):
         if self.compact:

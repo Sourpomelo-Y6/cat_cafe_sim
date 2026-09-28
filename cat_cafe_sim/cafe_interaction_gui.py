@@ -700,6 +700,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             summary=result['summary']
             lines=[f"{result['day']}日目の営業結果", f"売上 {summary['revenue']:g}（ボーナス {summary['interaction_bonus']:g}）",
                    f"所持金 {summary['funds']:g}", "", "猫の体力（開始からの消耗）"]
+            if 'net_cash_flow' in summary:
+                lines[2]=(f"収支 {summary['net_cash_flow']:+g}（開始 {summary['opening_funds']:g} / "
+                          f"収入 {summary['total_income']:g} / 支出 {summary['total_expenses']:g} / 終了 {summary['closing_funds']:g}）")
             for key,row in result['cats'].items():
                 name=self.session.profiles.get(key,{}).get('name',key)
                 lines.append(f"{name}：残り {row['stamina']:g} / 消耗 {row['spent']:g}")

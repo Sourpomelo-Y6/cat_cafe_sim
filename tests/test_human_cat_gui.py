@@ -1811,6 +1811,20 @@ class CafeStartWindowTests(unittest.TestCase):
         self.start = CafeStartWindow(self.root, self.directory)
         self.addCleanup(lambda: self.start.app.stop() if hasattr(self.start, 'app') else None)
 
+    def test_new_game_history_shows_daily_and_period_cash_flow(self):
+        from cat_cafe_sim.cafe_new_game import create_game,starting_conditions
+        selected=starting_conditions('free');selected.pop('intake_request')
+        s=create_game(self.directory,selected);s.day_off()
+        self.start.show_game(s,False);app=self.start.app;app.show_history();window=app.history_window
+        row=window.days.get_children()[0]
+        self.assertEqual(window.days.set(row,'開始資金'),'1000')
+        self.assertEqual(window.days.set(row,'収入'),'0')
+        self.assertEqual(window.days.set(row,'支出'),'60')
+        self.assertEqual(window.days.set(row,'純収支'),'-60')
+        self.assertEqual(window.days.set(row,'終了資金'),'940')
+        self.assertIn('純収支 -60',window.total.get())
+        window.window.destroy()
+
     def test_advanced_customer_preview_result_and_small_layout(self):
         from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
         from cat_cafe_sim.core.cafe_advanced_customers import CUSTOMER_ID

@@ -30,11 +30,18 @@ class OperatingCostTests(unittest.TestCase):
         revenue=s.core.summary()['revenue']
         self.assertEqual(s.core.funds,before+revenue-60)
         self.assertEqual(s.core.summary()['operating_cost'],60)
+        self.assertEqual(s.core.summary()['opening_funds'],before)
+        self.assertEqual(s.core.summary()['total_income'],revenue)
+        self.assertEqual(s.core.summary()['total_expenses'],60)
+        self.assertEqual(s.core.summary()['net_cash_flow'],revenue-60)
+        self.assertEqual(s.core.summary()['closing_funds'],s.core.funds)
         self.assertEqual(charged(s.core),60)
         self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(),s.core.snapshot())
         s=self.reload(s);s.next_day();before=s.core.funds;s.day_off()
         self.assertEqual(s.core.day_results[-1]['summary']['operating_cost'],60)
         self.assertEqual(s.core.funds,before-60);self.assertEqual(charged(s.core),120)
+        self.assertEqual(s.core.day_results[-1]['summary']['opening_funds'],before)
+        self.assertEqual(s.core.day_results[-1]['summary']['net_cash_flow'],-60)
         self.reload(s)
 
     def test_seat_count_changes_cost_and_funds_game_over(self):
@@ -56,6 +63,7 @@ class OperatingCostTests(unittest.TestCase):
         s=self.game();s.day_off();source=checkpoint(s.core,set())
         for mutate in (lambda d:d['state']['operating_cost']['charges'][0].update(total=1),
                        lambda d:d['state']['operating_cost']['charges'].clear(),
+                       lambda d:d['state']['day_results'][0]['summary'].update(net_cash_flow=1),
                        lambda d:d['state'].pop('management')):
             bad=copy.deepcopy(source);mutate(bad);bad['digest']=digest({k:v for k,v in bad.items() if k!='digest'})
             with self.assertRaises(ValueError):restore(bad)
