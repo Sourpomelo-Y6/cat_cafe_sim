@@ -194,6 +194,9 @@ def restore(data):
         # 来店予定の解放日は保存済み目標から導出。目標の整合性は後段で検証する。
         core.goal = copy.deepcopy(state.get('goal'))
         core.expansion = copy.deepcopy(state.get('expansion'))
+        if 'customer_loyalty' in state:
+            from .cafe_customer_loyalty import prepare as prepare_loyalty
+            core.customer_loyalty = prepare_loyalty(core, state['customer_loyalty'])
         if 'advanced_customers' in state:
             from .cafe_advanced_customers import rules as advanced_rules
             core.advanced_customers = advanced_rules(state['advanced_customers'])
@@ -208,6 +211,9 @@ def restore(data):
         if core.cat_features is None:
             raise ValueError('お客さんの好みには猫の特徴設定が必要です。')
         core.customer_preferences = validate_customers(core, state['customer_preferences'])
+    if 'customer_loyalty' in state:
+        from .cafe_customer_loyalty import validate as validate_loyalty
+        core.customer_loyalty = validate_loyalty(core, state['customer_loyalty'])
     if core.recruitment:
         for key in core.recruitment['accepted']:
             if (core.cat_features or {}).get(key) != core.recruitment['candidates'][key].get('features'):

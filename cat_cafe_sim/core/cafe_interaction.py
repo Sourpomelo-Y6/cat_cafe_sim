@@ -31,6 +31,7 @@ class CafeInteractionCore(SimulationCore):
         self.returning_customers = set()
         self.weekdays = None
         self.advanced_customers = None
+        self.customer_loyalty = None
         self.player_bond = None
         self.management = None
         self.goal = None
@@ -69,6 +70,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'intake_request': copy.deepcopy(self.intake_request)} if self.intake_request is not None else {}),
                 **({'weekdays': copy.deepcopy(self.weekdays)} if self.weekdays is not None else {}),
                 **({'advanced_customers': copy.deepcopy(self.advanced_customers)} if self.advanced_customers is not None else {}),
+                **({'customer_loyalty': copy.deepcopy(self.customer_loyalty)} if self.customer_loyalty is not None else {}),
                 **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
@@ -337,6 +339,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_advanced_customers import initialize
         initialize(self, rules)
 
+    def initialize_customer_loyalty(self, rules=None):
+        from .cafe_customer_loyalty import initialize
+        initialize(self, rules)
+
     def _arrive(self):
         if self.weekdays is None:
             super()._arrive()
@@ -515,6 +521,8 @@ class CafeInteractionCore(SimulationCore):
         if evaluation is not None:
             self._emit('advanced_customer_result', customer_id=visit.id, text=result_text(self, result))
         self.outcomes[interaction.session_id] = interaction.log()
+        from .cafe_customer_loyalty import apply as apply_loyalty
+        apply_loyalty(self, result)
         self._emit('interaction_completed', session_id=interaction.session_id, result=result)
         from .cafe_adoption import consider
         consider(self, result)

@@ -27,12 +27,13 @@ class CafeCustomersWindow:
         self.day_selector = ttk.Combobox(frame, textvariable=self.view_day, values=self.day_choices, state='readonly')
         self.day_selector.pack(anchor='w', pady=(0,4))
         self.day_selector.bind('<<ComboboxSelected>>', lambda event: self.fill())
-        self.customers = CafeHistoryWindow.table(frame, ('お客さん','好み','来店回数','予定の進行','本日の状態'))
-        self.customers.column('お客さん', width=190)
-        self.customers.column('好み', width=90)
-        self.customers.column('来店回数', width=80)
-        self.customers.column('予定の進行', width=90)
-        self.customers.column('本日の状態', width=135)
+        self.customers = CafeHistoryWindow.table(frame, ('お客さん','好み','来店回数','常連度','予定の進行','本日の状態'))
+        self.customers.column('お客さん', width=155)
+        self.customers.column('好み', width=75)
+        self.customers.column('来店回数', width=65)
+        self.customers.column('常連度', width=100)
+        self.customers.column('予定の進行', width=75)
+        self.customers.column('本日の状態', width=115)
         self.details = tk.StringVar(value='お客さんを選ぶと、猫別の親しみと相性を表示します。')
         ttk.Label(frame, textvariable=self.details, wraplength=620).pack(anchor='w', pady=4)
         self.cats = CafeHistoryWindow.table(frame, ('猫','猫から客への親しみ','好みとの相性','予定・状態'))
@@ -53,7 +54,9 @@ class CafeCustomersWindow:
             tick = row['tomorrow_tick'] if tomorrow else row['arrival_tick']
             status = ('来店予定' if tick is not None else '予定なし') if tomorrow else row['status']
             self.customers.insert('', 'end', iid=row['customer_id'], values=(customer_label(row['customer_id']),
-                row['preference_text'], row['visits'], '—' if tick is None else tick, status))
+                row['preference_text'], row['visits'], '未導入' if row['loyalty'] is None else
+                f"{row['loyalty']:g}/{row['loyalty_target']:g}"+('・常連' if row['regular_day'] is not None else ''),
+                '—' if tick is None else tick, status))
         if self.customers.get_children():
             self.customers.selection_set(selected[0] if selected and self.customers.exists(selected[0]) else self.customers.get_children()[0])
             self.select()
@@ -65,7 +68,11 @@ class CafeCustomersWindow:
             return
         key = selection[0]
         row = next(row for row in directory(self.session) if row['customer_id'] == key)
-        self.details.set(customer_label(key) + '・来店曜日：' + row['weekdays'] + '\n猫からこのお客さんへの親しみ（保存済みの値）です。' +
+        loyalty = ('常連度：未導入' if row['loyalty'] is None else
+                   f"常連度：{row['loyalty']:g}/{row['loyalty_target']:g}" +
+                   (f"・{row['regular_day']}日目に常連化" if row['regular_day'] is not None else '・接客で親しみが増えると上昇'))
+        self.details.set(customer_label(key) + '・来店曜日：' + row['weekdays'] + '\n' + loyalty +
+                         '\n猫からこのお客さんへの親しみ（保存済みの値）です。' +
                          (' 接客結果の保存待ちがあります。' if self.session.pending else ''))
         from .core.cafe_advanced_customers import CUSTOMER_ID, description, result_text
         if key == CUSTOMER_ID and self.session.core.advanced_customers is not None:
@@ -73,7 +80,8 @@ class CafeCustomersWindow:
             latest = next((outcome_result(value) for value in reversed(list(self.session.core.outcomes.values()))
                            if outcome_result(value)['customer_id'] == key), None)
             self.details.set(description(self.session.core) + '\n' +
-                             ('直近の接客：' + result_text(self.session.core, latest) if latest else '接客結果はまだありません。'))
+                             ('直近の接客：' + result_text(self.session.core, latest) if latest else '接客結果はまだありません。')+
+                             '\n'+self.details.get())
         for row in cat_rows(self.session, key):
             status = ACTIVITY_LABELS[row['activity']] if row['activity'] != 'cafe' else ('出勤予定' if row['working'] else '休養予定')
             from .cafe_health_text import health_text

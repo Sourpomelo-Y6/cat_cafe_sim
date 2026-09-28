@@ -42,9 +42,10 @@ def schedule(core, day=None):
     weekday = (core.weekdays['start_weekday'] + day - 1) % 7 if core.weekdays else None
     from .cafe_advanced_customers import schedule as advanced_schedule
     from .cafe_expansion import extra_schedule
+    from .cafe_customer_loyalty import extra_schedule as loyalty_schedule
     return {**{f'guest-{i+1}': tick for i, tick in enumerate(core.config.arrival_ticks)
                if weekday is None or weekday in customer_days(core, i)}, **advanced_schedule(core, day),
-            **extra_schedule(core, day)}
+            **extra_schedule(core, day), **loyalty_schedule(core, day)}
 
 
 def initialize(core, selected=None):

@@ -208,6 +208,9 @@ class ManualCafeInteractionWindow:
                 text=f"退店 {customer_label(event['customer_id'])} · {reasons.get(event['reason'],event['reason'])} · 会計 {event['bill']:g}（時間 {event['base_charge']:g}＋ボーナス {event['bonus']:g}）"
             elif kind=='advanced_customer_result':
                 text='こだわり客の満足条件 · '+event['text']
+            elif kind=='customer_loyalty_gained':
+                text=(f"常連度 {customer_label(event['customer_id'])} · {event['before']:g} → {event['after']:g}"+
+                      (' · 常連になりました' if event['became_regular'] else ''))
             elif kind=='advanced_customer_unlocked':
                 text=f"白猫好きのこだわり客を解放 · {event['first_day']}日目から来店。条件は「お客さんの名簿・来店予定…」で確認できます。"
             elif kind=='interaction_completed':

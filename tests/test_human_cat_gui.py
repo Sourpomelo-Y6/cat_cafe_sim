@@ -670,15 +670,15 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.root.update()
         before = copy.deepcopy(app.session.core.snapshot())
         self.assertIn('月', app.phase.get())
-        self.assertEqual(window.customers.item('guest-1', 'values')[3], '0')
-        self.assertEqual(window.customers.item('guest-2', 'values')[3], '—')
+        self.assertEqual(window.customers.item('guest-1', 'values')[4], '0')
+        self.assertEqual(window.customers.item('guest-2', 'values')[4], '—')
         window.customers.selection_set('guest-2')
         window.view_day.set(window.day_choices[1])
         window.day_selector.event_generate('<<ComboboxSelected>>')
         self.root.update()
         self.assertIn('火', window.view_day.get())
-        self.assertEqual(window.customers.item('guest-1', 'values')[3], '—')
-        self.assertEqual(window.customers.item('guest-2', 'values')[3], '6')
+        self.assertEqual(window.customers.item('guest-1', 'values')[4], '—')
+        self.assertEqual(window.customers.item('guest-2', 'values')[4], '6')
         self.assertEqual(window.customers.selection(), ('guest-2',))
         self.assertIn('火・木・土・日', window.details.get())
         self.assertEqual(app.session.core.snapshot(), before)
@@ -1877,6 +1877,29 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertEqual(customers.customers.set(EXTRA_CUSTOMER_ID, '予定の進行'), '0')
         self.assertIn('来店予定', customers.customers.set(EXTRA_CUSTOMER_ID, '本日の状態'))
         customers.window.destroy()
+
+    def test_customer_loyalty_regular_preview_and_small_layout(self):
+        from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
+        selected = starting_conditions('free'); selected.pop('intake_request')
+        selected['customer_loyalty'] = dict(gain=25, threshold=25)
+        s = create_game(self.directory, selected)
+        while not s.core.closed: s.automatic_step()
+        self.start.show_game(s, False)
+        app = self.start.app
+        self.assertTrue(any('常連になりました' in str(app.history.item(key, 'values')) for key in app.history.get_children()))
+        app.show_customers(); window = app.customers_window
+        window.window.geometry('660x520')
+        window.customers.selection_set('guest-1'); window.select(); self.root.update()
+        self.assertEqual(window.customers.set('guest-1', '常連度'), '25/25・常連')
+        self.assertIn('1日目に常連化', window.details.get())
+        self.assertIn('常連:火', window.details.get())
+        window.day_selector.current(1); window.fill(); self.root.update()
+        self.assertEqual(window.customers.set('guest-1', '予定の進行'), '0')
+        self.assertIn('来店予定', window.customers.set('guest-1', '本日の状態'))
+        self.assertGreater(window.customers.winfo_height(), 80)
+        self.assertGreater(window.cats.winfo_height(), 50)
+        before = s.core.snapshot(); window.fill(); self.assertEqual(before, s.core.snapshot())
+        window.window.destroy()
 
     def test_clear_results_continue_history_restart_and_small_layout(self):
         from cat_cafe_sim.cafe_new_game import create_game, starting_conditions

@@ -50,6 +50,7 @@ def preference(core, customer_id):
 def directory(session):
     core = session.core
     from .core.cafe_weekdays import schedule as arrival_schedule, customer_days, DAYS
+    from .core.cafe_customer_loyalty import row as loyalty_row, extra_weekday
     schedule = arrival_schedule(core)
     tomorrow = arrival_schedule(core, core.day + 1)
     all_customers = {f'guest-{i+1}' for i in range(len(core.config.arrival_ticks))}
@@ -68,6 +69,7 @@ def directory(session):
         visit = core.visits.get(key)
         planned = schedule.get(key)
         preferred = preference(core, key)
+        loyalty = loyalty_row(core, key)
         if visit:
             status = '待機中' if key in core.queue else '接客中' if visit.departure_reason is None else '退店済み'
         elif planned is not None:
@@ -78,10 +80,16 @@ def directory(session):
             from .core.cafe_advanced_customers import unlocked_day
             if unlocked_day(core) is None:
                 status = '未解放（人気第1段階）'
+        weekday_text = '・'.join(DAYS[d] for d in customer_days(core, index-1)) if key in all_customers and core.weekdays else '毎日' if key in all_customers else '—'
+        if loyalty and loyalty['regular_day'] is not None and weekday_text != '毎日':
+            weekday_text += f"＋常連:{DAYS[extra_weekday(core,key)]}"
         rows.append(dict(customer_id=key, name=customer_name(key), visits=count,
                          arrival_tick=planned, tomorrow_tick=tomorrow.get(key),
-                         weekdays='・'.join(DAYS[d] for d in customer_days(core, index-1)) if key in all_customers and core.weekdays else '毎日' if key in all_customers else '—',
+                         weekdays=weekday_text,
                          status=status, preference=preferred,
+                         loyalty=loyalty['score'] if loyalty else None,
+                         regular_day=loyalty['regular_day'] if loyalty else None,
+                         loyalty_target=core.customer_loyalty['rules']['threshold'] if core.customer_loyalty else None,
                          preference_text=FEATURES[preferred][0]+'好き' if preferred else '未設定'))
     return rows
 
