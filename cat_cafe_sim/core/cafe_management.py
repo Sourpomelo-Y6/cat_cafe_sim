@@ -200,7 +200,8 @@ def validate(core, data):
             raise ValueError('帰還イベントの状態が不正です。')
     if missing!={key for key in core.cats if core.activity(key)=='missing'}:
         raise ValueError('行方不明の猫とイベントが一致しません。')
-    expected=max(0,rule['starting_popularity']-len(data['events'])*rule['popularity_loss'])
+    from .cafe_customer_trust import losses as customer_losses
+    expected=max(0,rule['starting_popularity']-len(data['events'])*rule['popularity_loss']-customer_losses(core))
     if core.goal is None and data['popularity']!=expected:
         raise ValueError('人気と家出の記録が一致しません。')
     reason='funds' if core.funds<=0 else 'popularity' if data['popularity']<=0 else None

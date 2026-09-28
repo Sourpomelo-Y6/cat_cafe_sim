@@ -13,6 +13,8 @@ def apply_operation(core, operation):
     elif kind=='initialize_customer_satisfaction':core.initialize_customer_satisfaction(operation['rules'])
     elif kind=='initialize_customer_loyalty':core.initialize_customer_loyalty(operation['rules'])
     elif kind=='initialize_customer_discontent':core.initialize_customer_discontent(operation['rules'])
+    elif kind=='initialize_customer_trust':core.initialize_customer_trust(operation['rules'])
+    elif kind=='resolve_customer_trust':core.resolve_customer_trust(operation['event_id'],operation['choice'])
     elif kind=='purchase_seat_equipment':core.purchase_seat_equipment(operation['seat_id'],operation['rules'])
     elif kind=='equip_seat':core.equip_seat(operation['seat_id'],operation['item_id'])
     elif kind=='purchase_rest_space':core.purchase_rest_space(operation['rules'])

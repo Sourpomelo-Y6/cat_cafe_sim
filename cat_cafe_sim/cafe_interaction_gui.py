@@ -224,6 +224,15 @@ class ManualCafeInteractionWindow:
                 text=(f"累積不満 {customer_label(event['customer_id'])} · {event['before']:g} → {event['after']:g}"
                       f" · {reasons.get(event['reason'],event['reason'])}"+
                       (f" · {event['suspended_until']}日目まで来店停止" if event['suspended'] else ''))
+            elif kind=='customer_trust_warning':
+                text=f"信頼回復の回答待ち {customer_label(event['customer_id'])} · 来店停止{event['suspensions']}回"
+            elif kind=='customer_trust_recovery_started':
+                text=f"信頼回復に取り組む {customer_label(event['customer_id'])}"
+            elif kind=='customer_trust_recovered':
+                text=f"信頼回復 {customer_label(event['customer_id'])} · 累積不満{event['score']:g}"
+            elif kind=='customer_departed':
+                reason='対応しなかった' if event['reason']=='ignored' else '信頼回復中の接客が不満だった'
+                text=f"永久離脱 {customer_label(event['customer_id'])} · {reason} · 人気 {event['popularity_before']:g} → {event['popularity']:g}"
             elif kind=='advanced_customer_unlocked':
                 text=f"白猫好きのこだわり客を解放 · {event['first_day']}日目から来店。条件は「お客さんの名簿・来店予定…」で確認できます。"
             elif kind=='interaction_completed':
@@ -512,6 +521,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .core.cafe_patron import pending as patron_pending, progress as patron_progress
         from .core.cafe_bond_goal import pending as bond_pending, progress as bond_progress
         from .core.cafe_player import active
+        from .core.cafe_customer_trust import waiting as trust_waiting
         core = self.session.core
         phase = '営業終了' if is_over(core) else '閉店' if core.closed else '営業準備' if core.can_set_shifts else '営業中' if self.running else '営業・一時停止'
         from .core.cafe_weekdays import day_label
@@ -553,6 +563,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif adoptions(core):
             self.notice.set('猫の譲渡の申し出が届いています。承諾するか見送るかを選んでください。')
             self._attention = self.show_adoption
+        elif trust_waiting(core):
+            self.notice.set('来店停止を繰り返したお客さんがいます。信頼回復に取り組むか選んでください。')
+            self._attention = self.show_customer_trust
         elif waiting_events(core):
             from .core.cafe_dispatch_encounters import waiting as choice_waiting
             self.notice.set('派遣中の出来事が回答待ちです。選択肢と効果を確認してください。' if choice_waiting(core) else '派遣から帰還した猫が確認待ちです。帰還と報酬を確認してください。')
@@ -612,6 +625,11 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.stop()
         self.refresh()
         self.activity_window = CafeActivityWindow(self.root,self.session,self.refresh, show_navigation=False)
+
+    def show_customer_trust(self):
+        from .cafe_customer_trust_gui import CafeCustomerTrustWindow
+        self.pages.select(self.preparation_page);self.stop();self.refresh()
+        self.customer_trust_window=CafeCustomerTrustWindow(self.root,self.session,self.refresh)
 
     def take_day_off(self):
         from tkinter import messagebox

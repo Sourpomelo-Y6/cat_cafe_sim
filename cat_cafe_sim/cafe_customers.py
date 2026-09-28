@@ -53,10 +53,12 @@ def directory(session):
     from .core.cafe_customer_loyalty import row as loyalty_row, extra_weekday
     from .core.cafe_customer_discontent import row as discontent_row
     from .core.cafe_customer_satisfaction import latest as latest_satisfaction
+    from .core.cafe_customer_trust import row as trust_row
     schedule = arrival_schedule(core)
     tomorrow = arrival_schedule(core, core.day + 1)
     all_customers = {f'guest-{i+1}' for i in range(len(core.config.arrival_ticks))}
     known = all_customers | set(core.visits) | core.returning_customers | {guest for _, guest in session.affinities}
+    known |= set((core.customer_trust or {}).get('customers',{}))
     if core.advanced_customers is not None:
         known.add(CUSTOMER_ID)
     if four_seat_purchase(core):
@@ -74,6 +76,7 @@ def directory(session):
         loyalty = loyalty_row(core, key)
         discontent = discontent_row(core, key)
         satisfaction = latest_satisfaction(core, key)
+        trust = trust_row(core,key)
         if visit:
             status = '待機中' if key in core.queue else '接客中' if visit.departure_reason is None else '退店済み'
         elif planned is not None:
@@ -86,6 +89,9 @@ def directory(session):
                 status = '未解放（人気第1段階）'
         if discontent and discontent['suspended_until'] is not None:
             status = f"来店停止（{discontent['suspended_until']}日目まで）"
+        if trust and trust['status']=='recovery':status='信頼回復中'
+        if trust and trust['status']=='waiting':status='信頼回復の回答待ち'
+        if trust and trust['status']=='departed':status=f"永久離脱（{trust['departed_day']}日目）"
         tomorrow_discontent = discontent_row(core, key, core.day+1)
         weekday_text = '・'.join(DAYS[d] for d in customer_days(core, index-1)) if key in all_customers and core.weekdays else '毎日' if key in all_customers else '—'
         if loyalty and loyalty['regular_day'] is not None and weekday_text != '毎日':
@@ -103,6 +109,7 @@ def directory(session):
                          suspended_until=discontent['suspended_until'] if discontent else None,
                          tomorrow_suspended_until=tomorrow_discontent['suspended_until'] if tomorrow_discontent else None,
                          satisfaction=satisfaction,
+                         trust=trust,
                          preference_text=FEATURES[preferred][0]+'好き' if preferred else '未設定'))
     return rows
 

@@ -209,6 +209,8 @@ def validate(core, data, management):
                 or type(row['gain']) not in (int,float) or not math.isfinite(row['gain'])):
             raise ValueError('人気獲得の記録が不正です。')
         from .cafe_customer_satisfaction import qualified
+        from .cafe_customer_trust import losses as customer_losses
+        popularity=max(0,popularity-customer_losses(core,day))
         count=sum(qualified(core, outcome_result(value)) for value in offsets[day])
         after=min(rule['cap'],popularity+count*rule['gain_per_success'])
         expected=dict(day=day,qualified=count,gain=after-popularity)

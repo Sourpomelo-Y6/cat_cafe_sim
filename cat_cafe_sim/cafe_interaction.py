@@ -259,6 +259,12 @@ class CafeInteractionSession:
             raise ValueError('先に交流結果の保存を再試行してください。')
         self.core.resolve_adoption(event_id, choice)
 
+    def resolve_customer_trust(self,event_id,choice):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:raise ValueError('先に交流結果の保存を再試行してください。')
+        self.core.resolve_customer_trust(event_id,choice)
+
     def resolve_dispatch_choice(self, event_id, choice):
         from .storage.cafe_saves import check_link
         check_link(self)

@@ -203,6 +203,9 @@ def restore(data):
         if 'customer_discontent' in state:
             from .cafe_customer_discontent import prepare as prepare_discontent
             core.customer_discontent = prepare_discontent(core, state['customer_discontent'])
+        if 'customer_trust' in state:
+            from .cafe_customer_trust import validate as validate_trust
+            core.customer_trust=validate_trust(core,state['customer_trust'])
         if 'advanced_customers' in state:
             from .cafe_advanced_customers import rules as advanced_rules
             core.advanced_customers = advanced_rules(state['advanced_customers'])
@@ -248,6 +251,11 @@ def restore(data):
     if 'management' in state:
         from .cafe_management import validate as validate_management
         core.management=validate_management(core,state['management'])
+    if 'customer_trust' in state:
+        from .cafe_customer_trust import validate as validate_trust
+        if core.customer_discontent is None or core.management is None:
+            raise ValueError('信頼回復に必要な不満・経営設定がありません。')
+        core.customer_trust=validate_trust(core,state['customer_trust'])
     if 'item_uses' in state:
         from .cafe_items import validate_uses
         core.item_uses=validate_uses(core,state['item_uses'])

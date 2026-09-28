@@ -1849,6 +1849,22 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertGreater(window.cats.winfo_height(), 50)
         window.window.destroy()
 
+    def test_customer_trust_warning_has_no_payment_and_recovery_choice(self):
+        from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
+        from cat_cafe_sim.core.cafe_customer_trust import consider_suspension
+        selected=starting_conditions('free');selected.pop('intake_request')
+        s=create_game(self.directory,selected);core=s.core
+        core.customer_discontent['customers']['guest-1']=dict(score=100,score_day=1,
+            suspensions=[dict(day=1,until=8),dict(day=9,until=16)])
+        consider_suspension(core,'guest-1')
+        self.start.show_game(s,False);app=self.start.app;self.root.update()
+        self.assertIn('信頼回復',app.notice.get());app.attention_button.invoke();self.root.update()
+        window=app.customer_trust_window
+        self.assertIn('費用はかかりません',window.description.cget('text'))
+        window.recover.invoke();self.root.update()
+        self.assertEqual(core.customer_trust['customers']['guest-1']['status'],'recovery')
+        window.close()
+
     def test_four_seat_expansion_unlock_purchase_and_customer_preview(self):
         from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
         from cat_cafe_sim.core.cafe_expansion import EXTRA_CUSTOMER_ID

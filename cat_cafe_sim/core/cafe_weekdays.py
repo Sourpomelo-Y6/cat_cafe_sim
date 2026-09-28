@@ -47,7 +47,9 @@ def schedule(core, day=None):
                if weekday is None or weekday in customer_days(core, i)}, **advanced_schedule(core, day),
             **extra_schedule(core, day), **loyalty_schedule(core, day)}
     from .cafe_customer_discontent import filter_schedule
-    return filter_schedule(core, planned, day)
+    planned=filter_schedule(core, planned, day)
+    from .cafe_customer_trust import available
+    return {key:tick for key,tick in planned.items() if available(core,key,day)}
 
 
 def initialize(core, selected=None):

@@ -25,6 +25,7 @@ class CustomerLoyaltyTests(unittest.TestCase):
             selected.pop('customer_loyalty')
             selected.pop('customer_discontent')
             selected.pop('customer_satisfaction')
+            selected.pop('customer_trust')
         elif loyalty is not None:
             selected['customer_loyalty'] = loyalty
         if satisfaction is not None:

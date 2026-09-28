@@ -80,8 +80,10 @@ class CafeCustomersWindow:
         satisfaction = ('直近の接客評価：記録なし' if row['satisfaction'] is None else
                         f"直近の接客評価：{row['satisfaction']['label']}（点数 {row['satisfaction']['score']:g}"
                         f"・{('、'.join(row['satisfaction']['reasons']) or '加点要素なし')}）")
+        trust_labels={'stable':'通常','waiting':'回答待ち','recovery':'信頼回復中','departed':'永久離脱'}
+        trust='信頼状態：未導入' if row['trust'] is None else '信頼状態：'+trust_labels[row['trust']['status']]
         self.details.set(customer_label(key) + '・来店曜日：' + row['weekdays'] + '\n' + loyalty +
-                         '\n' + discontent + '\n' + satisfaction +
+                         '\n' + discontent + '・' + trust + '\n' + satisfaction +
                          (' 接客結果の保存待ちがあります。' if self.session.pending else ''))
         from .core.cafe_advanced_customers import CUSTOMER_ID, description, result_text
         if key == CUSTOMER_ID and self.session.core.advanced_customers is not None:

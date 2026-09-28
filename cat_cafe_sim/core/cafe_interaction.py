@@ -34,6 +34,7 @@ class CafeInteractionCore(SimulationCore):
         self.customer_satisfaction = None
         self.customer_loyalty = None
         self.customer_discontent = None
+        self.customer_trust = None
         self.player_bond = None
         self.management = None
         self.goal = None
@@ -75,6 +76,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'customer_satisfaction': copy.deepcopy(self.customer_satisfaction)} if self.customer_satisfaction is not None else {}),
                 **({'customer_loyalty': copy.deepcopy(self.customer_loyalty)} if self.customer_loyalty is not None else {}),
                 **({'customer_discontent': copy.deepcopy(self.customer_discontent)} if self.customer_discontent is not None else {}),
+                **({'customer_trust': copy.deepcopy(self.customer_trust)} if self.customer_trust is not None else {}),
                 **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
@@ -355,6 +357,14 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_customer_discontent import initialize
         initialize(self, rules)
 
+    def initialize_customer_trust(self, rules=None):
+        from .cafe_customer_trust import initialize
+        initialize(self,rules)
+
+    def resolve_customer_trust(self,event_id,choice):
+        from .cafe_customer_trust import resolve
+        resolve(self,event_id,choice)
+
     def _depart(self, visit, reason, perfect=False):
         already = visit.departure_reason is not None
         super()._depart(visit, reason, perfect)
@@ -467,6 +477,8 @@ class CafeInteractionCore(SimulationCore):
             self.initial_health = self._health_state()
             self.health_results = {}
         self._emit('next_day', day=self.day)
+        from .cafe_customer_trust import present as present_trust
+        present_trust(self)
         from .cafe_intake_request import present
         present(self)
         self._record(operation)
@@ -553,6 +565,8 @@ class CafeInteractionCore(SimulationCore):
         apply_loyalty(self, result, satisfaction)
         from .cafe_customer_discontent import apply_service as apply_discontent
         apply_discontent(self, result, evaluation, satisfaction)
+        from .cafe_customer_trust import apply_service as apply_trust
+        apply_trust(self,result,satisfaction)
         self._emit('interaction_completed', session_id=interaction.session_id, result=result)
         from .cafe_adoption import consider
         consider(self, result)
