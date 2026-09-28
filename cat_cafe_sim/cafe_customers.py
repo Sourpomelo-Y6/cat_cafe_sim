@@ -52,6 +52,7 @@ def directory(session):
     from .core.cafe_weekdays import schedule as arrival_schedule, customer_days, DAYS
     from .core.cafe_customer_loyalty import row as loyalty_row, extra_weekday
     from .core.cafe_customer_discontent import row as discontent_row
+    from .core.cafe_customer_satisfaction import latest as latest_satisfaction
     schedule = arrival_schedule(core)
     tomorrow = arrival_schedule(core, core.day + 1)
     all_customers = {f'guest-{i+1}' for i in range(len(core.config.arrival_ticks))}
@@ -72,6 +73,7 @@ def directory(session):
         preferred = preference(core, key)
         loyalty = loyalty_row(core, key)
         discontent = discontent_row(core, key)
+        satisfaction = latest_satisfaction(core, key)
         if visit:
             status = '待機中' if key in core.queue else '接客中' if visit.departure_reason is None else '退店済み'
         elif planned is not None:
@@ -100,6 +102,7 @@ def directory(session):
                          discontent_return=core.customer_discontent['rules']['return_score'] if core.customer_discontent else None,
                          suspended_until=discontent['suspended_until'] if discontent else None,
                          tomorrow_suspended_until=tomorrow_discontent['suspended_until'] if tomorrow_discontent else None,
+                         satisfaction=satisfaction,
                          preference_text=FEATURES[preferred][0]+'好き' if preferred else '未設定'))
     return rows
 

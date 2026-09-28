@@ -1837,11 +1837,13 @@ class CafeStartWindowTests(unittest.TestCase):
         s.continue_goal(); s.next_day(); s.step(); s.start(CUSTOMER_ID, 'cat-sora'); s.finish()
         app.refresh()
         self.assertTrue(any('こだわり客の満足条件' in str(app.history.item(key, 'values')) for key in app.history.get_children()))
+        self.assertTrue(any('接客評価' in str(app.history.item(key, 'values')) for key in app.history.get_children()))
         app.show_customers(); window = app.customers_window
         window.window.geometry('660x520')
         window.customers.selection_set(CUSTOMER_ID); window.select(); self.root.update()
         self.assertIn('未達：白猫一致', window.details.get())
         self.assertIn('心をつかむ 0/1回', window.details.get())
+        self.assertIn('直近の接客評価：不満', window.details.get())
         window.day_selector.current(1); window.fill()
         self.assertIn('来店予定', str(window.customers.item(CUSTOMER_ID, 'values')))
         self.assertGreater(window.cats.winfo_height(), 50)

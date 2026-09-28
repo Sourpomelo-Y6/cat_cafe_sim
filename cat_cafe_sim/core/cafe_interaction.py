@@ -31,6 +31,7 @@ class CafeInteractionCore(SimulationCore):
         self.returning_customers = set()
         self.weekdays = None
         self.advanced_customers = None
+        self.customer_satisfaction = None
         self.customer_loyalty = None
         self.customer_discontent = None
         self.player_bond = None
@@ -71,6 +72,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'intake_request': copy.deepcopy(self.intake_request)} if self.intake_request is not None else {}),
                 **({'weekdays': copy.deepcopy(self.weekdays)} if self.weekdays is not None else {}),
                 **({'advanced_customers': copy.deepcopy(self.advanced_customers)} if self.advanced_customers is not None else {}),
+                **({'customer_satisfaction': copy.deepcopy(self.customer_satisfaction)} if self.customer_satisfaction is not None else {}),
                 **({'customer_loyalty': copy.deepcopy(self.customer_loyalty)} if self.customer_loyalty is not None else {}),
                 **({'customer_discontent': copy.deepcopy(self.customer_discontent)} if self.customer_discontent is not None else {}),
                 **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
@@ -345,6 +347,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_customer_loyalty import initialize
         initialize(self, rules)
 
+    def initialize_customer_satisfaction(self, rules=None):
+        from .cafe_customer_satisfaction import initialize
+        initialize(self, rules)
+
     def initialize_customer_discontent(self, rules=None):
         from .cafe_customer_discontent import initialize
         initialize(self, rules)
@@ -530,17 +536,23 @@ class CafeInteractionCore(SimulationCore):
         evaluation = evaluate(self, result)
         if evaluation is not None:
             bonus += evaluation['bonus']
+        from .cafe_customer_satisfaction import evaluate as evaluate_satisfaction
+        satisfaction = evaluate_satisfaction(self, result, evaluation)
+        if satisfaction is not None:
+            bonus += satisfaction['bonus']
         visit.bill += bonus
         self.funds += bonus
         self.interaction_bonus += bonus
         self.events[-1].update(bonus=bonus, bill=visit.bill)
         if evaluation is not None:
             self._emit('advanced_customer_result', customer_id=visit.id, text=result_text(self, result))
+        if satisfaction is not None:
+            self._emit('customer_satisfaction_result', customer_id=visit.id, **satisfaction)
         self.outcomes[interaction.session_id] = interaction.log()
         from .cafe_customer_loyalty import apply as apply_loyalty
-        apply_loyalty(self, result)
+        apply_loyalty(self, result, satisfaction)
         from .cafe_customer_discontent import apply_service as apply_discontent
-        apply_discontent(self, result, evaluation)
+        apply_discontent(self, result, evaluation, satisfaction)
         self._emit('interaction_completed', session_id=interaction.session_id, result=result)
         from .cafe_adoption import consider
         consider(self, result)
@@ -580,6 +592,9 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_activities import reward
         from .cafe_seat_equipment import expenses as seat_expenses
         visits = list(self.visits.values())
+        from .cafe_checkpoint import outcome_result
+        from .cafe_customer_satisfaction import counts as satisfaction_counts
+        today_outcomes = [outcome_result(value) for value in list(self.outcomes.values())[self.day_outcome_offset:]]
         return dict(ticks=self.tick, closed=self.closed, arrivals=len(visits),
                     completed_interactions=len(self.outcomes)-self.day_outcome_offset,
                     departures={reason:sum(v.departure_reason == reason for v in visits)
@@ -594,6 +609,7 @@ class CafeInteractionCore(SimulationCore):
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()
                                                  if e['resolved_day']==self.day)) if self.management else {}),
                     interaction_bonus=self.interaction_bonus, stamina=self.cat.stamina,
+                    **({'customer_satisfaction': satisfaction_counts(self, today_outcomes)} if self.customer_satisfaction is not None else {}),
                     **({'dispatch_income': sum(reward(self,e) for e in self.activities['events'].values()
                         if e['status']=='resolved' and e['resolved_day']==self.day)} if self.activities else {}),
                     service_ticks=self.service_ticks,

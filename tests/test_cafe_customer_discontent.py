@@ -97,6 +97,7 @@ class CustomerDiscontentTests(unittest.TestCase):
 
     def test_legacy_and_corrupt_records(self):
         selected=starting_conditions('free');selected.pop('intake_request');selected.pop('customer_discontent')
+        selected.pop('customer_satisfaction')
         old=create_game(Path(self.temp.name)/'old',selected)
         while not old.core.closed:old.automatic_step()
         self.assertIsNone(old.core.customer_discontent)

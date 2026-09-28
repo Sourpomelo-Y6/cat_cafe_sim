@@ -115,7 +115,8 @@ def earn(core):
     if not core.goal:
         return
     rows = list(core.outcomes.values())[core.day_outcome_offset:]
-    count = sum(outcome_result(row)['affinity_pending'] > 0 for row in rows)
+    from .cafe_customer_satisfaction import qualified
+    count = sum(qualified(core, outcome_result(row)) for row in rows)
     before = core.management['popularity']
     after = min(core.goal['rules']['cap'], before+count*core.goal['rules']['gain_per_success'])
     core.management['popularity'] = after
@@ -207,7 +208,8 @@ def validate(core, data, management):
                 or type(row['day']) is not int or type(row['qualified']) is not int
                 or type(row['gain']) not in (int,float) or not math.isfinite(row['gain'])):
             raise ValueError('人気獲得の記録が不正です。')
-        count=sum(outcome_result(value)['affinity_pending']>0 for value in offsets[day])
+        from .cafe_customer_satisfaction import qualified
+        count=sum(qualified(core, outcome_result(value)) for value in offsets[day])
         after=min(rule['cap'],popularity+count*rule['gain_per_success'])
         expected=dict(day=day,qualified=count,gain=after-popularity)
         if row!=expected:

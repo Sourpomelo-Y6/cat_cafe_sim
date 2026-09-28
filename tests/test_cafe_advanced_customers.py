@@ -88,7 +88,9 @@ class AdvancedCustomerTests(unittest.TestCase):
             s, result = self.serve(s, cat)
             self.assertTrue(evaluate(s.core, result)['success'])
             visit = s.core.visits[CUSTOMER_ID]
-            self.assertEqual(visit.bill, visit.seated_ticks*s.core.config.time_price + result['bonus_funds'] + 100)
+            from cat_cafe_sim.core.cafe_customer_satisfaction import evaluate as satisfaction
+            satisfaction_bonus = satisfaction(s.core, result, evaluate(s.core, result))['bonus']
+            self.assertEqual(visit.bill, visit.seated_ticks*s.core.config.time_price + result['bonus_funds'] + 100 + satisfaction_bonus)
             event = next(e for e in s.core.events if e['kind'] == 'advanced_customer_result')
             self.assertIn('達成', event['text'])
             self.assertIn('追加料金 100', event['text'])
@@ -122,7 +124,9 @@ class AdvancedCustomerTests(unittest.TestCase):
                 self.assertTrue(evaluation['matched'])
                 self.assertEqual(result['connect_count'], 0)
             visit = s.core.visits[CUSTOMER_ID]
-            self.assertEqual(visit.bill, visit.seated_ticks*s.core.config.time_price + result['bonus_funds'])
+            from cat_cafe_sim.core.cafe_customer_satisfaction import evaluate as satisfaction
+            satisfaction_bonus = satisfaction(s.core, result, evaluation)['bonus']
+            self.assertEqual(visit.bill, visit.seated_ticks*s.core.config.time_price + result['bonus_funds'] + satisfaction_bonus)
             self.reload(s)
         s = self.create(); self.unlock(s)
         while not s.core.closed:

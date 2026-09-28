@@ -88,7 +88,9 @@ def validate(core, data):
             evaluation = evaluate(core, result)
             if evaluation is not None and CUSTOMER_ID not in schedule(core, day['day']):
                 raise ValueError('解放前の高難度客の接客記録があります。')
-            total += result['bonus_funds'] + (evaluation['bonus'] if evaluation else 0)
+            from .cafe_customer_satisfaction import evaluate as evaluate_satisfaction
+            satisfaction = evaluate_satisfaction(core, result, evaluation)
+            total += result['bonus_funds'] + (evaluation['bonus'] if evaluation else 0) + (satisfaction['bonus'] if satisfaction else 0)
         if day['summary']['interaction_bonus'] != total:
             raise ValueError('高難度客を含む追加料金と接客記録が一致しません。')
     return selected

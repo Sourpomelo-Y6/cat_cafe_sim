@@ -208,13 +208,19 @@ class ManualCafeInteractionWindow:
                 text=f"退店 {customer_label(event['customer_id'])} · {reasons.get(event['reason'],event['reason'])} · 会計 {event['bill']:g}（時間 {event['base_charge']:g}＋ボーナス {event['bonus']:g}）"
             elif kind=='advanced_customer_result':
                 text='こだわり客の満足条件 · '+event['text']
+            elif kind=='customer_satisfaction_result':
+                text=(f"接客評価 {customer_label(event['customer_id'])} · {event['label']}"
+                      f"（点数{event['score']:g}・{('、'.join(event['reasons']) or '加点要素なし')}）"
+                      + (f" · 満足ボーナス ＋{event['bonus']:g}" if event['bonus'] else ''))
             elif kind=='customer_loyalty_gained':
                 text=(f"常連度 {customer_label(event['customer_id'])} · {event['before']:g} → {event['after']:g}"+
                       (' · 常連になりました' if event['became_regular'] else ''))
             elif kind=='customer_discontent_changed':
                 reasons={'queue_full':'待機列満員','wait_timeout':'待機時間終了',
                          'advanced_failure':'高難度条件未達','good_service':'良い接客',
-                         'advanced_failure+good_service':'高難度条件未達・良い接客'}
+                         'dissatisfied_service':'接客評価が不満',
+                         'advanced_failure+good_service':'高難度条件未達・良い接客',
+                         'advanced_failure+dissatisfied_service':'高難度条件未達・接客評価が不満'}
                 text=(f"累積不満 {customer_label(event['customer_id'])} · {event['before']:g} → {event['after']:g}"
                       f" · {reasons.get(event['reason'],event['reason'])}"+
                       (f" · {event['suspended_until']}日目まで来店停止" if event['suspended'] else ''))
@@ -659,6 +665,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                     lines.append('  '+health_result_text(row['health']))
             if 'popularity' in summary:
                 lines.append(f"店の人気：{summary['popularity']:g} / 子猫の引き渡し費用：{summary['kitten_expenses']:g}")
+            if 'customer_satisfaction' in summary:
+                values=summary['customer_satisfaction']
+                lines.append(f"接客評価：満足 {values['satisfied']} / 普通 {values['normal']} / 不満 {values['dissatisfied']}")
             if 'dispatch_income' in summary:
                 lines.append(f"派遣収入（売上とは別）：{summary['dispatch_income']:g}")
             lines.append("\n親しみの変化")

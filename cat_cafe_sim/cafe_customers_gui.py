@@ -77,8 +77,11 @@ class CafeCustomersWindow:
         discontent = ('累積不満：未導入' if row['discontent'] is None else
                       f"累積不満：{row['discontent']:g}/{row['discontent_target']:g}"+
                       (f"・{row['suspended_until']}日目まで来店停止、翌日から不満{row['discontent_return']:g}で復帰" if row['suspended_until'] is not None else ''))
+        satisfaction = ('直近の接客評価：記録なし' if row['satisfaction'] is None else
+                        f"直近の接客評価：{row['satisfaction']['label']}（点数 {row['satisfaction']['score']:g}"
+                        f"・{('、'.join(row['satisfaction']['reasons']) or '加点要素なし')}）")
         self.details.set(customer_label(key) + '・来店曜日：' + row['weekdays'] + '\n' + loyalty +
-                         '\n' + discontent + '\n猫からこのお客さんへの親しみ（保存済みの値）です。' +
+                         '\n' + discontent + '\n' + satisfaction +
                          (' 接客結果の保存待ちがあります。' if self.session.pending else ''))
         from .core.cafe_advanced_customers import CUSTOMER_ID, description, result_text
         if key == CUSTOMER_ID and self.session.core.advanced_customers is not None:

@@ -30,9 +30,10 @@ def initialize(core, selected=None):
     core._record(dict(kind='initialize_customer_loyalty', rules=copy.deepcopy(core.customer_loyalty['rules'])))
 
 
-def apply(core, result):
+def apply(core, result, satisfaction=None):
     data = core.customer_loyalty
-    if data is None or result['affinity_delta'] <= 0:
+    qualifies = satisfaction['level'] == 'satisfied' if satisfaction is not None else result['affinity_delta'] > 0
+    if data is None or not qualifies:
         return
     key = result['customer_id']
     row = data['customers'].setdefault(key, dict(score=0, regular_day=None))
@@ -91,6 +92,7 @@ def validate(core, data):
     data = prepare(core, data)
     selected = data['rules']
     from .cafe_checkpoint import outcome_result
+    from .cafe_customer_satisfaction import qualified
     expected = {}
     outcomes = [outcome_result(value) for value in core.outcomes.values()]
     offset = 0
@@ -98,7 +100,7 @@ def validate(core, data):
     days.append((core.day, len(outcomes)-offset-sum(count for _, count in days)))
     for day, count in days:
         for result in outcomes[offset:offset+count]:
-            if result['affinity_delta'] <= 0:
+            if not qualified(core, result):
                 continue
             row = expected.setdefault(result['customer_id'], dict(score=0, regular_day=None))
             row['score'] = min(selected['threshold'], row['score'] + selected['gain'])

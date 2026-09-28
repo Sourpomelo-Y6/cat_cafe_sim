@@ -10,6 +10,7 @@ def apply_operation(core, operation):
     if kind=='initialize_traits':core.initialize_traits(operation['traits'])
     elif kind=='initialize_weekdays':core.initialize_weekdays(operation['rules'])
     elif kind=='initialize_advanced_customers':core.initialize_advanced_customers(operation['rules'])
+    elif kind=='initialize_customer_satisfaction':core.initialize_customer_satisfaction(operation['rules'])
     elif kind=='initialize_customer_loyalty':core.initialize_customer_loyalty(operation['rules'])
     elif kind=='initialize_customer_discontent':core.initialize_customer_discontent(operation['rules'])
     elif kind=='purchase_seat_equipment':core.purchase_seat_equipment(operation['seat_id'],operation['rules'])

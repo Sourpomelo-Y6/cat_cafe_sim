@@ -18,14 +18,17 @@ class CustomerLoyaltyTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
 
-    def create(self, mode='free', loyalty=None, legacy=False):
+    def create(self, mode='free', loyalty=None, legacy=False, satisfaction=None):
         selected = starting_conditions(mode)
         selected.pop('intake_request')
         if legacy:
             selected.pop('customer_loyalty')
             selected.pop('customer_discontent')
+            selected.pop('customer_satisfaction')
         elif loyalty is not None:
             selected['customer_loyalty'] = loyalty
+        if satisfaction is not None:
+            selected['customer_satisfaction'] = satisfaction
         if mode == 'popularity':
             selected['goal']['target'] = 105
         return create_game(Path(self.temp.name)/'games', selected)
@@ -68,17 +71,19 @@ class CustomerLoyaltyTests(unittest.TestCase):
         self.assertEqual(s.core.day_results[-1]['customer_visits'], [])
         self.reload(s)
 
-    def test_default_progress_and_all_customer_types_use_same_state(self):
-        s = self.create('popularity', loyalty=dict(gain=25, threshold=25))
+    def test_only_satisfied_customer_types_gain_loyalty(self):
+        from cat_cafe_sim.core.cafe_customer_satisfaction import rules as satisfaction_rules
+        satisfaction = dict(satisfaction_rules(), satisfied_score=1)
+        s = self.create('popularity', loyalty=dict(gain=25, threshold=25), satisfaction=satisfaction)
         while not s.core.closed: s.automatic_step()
         self.assertEqual(s.core.goal['status'], 'cleared')
         s.continue_goal(); s.next_day(); s.expand_seats(); s.expand_seats()
         s.step()
         from cat_cafe_sim.core.cafe_advanced_customers import CUSTOMER_ID
         self.assertIn(CUSTOMER_ID, s.core.queue)
-        s.start(CUSTOMER_ID, 'cat-mike')
+        s.start(CUSTOMER_ID, 'cat-sora')
         while s.active_interactions: s.automatic_step()
-        self.assertEqual(row(s.core, CUSTOMER_ID)['regular_day'], 2)
+        self.assertIsNone(row(s.core, CUSTOMER_ID)['regular_day'])
         while not s.core.closed: s.automatic_step()
         s.next_day(); s.step()
         from cat_cafe_sim.core.cafe_expansion import EXTRA_CUSTOMER_ID
@@ -86,7 +91,6 @@ class CustomerLoyaltyTests(unittest.TestCase):
         s.start(EXTRA_CUSTOMER_ID, 'cat-mugi')
         while s.active_interactions: s.automatic_step()
         self.assertEqual(row(s.core, EXTRA_CUSTOMER_ID)['regular_day'], 3)
-        self.assertIn(DAYS[extra_weekday(s.core, CUSTOMER_ID)], range_text(s, CUSTOMER_ID))
         self.reload(s)
 
     def test_legacy_and_corrupt_state(self):

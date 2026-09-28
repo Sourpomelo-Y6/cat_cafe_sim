@@ -79,14 +79,17 @@ def apply_departure(core, visit):
         _change(core, visit.id, core.customer_discontent['rules']['waiting_gain'], visit.departure_reason)
 
 
-def apply_service(core, result, advanced_evaluation):
+def apply_service(core, result, advanced_evaluation, satisfaction=None):
     if core.customer_discontent is None:
         return
     selected = core.customer_discontent['rules']
     delta = selected['advanced_failure_gain'] if advanced_evaluation is not None and not advanced_evaluation['success'] else 0
     reasons = ['advanced_failure'] if delta else []
-    if result['affinity_delta'] > 0:
+    good = satisfaction['level'] == 'satisfied' if satisfaction is not None else result['affinity_delta'] > 0
+    if good:
         delta -= selected['good_service_recovery']; reasons.append('good_service')
+    if satisfaction is not None and satisfaction['level'] == 'dissatisfied':
+        delta += core.customer_satisfaction['dissatisfied_discontent_gain']; reasons.append('dissatisfied_service')
     _change(core, result['customer_id'], delta, '+'.join(reasons))
 
 
@@ -148,6 +151,7 @@ def validate(core, data):
     selected = data['rules']
     from .cafe_checkpoint import outcome_result
     from .cafe_advanced_customers import evaluate
+    from .cafe_customer_satisfaction import evaluate as evaluate_satisfaction
     outcomes = [outcome_result(value) for value in core.outcomes.values()]
     offset = 0
     expected = {}
@@ -173,8 +177,12 @@ def validate(core, data):
                 _simulate_change(expected, selected, visit['customer_id'], day, selected['waiting_gain'])
         for result in outcomes[offset:offset+count]:
             advanced = evaluate(core, result)
+            satisfaction = evaluate_satisfaction(core, result, advanced)
             delta = selected['advanced_failure_gain'] if advanced is not None and not advanced['success'] else 0
-            delta -= selected['good_service_recovery'] if result['affinity_delta'] > 0 else 0
+            good = satisfaction['level'] == 'satisfied' if satisfaction is not None else result['affinity_delta'] > 0
+            delta -= selected['good_service_recovery'] if good else 0
+            if satisfaction is not None and satisfaction['level'] == 'dissatisfied':
+                delta += core.customer_satisfaction['dissatisfied_discontent_gain']
             _simulate_change(expected, selected, result['customer_id'], day, delta)
         offset += count
     if data['customers'] != expected:
