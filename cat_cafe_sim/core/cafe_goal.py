@@ -138,6 +138,8 @@ def settle(core):
         core._emit('goal_result', status=status)
         from .cafe_clear_results import capture
         capture(core, 'popularity')
+        if status == 'cleared' and core.advanced_customers is not None and not data.get('history'):
+            core._emit('advanced_customer_unlocked', first_day=core.day+1)
 
 
 def continue_game(core):

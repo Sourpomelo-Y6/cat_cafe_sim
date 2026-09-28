@@ -191,6 +191,11 @@ def restore(data):
             if (core.traits or {}).get(key) != core.recruitment['candidates'][key].get('trait'):
                 raise ValueError('加入した猫の特性が候補と一致しません。')
     if 'weekdays' in state:
+        # 来店予定の解放日は保存済み目標から導出。目標の整合性は後段で検証する。
+        core.goal = copy.deepcopy(state.get('goal'))
+        if 'advanced_customers' in state:
+            from .cafe_advanced_customers import rules as advanced_rules
+            core.advanced_customers = advanced_rules(state['advanced_customers'])
         from .cafe_weekdays import validate as validate_weekdays
         core.weekdays = validate_weekdays(core, state['weekdays'])
     elif any('customer_visits' in row for row in core.day_results):
@@ -238,6 +243,9 @@ def restore(data):
         if not core.management:
             raise ValueError('目標には経営ルールが必要です。')
         core.goal=validate_goal(core,state['goal'],core.management)
+    if 'advanced_customers' in state:
+        from .cafe_advanced_customers import validate as validate_advanced
+        core.advanced_customers = validate_advanced(core, state['advanced_customers'])
     from .cafe_patron import validate as validate_patron, pending as patron_pending, DESTINATION_ID
     if 'patron' in state:
         core.patron = validate_patron(core, state['patron'])

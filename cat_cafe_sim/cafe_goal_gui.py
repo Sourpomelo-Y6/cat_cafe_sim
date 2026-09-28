@@ -60,6 +60,9 @@ class CafeGoalWindow:
             return
         self.status.set(progress(core))
         self.details.set(f"開始日を含む{selected['days']}日以内に人気{selected['target']:g}が目標です。\n好感度につながる反応合計がプラスの接客1件につき＋{base['gain_per_success']:g}。閉店時に加算（上限{base['cap']:g}）し、家出の減少を反映後に判定します。休業も日数に含みます。")
+        from .core.cafe_advanced_customers import description
+        if core.advanced_customers is not None:
+            self.details.set(self.details.get() + '\n' + description(core))
         self.history.delete(*self.history.get_children())
         stages = [base] + base.get('stages', [])
         attempts = (data.get('history', []) + [dict(started_day=current_start(data), status=data['status'], resolved_day=data['resolved_day'])]) if data else []

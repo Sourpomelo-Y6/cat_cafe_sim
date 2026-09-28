@@ -70,7 +70,14 @@ def arrive(core):
     data = core.customer_preferences
     if data is not None:
         for key in core.visits:
-            data['customers'].setdefault(key, preference_for(core.seed, key, data['rules']['pool']))
+            data['customers'].setdefault(key, customer_preference(core, key, data['rules']))
+
+
+def customer_preference(core, key, selected):
+    from .cafe_advanced_customers import CUSTOMER_ID
+    if core.advanced_customers is not None and key == CUSTOMER_ID:
+        return core.advanced_customers['feature']
+    return preference_for(core.seed, key, selected['pool'])
 
 
 def validate_customers(core, data):
@@ -81,7 +88,7 @@ def validate_customers(core, data):
         raise ValueError('お客さんの好みと来店記録が一致しません。')
     for key, value in data['customers'].items():
         identity(key)
-        if value != preference_for(core.seed, key, selected['pool']):
+        if value != customer_preference(core, key, selected):
             raise ValueError('お客さんの好みが一致しません。')
     return copy.deepcopy(data)
 

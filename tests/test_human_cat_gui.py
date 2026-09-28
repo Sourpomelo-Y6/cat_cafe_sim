@@ -1811,6 +1811,42 @@ class CafeStartWindowTests(unittest.TestCase):
         self.start = CafeStartWindow(self.root, self.directory)
         self.addCleanup(lambda: self.start.app.stop() if hasattr(self.start, 'app') else None)
 
+    def test_advanced_customer_preview_result_and_small_layout(self):
+        from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
+        from cat_cafe_sim.core.cafe_advanced_customers import CUSTOMER_ID
+        selected = starting_conditions(); selected.pop('intake_request'); selected['goal']['target'] = 105
+        s = create_game(self.directory, selected)
+        self.start.show_game(s, False)
+        app = self.start.app
+        app.show_customers(); window = app.customers_window
+        window.window.geometry('660x520')
+        window.customers.selection_set(CUSTOMER_ID); window.select(); self.root.update()
+        self.assertIn('未解放', str(window.customers.item(CUSTOMER_ID, 'values')))
+        self.assertIn('心をつかむ', window.details.get())
+        self.assertIn('追加料金＋100', window.details.get())
+        self.assertGreater(window.cats.winfo_height(), 50)
+        before = s.core.snapshot(); window.fill()
+        self.assertEqual(s.core.snapshot(), before)
+        window.window.destroy()
+        while not s.core.closed: s.automatic_step()
+        app.show_goal(); goal = app.goal_window
+        goal.window.geometry('500x400'); self.root.update()
+        self.assertIn('解放', goal.details.get())
+        self.assertGreater(goal.history.winfo_height(), 20)
+        goal.window.destroy()
+        s.continue_goal(); s.next_day(); s.step(); s.start(CUSTOMER_ID, 'cat-sora'); s.finish()
+        app.refresh()
+        self.assertTrue(any('こだわり客の満足条件' in str(app.history.item(key, 'values')) for key in app.history.get_children()))
+        app.show_customers(); window = app.customers_window
+        window.window.geometry('660x520')
+        window.customers.selection_set(CUSTOMER_ID); window.select(); self.root.update()
+        self.assertIn('未達：白猫一致', window.details.get())
+        self.assertIn('心をつかむ 0/1回', window.details.get())
+        window.day_selector.current(1); window.fill()
+        self.assertIn('来店予定', str(window.customers.item(CUSTOMER_ID, 'values')))
+        self.assertGreater(window.cats.winfo_height(), 50)
+        window.window.destroy()
+
     def test_clear_results_continue_history_restart_and_small_layout(self):
         from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
         from cat_cafe_sim.cafe_clear_results_gui import CafeClearResultsWindow

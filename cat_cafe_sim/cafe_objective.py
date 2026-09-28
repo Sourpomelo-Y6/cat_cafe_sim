@@ -6,7 +6,7 @@ def description(conditions, mode):
     if mode == 'popularity':
         rules = conditions['goal']
         stages = [rules] + rules.get('stages', [])
-        return ' → '.join(f"人気{r['target']:g}（{r['days']}日間）" for r in stages) + '。段階ごとに次の挑戦か自由営業を選べます。'
+        return ' → '.join(f"人気{r['target']:g}（{r['days']}日間）" for r in stages) + '。段階ごとに次の挑戦か自由営業を選べます。第1段階達成で白猫好きのこだわり客が解放されます。'
     if mode == 'patron':
         rules = conditions['patron']
         return f"{rules['name']}への派遣で満足度{rules['target']:g}を目指します。期限なし。帰還報酬の受取時に加算します。"

@@ -38,7 +38,8 @@ def starting_conditions(mode="popularity"):
     from .core.cafe_intake_request import rules as intake_rules
     from .core.cafe_patron import rules as patron_rules
     from .core.cafe_bond_goal import rules as bond_rules
-    return dict(objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
+    from .core.cafe_advanced_customers import rules as advanced_rules
+    return dict(advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
 
 
 def create_game(directory='saves/games', conditions=None):
@@ -66,6 +67,8 @@ def create_game(directory='saves/games', conditions=None):
             raise ValueError('目標を選んでください。')
         if mode == 'popularity':
             session.enable_goal(selected.get('goal'))
+            if 'advanced_customers' in selected:
+                session.core.initialize_advanced_customers(selected['advanced_customers'])
         else:
             from .core.cafe_goal import rules as popularity_rules
             growth = dict(selected.get('goal') or popularity_rules())

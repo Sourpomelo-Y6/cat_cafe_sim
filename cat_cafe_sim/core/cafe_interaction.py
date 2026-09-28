@@ -30,6 +30,7 @@ class CafeInteractionCore(SimulationCore):
         self.day_outcome_offset = 0
         self.returning_customers = set()
         self.weekdays = None
+        self.advanced_customers = None
         self.player_bond = None
         self.management = None
         self.goal = None
@@ -67,6 +68,7 @@ class CafeInteractionCore(SimulationCore):
                 'interaction': self.active.log() if self.active else None,
                 **({'intake_request': copy.deepcopy(self.intake_request)} if self.intake_request is not None else {}),
                 **({'weekdays': copy.deepcopy(self.weekdays)} if self.weekdays is not None else {}),
+                **({'advanced_customers': copy.deepcopy(self.advanced_customers)} if self.advanced_customers is not None else {}),
                 **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
@@ -331,6 +333,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_weekdays import initialize
         initialize(self, rules)
 
+    def initialize_advanced_customers(self, rules=None):
+        from .cafe_advanced_customers import initialize
+        initialize(self, rules)
+
     def _arrive(self):
         if self.weekdays is None:
             super()._arrive()
@@ -498,10 +504,16 @@ class CafeInteractionCore(SimulationCore):
         self._depart(visit, reason)
         # 旧営業の成功ボーナスは使わず、版4の成果を同じ会計へ加える。
         bonus = result['bonus_funds']
+        from .cafe_advanced_customers import evaluate, result_text
+        evaluation = evaluate(self, result)
+        if evaluation is not None:
+            bonus += evaluation['bonus']
         visit.bill += bonus
         self.funds += bonus
         self.interaction_bonus += bonus
         self.events[-1].update(bonus=bonus, bill=visit.bill)
+        if evaluation is not None:
+            self._emit('advanced_customer_result', customer_id=visit.id, text=result_text(self, result))
         self.outcomes[interaction.session_id] = interaction.log()
         self._emit('interaction_completed', session_id=interaction.session_id, result=result)
         from .cafe_adoption import consider

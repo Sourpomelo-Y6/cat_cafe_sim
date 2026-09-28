@@ -1,6 +1,7 @@
 """保存済みの営業記録から作る、読み取り専用の顧客名簿と当日の予定。"""
 import re
 from .core.cafe_preferences import FEATURES, preference_for
+from .core.cafe_advanced_customers import CUSTOMER_ID, NAME
 
 # IDとの対応は保存再開・既存ゲームで維持する。追加するときも順番を変更しない。
 _NAMES = ('佐藤', '鈴木', '高橋', '田中', '伊藤', '渡辺', '山本', '中村', '小林', '加藤',
@@ -13,6 +14,8 @@ def number(customer_id):
 
 
 def customer_name(customer_id):
+    if customer_id == CUSTOMER_ID:
+        return NAME
     index = number(customer_id)
     if index is None:
         return customer_id
@@ -28,6 +31,8 @@ def preference(core, customer_id):
     data = core.customer_preferences
     if data is None:
         return None
+    if core.advanced_customers is not None and customer_id == CUSTOMER_ID:
+        return core.advanced_customers['feature']
     existing = data['customers'].get(customer_id)
     if existing is not None:
         return existing
@@ -44,6 +49,8 @@ def directory(session):
     tomorrow = arrival_schedule(core, core.day + 1)
     all_customers = {f'guest-{i+1}' for i in range(len(core.config.arrival_ticks))}
     known = all_customers | set(core.visits) | core.returning_customers | {guest for _, guest in session.affinities}
+    if core.advanced_customers is not None:
+        known.add(CUSTOMER_ID)
     rows = []
     for key in sorted(known, key=lambda key: (number(key) is None, number(key) or 0, key)):
         index = number(key)
@@ -60,6 +67,10 @@ def directory(session):
             status = '来店なし（休業・終了）' if core.closed else '来店予定'
         else:
             status = '本日の予定なし'
+        if key == CUSTOMER_ID and core.advanced_customers is not None:
+            from .core.cafe_advanced_customers import unlocked_day
+            if unlocked_day(core) is None:
+                status = '未解放（人気第1段階）'
         rows.append(dict(customer_id=key, name=customer_name(key), visits=count,
                          arrival_tick=planned, tomorrow_tick=tomorrow.get(key),
                          weekdays='・'.join(DAYS[d] for d in customer_days(core, index-1)) if key in all_customers and core.weekdays else '毎日' if key in all_customers else '—',
