@@ -42,9 +42,12 @@ class CafeExpansionWindow:
                       or step['to_seats']==5 and second_popularity_cleared(core))
             unlock='' if unlocked else f"\n{step['to_seats']}席は人気目標の第{step['to_seats']-3}段階達成後に解放されます。"
             visitors = '\n購入翌日から通常のお客さんが営業日ごとに1人増えます。' if step['to_seats'] in (4,5) else '\n来客数はまだ変わりません。'
+            from .core.cafe_operating_cost import estimate
+            running=('' if core.operating_cost is None else
+                     f"\n日次運営費：{estimate(core):g} → {estimate(core,step['to_seats']):g}（毎日）")
             self.details.set((history+'\n' if history else '') +
                 f"{step['from_seats']}席 → {step['to_seats']}席 / 増設費用：{step['cost']:g}\n増設後の所持金：{core.funds-step['cost']:g}"
-                f"\n増設した席は購入当日から使えます。{visitors}{unlock}\n派遣には店内の席数を超える担当可能な猫が必要です。")
+                f"\n増設した席は購入当日から使えます。{visitors}{running}{unlock}\n派遣には店内の席数を超える担当可能な猫が必要です。")
             self.purchase_button.configure(text=f"{step['to_seats']}席に増設する")
         else:
             self.details.set((history+'\n' if history else '')+'現在予定されている席の増設はすべて購入済みです。')

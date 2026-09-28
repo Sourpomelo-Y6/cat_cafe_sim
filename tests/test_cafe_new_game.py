@@ -33,7 +33,8 @@ class NewGameTests(unittest.TestCase):
         self.assertFalse(auto)
         self.assertEqual(restored.core.snapshot(), core.snapshot())
         restored.day_off()
-        self.assertEqual(restored.core.funds, 1000)
+        self.assertEqual(restored.core.funds, 940)
+        self.assertEqual(restored.core.day_results[-1]['summary']['operating_cost'],60)
         self.assertEqual(restored.core.day, 2)
 
     def test_new_game_does_not_inherit_or_change_previous_game(self):

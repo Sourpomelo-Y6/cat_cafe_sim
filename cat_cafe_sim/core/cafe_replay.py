@@ -16,6 +16,7 @@ def apply_operation(core, operation):
     elif kind=='initialize_customer_trust':core.initialize_customer_trust(operation['rules'])
     elif kind=='resolve_customer_trust':core.resolve_customer_trust(operation['event_id'],operation['choice'])
     elif kind=='initialize_reservation':core.initialize_reservation(operation['rules'])
+    elif kind=='initialize_operating_cost':core.initialize_operating_cost(operation['rules'])
     elif kind=='initialize_vip_customer':core.initialize_vip_customer(operation['rules'])
     elif kind=='resolve_reservation':core.resolve_reservation(operation['choice'])
     elif kind=='purchase_seat_equipment':core.purchase_seat_equipment(operation['seat_id'],operation['rules'])

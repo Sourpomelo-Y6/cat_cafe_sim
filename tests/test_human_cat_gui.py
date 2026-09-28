@@ -1131,7 +1131,7 @@ class CafeSaveWindowTests(unittest.TestCase):
         with patch('tkinter.messagebox.askyesno', return_value=True):
             window.accept_button.invoke()
         self.assertEqual(len(app.session.core.cats), 6)
-        self.assertEqual(app.session.core.funds, 800)
+        self.assertEqual(app.session.core.funds, 620)
         self.assertTrue(window.accept_button.instate(['disabled']))
         self.assertTrue(window.decline_button.instate(['disabled']))
         self.assertIn('迎えました', window.notice.get())
@@ -1898,6 +1898,7 @@ class CafeStartWindowTests(unittest.TestCase):
         window.window.geometry('500x300'); self.root.update()
         self.assertIn('3席 → 4席', window.details.get())
         self.assertIn('翌日', window.details.get())
+        self.assertIn('日次運営費：70 → 80',window.details.get())
         self.assertEqual(window.purchase_button['text'], '4席に増設する')
         self.assertLessEqual(window.close_button.winfo_rooty()+window.close_button.winfo_height(),
                              window.window.winfo_rooty()+window.window.winfo_height())
@@ -2084,7 +2085,7 @@ class CafeStartWindowTests(unittest.TestCase):
             self.assertGreater(widget.winfo_height(),15)
             self.assertLessEqual(widget.winfo_rooty()+widget.winfo_height(),activity.window.winfo_rooty()+activity.window.winfo_height())
         activity.receive_button.invoke()
-        self.assertEqual(app.session.core.funds,1125)
+        self.assertEqual(app.session.core.funds,1065)
         self.assertEqual(app.roster.set('cat-tama','stress'),'10')
         activity.recruitment_button.invoke();window=activity.recruitment_window
         self.root.update()

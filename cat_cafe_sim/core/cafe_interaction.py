@@ -39,6 +39,7 @@ class CafeInteractionCore(SimulationCore):
         self.vip_customer = None
         self.player_bond = None
         self.management = None
+        self.operating_cost = None
         self.goal = None
         self.objective = None
         self.clear_results = None
@@ -98,6 +99,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'objective': self.objective} if self.objective is not None else {}),
                 **({'goal': copy.deepcopy(self.goal)} if self.goal is not None else {}),
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
+                **({'operating_cost': copy.deepcopy(self.operating_cost)} if self.operating_cost is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
                 **({'item_uses': copy.deepcopy(self.item_uses)} if self.item_uses else {}),
@@ -328,6 +330,8 @@ class CafeInteractionCore(SimulationCore):
         if kind == 'closed':
             from .cafe_activities import close_day
             close_day(self)
+            from .cafe_operating_cost import charge
+            charge(self)
             from .cafe_management import close_day as management_close
             management_close(self)
             from .cafe_goal import settle
@@ -344,6 +348,10 @@ class CafeInteractionCore(SimulationCore):
     def initialize_weekdays(self, rules=None):
         from .cafe_weekdays import initialize
         initialize(self, rules)
+
+    def initialize_operating_cost(self,rules=None):
+        from .cafe_operating_cost import initialize
+        initialize(self,rules)
 
     def initialize_advanced_customers(self, rules=None):
         from .cafe_advanced_customers import initialize
@@ -635,6 +643,7 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_equipment import expenses as equipment_expenses
         from .cafe_activities import reward
         from .cafe_seat_equipment import expenses as seat_expenses
+        from .cafe_operating_cost import charged as operating_charged
         visits = list(self.visits.values())
         from .cafe_checkpoint import outcome_result
         from .cafe_customer_satisfaction import counts as satisfaction_counts
@@ -648,6 +657,7 @@ class CafeInteractionCore(SimulationCore):
                     **({**({'goal_status': summary_status(self.goal, self.day)} if not self.goal.get('tracking_only') else {}), 'popularity_gain': next((r['gain'] for r in self.goal['days'] if r['day']==self.day),0)} if self.goal else {}),
                     **({'equipment_expenses': equipment_expenses(self, self.day)} if self.rest_space is not None else {}),
                     **({'expansion_expenses': expansion_expenses(self, self.day)} if self.expansion is not None else {}),
+                    **({'operating_cost': operating_charged(self,self.day)} if self.operating_cost is not None else {}),
                     **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()

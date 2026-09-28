@@ -20,6 +20,7 @@
 - 1席の検証用営業からの増設は初回範囲に含めない。
 
 設定は [cafe_expansion.json](../config/cafe_expansion.json)。増設画面には段階ごとの購入日と実際の支払額を表示する。
+新規ゲームでは、増設前後の[日次運営費](HumanToCatOperatingCosts.md)も表示する。増設した席は購入当日の運営費から席数に含める。
 
 ## 接客・派遣・一日の流れ
 

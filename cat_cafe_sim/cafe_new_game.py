@@ -45,7 +45,8 @@ def starting_conditions(mode="popularity"):
     from .core.cafe_customer_trust import rules as trust_rules
     from .core.cafe_reservation import rules as reservation_rules
     from .core.cafe_vip_customer import rules as vip_rules
-    return dict(vip_customer=vip_rules(), reservation=reservation_rules(), customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
+    from .core.cafe_operating_cost import rules as operating_cost_rules
+    return dict(operating_cost=operating_cost_rules(), vip_customer=vip_rules(), reservation=reservation_rules(), customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
 
 
 def create_game(directory='saves/games', conditions=None):
@@ -72,6 +73,8 @@ def create_game(directory='saves/games', conditions=None):
         if 'customer_discontent' in selected:
             session.core.initialize_customer_discontent(selected['customer_discontent'])
         session.enable_management(selected['management'])
+        if 'operating_cost' in selected:
+            session.core.initialize_operating_cost(selected['operating_cost'])
         if 'customer_trust' in selected:
             session.core.initialize_customer_trust(selected['customer_trust'])
         session.core.initialize_clear_results()

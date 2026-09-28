@@ -323,6 +323,10 @@ def restore(data):
         core.expansion = validate_expansion(core, state['expansion'], data['seat_count'])
     elif data['seat_count'] >= 3:
         raise ValueError('3席以上の営業には増設記録が必要です。')
+    if 'operating_cost' in state:
+        from .cafe_operating_cost import validate as validate_operating_cost
+        if core.management is None:raise ValueError('店舗運営費に必要な経営設定がありません。')
+        core.operating_cost=validate_operating_cost(core,state['operating_cost'])
     from .cafe_seat_equipment import validate as validate_seat_equipment, expenses as seat_expenses, check_interaction as check_equipment
     if 'equipment_store' in state:
         core.equipment_store = validate_seat_equipment(core, state['equipment_store'])
@@ -359,6 +363,8 @@ def restore(data):
     expected_funds += money_adjustment(core)
     from .cafe_recruitment import expenses
     expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core) + seat_expenses(core)
+    from .cafe_operating_cost import charged as operating_charged
+    expected_funds-=operating_charged(core)
     if not math.isclose(core.funds,expected_funds,rel_tol=1e-12,abs_tol=1e-8):
         raise ValueError('会計の合計と所持金が一致しません。')
     core.recorded_digest=record_digest(core)

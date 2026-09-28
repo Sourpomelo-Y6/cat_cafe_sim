@@ -151,6 +151,11 @@ class ManualCafeInteractionWindow:
                 text='目標結果を確認し、継続営業を選択'
             elif kind=='management_enabled':
                 text=f"経営ルール開始 · 開始時資金補充 {event['grant']:g}"
+            elif kind=='operating_cost_enabled':
+                text='日次の店舗運営費を有効化'
+            elif kind=='operating_cost_charged':
+                text=(f"店舗運営費 {event['total']:g}（基本 {event['base']:g}＋"
+                      f"{event['seat_count']}席分 {event['seat_cost']:g}）")
             elif kind=='intake_request_waiting':
                 text=f"保護猫 {event['name']} の受け入れ依頼が届きました。"
             elif kind=='intake_request_resolved':
@@ -706,6 +711,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                     lines.append('  '+health_result_text(row['health']))
             if 'popularity' in summary:
                 lines.append(f"店の人気：{summary['popularity']:g} / 子猫の引き渡し費用：{summary['kitten_expenses']:g}")
+            if 'operating_cost' in summary:
+                lines.append(f"店舗運営費：{summary['operating_cost']:g}")
             if 'customer_satisfaction' in summary:
                 values=summary['customer_satisfaction']
                 lines.append(f"接客評価：満足 {values['satisfied']} / 普通 {values['normal']} / 不満 {values['dissatisfied']}")
