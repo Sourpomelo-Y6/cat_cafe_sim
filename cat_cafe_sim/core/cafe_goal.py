@@ -117,8 +117,10 @@ def earn(core):
     rows = list(core.outcomes.values())[core.day_outcome_offset:]
     from .cafe_customer_satisfaction import qualified
     count = sum(qualified(core, outcome_result(row)) for row in rows)
+    from .cafe_reservation import popularity_bonus
+    extra=sum(popularity_bonus(core,outcome_result(row)) for row in rows)
     before = core.management['popularity']
-    after = min(core.goal['rules']['cap'], before+count*core.goal['rules']['gain_per_success'])
+    after = min(core.goal['rules']['cap'], before+count*core.goal['rules']['gain_per_success']+extra)
     core.management['popularity'] = after
     core.goal['days'].append(dict(day=core.day, qualified=count, gain=after-before))
     core._emit('popularity_earned', gain=after-before, qualified=count)
@@ -141,6 +143,8 @@ def settle(core):
         capture(core, 'popularity')
         if status == 'cleared' and core.advanced_customers is not None and not data.get('history'):
             core._emit('advanced_customer_unlocked', first_day=core.day+1)
+        if status=='cleared' and core.reservation is not None and len(data.get('history',[]))==1:
+            core._emit('reservation_unlocked',first_request_day=core.day+1)
 
 
 def continue_game(core):
@@ -212,7 +216,9 @@ def validate(core, data, management):
         from .cafe_customer_trust import losses as customer_losses
         popularity=max(0,popularity-customer_losses(core,day))
         count=sum(qualified(core, outcome_result(value)) for value in offsets[day])
-        after=min(rule['cap'],popularity+count*rule['gain_per_success'])
+        from .cafe_reservation import popularity_bonus
+        extra=sum(popularity_bonus(core,outcome_result(value)) for value in offsets[day])
+        after=min(rule['cap'],popularity+count*rule['gain_per_success']+extra)
         expected=dict(day=day,qualified=count,gain=after-popularity)
         if row!=expected:
             raise ValueError('人気獲得と接客記録が一致しません。')

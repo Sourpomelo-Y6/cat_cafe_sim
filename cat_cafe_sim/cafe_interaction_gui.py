@@ -233,6 +233,16 @@ class ManualCafeInteractionWindow:
             elif kind=='customer_departed':
                 reason='対応しなかった' if event['reason']=='ignored' else '信頼回復中の接客が不満だった'
                 text=f"永久離脱 {customer_label(event['customer_id'])} · {reason} · 人気 {event['popularity_before']:g} → {event['popularity']:g}"
+            elif kind=='reservation_offered':
+                text=f"特別予約の依頼 · {event['visit_day']}日目の来店"
+            elif kind=='reservation_unlocked':
+                text=f"特別予約を解放 · {event['first_request_day']}日目から依頼を確認できます"
+            elif kind=='reservation_resolved':
+                text=('特別予約を受け入れ' if event['choice']=='accept' else '特別予約を見送り')+f" · 対象{event['visit_day']}日目"
+            elif kind=='reservation_result':
+                text=('特別予約の条件達成' if event['success'] else '特別予約の条件未達')+f" · 追加料金 {event['bonus']:g}"
+            elif kind=='reservation_unserved':
+                text='特別予約は接客されず終了'
             elif kind=='advanced_customer_unlocked':
                 text=f"白猫好きのこだわり客を解放 · {event['first_day']}日目から来店。条件は「お客さんの名簿・来店予定…」で確認できます。"
             elif kind=='interaction_completed':
@@ -522,6 +532,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .core.cafe_bond_goal import pending as bond_pending, progress as bond_progress
         from .core.cafe_player import active
         from .core.cafe_customer_trust import waiting as trust_waiting
+        from .core.cafe_reservation import waiting as reservation_waiting
         core = self.session.core
         phase = '営業終了' if is_over(core) else '閉店' if core.closed else '営業準備' if core.can_set_shifts else '営業中' if self.running else '営業・一時停止'
         from .core.cafe_weekdays import day_label
@@ -566,6 +577,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif trust_waiting(core):
             self.notice.set('来店停止を繰り返したお客さんがいます。信頼回復に取り組むか選んでください。')
             self._attention = self.show_customer_trust
+        elif reservation_waiting(core):
+            self.notice.set('翌日の特別予約依頼があります。条件を確認して受け入れるか選んでください。')
+            self._attention = self.show_reservation
         elif waiting_events(core):
             from .core.cafe_dispatch_encounters import waiting as choice_waiting
             self.notice.set('派遣中の出来事が回答待ちです。選択肢と効果を確認してください。' if choice_waiting(core) else '派遣から帰還した猫が確認待ちです。帰還と報酬を確認してください。')
@@ -630,6 +644,11 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .cafe_customer_trust_gui import CafeCustomerTrustWindow
         self.pages.select(self.preparation_page);self.stop();self.refresh()
         self.customer_trust_window=CafeCustomerTrustWindow(self.root,self.session,self.refresh)
+
+    def show_reservation(self):
+        from .cafe_reservation_gui import CafeReservationWindow
+        self.pages.select(self.preparation_page);self.stop();self.refresh()
+        self.reservation_window=CafeReservationWindow(self.root,self.session,self.refresh)
 
     def take_day_off(self):
         from tkinter import messagebox

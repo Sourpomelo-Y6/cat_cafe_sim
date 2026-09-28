@@ -209,6 +209,9 @@ def restore(data):
         if 'advanced_customers' in state:
             from .cafe_advanced_customers import rules as advanced_rules
             core.advanced_customers = advanced_rules(state['advanced_customers'])
+        if 'reservation' in state:
+            from .cafe_reservation import prepare as prepare_reservation
+            core.reservation=prepare_reservation(core,state['reservation'])
         from .cafe_weekdays import validate as validate_weekdays
         core.weekdays = validate_weekdays(core, state['weekdays'])
     elif any('customer_visits' in row for row in core.day_results):
@@ -267,6 +270,9 @@ def restore(data):
     if 'advanced_customers' in state:
         from .cafe_advanced_customers import validate as validate_advanced
         core.advanced_customers = validate_advanced(core, state['advanced_customers'])
+    if 'reservation' in state:
+        from .cafe_reservation import validate as validate_reservation
+        core.reservation=validate_reservation(core,state['reservation'])
     if 'customer_satisfaction' in state:
         from .cafe_customer_satisfaction import validate as validate_satisfaction
         core.customer_satisfaction = validate_satisfaction(core, state['customer_satisfaction'])

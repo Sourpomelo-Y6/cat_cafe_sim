@@ -55,6 +55,11 @@ def evaluate(core, result, advanced=None):
     if advanced is not None:
         score += 1 if advanced['success'] else -1
         reasons.append('高難度条件達成' if advanced['success'] else '高難度条件未達')
+    from .cafe_reservation import evaluate as reservation_evaluate
+    reservation=reservation_evaluate(core,result)
+    if reservation is not None:
+        score += 1 if reservation['success'] else -1
+        reasons.append('予約条件達成' if reservation['success'] else '予約条件未達')
     if result['end_reason'] == 'exhausted':
         score -= 2
         reasons.append('体力切れ')
@@ -111,7 +116,9 @@ def validate(core, data):
         bonus = 0
         for outcome in current:
             advanced = advanced_evaluate(core, outcome)
-            bonus += outcome['bonus_funds'] + (advanced['bonus'] if advanced else 0) + evaluate(core, outcome, advanced)['bonus']
+            from .cafe_reservation import evaluate as reservation_evaluate
+            reservation=reservation_evaluate(core,outcome)
+            bonus += outcome['bonus_funds'] + (advanced['bonus'] if advanced else 0) + (reservation['bonus'] if reservation else 0) + evaluate(core, outcome, advanced)['bonus']
         if day['summary']['interaction_bonus'] != bonus:
             raise ValueError('接客評価の追加料金と接客記録が一致しません。')
         if index < len(core.day_results):

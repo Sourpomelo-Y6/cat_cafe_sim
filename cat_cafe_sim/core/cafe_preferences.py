@@ -76,6 +76,8 @@ def arrive(core):
 def customer_preference(core, key, selected):
     from .cafe_advanced_customers import CUSTOMER_ID
     from .cafe_expansion import EXTRA_CUSTOMER_ID, four_seat_purchase
+    from .cafe_reservation import CUSTOMER_ID as RESERVATION_ID
+    if core.reservation is not None and key==RESERVATION_ID:return core.reservation['rules']['feature']
     if core.advanced_customers is not None and key == CUSTOMER_ID:
         return core.advanced_customers['feature']
     if key == EXTRA_CUSTOMER_ID and four_seat_purchase(core):

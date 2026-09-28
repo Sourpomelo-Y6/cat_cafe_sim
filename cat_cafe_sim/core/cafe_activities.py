@@ -75,7 +75,9 @@ def waiting_events(core):
     from .cafe_management import waiting as returns
     from .cafe_dispatch_encounters import waiting as choices
     from .cafe_customer_trust import waiting as trust_waiting
-    return choices(core) + ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core) + returns(core) + trust_waiting(core)
+    from .cafe_reservation import waiting as reservation_waiting
+    reservation=reservation_waiting(core)
+    return choices(core) + ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core) + returns(core) + trust_waiting(core) + ([reservation] if reservation else [])
 
 
 def reward(core, event):

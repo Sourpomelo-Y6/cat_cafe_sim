@@ -38,6 +38,8 @@ class ClearResultsTests(unittest.TestCase):
         self.assertEqual(s.core.clear_results,{})
         s.advance_goal();s.next_day();s.day_off()
         self.assertEqual(s.core.clear_results,{})
+        from cat_cafe_sim.core.cafe_reservation import waiting
+        if waiting(s.core):s.resolve_reservation('decline')
         s.advance_goal();s.day_off()
         row=copy.deepcopy(s.core.clear_results['popularity'])
         self.assertEqual(row['day'],3)

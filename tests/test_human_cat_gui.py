@@ -1865,6 +1865,20 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertEqual(core.customer_trust['customers']['guest-1']['status'],'recovery')
         window.close()
 
+    def test_special_reservation_prompt_accept_decline_layout(self):
+        from cat_cafe_sim.cafe_new_game import create_game,starting_conditions
+        selected=starting_conditions();selected.pop('intake_request')
+        s=create_game(self.directory,selected);core=s.core
+        core.reservation['request']=dict(id='reservation-1',offered_day=1,visit_day=2,status='waiting',
+            choice=None,resolved_day=None,result=None,session_id=None)
+        self.start.show_game(s,False);app=self.start.app;self.root.update()
+        self.assertIn('特別予約',app.notice.get());app.attention_button.invoke();self.root.update()
+        window=app.reservation_window;window.window.geometry('500x280');self.root.update()
+        self.assertIn('見送ってもペナルティはありません',window.details.get())
+        self.assertLessEqual(window.accept.winfo_rooty()+window.accept.winfo_height(),window.window.winfo_rooty()+window.window.winfo_height())
+        window.decline.invoke();self.root.update()
+        self.assertEqual(core.reservation['request']['status'],'declined')
+
     def test_four_seat_expansion_unlock_purchase_and_customer_preview(self):
         from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
         from cat_cafe_sim.core.cafe_expansion import EXTRA_CUSTOMER_ID

@@ -35,6 +35,7 @@ class CafeInteractionCore(SimulationCore):
         self.customer_loyalty = None
         self.customer_discontent = None
         self.customer_trust = None
+        self.reservation = None
         self.player_bond = None
         self.management = None
         self.goal = None
@@ -77,6 +78,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'customer_loyalty': copy.deepcopy(self.customer_loyalty)} if self.customer_loyalty is not None else {}),
                 **({'customer_discontent': copy.deepcopy(self.customer_discontent)} if self.customer_discontent is not None else {}),
                 **({'customer_trust': copy.deepcopy(self.customer_trust)} if self.customer_trust is not None else {}),
+                **({'reservation': copy.deepcopy(self.reservation)} if self.reservation is not None else {}),
                 **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
@@ -365,6 +367,14 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_customer_trust import resolve
         resolve(self,event_id,choice)
 
+    def initialize_reservation(self,rules=None):
+        from .cafe_reservation import initialize
+        initialize(self,rules)
+
+    def resolve_reservation(self,choice):
+        from .cafe_reservation import resolve
+        resolve(self,choice)
+
     def _depart(self, visit, reason, perfect=False):
         already = visit.departure_reason is not None
         super()._depart(visit, reason, perfect)
@@ -429,6 +439,8 @@ class CafeInteractionCore(SimulationCore):
 
     def day_off(self):
         self.require_events_resolved()
+        from .cafe_reservation import day_off_reason
+        if day_off_reason(self):raise ValueError(day_off_reason(self))
         if not self.can_set_shifts or not self.shift_rules or not self.health_rules:
             raise ValueError('休業は出勤・病気ルールが有効な営業準備中に選んでください。')
         planned = set(self.working_cats)
@@ -479,6 +491,8 @@ class CafeInteractionCore(SimulationCore):
         self._emit('next_day', day=self.day)
         from .cafe_customer_trust import present as present_trust
         present_trust(self)
+        from .cafe_reservation import present as present_reservation
+        present_reservation(self)
         from .cafe_intake_request import present
         present(self)
         self._record(operation)
@@ -548,6 +562,9 @@ class CafeInteractionCore(SimulationCore):
         evaluation = evaluate(self, result)
         if evaluation is not None:
             bonus += evaluation['bonus']
+        from .cafe_reservation import evaluate as evaluate_reservation
+        reservation=evaluate_reservation(self,result)
+        if reservation is not None:bonus+=reservation['bonus']
         from .cafe_customer_satisfaction import evaluate as evaluate_satisfaction
         satisfaction = evaluate_satisfaction(self, result, evaluation)
         if satisfaction is not None:
@@ -558,6 +575,9 @@ class CafeInteractionCore(SimulationCore):
         self.events[-1].update(bonus=bonus, bill=visit.bill)
         if evaluation is not None:
             self._emit('advanced_customer_result', customer_id=visit.id, text=result_text(self, result))
+        if reservation is not None:
+            from .cafe_reservation import apply_result
+            apply_result(self,result,reservation)
         if satisfaction is not None:
             self._emit('customer_satisfaction_result', customer_id=visit.id, **satisfaction)
         self.outcomes[interaction.session_id] = interaction.log()

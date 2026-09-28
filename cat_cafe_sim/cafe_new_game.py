@@ -43,7 +43,8 @@ def starting_conditions(mode="popularity"):
     from .core.cafe_customer_discontent import rules as discontent_rules
     from .core.cafe_customer_satisfaction import rules as satisfaction_rules
     from .core.cafe_customer_trust import rules as trust_rules
-    return dict(customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
+    from .core.cafe_reservation import rules as reservation_rules
+    return dict(reservation=reservation_rules(), customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
 
 
 def create_game(directory='saves/games', conditions=None):
@@ -81,6 +82,8 @@ def create_game(directory='saves/games', conditions=None):
             session.enable_goal(selected.get('goal'))
             if 'advanced_customers' in selected:
                 session.core.initialize_advanced_customers(selected['advanced_customers'])
+            if 'reservation' in selected:
+                session.core.initialize_reservation(selected['reservation'])
         else:
             from .core.cafe_goal import rules as popularity_rules
             growth = dict(selected.get('goal') or popularity_rules())

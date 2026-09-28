@@ -19,6 +19,8 @@ def customer_name(customer_id):
         return NAME
     if customer_id == EXTRA_CUSTOMER_ID:
         return '増設で来店したお客さん'
+    from .core.cafe_reservation import CUSTOMER_ID as RESERVATION_ID,NAME as RESERVATION_NAME
+    if customer_id==RESERVATION_ID:return RESERVATION_NAME
     index = number(customer_id)
     if index is None:
         return customer_id
@@ -36,6 +38,8 @@ def preference(core, customer_id):
         return None
     if core.advanced_customers is not None and customer_id == CUSTOMER_ID:
         return core.advanced_customers['feature']
+    from .core.cafe_reservation import CUSTOMER_ID as RESERVATION_ID
+    if core.reservation is not None and customer_id==RESERVATION_ID:return core.reservation['rules']['feature']
     if customer_id == EXTRA_CUSTOMER_ID and four_seat_purchase(core):
         return preference_for(core.seed, customer_id, data['rules']['pool'])
     existing = data['customers'].get(customer_id)
@@ -63,6 +67,9 @@ def directory(session):
         known.add(CUSTOMER_ID)
     if four_seat_purchase(core):
         known.add(EXTRA_CUSTOMER_ID)
+    if core.reservation is not None:
+        from .core.cafe_reservation import CUSTOMER_ID as RESERVATION_ID
+        known.add(RESERVATION_ID)
     rows = []
     for key in sorted(known, key=lambda key: (number(key) is None, number(key) or 0, key)):
         index = number(key)
@@ -87,6 +94,14 @@ def directory(session):
             from .core.cafe_advanced_customers import unlocked_day
             if unlocked_day(core) is None:
                 status = '未解放（人気第1段階）'
+        from .core.cafe_reservation import CUSTOMER_ID as RESERVATION_ID,second_cleared_day
+        if key==RESERVATION_ID and core.reservation is not None:
+            request=core.reservation['request']
+            if second_cleared_day(core) is None:status='未解放（人気第2段階）'
+            elif request is None:status='予約依頼の準備前'
+            elif request['status']=='waiting':status='予約依頼への回答待ち'
+            elif request['status']=='declined':status='予約を見送り'
+            elif request['result'] is not None:status={'success':'条件達成','failure':'条件未達','unserved':'未接客'}[request['result']]
         if discontent and discontent['suspended_until'] is not None:
             status = f"来店停止（{discontent['suspended_until']}日目まで）"
         if trust and trust['status']=='recovery':status='信頼回復中'
