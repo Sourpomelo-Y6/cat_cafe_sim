@@ -23,6 +23,7 @@ class CustomerLoyaltyTests(unittest.TestCase):
         selected.pop('intake_request')
         if legacy:
             selected.pop('customer_loyalty')
+            selected.pop('customer_discontent')
         elif loyalty is not None:
             selected['customer_loyalty'] = loyalty
         if mode == 'popularity':

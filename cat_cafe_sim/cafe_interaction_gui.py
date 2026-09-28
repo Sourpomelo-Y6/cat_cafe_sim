@@ -211,6 +211,13 @@ class ManualCafeInteractionWindow:
             elif kind=='customer_loyalty_gained':
                 text=(f"常連度 {customer_label(event['customer_id'])} · {event['before']:g} → {event['after']:g}"+
                       (' · 常連になりました' if event['became_regular'] else ''))
+            elif kind=='customer_discontent_changed':
+                reasons={'queue_full':'待機列満員','wait_timeout':'待機時間終了',
+                         'advanced_failure':'高難度条件未達','good_service':'良い接客',
+                         'advanced_failure+good_service':'高難度条件未達・良い接客'}
+                text=(f"累積不満 {customer_label(event['customer_id'])} · {event['before']:g} → {event['after']:g}"
+                      f" · {reasons.get(event['reason'],event['reason'])}"+
+                      (f" · {event['suspended_until']}日目まで来店停止" if event['suspended'] else ''))
             elif kind=='advanced_customer_unlocked':
                 text=f"白猫好きのこだわり客を解放 · {event['first_day']}日目から来店。条件は「お客さんの名簿・来店予定…」で確認できます。"
             elif kind=='interaction_completed':

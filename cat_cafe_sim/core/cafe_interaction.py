@@ -32,6 +32,7 @@ class CafeInteractionCore(SimulationCore):
         self.weekdays = None
         self.advanced_customers = None
         self.customer_loyalty = None
+        self.customer_discontent = None
         self.player_bond = None
         self.management = None
         self.goal = None
@@ -71,6 +72,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'weekdays': copy.deepcopy(self.weekdays)} if self.weekdays is not None else {}),
                 **({'advanced_customers': copy.deepcopy(self.advanced_customers)} if self.advanced_customers is not None else {}),
                 **({'customer_loyalty': copy.deepcopy(self.customer_loyalty)} if self.customer_loyalty is not None else {}),
+                **({'customer_discontent': copy.deepcopy(self.customer_discontent)} if self.customer_discontent is not None else {}),
                 **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
@@ -343,6 +345,17 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_customer_loyalty import initialize
         initialize(self, rules)
 
+    def initialize_customer_discontent(self, rules=None):
+        from .cafe_customer_discontent import initialize
+        initialize(self, rules)
+
+    def _depart(self, visit, reason, perfect=False):
+        already = visit.departure_reason is not None
+        super()._depart(visit, reason, perfect)
+        if not already:
+            from .cafe_customer_discontent import apply_departure
+            apply_departure(self, visit)
+
     def _arrive(self):
         if self.weekdays is None:
             super()._arrive()
@@ -375,6 +388,9 @@ class CafeInteractionCore(SimulationCore):
             changes[key] = changes.get(key, 0) + result['affinity_after'] - result['affinity_before']
         return dict(day=self.day, summary=self.summary(),
                     **({"customer_visits": sorted(self.visits)} if self.weekdays is not None else {}),
+                    **({'customer_outcomes': [dict(customer_id=v.id, reason=v.departure_reason, discontent=v.discontent)
+                                              for v in sorted(self.visits.values(), key=lambda value:value.id)]}
+                       if self.customer_discontent is not None else {}),
                     cats={key: dict(stamina=cat.stamina,
                          **(dict(stress=self.management['stress'][key]) if self.management else {}),
                          **(dict(activity=self.activities['day_locations'][key]) if self.activities else {}),
@@ -523,6 +539,8 @@ class CafeInteractionCore(SimulationCore):
         self.outcomes[interaction.session_id] = interaction.log()
         from .cafe_customer_loyalty import apply as apply_loyalty
         apply_loyalty(self, result)
+        from .cafe_customer_discontent import apply_service as apply_discontent
+        apply_discontent(self, result, evaluation)
         self._emit('interaction_completed', session_id=interaction.session_id, result=result)
         from .cafe_adoption import consider
         consider(self, result)

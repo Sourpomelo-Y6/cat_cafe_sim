@@ -51,6 +51,7 @@ def directory(session):
     core = session.core
     from .core.cafe_weekdays import schedule as arrival_schedule, customer_days, DAYS
     from .core.cafe_customer_loyalty import row as loyalty_row, extra_weekday
+    from .core.cafe_customer_discontent import row as discontent_row
     schedule = arrival_schedule(core)
     tomorrow = arrival_schedule(core, core.day + 1)
     all_customers = {f'guest-{i+1}' for i in range(len(core.config.arrival_ticks))}
@@ -70,6 +71,7 @@ def directory(session):
         planned = schedule.get(key)
         preferred = preference(core, key)
         loyalty = loyalty_row(core, key)
+        discontent = discontent_row(core, key)
         if visit:
             status = '待機中' if key in core.queue else '接客中' if visit.departure_reason is None else '退店済み'
         elif planned is not None:
@@ -80,6 +82,9 @@ def directory(session):
             from .core.cafe_advanced_customers import unlocked_day
             if unlocked_day(core) is None:
                 status = '未解放（人気第1段階）'
+        if discontent and discontent['suspended_until'] is not None:
+            status = f"来店停止（{discontent['suspended_until']}日目まで）"
+        tomorrow_discontent = discontent_row(core, key, core.day+1)
         weekday_text = '・'.join(DAYS[d] for d in customer_days(core, index-1)) if key in all_customers and core.weekdays else '毎日' if key in all_customers else '—'
         if loyalty and loyalty['regular_day'] is not None and weekday_text != '毎日':
             weekday_text += f"＋常連:{DAYS[extra_weekday(core,key)]}"
@@ -90,6 +95,11 @@ def directory(session):
                          loyalty=loyalty['score'] if loyalty else None,
                          regular_day=loyalty['regular_day'] if loyalty else None,
                          loyalty_target=core.customer_loyalty['rules']['threshold'] if core.customer_loyalty else None,
+                         discontent=discontent['score'] if discontent else None,
+                         discontent_target=core.customer_discontent['rules']['threshold'] if core.customer_discontent else None,
+                         discontent_return=core.customer_discontent['rules']['return_score'] if core.customer_discontent else None,
+                         suspended_until=discontent['suspended_until'] if discontent else None,
+                         tomorrow_suspended_until=tomorrow_discontent['suspended_until'] if tomorrow_discontent else None,
                          preference_text=FEATURES[preferred][0]+'好き' if preferred else '未設定'))
     return rows
 

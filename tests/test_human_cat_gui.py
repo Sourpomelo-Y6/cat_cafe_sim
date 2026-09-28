@@ -670,15 +670,15 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.root.update()
         before = copy.deepcopy(app.session.core.snapshot())
         self.assertIn('月', app.phase.get())
-        self.assertEqual(window.customers.item('guest-1', 'values')[4], '0')
-        self.assertEqual(window.customers.item('guest-2', 'values')[4], '—')
+        self.assertEqual(window.customers.item('guest-1', 'values')[5], '0')
+        self.assertEqual(window.customers.item('guest-2', 'values')[5], '—')
         window.customers.selection_set('guest-2')
         window.view_day.set(window.day_choices[1])
         window.day_selector.event_generate('<<ComboboxSelected>>')
         self.root.update()
         self.assertIn('火', window.view_day.get())
-        self.assertEqual(window.customers.item('guest-1', 'values')[4], '—')
-        self.assertEqual(window.customers.item('guest-2', 'values')[4], '6')
+        self.assertEqual(window.customers.item('guest-1', 'values')[5], '—')
+        self.assertEqual(window.customers.item('guest-2', 'values')[5], '6')
         self.assertEqual(window.customers.selection(), ('guest-2',))
         self.assertIn('火・木・土・日', window.details.get())
         self.assertEqual(app.session.core.snapshot(), before)
@@ -1899,6 +1899,29 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertGreater(window.customers.winfo_height(), 80)
         self.assertGreater(window.cats.winfo_height(), 50)
         before = s.core.snapshot(); window.fill(); self.assertEqual(before, s.core.snapshot())
+        window.window.destroy()
+
+    def test_customer_discontent_suspension_preview_and_small_layout(self):
+        from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
+        from cat_cafe_sim.core.cafe_advanced_customers import CUSTOMER_ID
+        from cat_cafe_sim.core.cafe_customer_discontent import rules
+        selected=starting_conditions();selected.pop('intake_request');selected['goal']['target']=105
+        selected['customer_discontent']=dict(rules(),advanced_failure_gain=100,good_service_recovery=0)
+        s=create_game(self.directory,selected)
+        while not s.core.closed:s.automatic_step()
+        s.continue_goal();s.next_day();s.step();s.start(CUSTOMER_ID,'cat-sora');s.finish()
+        self.start.show_game(s,False);app=self.start.app
+        self.assertTrue(any('来店停止' in str(app.history.item(key,'values')) for key in app.history.get_children()))
+        app.show_customers();window=app.customers_window
+        window.window.geometry('660x520');window.customers.selection_set(CUSTOMER_ID);window.select();self.root.update()
+        self.assertEqual(window.customers.set(CUSTOMER_ID,'累積不満'),'100/100')
+        self.assertIn('9日目まで来店停止',window.details.get())
+        window.day_selector.current(1);window.fill();self.root.update()
+        self.assertEqual(window.customers.set(CUSTOMER_ID,'予定の進行'),'—')
+        self.assertIn('来店停止',window.customers.set(CUSTOMER_ID,'本日の状態'))
+        self.assertGreater(window.customers.winfo_height(),80)
+        self.assertGreater(window.cats.winfo_height(),50)
+        before=s.core.snapshot();window.fill();self.assertEqual(before,s.core.snapshot())
         window.window.destroy()
 
     def test_clear_results_continue_history_restart_and_small_layout(self):

@@ -197,6 +197,9 @@ def restore(data):
         if 'customer_loyalty' in state:
             from .cafe_customer_loyalty import prepare as prepare_loyalty
             core.customer_loyalty = prepare_loyalty(core, state['customer_loyalty'])
+        if 'customer_discontent' in state:
+            from .cafe_customer_discontent import prepare as prepare_discontent
+            core.customer_discontent = prepare_discontent(core, state['customer_discontent'])
         if 'advanced_customers' in state:
             from .cafe_advanced_customers import rules as advanced_rules
             core.advanced_customers = advanced_rules(state['advanced_customers'])
@@ -253,6 +256,9 @@ def restore(data):
     if 'advanced_customers' in state:
         from .cafe_advanced_customers import validate as validate_advanced
         core.advanced_customers = validate_advanced(core, state['advanced_customers'])
+    if 'customer_discontent' in state:
+        from .cafe_customer_discontent import validate as validate_discontent
+        core.customer_discontent = validate_discontent(core, state['customer_discontent'])
     from .cafe_patron import validate as validate_patron, pending as patron_pending, DESTINATION_ID
     if 'patron' in state:
         core.patron = validate_patron(core, state['patron'])
