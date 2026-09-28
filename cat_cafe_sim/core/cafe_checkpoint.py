@@ -92,7 +92,7 @@ def restore(data):
     fields={'kind','version','config','seed','start_state','cat_ids','seat_count','state','summary','resume','digest'}
     if (not isinstance(data,dict) or set(data)!=fields or data['kind']!='cafe-checkpoint'
             or type(data['version']) is not int or data['version']!=1
-            or type(data['seat_count']) is not int or data['seat_count'] not in (1,2,3,4)
+            or type(data['seat_count']) is not int or data['seat_count'] not in (1,2,3,4,5)
             or digest({k:v for k,v in data.items() if k!='digest'})!=data['digest']):
         raise ValueError('営業セーブの現在状態が破損しています。')
     cls=MultiSeatCafeCore if data['seat_count']>=2 else CafeInteractionCore

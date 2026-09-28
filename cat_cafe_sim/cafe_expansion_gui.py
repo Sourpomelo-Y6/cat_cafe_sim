@@ -1,5 +1,5 @@
 """増設前に費用・残金・席数を確認する。"""
-from .core.cafe_expansion import rules, reason, next_step, purchases, first_popularity_cleared
+from .core.cafe_expansion import rules, reason, next_step, purchases, first_popularity_cleared,second_popularity_cleared
 
 
 class CafeExpansionWindow:
@@ -38,8 +38,10 @@ class CafeExpansionWindow:
         step = next_step(core, self.selected) if hasattr(core, 'seats') else None
         history = ' / '.join(f"{row['day']}日目：{row['seats']}席（{row['cost']:g}）" for row in purchases(core))
         if step:
-            unlock = '' if step['to_seats'] == 3 or first_popularity_cleared(core) else '\n4席は人気目標の第1段階達成後に解放されます。'
-            visitors = '\n購入翌日から通常のお客さんが営業日ごとに1人増えます。' if step['to_seats'] == 4 else '\n来客数はまだ変わりません。'
+            unlocked=(step['to_seats']==3 or step['to_seats']==4 and first_popularity_cleared(core)
+                      or step['to_seats']==5 and second_popularity_cleared(core))
+            unlock='' if unlocked else f"\n{step['to_seats']}席は人気目標の第{step['to_seats']-3}段階達成後に解放されます。"
+            visitors = '\n購入翌日から通常のお客さんが営業日ごとに1人増えます。' if step['to_seats'] in (4,5) else '\n来客数はまだ変わりません。'
             self.details.set((history+'\n' if history else '') +
                 f"{step['from_seats']}席 → {step['to_seats']}席 / 増設費用：{step['cost']:g}\n増設後の所持金：{core.funds-step['cost']:g}"
                 f"\n増設した席は購入当日から使えます。{visitors}{unlock}\n派遣には店内の席数を超える担当可能な猫が必要です。")
@@ -48,7 +50,7 @@ class CafeExpansionWindow:
             self.details.set((history+'\n' if history else '')+'現在予定されている席の増設はすべて購入済みです。')
             self.purchase_button.configure(text='増設済み')
         problem = '先に接客結果の保存を再試行してください。' if self.session.pending else reason(core, self.selected)
-        self.notice.set(problem or ('増設した席は今日から使用できます。追加のお客さんは翌日から来店します。' if step and step['to_seats']==4 else '増設した席は今日から使用できます。'))
+        self.notice.set(problem or ('増設した席は今日から使用できます。追加のお客さんは翌日から来店します。' if step and step['to_seats'] in (4,5) else '増設した席は今日から使用できます。'))
         self.purchase_button.state(['disabled'] if problem else ['!disabled'])
 
     def show_equipment(self):

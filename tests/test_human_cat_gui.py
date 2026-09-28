@@ -1904,7 +1904,8 @@ class CafeStartWindowTests(unittest.TestCase):
         with patch('tkinter.messagebox.askyesno', return_value=True):
             window.purchase_button.invoke()
         self.assertIn('seat-4', app.seat_selector['values'])
-        self.assertIn('すべて購入済み', window.details.get())
+        self.assertIn('4席 → 5席', window.details.get())
+        self.assertIn('人気目標の第2段階', window.details.get())
         self.assertIn('disabled', window.purchase_button.state())
         window.close_button.invoke()
         app.show_customers(); customers = app.customers_window
