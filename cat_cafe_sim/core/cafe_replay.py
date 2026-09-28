@@ -79,7 +79,7 @@ def verify(data):
     if data['base'] is not None:
         core=restore(data['base'])
     else:
-        if data['seat_count'] not in (1,2,3):raise ValueError('invalid seat count')
+        if data['seat_count'] not in (1,2,3,4):raise ValueError('invalid seat count')
         cls=MultiSeatCafeCore if data['seat_count']>=2 else CafeInteractionCore
         core=cls(Config.from_dict(data['config']),seed=data['seed'],start_state=StartState(**data['start_state']),
                  cat_ids=data['cat_ids'],compact=True)

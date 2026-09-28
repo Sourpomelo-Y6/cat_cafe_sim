@@ -92,7 +92,7 @@ def restore(data):
     fields={'kind','version','config','seed','start_state','cat_ids','seat_count','state','summary','resume','digest'}
     if (not isinstance(data,dict) or set(data)!=fields or data['kind']!='cafe-checkpoint'
             or type(data['version']) is not int or data['version']!=1
-            or type(data['seat_count']) is not int or data['seat_count'] not in (1,2,3)
+            or type(data['seat_count']) is not int or data['seat_count'] not in (1,2,3,4)
             or digest({k:v for k,v in data.items() if k!='digest'})!=data['digest']):
         raise ValueError('営業セーブの現在状態が破損しています。')
     cls=MultiSeatCafeCore if data['seat_count']>=2 else CafeInteractionCore
@@ -193,6 +193,7 @@ def restore(data):
     if 'weekdays' in state:
         # 来店予定の解放日は保存済み目標から導出。目標の整合性は後段で検証する。
         core.goal = copy.deepcopy(state.get('goal'))
+        core.expansion = copy.deepcopy(state.get('expansion'))
         if 'advanced_customers' in state:
             from .cafe_advanced_customers import rules as advanced_rules
             core.advanced_customers = advanced_rules(state['advanced_customers'])
@@ -282,8 +283,8 @@ def restore(data):
     from .cafe_expansion import validate as validate_expansion, expenses as expansion_expenses
     if 'expansion' in state:
         core.expansion = validate_expansion(core, state['expansion'], data['seat_count'])
-    elif data['seat_count'] == 3:
-        raise ValueError('3席の営業には増設記録が必要です。')
+    elif data['seat_count'] >= 3:
+        raise ValueError('3席以上の営業には増設記録が必要です。')
     from .cafe_seat_equipment import validate as validate_seat_equipment, expenses as seat_expenses, check_interaction as check_equipment
     if 'equipment_store' in state:
         core.equipment_store = validate_seat_equipment(core, state['equipment_store'])

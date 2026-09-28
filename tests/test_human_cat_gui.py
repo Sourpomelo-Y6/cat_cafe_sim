@@ -1847,6 +1847,37 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertGreater(window.cats.winfo_height(), 50)
         window.window.destroy()
 
+    def test_four_seat_expansion_unlock_purchase_and_customer_preview(self):
+        from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
+        from cat_cafe_sim.core.cafe_expansion import EXTRA_CUSTOMER_ID
+        selected = starting_conditions(); selected.pop('intake_request'); selected['goal']['target'] = 105
+        s = create_game(self.directory, selected)
+        s.expand_seats()
+        while not s.core.closed: s.automatic_step()
+        s.continue_goal(); s.next_day()
+        self.start.show_game(s, False)
+        app = self.start.app
+        app.expansion_button.invoke(); window = app.expansion_window
+        window.window.geometry('500x300'); self.root.update()
+        self.assertIn('3席 → 4席', window.details.get())
+        self.assertIn('翌日', window.details.get())
+        self.assertEqual(window.purchase_button['text'], '4席に増設する')
+        self.assertLessEqual(window.close_button.winfo_rooty()+window.close_button.winfo_height(),
+                             window.window.winfo_rooty()+window.window.winfo_height())
+        with patch('tkinter.messagebox.askyesno', return_value=True):
+            window.purchase_button.invoke()
+        self.assertIn('seat-4', app.seat_selector['values'])
+        self.assertIn('すべて購入済み', window.details.get())
+        self.assertIn('disabled', window.purchase_button.state())
+        window.close_button.invoke()
+        app.show_customers(); customers = app.customers_window
+        self.assertTrue(customers.customers.exists(EXTRA_CUSTOMER_ID))
+        self.assertEqual(customers.customers.set(EXTRA_CUSTOMER_ID, '予定の進行'), '—')
+        customers.day_selector.current(1); customers.fill()
+        self.assertEqual(customers.customers.set(EXTRA_CUSTOMER_ID, '予定の進行'), '0')
+        self.assertIn('来店予定', customers.customers.set(EXTRA_CUSTOMER_ID, '本日の状態'))
+        customers.window.destroy()
+
     def test_clear_results_continue_history_restart_and_small_layout(self):
         from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
         from cat_cafe_sim.cafe_clear_results_gui import CafeClearResultsWindow

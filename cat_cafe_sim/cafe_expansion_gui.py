@@ -1,5 +1,5 @@
 """増設前に費用・残金・席数を確認する。"""
-from .core.cafe_expansion import rules, reason
+from .core.cafe_expansion import rules, reason, next_step, purchases, first_popularity_cleared
 
 
 class CafeExpansionWindow:
@@ -18,7 +18,7 @@ class CafeExpansionWindow:
         frame.pack(fill='both', expand=True)
         footer = ttk.Frame(frame)
         footer.pack(side='bottom', fill='x')
-        self.purchase_button = ttk.Button(footer, text='3席に増設する', command=self.purchase)
+        self.purchase_button = ttk.Button(footer, text='席を増設する', command=self.purchase)
         self.purchase_button.pack(side='left')
         self.equipment_button = ttk.Button(footer, text='休養設備…', command=self.show_equipment)
         if show_navigation:
@@ -35,12 +35,20 @@ class CafeExpansionWindow:
         core = self.session.core
         seats = len(core.seats) if hasattr(core, 'seats') else 1
         self.status.set(f'現在の席数：{seats}席 / 所持金：{core.funds:g}')
-        if core.expansion:
-            self.details.set(f"{core.expansion['day']}日目に3席へ増設済み。支払額：{core.expansion['cost']:g}")
+        step = next_step(core, self.selected) if hasattr(core, 'seats') else None
+        history = ' / '.join(f"{row['day']}日目：{row['seats']}席（{row['cost']:g}）" for row in purchases(core))
+        if step:
+            unlock = '' if step['to_seats'] == 3 or first_popularity_cleared(core) else '\n4席は人気目標の第1段階達成後に解放されます。'
+            visitors = '\n購入翌日から通常のお客さんが営業日ごとに1人増えます。' if step['to_seats'] == 4 else '\n来客数はまだ変わりません。'
+            self.details.set((history+'\n' if history else '') +
+                f"{step['from_seats']}席 → {step['to_seats']}席 / 増設費用：{step['cost']:g}\n増設後の所持金：{core.funds-step['cost']:g}"
+                f"\n増設した席は購入当日から使えます。{visitors}{unlock}\n派遣には店内の席数を超える担当可能な猫が必要です。")
+            self.purchase_button.configure(text=f"{step['to_seats']}席に増設する")
         else:
-            self.details.set(f"2席 → 3席 / 増設費用：{self.selected['cost']:g}\n増設後の所持金：{core.funds-self.selected['cost']:g}\n準備中に一度だけ購入できます。支払い後に資金が残る必要があります。\n派遣は店内の3席を超える担当可能な猫がいる場合に出発できます。")
+            self.details.set((history+'\n' if history else '')+'現在予定されている席の増設はすべて購入済みです。')
+            self.purchase_button.configure(text='増設済み')
         problem = '先に接客結果の保存を再試行してください。' if self.session.pending else reason(core, self.selected)
-        self.notice.set(problem or '増設した席は今日から使用できます。来客数・猫の出勤予定はそのままです。')
+        self.notice.set(problem or ('増設した席は今日から使用できます。追加のお客さんは翌日から来店します。' if step and step['to_seats']==4 else '増設した席は今日から使用できます。'))
         self.purchase_button.state(['disabled'] if problem else ['!disabled'])
 
     def show_equipment(self):
@@ -54,7 +62,8 @@ class CafeExpansionWindow:
     def purchase(self):
         from tkinter import messagebox
         core = self.session.core
-        if not messagebox.askyesno('席の増設', f"2席から3席へ増設しますか？\n費用：{self.selected['cost']:g}\n増設後の所持金：{core.funds-self.selected['cost']:g}\n購入後の取り消し・返金はできません。", parent=self.window):
+        step = next_step(core, self.selected)
+        if not step or not messagebox.askyesno('席の増設', f"{step['from_seats']}席から{step['to_seats']}席へ増設しますか？\n費用：{step['cost']:g}\n増設後の所持金：{core.funds-step['cost']:g}\n購入後の取り消し・返金はできません。", parent=self.window):
             return
         try:
             self.session.expand_seats(self.selected)

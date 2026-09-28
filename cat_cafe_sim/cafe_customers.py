@@ -2,6 +2,7 @@
 import re
 from .core.cafe_preferences import FEATURES, preference_for
 from .core.cafe_advanced_customers import CUSTOMER_ID, NAME
+from .core.cafe_expansion import EXTRA_CUSTOMER_ID, four_seat_purchase
 
 # IDとの対応は保存再開・既存ゲームで維持する。追加するときも順番を変更しない。
 _NAMES = ('佐藤', '鈴木', '高橋', '田中', '伊藤', '渡辺', '山本', '中村', '小林', '加藤',
@@ -16,6 +17,8 @@ def number(customer_id):
 def customer_name(customer_id):
     if customer_id == CUSTOMER_ID:
         return NAME
+    if customer_id == EXTRA_CUSTOMER_ID:
+        return '増設で来店したお客さん'
     index = number(customer_id)
     if index is None:
         return customer_id
@@ -33,6 +36,8 @@ def preference(core, customer_id):
         return None
     if core.advanced_customers is not None and customer_id == CUSTOMER_ID:
         return core.advanced_customers['feature']
+    if customer_id == EXTRA_CUSTOMER_ID and four_seat_purchase(core):
+        return preference_for(core.seed, customer_id, data['rules']['pool'])
     existing = data['customers'].get(customer_id)
     if existing is not None:
         return existing
@@ -51,6 +56,8 @@ def directory(session):
     known = all_customers | set(core.visits) | core.returning_customers | {guest for _, guest in session.affinities}
     if core.advanced_customers is not None:
         known.add(CUSTOMER_ID)
+    if four_seat_purchase(core):
+        known.add(EXTRA_CUSTOMER_ID)
     rows = []
     for key in sorted(known, key=lambda key: (number(key) is None, number(key) or 0, key)):
         index = number(key)
