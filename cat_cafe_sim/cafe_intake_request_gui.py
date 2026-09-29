@@ -52,7 +52,8 @@ class CafeIntakeRequestWindow:
         preset = next((name for name, value in self.session.presets.items() if value == personality), 'カスタム')
         self.title.set(f"{row['name']}の受け入れ依頼 · {rule['day']}日目")
         self.details.delete(*self.details.get_children())
-        values = [('名前 / 個性', f"{row['name']} / {preset}"), ('特徴', feature_text(row.get('features', [])))]
+        from .core.cafe_housing import status as housing_status, admission_reason
+        values = [('飼育スペース', housing_status(core)), ('名前 / 個性', f"{row['name']} / {preset}"), ('特徴', feature_text(row.get('features', [])))]
         values += description(row.get('trait'))
         values += [('初期費用', f"{row['cost']:g}"), ('加入時の状態', '健康・体力全回復・休養予定'), ('疲労 / ストレス / 好感度', '0 / 0 / 0（未交流）')]
         values += [(f'好み：{kind.name}', f'{value:g}') for kind, value in zip(self.session.interaction_config.types, personality.type_preferences)]
@@ -71,7 +72,9 @@ class CafeIntakeRequestWindow:
             self.notice.set(str(exc))
             return
         self.decline_button.state(['!disabled'])
-        if core.funds <= row['cost']:
+        if admission_reason(core):
+            self.notice.set(admission_reason(core) + ' この依頼は見送ることができます。')
+        elif core.funds <= row['cost']:
             self.notice.set(f'所持金 {core.funds:g}。受け入れ後に資金が残る必要があります。見送ることができます。')
         else:
             self.accept_button.state(['!disabled'])

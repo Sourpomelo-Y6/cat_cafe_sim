@@ -1,0 +1,6 @@
+{
+  "initial_capacity": 6,
+  "capacity_bonus": 3,
+  "cost": 500,
+  "daily_cost": 20
+}

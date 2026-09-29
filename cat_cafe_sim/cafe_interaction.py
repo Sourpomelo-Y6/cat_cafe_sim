@@ -199,6 +199,10 @@ class CafeInteractionSession:
         self._ready()
         self.core.expand_seats(rules)
 
+    def purchase_housing(self):
+        self._ready()
+        self.core.purchase_housing()
+
     def purchase_waiting_area(self):
         self._ready()
         self.core.purchase_waiting_area()

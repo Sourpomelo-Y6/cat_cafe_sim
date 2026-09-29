@@ -45,7 +45,8 @@ class CafeRecruitmentWindow:
 
     def refresh(self):
         core = self.session.core
-        self.funds.set(f'所持金：{core.funds:g}')
+        from .core.cafe_housing import status
+        self.funds.set(f'所持金：{core.funds:g} · {status(core)}')
         from .core.cafe_recruitment import next_candidate_day
         due = next_candidate_day(core.recruitment)
         self.schedule.set(f'次の候補追加：{due}日目（準備中にこの画面を開くと追加）')
@@ -91,6 +92,9 @@ class CafeRecruitmentWindow:
             reason = str(exc)
         if self.session.pending:
             reason = '接客結果の保存を再試行してください。'
+        from .core.cafe_housing import admission_reason
+        if not reason:
+            reason = admission_reason(core)
         if not reason and core.funds <= row['cost']:
             reason = '受け入れ後に資金が残る必要があります。'
         self.notice.set(reason or f"初期費用 {row['cost']:g} / 受け入れ後の所持金 {core.funds - row['cost']:g}。出勤予定は加入後に設定できます。")

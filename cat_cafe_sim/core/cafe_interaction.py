@@ -41,6 +41,7 @@ class CafeInteractionCore(SimulationCore):
         self.management = None
         self.operating_cost = None
         self.waiting_area = None
+        self.housing = None
         self.store_events = None
         self.growth = None
         self.dispatch_unlocks = None
@@ -106,6 +107,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
                 **({'operating_cost': copy.deepcopy(self.operating_cost)} if self.operating_cost is not None else {}),
                 **({'waiting_area': copy.deepcopy(self.waiting_area)} if self.waiting_area is not None else {}),
+                **({'housing': copy.deepcopy(self.housing)} if self.housing is not None else {}),
                 **({'store_events': copy.deepcopy(self.store_events)} if self.store_events is not None else {}),
                 **({'growth': copy.deepcopy(self.growth)} if self.growth is not None else {}),
                 **({'dispatch_unlocks':copy.deepcopy(self.dispatch_unlocks)} if self.dispatch_unlocks is not None else {}),
@@ -399,6 +401,14 @@ class CafeInteractionCore(SimulationCore):
     def resolve_growth_mastery(self,cat_id,choice):
         from .cafe_growth import resolve_mastery
         resolve_mastery(self,cat_id,choice)
+
+    def initialize_housing(self, rules=None):
+        from .cafe_housing import initialize
+        initialize(self, rules)
+
+    def purchase_housing(self):
+        from .cafe_housing import purchase
+        purchase(self)
 
     def purchase_waiting_area(self):
         from .cafe_waiting_area import purchase
@@ -720,6 +730,7 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_seat_equipment import expenses as seat_expenses
         from .cafe_operating_cost import charged as operating_charged
         from .cafe_waiting_area import expenses as waiting_area_expenses
+        from .cafe_housing import expenses as housing_expenses
         from .cafe_store_events import expenses as store_event_expenses
         from .cafe_item_shop import expenses as item_expenses
         visits = list(self.visits.values())
@@ -738,6 +749,7 @@ class CafeInteractionCore(SimulationCore):
                     **({'expansion_expenses': expansion_expenses(self, self.day)} if self.expansion is not None else {}),
                     **({'operating_cost': operating_charged(self,self.day)} if self.operating_cost is not None else {}),
                     **({'waiting_area_expenses': waiting_area_expenses(self,self.day)} if self.waiting_area is not None else {}),
+                    **({'housing_expenses': housing_expenses(self,self.day)} if self.housing is not None else {}),
                     **({'store_event_expenses': store_event_expenses(self,self.day)} if self.store_events is not None else {}),
                     **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),

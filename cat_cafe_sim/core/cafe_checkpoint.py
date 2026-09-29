@@ -215,9 +215,6 @@ def restore(data):
         if 'reservation' in state:
             from .cafe_reservation import prepare as prepare_reservation
             core.reservation=prepare_reservation(core,state['reservation'])
-        if 'waiting_area' in state:
-            from .cafe_waiting_area import prepare as prepare_waiting_area
-            core.waiting_area=prepare_waiting_area(core,state['waiting_area'])
         if 'store_events' in state:
             from .cafe_store_events import validate as validate_store_events
             core.store_events=validate_store_events(core,state['store_events'])
@@ -338,10 +335,19 @@ def restore(data):
         core.expansion = validate_expansion(core, state['expansion'], data['seat_count'])
     elif data['seat_count'] >= 3:
         raise ValueError('3席以上の営業には増設記録が必要です。')
+    if 'waiting_area' in state:
+        from .cafe_waiting_area import prepare as prepare_waiting_area
+        core.waiting_area=prepare_waiting_area(core,state['waiting_area'])
+    if 'housing' in state:
+        from .cafe_housing import prepare as prepare_housing
+        core.housing=prepare_housing(core,state['housing'])
     if 'operating_cost' in state:
         from .cafe_operating_cost import validate as validate_operating_cost
         if core.management is None:raise ValueError('店舗運営費に必要な経営設定がありません。')
         core.operating_cost=validate_operating_cost(core,state['operating_cost'])
+    if 'housing' in state:
+        from .cafe_housing import validate as validate_housing
+        core.housing=validate_housing(core,state['housing'])
     if 'waiting_area' in state:
         from .cafe_waiting_area import validate as validate_waiting_area
         core.waiting_area=validate_waiting_area(core,state['waiting_area'])
@@ -381,9 +387,10 @@ def restore(data):
     expected_funds += money_adjustment(core)
     from .cafe_recruitment import expenses
     from .cafe_waiting_area import expenses as waiting_area_expenses
+    from .cafe_housing import expenses as housing_expenses
     from .cafe_item_shop import expenses as item_expenses
     expected_funds -= item_expenses(core)
-    expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core) + seat_expenses(core)+waiting_area_expenses(core)
+    expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core) + seat_expenses(core)+waiting_area_expenses(core)+housing_expenses(core)
     if core.store_events is not None:
         from .cafe_store_events import expenses as store_event_expenses
         expected_funds-=store_event_expenses(core)

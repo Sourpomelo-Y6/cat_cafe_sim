@@ -168,7 +168,10 @@ class ManualCafeInteractionWindow:
                 text=(f"店舗運営費 {event['total']:g}（基本 {event['base']:g}＋"
                       f"{event['seat_count']}席分 {event['seat_cost']:g}"+
                       (f"＋施設分 {event['facility_cost']:g}" if event.get('facility_cost') else '')+
+                      (f"＋飼育分 {event['housing_cost']:g}" if event.get('housing_cost') else '')+
                       (f"＋イベント分 {event['event_cost']:g}" if event.get('event_cost') else '')+'）')
+            elif kind=='housing_purchased':
+                text=f"飼育スペースを拡張 · 費用 {event['cost']:g} · 上限 {event['capacity']}匹 · 日次運営費 ＋{event['daily_cost']:g}"
             elif kind=='waiting_area_purchased':
                 text=(f"待合スペースを強化 · 費用 {event['cost']:g} · 待機上限 {event['queue_capacity']}人 · "
                       f"待機猶予 {event['max_wait_ticks']}tick · 日次運営費 ＋{event['daily_cost']:g}")
@@ -426,6 +429,11 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.stop()
         self.refresh()
         self.expansion_window = CafeExpansionWindow(self.root, self.session, self.refresh, show_navigation=False)
+
+    def show_housing(self):
+        self.pages.select(self.preparation_page);self.stop();self.refresh()
+        from .cafe_housing_gui import CafeHousingWindow
+        self.housing_window=CafeHousingWindow(self.root,self.session,self.refresh)
 
     def show_waiting_area(self):
         self.pages.select(self.preparation_page);self.stop();self.refresh()

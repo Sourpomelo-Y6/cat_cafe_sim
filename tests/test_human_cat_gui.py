@@ -2019,6 +2019,30 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertIn('来店予定', customers.customers.set(EXTRA_CUSTOMER_ID, '本日の状態'))
         customers.window.destroy()
 
+    def test_housing_dashboard_purchase_history_and_legacy(self):
+        from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
+        selected = starting_conditions('free'); selected.pop('intake_request')
+        s = create_game(self.directory, selected)
+        self.start.show_game(s, False); app = self.start.app
+        app.housing_button.invoke(); window = app.housing_window
+        with patch('tkinter.messagebox.askyesno', return_value=True):
+            window.purchase_button.invoke()
+        self.assertIn('拡張済み', window.details.get())
+        self.assertTrue(any('飼育スペースを拡張' in str(app.history.item(key, 'values')) for key in app.history.get_children()))
+        window.close_button.invoke()
+        s.day_off(); app.show_history(); history = app.history_window
+        row = history.days.get_children()[-1]
+        self.assertEqual(history.days.set(row, '飼育スペース費用'), '500')
+        self.assertEqual(history.days.set(row, '運営費'), '80')
+        self.assertEqual(history.days.set(row, '支出'), '580')
+        history.window.destroy()
+        selected.pop('housing')
+        old = create_game(self.directory, selected)
+        app.session = old; app.show_housing(); window = app.housing_window
+        self.assertIn('上限なし', window.details.get())
+        self.assertTrue(window.purchase_button.instate(['disabled']))
+        window.close_button.invoke()
+
     def test_waiting_area_unlock_purchase_and_history_layout(self):
         from cat_cafe_sim.cafe_new_game import create_game,starting_conditions
         selected=starting_conditions();selected.pop('intake_request');selected['goal']['target']=105

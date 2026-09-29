@@ -47,10 +47,11 @@ def starting_conditions(mode="popularity"):
     from .core.cafe_vip_customer import rules as vip_rules
     from .core.cafe_operating_cost import rules as operating_cost_rules
     from .core.cafe_waiting_area import rules as waiting_area_rules
+    from .core.cafe_housing import rules as housing_rules
     from .core.cafe_store_events import rules as store_event_rules
     from .core.cafe_growth import rules as growth_rules
     from .core.cafe_dispatch_unlocks import rules as dispatch_unlock_rules
-    return dict(dispatch_unlocks=dispatch_unlock_rules(),growth=growth_rules(), store_events=store_event_rules(), waiting_area=waiting_area_rules(), operating_cost=operating_cost_rules(), vip_customer=vip_rules(), reservation=reservation_rules(), customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
+    return dict(housing=housing_rules(),dispatch_unlocks=dispatch_unlock_rules(),growth=growth_rules(), store_events=store_event_rules(), waiting_area=waiting_area_rules(), operating_cost=operating_cost_rules(), vip_customer=vip_rules(), reservation=reservation_rules(), customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
 
 
 def create_game(directory='saves/games', conditions=None):
@@ -79,6 +80,8 @@ def create_game(directory='saves/games', conditions=None):
         session.enable_management(selected['management'])
         if 'operating_cost' in selected:
             session.core.initialize_operating_cost(selected['operating_cost'])
+        if 'housing' in selected and 'operating_cost' in selected:
+            session.core.initialize_housing(selected['housing'])
         if 'waiting_area' in selected and 'operating_cost' in selected:
             session.core.initialize_waiting_area(selected['waiting_area'])
         if 'customer_trust' in selected:

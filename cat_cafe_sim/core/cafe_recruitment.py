@@ -117,6 +117,10 @@ def join_cat(core,cat_id,row):
         raise ValueError('この猫はすでに加入しています。')
     if core.funds <= row['cost']:
         raise ValueError('受け入れ後に資金が残る必要があります。')
+    from .cafe_housing import admission_reason
+    problem = admission_reason(core)
+    if problem:
+        raise ValueError(problem)
     cat = Cat(id=cat_id, stamina=core.config.max_stamina, spirit=core.config.max_spirit)
     core.cats[cat_id] = cat
     from .cafe_growth import ensure_cat
