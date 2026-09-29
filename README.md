@@ -73,6 +73,8 @@
 現在はゲーム全体の流れを固めることを優先し、回復量などの細かなバランス調整は後回しにします。[開発方針](Docs/CatCafeSimulation_ImplementationGuide.md)を参照してください。
 [ゲーム全体の流れと実装順](Docs/HumanToCatGameFlowPlan.md)に、現行の遊び方・不足する経営要素・未決定事項と、次の実装順の提案を整理しています。派遣・イベント・終了判定を含む一日の流れへ更新し、[猫の詳細画面](Docs/HumanToCatCatDetailsPlan.md)に加え、派遣3種類と帰還確認の初回実装まで進めています。
 
+[猫の経験・得意行動の成長案](Docs/HumanToCatCatGrowthPlan.md)に、接客・休養・派遣経験と、将来の行動別熟練度への発展方針を整理しています。生来の個性・好み・特性とは別の後天的な成長として扱います。現時点では未実装です。
+
 営業前の「今日は休業する」で、来客なしに在店猫を1日休ませて翌日へ進めます。出勤予定がある場合も利用できます。[休業日の仕様](Docs/HumanToCatCafeDayOffPlan.md)を参照してください。
 
 全猫出勤・交代休養・疲労による休業を比較する[100日営業の検証](Docs/HumanToCatLongTermEvaluation.md)に、測定条件・結果と今後の調整案をまとめています。
