@@ -163,6 +163,8 @@ class ManualCafeInteractionWindow:
                       f"待機猶予 {event['max_wait_ticks']}tick · 日次運営費 ＋{event['daily_cost']:g}")
             elif kind=='store_event_presented':
                 text='本日の店舗イベント：'+event['label']
+            elif kind=='store_event_resolved':
+                text='設備トラブル：'+{'repair':'修理する','patch':'応急処置する','close':'休業する'}[event['choice']]
             elif kind=='intake_request_waiting':
                 text=f"保護猫 {event['name']} の受け入れ依頼が届きました。"
             elif kind=='intake_request_resolved':
@@ -476,7 +478,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if patron_pending(core):
             self.instructions.configure(text='有力者目標クリア！「結果・記録」→「有力者目標・結果…」で結果を確認してください。')
         from .core.cafe_intake_request import pending as intake_pending
-        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core)
+        from .core.cafe_store_events import waiting as store_event_waiting
+        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core) or bool(store_event_waiting(core))
         if core.management:
             self.status.set(self.status.get()+f" · 人気 {core.management['popularity']:g}")
         self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
@@ -601,6 +604,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif reservation_waiting(core):
             self.notice.set('翌日の特別予約依頼があります。条件を確認して受け入れるか選んでください。')
             self._attention = self.show_reservation
+        elif store_event_waiting(core):
+            self.notice.set('設備トラブルが発生しています。営業前に対応を選んでください。')
+            self._attention = self.show_store_event
         elif waiting_events(core):
             from .core.cafe_dispatch_encounters import waiting as choice_waiting
             self.notice.set('派遣中の出来事が回答待ちです。選択肢と効果を確認してください。' if choice_waiting(core) else '派遣から帰還した猫が確認待ちです。帰還と報酬を確認してください。')
@@ -670,6 +676,11 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .cafe_reservation_gui import CafeReservationWindow
         self.pages.select(self.preparation_page);self.stop();self.refresh()
         self.reservation_window=CafeReservationWindow(self.root,self.session,self.refresh)
+
+    def show_store_event(self):
+        from .cafe_store_event_gui import CafeStoreEventWindow
+        self.pages.select(self.preparation_page);self.stop();self.refresh()
+        self.store_event_window=CafeStoreEventWindow(self.root,self.session,self.refresh)
 
     def take_day_off(self):
         from tkinter import messagebox

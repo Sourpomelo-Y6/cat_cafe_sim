@@ -22,6 +22,7 @@ def apply_operation(core, operation):
     elif kind=='purchase_waiting_area':core.purchase_waiting_area()
     elif kind=='initialize_vip_customer':core.initialize_vip_customer(operation['rules'])
     elif kind=='resolve_reservation':core.resolve_reservation(operation['choice'])
+    elif kind=='resolve_store_event':core.resolve_store_event(operation['choice'])
     elif kind=='purchase_seat_equipment':core.purchase_seat_equipment(operation['seat_id'],operation['rules'])
     elif kind=='equip_seat':core.equip_seat(operation['seat_id'],operation['item_id'])
     elif kind=='purchase_rest_space':core.purchase_rest_space(operation['rules'])

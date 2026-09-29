@@ -227,7 +227,7 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_activities import resolve
         resolve(self, event_id, choice)
 
-    def require_events_resolved(self, *, ignore_intake=False):
+    def require_events_resolved(self, *, ignore_intake=False, ignore_store=False):
         self.require_running()
         from .cafe_intake_request import pending as intake_pending
         if not ignore_intake and intake_pending(self):
@@ -247,6 +247,9 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_activities import waiting_events
         if waiting_events(self):
             raise ValueError('派遣・イベント画面で帰還結果や譲渡・家出イベントを確認してください。')
+        from .cafe_store_events import waiting as store_event_waiting
+        if not ignore_store and store_event_waiting(self):
+            raise ValueError('設備トラブルへの対応を選んでください。')
 
     @property
     def can_set_shifts(self):
@@ -405,6 +408,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_reservation import resolve
         resolve(self,choice)
 
+    def resolve_store_event(self,choice):
+        from .cafe_store_events import resolve
+        resolve(self,choice)
+
     def _depart(self, visit, reason, perfect=False):
         already = visit.departure_reason is not None
         super()._depart(visit, reason, perfect)
@@ -469,14 +476,18 @@ class CafeInteractionCore(SimulationCore):
         self._advance_day(self.day_result(), dict(kind='next_day'))
 
     def day_off(self):
-        self.require_events_resolved()
+        from .cafe_store_events import waiting as store_event_waiting,close_for_day
+        closing_for_trouble=bool(store_event_waiting(self))
+        self.require_events_resolved(ignore_store=closing_for_trouble)
         from .cafe_reservation import day_off_reason
         if day_off_reason(self):raise ValueError(day_off_reason(self))
         if not self.can_set_shifts or not self.shift_rules or not self.health_rules:
             raise ValueError('休業は出勤・病気ルールが有効な営業準備中に選んでください。')
+        if closing_for_trouble:close_for_day(self)
         planned = set(self.working_cats)
         self.working_cats = set()
         self._tick_events = []
+        if closing_for_trouble:self._emit('store_event_resolved',choice='close')
         self._emit('day_off', day=self.day)
         self.tick = self.config.opening_ticks
         self.closed = True
@@ -690,8 +701,8 @@ class CafeInteractionCore(SimulationCore):
                     service_ticks=self.service_ticks,
                     **({'cat_stamina': {key:cat.stamina for key,cat in self.cats.items()}} if self.roster_ids is not None else {}))
         if self.store_events is not None:
-            from .cafe_store_events import row,LABELS
-            event=row(self,self.day);result['store_event']=LABELS.get(event['type'],'イベントなし')
+            from .cafe_store_events import row,label
+            event=row(self,self.day);result['store_event']=label(event)
         if self.operating_cost is not None:
             from .cafe_finance import add
             add(result)

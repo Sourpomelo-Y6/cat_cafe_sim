@@ -45,8 +45,9 @@ class MultiSeatCafeCore(CafeInteractionCore):
 
     def start(self, interaction, seat_id=None):
         self.require_events_resolved()
-        seat_id = seat_id or next((key for key in self.seats if key not in self.interactions), None)
-        if seat_id not in self.seats or seat_id in self.interactions:
+        from .cafe_store_events import disabled_seats
+        seat_id = seat_id or next((key for key in self.seats if key not in self.interactions and key not in disabled_seats(self)), None)
+        if seat_id not in self.seats or seat_id in self.interactions or seat_id in disabled_seats(self):
             raise ValueError('空いている席を選んでください。')
         if any(item.cat_id==interaction.cat_id or item.session_id==interaction.session_id for item in self.interactions.values()):
             raise ValueError('この猫は別の席で交流中です。')

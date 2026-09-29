@@ -53,7 +53,8 @@ class CafeInteractionSession:
     @property
     def free_seats(self):
         seats = self.core.seats if isinstance(self.core,MultiSeatCafeCore) else {self.core.seat.id:self.core.seat}
-        return [key for key in seats if key not in self.active_interactions]
+        from .core.cafe_store_events import disabled_seats
+        return [key for key in seats if key not in self.active_interactions and key not in disabled_seats(self.core)]
 
     def available_cats(self):
         return [cat for cat in self.core.cats.values()
@@ -275,6 +276,12 @@ class CafeInteractionSession:
         if self.pending:raise ValueError('先に交流結果の保存を再試行してください。')
         self.core.resolve_reservation(choice)
 
+    def resolve_store_event(self,choice):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:raise ValueError('先に交流結果の保存を再試行してください。')
+        self.core.resolve_store_event(choice)
+
     def resolve_dispatch_choice(self, event_id, choice):
         from .storage.cafe_saves import check_link
         check_link(self)
@@ -298,7 +305,13 @@ class CafeInteractionSession:
             self.core.enable_health(health_rules)
 
     def day_off(self):
-        self._ready()
+        from .core.cafe_store_events import waiting as store_event_waiting
+        trouble=store_event_waiting(self.core)
+        if trouble:
+            from .storage.cafe_saves import check_link
+            check_link(self)
+            if self.pending:raise ValueError('先に交流結果の保存を再試行してください。')
+        else:self._ready()
         if not self.core.can_set_shifts:
             raise ValueError('休業は営業開始前に選んでください。')
         if not self.core.shift_rules or not self.core.health_rules:

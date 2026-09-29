@@ -79,8 +79,6 @@ def create_game(directory='saves/games', conditions=None):
             session.core.initialize_operating_cost(selected['operating_cost'])
         if 'waiting_area' in selected and 'operating_cost' in selected:
             session.core.initialize_waiting_area(selected['waiting_area'])
-        if 'store_events' in selected and 'operating_cost' in selected and 'weekdays' in selected:
-            session.core.initialize_store_events(selected['store_events'])
         if 'customer_trust' in selected:
             session.core.initialize_customer_trust(selected['customer_trust'])
         session.core.initialize_clear_results()
@@ -109,6 +107,8 @@ def create_game(directory='saves/games', conditions=None):
             session.core.initialize_intake_request(selected['intake_request'])
         if 'objective' in selected:
             session.core.initialize_objective(mode)
+        if 'store_events' in selected and 'operating_cost' in selected and 'weekdays' in selected:
+            session.core.initialize_store_events(selected['store_events'])
         save_game(session, location / 'cafe.json', auto_assign=False)
     except Exception:
         # Only this call's newly allocated directory belongs to the failed creation.
