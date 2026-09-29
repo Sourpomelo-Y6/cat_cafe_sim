@@ -25,6 +25,8 @@ class CafeActivityWindow:
         self.send_button.pack(side='left')
         self.receive_button=ttk.Button(footer,text='帰還・報酬を受け取る',command=self.receive)
         self.receive_button.pack(side='left',padx=4)
+        self.result_button=ttk.Button(footer,text='派遣結果・内訳…',command=self.show_result)
+        self.result_button.pack(side='left',padx=4)
         self.close_button=ttk.Button(footer,text='閉じる',command=self.window.destroy)
         self.close_button.pack(side='right')
         event_controls=ttk.Frame(frame)
@@ -97,6 +99,7 @@ class CafeActivityWindow:
             from .core.cafe_growth import description as growth_description
             self.selection_info.set(self.selection_info.get()+'\n'+growth_description(core,cats[0]))
         selected=self.events.selection()
+        self.result_button.state(['!disabled'] if selected else ['disabled'])
         can_receive=bool(selected) and core.activities['events'][selected[0]]['status']=='waiting' and not self.session.pending and not is_over(core)
         from .core.cafe_dispatch_encounters import pending as choice_pending, selected as answered
         event = core.activities['events'][selected[0]] if selected else None
@@ -132,6 +135,7 @@ class CafeActivityWindow:
         if item:
             self.destination_info.set(self.destination_info.get()+f" / {item['name']} ×1（ストレス −{item['stress_relief']:g}）")
         selected=self.cats.selection()
+        previous_events=self.events.selection()
         self.cats.delete(*self.cats.get_children());self.events.delete(*self.events.get_children())
         from .core.cafe_growth import summary as growth_summary
         for key,cat in core.cats.items():
@@ -144,7 +148,9 @@ class CafeActivityWindow:
                 self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],('派遣中・回答待ち' if e.get('encounter',{}).get('status')=='waiting' else labels[e['status']]),e['remaining'],f"{reward(core,e):g}" + (f" + {e['item_reward']['name']} ×1" if 'item_reward' in e else ''), f"{dispatch_terms(core,e['cat_id'],e['destination']['reward'])['stress']:g}" if e['status']!='resolved' else '確定済み'))
         waiting=waiting_events(core)
         dispatch_waiting=[event for event in waiting if event.get('kind')=='dispatch_return']
-        if dispatch_waiting:self.events.selection_set(dispatch_waiting[0]['id'])
+        if previous_events and previous_events[0] in self.events.get_children():self.events.selection_set(previous_events[0])
+        elif dispatch_waiting:self.events.selection_set(dispatch_waiting[0]['id'])
+        elif self.events.get_children():self.events.selection_set(self.events.get_children()[-1])
         from .core.cafe_adoption import waiting as adoption_waiting
         offers=adoption_waiting(core)
         from .core.cafe_management import waiting as return_waiting, is_over
@@ -223,3 +229,23 @@ class CafeActivityWindow:
         try:action()
         except (ValueError,OSError) as exc:messagebox.showerror('派遣・イベントを処理できません',str(exc),parent=self.window)
         self.on_changed();self.refresh()
+
+    def show_result(self):
+        selected=self.events.selection()
+        if not selected:return
+        import tkinter as tk
+        from tkinter import ttk
+        from .cafe_dispatch_results import result_text
+        event=self.session.core.activities['events'][selected[0]]
+        window=tk.Toplevel(self.window);self.result_window=window
+        window.title('派遣結果・報酬内訳');window.geometry('560x440');window.minsize(400,300)
+        window.transient(self.window)
+        frame=ttk.Frame(window,padding=12);frame.pack(fill='both',expand=True)
+        ttk.Button(frame,text='閉じる',command=window.destroy).pack(side='bottom',anchor='e')
+        ttk.Label(frame,text=event['destination']['name']).pack(anchor='w')
+        body=ttk.Frame(frame);body.pack(fill='both',expand=True)
+        text=tk.Text(body,wrap='word',width=40,height=10);self.result_text=text
+        scroll=ttk.Scrollbar(body,orient='vertical',command=text.yview)
+        text.configure(yscrollcommand=scroll.set);scroll.pack(side='right',fill='y');text.pack(fill='both',expand=True)
+        text.insert('1.0',result_text(self.session.core,event));text.configure(state='disabled')
+        window.bind('<Escape>',lambda event:window.destroy())

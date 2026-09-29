@@ -65,7 +65,7 @@ class CatEventsTests(unittest.TestCase):
         self.assertIn('疲労 0 → 10',str(rows))
         self.assertNotIn('帰還報酬の受取',str(rows))
         s.day_off();s.resolve_activity(event_id)
-        self.assertIn('資金報酬 360',str(self.roundtrip(s,key)))
+        self.assertIn('資金報酬合計：360',str(self.roundtrip(s,key)))
 
     def test_missing_adoption_statuses_and_unrecorded_values_are_not_invented(self):
         core=self.session.core;key=self.ids[0];other=self.ids[1]

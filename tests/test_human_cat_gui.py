@@ -1064,6 +1064,21 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertIn('達成', window.history.item(window.history.get_children()[0], 'values')[-1])
         self.assertTrue(window.next_button.instate(['disabled']))
 
+    def test_dispatch_result_is_read_only_and_scrollable_after_return(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        s=CafeInteractionSession(store=self.store);s.enable_management()
+        key=next(iter(s.core.cats));s.dispatch(key);s.day_off();s.resolve_activity(f'dispatch-1-{key}')
+        self.app.replace_game(s);self.app.activity_button.invoke();window=self.app.activity_window
+        before=s.core.log();window.result_button.invoke();dialog=window.result_window
+        self.root.deiconify();dialog.geometry('400x300');self.root.update()
+        self.assertIn('基本報酬：100',window.result_text.get('1.0','end'))
+        self.assertIn('受取済み',window.result_text.get('1.0','end'))
+        self.assertTrue(window.result_text.winfo_ismapped())
+        self.assertEqual(s.core.log(),before)
+        dialog.destroy();window.refresh()
+        self.assertEqual(window.events.selection(),(f'dispatch-1-{key}',))
+        window.window.destroy()
+
     def test_items_inventory_use_history_and_small_layout(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         from cat_cafe_sim.core.cafe_traits import definitions

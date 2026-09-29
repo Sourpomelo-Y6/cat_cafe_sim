@@ -2,7 +2,6 @@
 
 
 def cat_events(core, cat_id):
-    from .core.cafe_activities import reward
     from .core.cafe_dispatch_encounters import selected
     rows = []
 
@@ -34,9 +33,8 @@ def cat_events(core, cat_id):
         if event['status'] in ('waiting', 'resolved'):
             add(event['occurred_day'], '派遣帰還', place, '報酬受取待ち' if event['status']=='waiting' else '報酬受取済み')
         if event['status'] == 'resolved':
-            result = f'資金報酬 {reward(core, event):g}'
-            if 'item_reward' in event:
-                result += f" / {event['item_reward']['name']} ×1"
+            from .cafe_dispatch_results import result_text
+            result = result_text(core,event).replace('\n',' / ')
             add(event['resolved_day'], '帰還報酬の受取', place, result)
 
     management = core.management
