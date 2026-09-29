@@ -43,6 +43,8 @@ def apply_operation(core, operation):
     elif kind=='initialize_objective':core.initialize_objective(operation['mode'])
     elif kind=='advance_goal':core.advance_goal()
     elif kind=='continue_goal':core.continue_goal()
+    elif kind=='initialize_dispatch_trouble':core.initialize_dispatch_trouble(operation['rules'])
+    elif kind=='resolve_dispatch_trouble':core.resolve_dispatch_trouble(operation['event_id'],operation['choice'])
     elif kind=='initialize_dispatch_introduction':core.initialize_dispatch_introduction(operation['rules'])
     elif kind=='resolve_dispatch_introduction':core.resolve_dispatch_introduction(operation['event_id'],operation['choice'])
     elif kind=='initialize_intake_request':core.initialize_intake_request(operation['rules'])
@@ -56,7 +58,7 @@ def apply_operation(core, operation):
     elif kind=='recruit_cat':core.recruit_cat(operation['cat_id'])
     elif kind=='purchase_item':core.purchase_item(operation['rules'])
     elif kind=='use_item':core.use_item(operation['source'],operation['cat_id'])
-    elif kind=='dispatch':core.dispatch(operation['cat_id'],operation['rules'],encounter=operation.get('encounter'),item_reward=operation.get('item_reward'),introduction=operation.get('introduction'))
+    elif kind=='dispatch':core.dispatch(operation['cat_id'],operation['rules'],encounter=operation.get('encounter'),item_reward=operation.get('item_reward'),introduction=operation.get('introduction'),trouble=operation.get('trouble'))
     elif kind=='resolve_dispatch_choice':core.resolve_dispatch_choice(operation['event_id'],operation['choice'])
     elif kind=='player_play':
         from .cafe_player import legacy_play

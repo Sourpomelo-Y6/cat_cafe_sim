@@ -1,7 +1,7 @@
 """確定済みの収入・支出から日次収支を導出する。"""
 import math
 
-EXPENSE_KEYS=('pet_shop_expenses','housing_expenses','item_expenses','operating_cost','recruitment_expenses','expansion_expenses',
+EXPENSE_KEYS=('dispatch_trouble_expenses','pet_shop_expenses','housing_expenses','item_expenses','operating_cost','recruitment_expenses','expansion_expenses',
               'equipment_expenses','seat_equipment_expenses','waiting_area_expenses','store_event_expenses','kitten_expenses')
 
 

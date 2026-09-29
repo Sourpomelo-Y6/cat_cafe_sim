@@ -26,13 +26,15 @@ def destination(data=None):
     return copy.deepcopy(data)
 
 
-def destinations():
+def destinations(core=None):
     extra = json.loads((Path(__file__).resolve().parents[2]/'config/cafe_dispatch_destinations.json').read_text(encoding='utf-8'))
     if not isinstance(extra, list):
         raise ValueError('派遣先一覧が不正です。')
     rows = [destination()] + [destination(row) for row in extra]
     if len({row['id'] for row in rows}) != len(rows):
         raise ValueError('派遣先IDが重複しています。')
+    if core is not None and core.dispatch_trouble is not None:
+        rows.append(copy.deepcopy(core.dispatch_trouble['destination']))
     return rows
 
 
@@ -52,6 +54,9 @@ def dispatch_reason(core, cat_id, rules):
     from .cafe_dispatch_unlocks import reason as unlock_reason
     locked=unlock_reason(core,rules['id'])
     if locked:return locked
+    from .cafe_dispatch_trouble import DESTINATION_ID as trouble_id
+    if rules['id'] == trouble_id and (core.dispatch_trouble is None or rules != core.dispatch_trouble['destination'] or core.management is None):
+        return 'この営業には山あいの宿の派遣設定がありません。'
     cat = core.cats[cat_id]
     if activity(core, cat_id) != 'cafe':
         return '在店していません。'
@@ -85,10 +90,14 @@ def waiting_events(core, *, include_introductions=True):
     from .cafe_dispatch_introduction import waiting as introduction_waiting
     offered = introduction_waiting(core) if include_introductions else []
     reservation=reservation_waiting(core)
-    return offered + choices(core) + ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core) + returns(core) + trust_waiting(core) + ([reservation] if reservation else [])
+    from .cafe_dispatch_trouble import waiting as trouble_waiting
+    return offered + trouble_waiting(core) + choices(core) + ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core) + returns(core) + trust_waiting(core) + ([reservation] if reservation else [])
 
 
 def reward(core, event):
+    from .cafe_dispatch_trouble import interrupted
+    if interrupted(event):
+        return 0
     from .cafe_traits import effect
     from .cafe_dispatch_encounters import reward_delta
     multiplier=event.get('growth_multiplier',1)
@@ -104,7 +113,7 @@ def ensure(core):
         core.activities = dict(cats=dict.fromkeys(core.cats,'cafe'), events={}, day_locations=dict.fromkeys(core.cats,'cafe'))
 
 
-def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None, introduction=None):
+def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None, introduction=None, trouble=None):
     rules = destination(rules)
     reason = dispatch_reason(core, cat_id, rules)
     if reason:
@@ -127,6 +136,8 @@ def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None, intr
         event['item_reward'] = definition(item_reward)
     from .cafe_dispatch_introduction import attach as attach_introduction
     attach_introduction(core, event, introduction)
+    from .cafe_dispatch_trouble import attach as attach_trouble
+    attach_trouble(core, event, trouble)
     ensure(core)
     core.activities['cats'][cat_id] = 'dispatched'
     core.activities['day_locations'][cat_id] = 'dispatched'
@@ -136,12 +147,15 @@ def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None, intr
     core._emit('dispatch_started', event_id=event_id, cat_id=cat_id, destination=rules['name'])
     core._record(dict(kind='dispatch',cat_id=cat_id,rules=rules, **({'encounter':copy.deepcopy(event['encounter']['rules'])} if encounter is not None else {}),
                       **({'item_reward':copy.deepcopy(event['item_reward'])} if item_reward is not None else {}),
-                      **({'introduction':copy.deepcopy(introduction)} if introduction is not None else {})))
+                      **({'introduction':copy.deepcopy(introduction)} if introduction is not None else {}),
+                      **({'trouble':copy.deepcopy(trouble)} if trouble is not None else {})))
 
 
 def close_day(core):
     if not core.activities:return
     for event in core.activities['events'].values():
+        from .cafe_dispatch_trouble import close_day as trouble_close
+        if trouble_close(core, event):continue
         if event['status'] != 'travelling':continue
         event['remaining'] -= 1
         from .cafe_dispatch_encounters import close_day as encounter_close
@@ -168,17 +182,24 @@ def resolve(core, event_id, choice):
     if core.can_set_shifts:
         core.activities['day_locations'][event['cat_id']]='cafe'
     core.funds += received
-    if core.management:
+    from .cafe_dispatch_trouble import interrupted
+    if core.management and interrupted(event):
+        key = event['cat_id']
+        core.management['stress'][key] = event['trouble']['rules']['return_stress']
+        core.cats[key].stamina = core.config.max_stamina
+        core.cats[key].cannot_continue = core.cats[key].health_status != 'healthy'
+    elif core.management:
         key=event['cat_id']
         core.management['stress'][key]=min(100,core.management['stress'][key]+terms['stress'])
     core._tick_events=[]
     core._emit('activity_event_resolved',event_id=event_id,cat_id=event['cat_id'],reward=received,
-               **({'stress_gain':terms['stress']} if terms['stress'] else {}),
+               **({'stress_gain':terms['stress']} if terms['stress'] and not interrupted(event) else {}),
                **({'item_reward':copy.deepcopy(event['item_reward'])} if 'item_reward' in event else {}))
     from .cafe_patron import receive
     receive(core, event)
     from .cafe_growth import dispatch_return
-    dispatch_return(core,event['cat_id'])
+    if not interrupted(event):
+        dispatch_return(core,event['cat_id'])
     from .cafe_dispatch_introduction import present
     present(core)
     core._record(dict(kind='resolve_activity',event_id=event_id,choice=choice))
@@ -192,7 +213,7 @@ def validate(core, data):
             raise ValueError('猫の活動状態が不正です。')
     busy=set()
     for key,e in data['events'].items():
-        if set(e)-{'encounter','item_reward','growth_multiplier','welcome_match','introduction'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
+        if set(e)-{'encounter','item_reward','growth_multiplier','welcome_match','introduction','trouble'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
             raise ValueError('イベントの記録が不正です。')
         if 'item_reward' in e:
             from .cafe_items import definition
@@ -208,22 +229,29 @@ def validate(core, data):
             if e['growth_multiplier']!=expected:raise ValueError('派遣時の成長効果が不正です。')
         if e['cat_id'] not in core.cats or e['kind']!='dispatch_return' or e['id']!=key or key!=f"dispatch-{e['started_day']}-{e['cat_id']}":
             raise ValueError('イベントの対象が不正です。')
-        if type(e['started_day']) is not int or not 1<=e['started_day']<=core.day or type(e['remaining']) is not int or not 0<=e['remaining']<=rule['days']:
+        if type(e['started_day']) is not int or not 1<=e['started_day']<=core.day or type(e['remaining']) is not int or e['remaining']<0:
             raise ValueError('イベントの日数が不正です。')
-        completed_days=core.day-e['started_day']+int(core.closed)
-        if e['remaining']!=max(0,rule['days']-completed_days):raise ValueError('派遣の残日数が不正です。')
-        if e['status']=='travelling':
-            if e['remaining']==0 or any(e[k] is not None for k in ('occurred_day','resolved_day','choice')):raise ValueError('進行中イベントが不正です。')
-        elif e['status'] in ('waiting','resolved'):
-            if e['remaining']!=0 or type(e['occurred_day']) is not int or e['occurred_day']!=e['started_day']+rule['days']-1:raise ValueError('帰還イベントが不正です。')
-            if e['status']=='waiting' and (e['resolved_day'] is not None or e['choice'] is not None):raise ValueError('未解決イベントが不正です。')
-            if e['status']=='resolved' and (type(e['resolved_day']) is not int or not e['occurred_day']<=e['resolved_day']<=core.day or e['choice']!='receive'):raise ValueError('解決済みイベントが不正です。')
-        else:raise ValueError('未知のイベント状態です。')
+        from .cafe_dispatch_trouble import validate_event
+        special = validate_event(core, e)
+        if e['remaining'] > max(rule['days'], e.get('trouble',{}).get('rules',{}).get('missing_days',0)):
+            raise ValueError('イベントの残日数が不正です。')
+        if not special:
+            completed_days=core.day-e['started_day']+int(core.closed)
+            if e['remaining']!=max(0,rule['days']-completed_days):raise ValueError('派遣の残日数が不正です。')
+            if e['status']=='travelling':
+                if e['remaining']==0 or any(e[k] is not None for k in ('occurred_day','resolved_day','choice')):raise ValueError('進行中イベントが不正です。')
+            elif e['status'] in ('waiting','resolved'):
+                if e['remaining']!=0 or type(e['occurred_day']) is not int or e['occurred_day']!=e['started_day']+rule['days']-1:raise ValueError('帰還イベントが不正です。')
+                if e['status']=='waiting' and (e['resolved_day'] is not None or e['choice'] is not None):raise ValueError('未解決イベントが不正です。')
+                if e['status']=='resolved' and (type(e['resolved_day']) is not int or not e['occurred_day']<=e['resolved_day']<=core.day or e['choice']!='receive'):raise ValueError('解決済みイベントが不正です。')
+            else:raise ValueError('未知のイベント状態です。')
         from .cafe_dispatch_encounters import validate as validate_encounter
         validate_encounter(core,e)
         if e['status']!='resolved':
-            if e['cat_id'] in busy or data['cats'][e['cat_id']]!='dispatched':raise ValueError('派遣が重複しています。')
+            if e['cat_id'] in busy or data['cats'][e['cat_id']]!=('missing' if special else 'dispatched'):raise ValueError('派遣が重複しています。')
             busy.add(e['cat_id'])
-    if busy!={key for key,value in data['cats'].items() if value=='dispatched'}:raise ValueError('派遣状態とイベントが一致しません。')
+    from .cafe_dispatch_trouble import interrupted
+    trouble_missing = {e['cat_id'] for e in data['events'].values() if interrupted(e) and e['status'] in ('missing','waiting')}
+    if busy!=({key for key,value in data['cats'].items() if value=='dispatched'} | trouble_missing):raise ValueError('派遣状態とイベントが一致しません。')
     if any(data['cats'][key]!='cafe' for key in core.working_cats):raise ValueError('不在の猫に出勤予定があります。')
     return copy.deepcopy(data)

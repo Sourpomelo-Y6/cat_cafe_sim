@@ -129,7 +129,9 @@ class CafeInteractionSession:
         if self.core.intake_request:
             used.add(self.core.intake_request['rules']['cat_id'])
         introduction = for_departure(self.core, selected, used)
-        self.core.dispatch(cat_id, selected, encounter=for_destination(selected), item_reward=item_reward(selected), introduction=introduction)
+        from .core.cafe_dispatch_trouble import for_departure as trouble_for_departure
+        trouble = trouble_for_departure(self.core, cat_id, selected)
+        self.core.dispatch(cat_id, selected, encounter=for_destination(selected), item_reward=item_reward(selected), introduction=introduction, trouble=trouble)
 
     def open_recruitment(self):
         from .core.cafe_recruitment import candidates, next_candidate_day, require_preparation, add_candidates
@@ -338,6 +340,13 @@ class CafeInteractionSession:
         check_link(self)
         if self.pending:raise ValueError('先に交流結果の保存を再試行してください。')
         self.core.resolve_growth_mastery(cat_id,choice)
+
+    def resolve_dispatch_trouble(self, event_id, choice):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に交流結果の保存を再試行してください。')
+        self.core.resolve_dispatch_trouble(event_id, choice)
 
     def resolve_dispatch_choice(self, event_id, choice):
         from .storage.cafe_saves import check_link

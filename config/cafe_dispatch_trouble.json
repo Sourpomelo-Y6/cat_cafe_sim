@@ -1,0 +1,8 @@
+{
+  "destination": {"id": "mountain_lodge_visit", "name": "山あいの宿への訪問", "days": 3, "reward": 650, "max_fatigue": 20, "required_trait": "outgoing", "required_trait_name": "外出好き"},
+  "base_probability": 0.15,
+  "stress_probability": 0.35,
+  "missing_days": 2,
+  "search_cost": 100,
+  "return_stress": 30
+}

@@ -9,7 +9,7 @@ def result_rows(core,event):
     trait=effect(core,event['cat_id'],'dispatch_reward')
     growth=event.get('growth_multiplier',1)
     welcome=event.get('welcome_match',{})
-    rows=[('状態',{'travelling':'派遣中（報酬見込み）','waiting':'帰還・受取待ち','resolved':'受取済み'}[event['status']]),
+    rows=[('状態',{'missing':'派遣中断・行方不明','travelling':'派遣中（報酬見込み）','waiting':'帰還・受取待ち','resolved':'受取済み'}[event['status']]),
           ('出発日',f"{event['started_day']}日目"),
           ('受取日',f"{event['resolved_day']}日目" if event['resolved_day'] is not None else '未受取'),
           ('基本報酬',f'{base:g}'),('特性補正',f'×{trait:g}（{base*(trait-1):+g}）'),
@@ -27,6 +27,17 @@ def result_rows(core,event):
                      ('歓迎する得意分野',LABELS[selected['specialization']]+('：一致' if welcome['specialization_matched'] else '：不一致'))])
     else:rows.append(('歓迎条件','設定なし'))
     if 'item_reward' in event:rows.append(('アイテム報酬',event['item_reward']['name']+' ×1'))
+    trouble = event.get('trouble')
+    if trouble:
+        from .core.cafe_dispatch_trouble import interrupted
+        rows.append(('出発時のトラブル発生率', f"{trouble['probability']*100:g}%（ストレス{trouble['stress']:g}）"))
+        if interrupted(event):
+            rows.append(('中断による報酬取消', f'{-max(0,raw):+g}'))
+            rows.extend([('派遣中断', f"{trouble['missing_day']}日目に家出・報酬0・派遣経験なし"),
+                         ('対応', {'search':'捜索して連れ戻す','wait':'帰還を待つ',None:'回答待ち'}[trouble['choice']]),
+                         ('捜索費', f"{trouble['cost']:g}")])
+        else:
+            rows.append(('トラブル', '抽選前' if trouble['status']=='scheduled' else '発生なし'))
     offered = event.get('introduction')
     if offered:
         rows.append(('紹介された猫', offered['candidate']['name']))

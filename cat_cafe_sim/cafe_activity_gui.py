@@ -43,7 +43,7 @@ class CafeActivityWindow:
         self.patron_button.pack(side='right')
         self.recruitment_button=ttk.Button(extra_controls,text='保護猫の受け入れ…',command=self.show_recruitment)
         self.recruitment_button.pack(side='left')
-        self.base_destinations = destinations()
+        self.base_destinations = destinations(session.core)
         self.destinations = list(self.base_destinations)
         self.destination_choice = ttk.Combobox(frame, state='readonly', values=[row['name'] for row in self.destinations])
         self.destination_choice.pack(fill='x')
@@ -90,6 +90,9 @@ class CafeActivityWindow:
         else:
             terms = dispatch_terms(core, cats[0], self.rules['reward'])
             self.selection_info.set(f"参加できます：報酬 {terms['reward']:g} / 帰還時ストレス ＋{terms['stress']:g}")
+        if cats and self.rules['id'] == 'mountain_lodge_visit' and core.dispatch_trouble:
+            from .core.cafe_dispatch_trouble import probability
+            self.selection_info.set(self.selection_info.get()+f'\nこの猫のトラブル発生率：{probability(core,cats[0])*100:g}%（出発時に固定）')
         if cats:
             from .core.cafe_dispatch_match import description,terms as welcome_terms
             self.selection_info.set(self.selection_info.get()+'\n'+description(core,cats[0],self.rules))
@@ -112,6 +115,17 @@ class CafeActivityWindow:
         else:
             self.receive_button.configure(text='帰還・報酬を受け取る')
             self.receive_button.state(['!disabled'] if can_receive else ['disabled'])
+        if event and event.get('trouble', {}).get('missing_day') is not None:
+            from .core.cafe_dispatch_trouble import pending as trouble_pending
+            if trouble_pending(event):
+                self.receive_button.configure(text='家出トラブルに対応…')
+                self.receive_button.state(['!disabled'] if not self.session.pending and not is_over(core) else ['disabled'])
+            elif event['status'] not in ('waiting',):
+                self.receive_button.configure(text='トラブルの記録…')
+                self.receive_button.state(['!disabled'])
+            else:
+                self.receive_button.configure(text='帰還を確認する（報酬なし）')
+                self.receive_button.state(['!disabled'] if can_receive else ['disabled'])
         introduction = event.get('introduction') if event else None
         if introduction and event['status']=='resolved':
             self.receive_button.configure(text='猫の紹介…' if introduction['status']=='waiting' else '猫紹介の記録…')
@@ -140,6 +154,9 @@ class CafeActivityWindow:
         item = item_reward(self.rules)
         if item:
             self.destination_info.set(self.destination_info.get()+f" / {item['name']} ×1（ストレス −{item['stress_relief']:g}）")
+        if self.rules['id'] == 'mountain_lodge_visit' and core.dispatch_trouble:
+            rule = core.dispatch_trouble
+            self.destination_info.set(self.destination_info.get()+f"\n1日目に家出トラブル：確率{rule['base_probability']*100:g}〜{(rule['base_probability']+rule['stress_probability'])*100:g}%（ストレスによる）。中断報酬0・捜索費{rule['search_cost']:g}、または{rule['missing_days']}日後の帰還待ち。")
         selected=self.cats.selection()
         previous_events=self.events.selection()
         self.cats.delete(*self.cats.get_children());self.events.delete(*self.events.get_children())
@@ -148,10 +165,10 @@ class CafeActivityWindow:
             self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),ACTIVITY_LABELS[core.activity(key)],health_text(cat.health_status,cat.recovery_days_remaining),f'{cat.fatigue:g}',(trait(core,key) or {}).get('name','なし'),growth_summary(core,key),(dispatch_reason(core,key,self.rules) or '参加できます')+' / '+welcome_description(core,key,self.rules)))
         if selected:self.cats.selection_set(selected[0])
         elif core.cats:self.cats.selection_set(next(iter(core.cats)))
-        labels={'travelling':'派遣中','waiting':'帰還・確認待ち','resolved':'受取済み'}
+        labels={'missing':'派遣中断・行方不明','travelling':'派遣中','waiting':'帰還・確認待ち','resolved':'受取済み'}
         if core.activities:
             for key,e in core.activities['events'].items():
-                self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],('猫紹介・回答待ち' if e.get('introduction',{}).get('status')=='waiting' else '派遣中・回答待ち' if e.get('encounter',{}).get('status')=='waiting' else labels[e['status']]),e['remaining'],f"{reward(core,e):g}" + (f" + {e['item_reward']['name']} ×1" if 'item_reward' in e else ''), f"{dispatch_terms(core,e['cat_id'],e['destination']['reward'])['stress']:g}" if e['status']!='resolved' else '確定済み'))
+                self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],('家出トラブル・回答待ち' if e.get('trouble',{}).get('status')=='waiting' else '猫紹介・回答待ち' if e.get('introduction',{}).get('status')=='waiting' else '派遣中・回答待ち' if e.get('encounter',{}).get('status')=='waiting' else labels[e['status']]),e['remaining'],f"{reward(core,e):g}" + (f" + {e['item_reward']['name']} ×1" if 'item_reward' in e else ''), f"{dispatch_terms(core,e['cat_id'],e['destination']['reward'])['stress']:g}" if e['status']!='resolved' else '確定済み'))
         waiting=waiting_events(core)
         dispatch_waiting=[event for event in waiting if event.get('kind')=='dispatch_return']
         if previous_events and previous_events[0] in self.events.get_children():self.events.selection_set(previous_events[0])
@@ -175,6 +192,9 @@ class CafeActivityWindow:
         from .core.cafe_dispatch_introduction import waiting as introduction_waiting
         if introduction_waiting(core) and not is_over(core) and not self.session.pending:
             self.notice.set('派遣先からの猫紹介が回答待ちです。対象を選び「猫の紹介…」から迎えるか見送るか選んでください。')
+        from .core.cafe_dispatch_trouble import waiting as trouble_waiting
+        if trouble_waiting(core) and not is_over(core) and not self.session.pending:
+            self.notice.set('山あいの宿で家出トラブルが起きています。対象を選び「家出トラブルに対応…」から対応してください。')
         if not self.show_navigation and (returns or offers):
             self.notice.set('家出・譲渡の確認待ちです。この画面を閉じ、営業画面の「確認する」から対応できます。')
         self.buttons()
@@ -219,6 +239,10 @@ class CafeActivityWindow:
         note=f"\n1日目終了時に選択イベント：{encounter['title']}" if encounter else ''
         if self.session.core.dispatch_introduction and self.rules['id']==self.session.core.dispatch_introduction['destination']:
             note += '\n帰還報酬を受け取った後、準備中に保護猫の紹介を確認できます。'
+        if self.rules['id'] == 'mountain_lodge_visit' and self.session.core.dispatch_trouble:
+            from .core.cafe_dispatch_trouble import probability
+            rule = self.session.core.dispatch_trouble
+            note += f"\n1日目の家出トラブル発生率 {probability(self.session.core,selected[0])*100:g}%。中断時は報酬0。捜索費{rule['search_cost']:g}で連れ戻すか、費用なしで{rule['missing_days']}日後の帰還を待ちます。"
         item = item_reward(self.rules)
         if item:
             note += f"\n帰還時に {item['name']} ×1（準備中に在店猫のストレス −{item['stress_relief']:g}）"
@@ -229,7 +253,10 @@ class CafeActivityWindow:
         selected=self.events.selection()
         if not selected:return
         event=self.session.core.activities['events'][selected[0]]
-        if event.get('introduction') and event['status']=='resolved':
+        if event.get('trouble',{}).get('missing_day') is not None and event['status']!='waiting':
+            from .cafe_dispatch_trouble_gui import CafeDispatchTroubleWindow
+            self.trouble_window = CafeDispatchTroubleWindow(self.window, self.session, selected[0], self.changed)
+        elif event.get('introduction') and event['status']=='resolved':
             from .cafe_dispatch_introduction_gui import CafeDispatchIntroductionWindow
             self.introduction_window = CafeDispatchIntroductionWindow(self.window, self.session, selected[0], self.changed)
         elif event.get('encounter') and event['status']!='waiting':

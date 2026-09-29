@@ -19,7 +19,8 @@ def rules(data=None):
 
 
 def count(core):
-    return sum(e['status']=='resolved' for e in (core.activities or {}).get('events',{}).values())
+    from .cafe_dispatch_trouble import interrupted
+    return sum(e['status']=='resolved' and not interrupted(e) for e in (core.activities or {}).get('events',{}).values())
 
 
 def initialize(core,selected=None):

@@ -198,7 +198,9 @@ def validate(core, data):
                 raise ValueError('帰還の確定記録が不正です。')
         else:
             raise ValueError('帰還イベントの状態が不正です。')
-    if missing!={key for key in core.cats if core.activity(key)=='missing'}:
+    from .cafe_dispatch_trouble import missing_ids
+    dispatch_missing = missing_ids(core)
+    if missing & dispatch_missing or (missing | dispatch_missing) != {key for key in core.cats if core.activity(key)=='missing'}:
         raise ValueError('行方不明の猫とイベントが一致しません。')
     from .cafe_customer_trust import losses as customer_losses
     expected=max(0,rule['starting_popularity']-len(data['events'])*rule['popularity_loss']-customer_losses(core))

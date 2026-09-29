@@ -31,6 +31,11 @@ def cat_events(core, cat_id):
             continue
         place = event['destination']['name']
         add(event['started_day'], '派遣出発', place, f"予定期間 {event['destination']['days']}日")
+        trouble = event.get('trouble')
+        if trouble and trouble['missing_day'] is not None:
+            add(trouble['missing_day'], '派遣中の家出', place, '派遣中断・報酬0')
+            if trouble['choice']:
+                add(trouble['choice_day'], '家出トラブルへの対応', place, ('捜索して連れ戻す' if trouble['choice']=='search' else '帰還を待つ')+f" / 捜索費 {trouble['cost']:g}")
         encounter = event.get('encounter')
         if encounter and encounter['status'] != 'scheduled':
             add(encounter['occurred_day'], '派遣中の出来事', place, encounter['rules']['title'] + ('（回答待ち）' if encounter['status']=='waiting' else '（回答済み）'))

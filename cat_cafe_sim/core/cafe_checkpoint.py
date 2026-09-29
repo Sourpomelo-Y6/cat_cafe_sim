@@ -99,6 +99,9 @@ def restore(data):
     core=cls(Config.from_dict(data['config']),seed=data['seed'],start_state=StartState(**data['start_state']),
              cat_ids=data['cat_ids'],compact=True)
     state, resume=data['state'],data['resume']
+    if 'dispatch_trouble' in state:
+        from .cafe_dispatch_trouble import rules as trouble_rules
+        core.dispatch_trouble = trouble_rules(state['dispatch_trouble'])
     if set(resume)!={'cat_id','returning_customers','day_outcome_offset','events','pending'}:
         raise ValueError('invalid resume fields')
     if 'recruitment' in state:
@@ -284,6 +287,8 @@ def restore(data):
     if 'management' in state:
         from .cafe_management import validate as validate_management
         core.management=validate_management(core,state['management'])
+    from .cafe_dispatch_trouble import validate as validate_trouble
+    validate_trouble(core)
     if 'customer_trust' in state:
         from .cafe_customer_trust import validate as validate_trust
         if core.customer_discontent is None or core.management is None:
@@ -411,6 +416,8 @@ def restore(data):
     from .cafe_housing import expenses as housing_expenses
     from .cafe_item_shop import expenses as item_expenses
     from .cafe_pet_shop import expenses as pet_shop_expenses
+    from .cafe_dispatch_trouble import expenses as trouble_expenses
+    expected_funds -= trouble_expenses(core)
     expected_funds -= pet_shop_expenses(core)
     expected_funds -= item_expenses(core)
     expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core) + seat_expenses(core)+waiting_area_expenses(core)+housing_expenses(core)

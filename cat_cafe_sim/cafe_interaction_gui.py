@@ -121,6 +121,12 @@ class ManualCafeInteractionWindow:
             elif kind=='dispatch_destination_unlocked':
                 names={'shopping_street_event':'商店街の交流会','out_of_town_visit':'郊外への出張訪問'}
                 text='派遣先を解放：'+names[event['destination_id']]
+            elif kind=='dispatch_trouble_initialized':
+                text='山あいの宿への派遣と家出トラブルを設定'
+            elif kind=='dispatch_trouble_waiting':
+                text=f"山あいの宿で {event['cat_id']} が行方不明。派遣は中断し、対応待ちです。"
+            elif kind=='dispatch_trouble_resolved':
+                text=f"{event['cat_id']}："+('捜索して連れ戻す' if event['choice']=='search' else '帰還を待つ')+f" · 費用 {event['cost']:g}"
             elif kind=='dispatch_choice_waiting':
                 text=f"派遣イベント回答待ち：{event['title']}（{event['cat_id']}）"
             elif kind=='dispatch_choice_resolved':
@@ -683,7 +689,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self._attention = self.show_growth
         elif waiting_events(core, include_introductions=False):
             from .core.cafe_dispatch_encounters import waiting as choice_waiting
-            self.notice.set('派遣中の出来事が回答待ちです。選択肢と効果を確認してください。' if choice_waiting(core) else '派遣から帰還した猫が確認待ちです。帰還と報酬を確認してください。')
+            from .core.cafe_dispatch_trouble import waiting as trouble_waiting
+            self.notice.set('山あいの宿で家出トラブルが起きています。派遣画面で対応してください。' if trouble_waiting(core) else '派遣中の出来事が回答待ちです。選択肢と効果を確認してください。' if choice_waiting(core) else '派遣から帰還した猫が確認待ちです。帰還と報酬を確認してください。')
             self._attention = self.show_dispatch_choice if choice_waiting(core) else self.show_activities
         elif patron_pending(core):
             self.notice.set('有力者目標を達成しました。結果を確認すると営業を続けられます。')

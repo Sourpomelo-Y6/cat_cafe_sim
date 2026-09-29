@@ -45,7 +45,7 @@ class CafeHistoryWindow:
         self.total=tk.StringVar(value=('期間の収支：未導入' if not rows or 'net_cash_flow' not in rows[0]['summary'] else
             f"期間の収入 {sum(row['summary']['total_income'] for row in rows):g} / 支出 {sum(row['summary']['total_expenses'] for row in rows):g} / 純収支 {sum(row['summary']['net_cash_flow'] for row in rows):+g}"))
         ttk.Label(frame,textvariable=self.total).pack(anchor='w')
-        self.days = self.table(frame, ('日目', '店舗イベント', '開始資金', '収入', '支出', '純収支', '終了資金', '売上', 'うちボーナス', '交流件数', '接客評価', '満員帰り', '待切れ', '運営費', 'イベント支出', '用品購入費', '派遣収入', '子猫費用', '人気', '受入費用', '猫購入費', '獲得人気', '目標結果', '席数', '増設費用', '待合費用', '飼育スペース費用', '設備費用', '接客設備費用', '営業区分'))
+        self.days = self.table(frame, ('日目', '店舗イベント', '開始資金', '収入', '支出', '純収支', '終了資金', '売上', 'うちボーナス', '交流件数', '接客評価', '満員帰り', '待切れ', '運営費', 'イベント支出', '用品購入費', '派遣収入', '子猫費用', '人気', '受入費用', '猫購入費', '派遣捜索費', '獲得人気', '目標結果', '席数', '増設費用', '待合費用', '飼育スペース費用', '設備費用', '接客設備費用', '営業区分'))
         ttk.Label(frame, text='猫ごとの比較（体力消耗は営業開始時からの差、親しみは各お客への実増減の合計）',
                   wraplength=600).pack(anchor='w', pady=(10, 0))
         self.cats = self.table(frame, ('日目', '猫', '接客回数', '体力消耗', '残り体力', '親しみ増減', '出勤・休養', '疲労変化', '体調・療養'))
@@ -58,7 +58,7 @@ class CafeHistoryWindow:
                 ('満{0[satisfied]}・普{0[normal]}・不{0[dissatisfied]}'.format(summary['customer_satisfaction']) if 'customer_satisfaction' in summary else '未導入'),
                 summary['departures'].get('queue_full',0),summary['departures'].get('wait_timeout',0),
                 f"{summary.get('operating_cost',0):g}",f"{summary.get('store_event_expenses',0):g}", f"{summary.get('item_expenses',0):g}", f"{summary.get('dispatch_income',0):g}", f"{summary.get('kitten_expenses',0):g}",
-                f"{summary['popularity']:g}" if 'popularity' in summary else '未導入', f"{summary.get('recruitment_expenses',0):g}", f"{summary.get('pet_shop_expenses',0):g}", f"{summary.get('popularity_gain',0):g}", {'active':'挑戦中','cleared':'クリア','expired':'期限内未達'}.get(summary.get('goal_status'),'未導入'), summary.get('seat_count', 1), f"{summary.get('expansion_expenses',0):g}", f"{summary.get('waiting_area_expenses',0):g}", f"{summary.get('housing_expenses',0):g}", f"{summary.get('equipment_expenses',0):g}", f"{summary.get('seat_equipment_expenses',0):g}", '休業日' if result.get('day_type')=='day_off' else '営業日'))
+                f"{summary['popularity']:g}" if 'popularity' in summary else '未導入', f"{summary.get('recruitment_expenses',0):g}", f"{summary.get('pet_shop_expenses',0):g}", f"{summary.get('dispatch_trouble_expenses',0):g}", f"{summary.get('popularity_gain',0):g}", {'active':'挑戦中','cleared':'クリア','expired':'期限内未達'}.get(summary.get('goal_status'),'未導入'), summary.get('seat_count', 1), f"{summary.get('expansion_expenses',0):g}", f"{summary.get('waiting_area_expenses',0):g}", f"{summary.get('housing_expenses',0):g}", f"{summary.get('equipment_expenses',0):g}", f"{summary.get('seat_equipment_expenses',0):g}", '休業日' if result.get('day_type')=='day_off' else '営業日'))
             for cat_id, cat in result['cats'].items():
                 name = session.profiles.get(cat_id, {}).get('name', cat_id)
                 self.cats.insert('', 'end', values=(result['day'], f'{name}（{cat_id}）', cat['interactions'],
