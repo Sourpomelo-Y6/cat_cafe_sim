@@ -708,42 +708,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from tkinter import messagebox
         self.stop()
         try:
-            result=self.session.core.day_result()
-            summary=result['summary']
-            lines=[f"{result['day']}日目の営業結果", f"売上 {summary['revenue']:g}（ボーナス {summary['interaction_bonus']:g}）",
-                   f"所持金 {summary['funds']:g}", "", "猫の体力（開始からの消耗）"]
-            if 'net_cash_flow' in summary:
-                lines[2]=(f"収支 {summary['net_cash_flow']:+g}（開始 {summary['opening_funds']:g} / "
-                          f"収入 {summary['total_income']:g} / 支出 {summary['total_expenses']:g} / 終了 {summary['closing_funds']:g}）")
-            for key,row in result['cats'].items():
-                name=self.session.profiles.get(key,{}).get('name',key)
-                lines.append(f"{name}：残り {row['stamina']:g} / 消耗 {row['spent']:g}")
-                if 'shift' in row:
-                    from .core.cafe_activities import ACTIVITY_LABELS
-                    label=ACTIVITY_LABELS[row['activity']] if row.get('activity','cafe')!='cafe' else ('出勤' if row['shift']=='work' else '休養')
-                    lines.append(f"  {label} · 疲労 {row['fatigue_before']:g} → {row['fatigue_after']:g}")
-                if 'health' in row:
-                    lines.append('  '+health_result_text(row['health']))
-            if 'popularity' in summary:
-                lines.append(f"店の人気：{summary['popularity']:g} / 子猫の引き渡し費用：{summary['kitten_expenses']:g}")
-            if 'operating_cost' in summary:
-                lines.append(f"店舗運営費：{summary['operating_cost']:g}")
-            if 'store_event' in summary:
-                lines.append('店舗イベント：'+summary['store_event'])
-            lines.append(f"混雑による退店：満員 {summary['departures'].get('queue_full',0)} / 待ち時間切れ {summary['departures'].get('wait_timeout',0)}")
-            if 'customer_satisfaction' in summary:
-                values=summary['customer_satisfaction']
-                lines.append(f"接客評価：満足 {values['satisfied']} / 普通 {values['normal']} / 不満 {values['dissatisfied']}")
-            if 'dispatch_income' in summary:
-                lines.append(f"派遣収入（売上とは別）：{summary['dispatch_income']:g}")
-            lines.append("\n親しみの変化")
-            for row in result['affinity_changes']:
-                name=self.session.profiles.get(row['cat_id'],{}).get('name',row['cat_id'])
-                lines.append(f"{name} → {row['customer_id']}：{row['change']:+g}")
-            if not result['affinity_changes']:
-                lines.append('交流なし')
-            lines.append("\n在店猫は一晩休むと体力が全回復します。療養中の猫は復帰まで接客できません。翌日へ進みますか？")
-            if messagebox.askyesno('閉店結果', '\n'.join(lines),parent=self.root):
+            self.session.core.day_result()
+            if messagebox.askyesno('翌日へ進む', '翌日へ進みますか？', parent=self.root):
                 self.session.next_day()
                 self.customer.set('')
         except (ValueError, OSError) as exc:

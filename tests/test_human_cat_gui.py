@@ -1725,8 +1725,7 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app.refresh()
         with patch('tkinter.messagebox.askyesno',return_value=False) as dialog:
             self.app.day_button.invoke()
-        self.assertIn('売上',dialog.call_args.args[1])
-        self.assertIn('親しみ',dialog.call_args.args[1])
+        self.assertEqual(dialog.call_args.args[:2], ('翌日へ進む', '翌日へ進みますか？'))
         self.assertEqual(self.session.core.day,1)
         with patch('tkinter.messagebox.askyesno',return_value=True):
             self.app.day_button.invoke()
