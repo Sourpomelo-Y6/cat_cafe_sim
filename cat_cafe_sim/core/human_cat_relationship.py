@@ -22,6 +22,7 @@ class RelationshipConfig(TypesConfig):
     customer_tension_multiplier: float = 1
     equipment_engagement_multiplier: float = 1
     equipment_tension_multiplier: float = 1
+    equipment_group: str = ''
     mastery_group: str = ''
     mastery_engagement_multiplier: float = 1
     affinity_enthusiastic: float = 1
@@ -37,6 +38,10 @@ class RelationshipConfig(TypesConfig):
         bounded(self.customer_tension_multiplier, 1, 2, 'customer tension multiplier')
         bounded(self.equipment_engagement_multiplier, 1, 2, 'equipment engagement multiplier')
         bounded(self.equipment_tension_multiplier, 1, 2, 'equipment tension multiplier')
+        if self.equipment_group not in ('', 'play', 'contact', 'quiet'):
+            raise ValueError('invalid equipment group')
+        if self.equipment_group and (self.equipment_engagement_multiplier == 1 or self.equipment_tension_multiplier != 1):
+            raise ValueError('group equipment requires engagement bonus without tension bonus')
         if self.mastery_group not in ('','play','contact','quiet'):
             raise ValueError('invalid mastery group')
         bounded(self.mastery_engagement_multiplier, 1, 2, 'mastery engagement multiplier')
@@ -58,6 +63,8 @@ class RelationshipConfig(TypesConfig):
         for key in ("equipment_engagement_multiplier", "equipment_tension_multiplier"):
             if getattr(self,key) == 1:
                 data["rules"].pop(key)
+        if not self.equipment_group:
+            data['rules'].pop('equipment_group')
         if not self.mastery_group:
             data['rules'].pop('mastery_group')
             data['rules'].pop('mastery_engagement_multiplier')
@@ -87,9 +94,12 @@ class RelationshipInteraction(TypesInteraction):
 
     def _normal_effect(self, action):
         cost, score, reaction, diagnostic = super()._normal_effect(action)
-        if action in INTERACTIONS and score > 0 and self.config.equipment_engagement_multiplier != 1:
+        if (action in INTERACTIONS and score > 0 and self.config.equipment_engagement_multiplier != 1
+                and (not self.config.equipment_group or diagnostic.get('boredom_group') == self.config.equipment_group)):
             score *= self.config.equipment_engagement_multiplier
             diagnostic = dict(diagnostic, equipment_multiplier=self.config.equipment_engagement_multiplier)
+            if self.config.equipment_group:
+                diagnostic = dict(diagnostic, equipment_group=self.config.equipment_group)
         if (action in INTERACTIONS and score>0 and self.config.mastery_group
                 and diagnostic.get('boredom_group')==self.config.mastery_group):
             score*=self.config.mastery_engagement_multiplier

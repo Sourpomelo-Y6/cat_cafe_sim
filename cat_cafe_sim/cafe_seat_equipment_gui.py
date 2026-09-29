@@ -1,5 +1,5 @@
 """席の接客設備を購入・設置する画面。"""
-from .core.cafe_seat_equipment import catalog, seats, owned, description, reason
+from .core.cafe_seat_equipment import catalog, seats, owned, description, reason, effect_text
 
 
 class CafeSeatEquipmentWindow:
@@ -57,7 +57,7 @@ class CafeSeatEquipmentWindow:
         self.status.set(f'所持金 {core.funds:g} / 準備中は1席に設備1つを設置できます。')
         self.layout.set('\n'.join(f'{key}：{description(core,key)}' for key in seats(core)))
         row=self.selected()
-        self.detail.set(f"費用 {row['cost']:g} / 関心の通常上昇×{row['engagement']:g}・テンションの通常上昇×{row['tension']:g}。\n特別行動のテンション上昇・減少量・体力消費は変更しません。")
+        self.detail.set(f"費用 {row['cost']:g} / {effect_text(row)}。購入後の資金 {core.funds-row['cost']:g}。\n特別行動のテンション上昇・減少量・体力消費は変更しません。")
         self.items={f"{r['rules']['name']}（{r['id']}）":r['id'] for r in owned(core)}
         self.item_selector.configure(values=tuple(self.items))
         if self.item.get() not in self.items:
@@ -80,7 +80,7 @@ class CafeSeatEquipmentWindow:
     def purchase(self):
         from tkinter import messagebox
         row=self.selected()
-        if messagebox.askyesno('接客設備を購入',f"{row['name']}を{row['cost']:g}で1個購入し、{self.seat.get()}に設置しますか？\n設置中の設備は保管します。購入後の資金：{self.session.core.funds-row['cost']:g}\n購入の取消・返金はできません。",parent=self.window):
+        if messagebox.askyesno('接客設備を購入',f"{row['name']}を{row['cost']:g}で1個購入し、{self.seat.get()}に設置しますか？\n{effect_text(row)}\n設置中の設備は保管します。購入後の資金：{self.session.core.funds-row['cost']:g}\n購入の取消・返金はできません。",parent=self.window):
             self.perform(lambda:self.session.purchase_seat_equipment(self.seat.get(),row))
 
     def equip(self):

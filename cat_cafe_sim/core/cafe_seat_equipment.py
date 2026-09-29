@@ -4,11 +4,19 @@ import json
 import math
 from pathlib import Path
 
+GROUP_EQUIPMENT = {'cat_tower': 'play', 'grooming_brush': 'contact', 'quiet_space': 'quiet'}
+
 
 def definition(data):
-    if (not isinstance(data, dict) or set(data) != {'id','name','cost','engagement','tension'}
-            or data['id'] not in ('toys','cushion') or not isinstance(data['name'], str) or not data['name'].strip()):
+    if (not isinstance(data, dict) or set(data) not in ({'id','name','cost','engagement','tension'}, {'id','name','cost','engagement','tension','group'})
+            or not isinstance(data['id'], str) or data['id'] not in ('toys','cushion', *GROUP_EQUIPMENT)
+            or not isinstance(data['name'], str) or not data['name'].strip()):
         raise ValueError('接客設備の設定が不正です。')
+    if data['id'] in GROUP_EQUIPMENT:
+        if data.get('group') != GROUP_EQUIPMENT[data['id']] or data['engagement'] == 1 or data['tension'] != 1:
+            raise ValueError('分類別設備には対応する交流分類と関心補正を設定してください。')
+    elif 'group' in data:
+        raise ValueError('従来の設備には交流分類を追加できません。')
     for key in ('cost','engagement','tension'):
         if type(data[key]) not in (int,float) or not math.isfinite(data[key]):
             raise ValueError('設備の価格・効果が不正です。')
@@ -20,8 +28,8 @@ def definition(data):
 def catalog():
     data = json.loads((Path(__file__).resolve().parents[2]/'config/cafe_seat_equipment.json').read_text())
     rows = [definition(row) for row in data]
-    if len(rows) != 2 or {r['id'] for r in rows} != {'toys','cushion'}:
-        raise ValueError('接客設備は2種類設定してください。')
+    if len(rows) != 5 or {r['id'] for r in rows} != {'toys','cushion', *GROUP_EQUIPMENT}:
+        raise ValueError('接客設備は従来の2種類と分類別の3種類を設定してください。')
     return rows
 
 
@@ -92,15 +100,23 @@ def installed(core, seat_id):
 def effects(core, seat_id):
     data = installed(core, seat_id)
     return dict(equipment_engagement_multiplier=data['engagement'] if data else 1,
-                equipment_tension_multiplier=data['tension'] if data else 1)
+                equipment_tension_multiplier=data['tension'] if data else 1,
+                equipment_group=data.get('group', '') if data else '')
+
+
+def effect_text(data):
+    if 'group' in data:
+        from .cafe_growth import GROUP_LABELS
+        return f"{GROUP_LABELS[data['group']]}の通常行動のみ：関心×{data['engagement']:g}"
+    effect = '・'.join(label + f'×{data[key]:g}' for key,label in (('engagement','関心'),('tension','テンション')) if data[key] != 1) or '補正なし'
+    return f'通常上昇：{effect}'
 
 
 def description(core, seat_id):
     data = installed(core, seat_id)
     if not data:
         return '設備なし'
-    effect = '・'.join(label + f'×{data[key]:g}' for key,label in (('engagement','関心'),('tension','テンション')) if data[key] != 1) or '補正なし'
-    return f"{data['name']}（通常上昇：{effect}）"
+    return f"{data['name']}（{effect_text(data)}）"
 
 
 def check_interaction(core, interaction, seat_id):

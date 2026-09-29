@@ -1,4 +1,7 @@
 [
   {"id":"toys","name":"おもちゃセット","cost":300,"engagement":1.2,"tension":1},
-  {"id":"cushion","name":"くつろぎクッション","cost":300,"engagement":1,"tension":1.2}
+  {"id":"cushion","name":"くつろぎクッション","cost":300,"engagement":1,"tension":1.2},
+  {"id":"cat_tower","name":"キャットタワー","cost":450,"engagement":1.35,"tension":1,"group":"play"},
+  {"id":"grooming_brush","name":"お手入れブラシ","cost":450,"engagement":1.35,"tension":1,"group":"contact"},
+  {"id":"quiet_space","name":"静かな交流スペース","cost":450,"engagement":1.35,"tension":1,"group":"quiet"}
 ]
