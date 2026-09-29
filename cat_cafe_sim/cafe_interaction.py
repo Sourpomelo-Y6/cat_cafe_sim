@@ -57,9 +57,8 @@ class CafeInteractionSession:
         return [key for key in seats if key not in self.active_interactions and key not in disabled_seats(self.core)]
 
     def available_cats(self):
-        return [cat for cat in self.core.cats.values()
-                if self.core.activity(cat.id)=='cafe' and cat.id in self.core.working_cats and cat.health_status == 'healthy' and not cat.cannot_continue and cat.stamina > 0
-                and cat.id not in {item.cat_id for item in self.active_interactions.values()}]
+        from .core.cafe_auto_assignment import available_cats
+        return available_cats(self.core)
 
     def cat_choices(self, customer_id=None):
         from .core.human_cat_types import Personality
@@ -375,8 +374,11 @@ class CafeInteractionSession:
         while self.free_seats and self.core.queue and self.available_cats():
             if not auto_assign:
                 return False
-            cat = min(self.available_cats(), key=lambda cat: (-cat.stamina, cat.id))
-            self.start(self.core.queue[0], cat.id, self.free_seats[0])
+            from .core.cafe_auto_assignment import select
+            customer_id=self.core.queue[0]
+            cat,_=select(self.core,customer_id)
+            self.core.automatic_assignment(customer_id,cat.id)
+            self.start(customer_id, cat.id, self.free_seats[0])
         if isinstance(self.core,MultiSeatCafeCore):
             commands={key:self.policy.choose(active.observation(),active.valid_actions(),active.config)
                       for key,active in self.active_interactions.items()}

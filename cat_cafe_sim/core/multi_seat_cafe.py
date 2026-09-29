@@ -152,6 +152,8 @@ def verify_multi_seat(data):
             core.enable_health(operation['rules'])
         elif operation['kind']=='set_shifts':
             core.set_shifts(operation['working_cats'],operation['rules'])
+        elif operation['kind']=='automatic_assignment':
+            core.automatic_assignment(operation['customer_id'],operation['cat_id'])
         elif operation['kind']=='start':
             core.start(verify_relationship(operation['interaction']),operation['seat_id'])
         elif operation['kind']=='step':

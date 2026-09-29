@@ -972,9 +972,12 @@ class CafeSaveWindowTests(unittest.TestCase):
         details = self.app.cat_details_window
         self.assertIn('白猫・長毛', str([details.tables['basic'].item(i)['values'] for i in details.tables['basic'].get_children()]))
         details.window.destroy()
+        self.app.session.core.automatic_assignment('guest-1',keys[0])
         self.app.session.start('guest-1', keys[0])
         self.assertEqual(self.app.session.core.active.config.customer_tension_multiplier, 1.25)
         self.app.refresh()
+        lines=[self.app.history.item(item,'values')[1] for item in self.app.history.get_children()]
+        self.assertTrue(any('自動割り当て' in line and '好みと特徴が一致' in line for line in lines))
         self.root.geometry('860x600')
         self.root.update()
         self.assertGreaterEqual(self.app.history.winfo_height(), 100)

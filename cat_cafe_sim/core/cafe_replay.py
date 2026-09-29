@@ -65,6 +65,7 @@ def apply_operation(core, operation):
     elif kind=='set_shifts':core.set_shifts(operation['working_cats'],operation['rules'])
     elif kind=='day_off':core.day_off()
     elif kind=='next_day':core.next_day()
+    elif kind=='automatic_assignment':core.automatic_assignment(operation['customer_id'],operation['cat_id'])
     elif kind=='start':
         interaction=verify_relationship(operation['interaction'])
         if hasattr(core,'seats'):core.start(interaction,operation['seat_id'])

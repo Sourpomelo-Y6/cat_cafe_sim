@@ -112,6 +112,30 @@ class PreferencesTests(unittest.TestCase):
                 self.assertEqual(s.core.customer_preferences, prefs)
                 self.reload(s)
 
+    def test_automatic_assignment_prefers_match_then_stamina_and_is_replayable(self):
+        s=self.session(seats=1);self.enable(s)
+        s.automatic_step();s.automatic_step()
+        self.assertEqual(s.core.active.cat_id,'white')
+        event=next(e for e in s.core.events if e['kind']=='automatic_assignment')
+        self.assertEqual((event['cat_id'],event['reason'],event['matched']),('white','preference_match',True))
+        self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(),s.core.snapshot())
+        bad=copy.deepcopy(s.core.log())
+        next(item['operation'] for item in bad['operations']
+             if item['operation']['kind']=='automatic_assignment')['cat_id']='black'
+        with self.assertRaises(ValueError):verify_cafe_interaction(bad)
+
+        fallback=self.session(seats=1);self.enable(fallback);fallback.set_shifts(['black','unconfigured'])
+        fallback.core.cats['black'].stamina=40;fallback.core.cats['unconfigured'].stamina=90
+        fallback.automatic_step()
+        from cat_cafe_sim.core.cafe_auto_assignment import select
+        cat,compatibility=select(fallback.core,'guest-1')
+        self.assertEqual(cat.id,'unconfigured')
+        self.assertFalse(compatibility['matched'])
+
+    def test_manual_assignment_does_not_add_automatic_reason(self):
+        s=self.session(seats=1);self.enable(s);s.step();s.start('guest-1','black')
+        self.assertFalse(any(e['kind']=='automatic_assignment' for e in s.core.events))
+
     def test_new_game_features_and_recruitment_preserved(self):
         s = create_game(Path(self.temp.name) / 'games')
         self.assertEqual(s.core.cat_features['cat-sora'], ['white', 'long_hair'])

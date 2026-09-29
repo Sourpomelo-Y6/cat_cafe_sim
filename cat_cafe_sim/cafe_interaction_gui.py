@@ -101,6 +101,10 @@ class ManualCafeInteractionWindow:
                     text+=f" / 得意な交流×{event['record']['diagnostic']['mastery_multiplier']:g}"
                 elif event['record']['diagnostic'].get('mastery_switch'):
                     text+=' / 得意な交流を考慮して切り替え'
+            elif kind=='automatic_assignment':
+                name=self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])
+                text=(f"自動割り当て：{customer_label(event['customer_id'])} → {name} / "+
+                      ('好みと特徴が一致' if event['matched'] else '一致する猫なし・体力優先'))
             elif kind=='health_enabled':
                 text='病気・療養ルールを開始'
             elif kind=='cat_health':

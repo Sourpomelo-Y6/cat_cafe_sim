@@ -601,6 +601,10 @@ class CafeInteractionCore(SimulationCore):
         self._emit('interaction_started', session_id=interaction.session_id, customer_id=interaction.customer_id)
         self._record(dict(kind='start', interaction=interaction.log()))
 
+    def automatic_assignment(self, customer_id, cat_id):
+        from .cafe_auto_assignment import record
+        record(self, customer_id, cat_id)
+
     def _interact(self, action_override):
         if self.active is None:
             return None
@@ -767,6 +771,8 @@ def verify_cafe_interaction(data):
             core.enable_health(operation['rules'])
         elif operation['kind'] == 'set_shifts':
             core.set_shifts(operation['working_cats'], operation['rules'])
+        elif operation['kind'] == 'automatic_assignment':
+            core.automatic_assignment(operation['customer_id'], operation['cat_id'])
         elif operation['kind'] == 'start':
             core.start(verify_relationship(operation['interaction']))
         elif operation['kind'] == 'step':

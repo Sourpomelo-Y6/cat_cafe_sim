@@ -111,6 +111,13 @@ class AdvancedCustomerTests(unittest.TestCase):
             self.reload(s)
             self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(), s.core.snapshot())
 
+    def test_automatic_assignment_uses_required_white_cat(self):
+        s=self.create();self.unlock(s);s.automatic_step();s.automatic_step()
+        assignment=next(e for e in s.core.events
+                        if e['kind']=='automatic_assignment' and e['customer_id']==CUSTOMER_ID)
+        self.assertEqual(assignment['cat_id'],'cat-sora')
+        self.assertTrue(assignment['matched'])
+
     def test_unmet_conditions_and_unserved_no_extra_charge(self):
         for cat, finish in (('cat-mike', False), ('cat-sora', True)):
             s = self.create(); self.unlock(s)
