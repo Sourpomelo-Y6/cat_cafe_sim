@@ -76,14 +76,16 @@ def activity(core, cat_id):
     return core.activities['cats'][cat_id] if core.activities else 'cafe'
 
 
-def waiting_events(core):
+def waiting_events(core, *, include_introductions=True):
     from .cafe_adoption import waiting
     from .cafe_management import waiting as returns
     from .cafe_dispatch_encounters import waiting as choices
     from .cafe_customer_trust import waiting as trust_waiting
     from .cafe_reservation import waiting as reservation_waiting
+    from .cafe_dispatch_introduction import waiting as introduction_waiting
+    offered = introduction_waiting(core) if include_introductions else []
     reservation=reservation_waiting(core)
-    return choices(core) + ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core) + returns(core) + trust_waiting(core) + ([reservation] if reservation else [])
+    return offered + choices(core) + ([event for event in core.activities['events'].values() if event['status'] == 'waiting'] if core.activities else []) + waiting(core) + returns(core) + trust_waiting(core) + ([reservation] if reservation else [])
 
 
 def reward(core, event):
@@ -102,7 +104,7 @@ def ensure(core):
         core.activities = dict(cats=dict.fromkeys(core.cats,'cafe'), events={}, day_locations=dict.fromkeys(core.cats,'cafe'))
 
 
-def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None):
+def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None, introduction=None):
     rules = destination(rules)
     reason = dispatch_reason(core, cat_id, rules)
     if reason:
@@ -123,6 +125,8 @@ def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None):
     if item_reward is not None:
         from .cafe_items import definition
         event['item_reward'] = definition(item_reward)
+    from .cafe_dispatch_introduction import attach as attach_introduction
+    attach_introduction(core, event, introduction)
     ensure(core)
     core.activities['cats'][cat_id] = 'dispatched'
     core.activities['day_locations'][cat_id] = 'dispatched'
@@ -131,7 +135,8 @@ def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None):
     core._tick_events=[]
     core._emit('dispatch_started', event_id=event_id, cat_id=cat_id, destination=rules['name'])
     core._record(dict(kind='dispatch',cat_id=cat_id,rules=rules, **({'encounter':copy.deepcopy(event['encounter']['rules'])} if encounter is not None else {}),
-                      **({'item_reward':copy.deepcopy(event['item_reward'])} if item_reward is not None else {})))
+                      **({'item_reward':copy.deepcopy(event['item_reward'])} if item_reward is not None else {}),
+                      **({'introduction':copy.deepcopy(introduction)} if introduction is not None else {})))
 
 
 def close_day(core):
@@ -174,6 +179,8 @@ def resolve(core, event_id, choice):
     receive(core, event)
     from .cafe_growth import dispatch_return
     dispatch_return(core,event['cat_id'])
+    from .cafe_dispatch_introduction import present
+    present(core)
     core._record(dict(kind='resolve_activity',event_id=event_id,choice=choice))
 
 
@@ -185,7 +192,7 @@ def validate(core, data):
             raise ValueError('猫の活動状態が不正です。')
     busy=set()
     for key,e in data['events'].items():
-        if set(e)-{'encounter','item_reward','growth_multiplier','welcome_match'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
+        if set(e)-{'encounter','item_reward','growth_multiplier','welcome_match','introduction'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
             raise ValueError('イベントの記録が不正です。')
         if 'item_reward' in e:
             from .cafe_items import definition

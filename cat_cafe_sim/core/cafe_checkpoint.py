@@ -112,7 +112,18 @@ def restore(data):
         core.intake_request=validate_request(state['intake_request'],state['day'],used)
         for key in request_cats(core):
             core.cats[key]=Cat(id=key)
-    cats=state.get('cats',{state.get('cat',{}).get('id'):state.get('cat')})
+    introduction_events = (state.get('activities') or {}).get('events', {})
+    if 'dispatch_introduction' in state:
+        from .cafe_dispatch_introduction import prepare as prepare_introductions
+        used = set(core.cats) | set((core.recruitment or {}).get('candidates', {}))
+        if core.intake_request:
+            used.add(core.intake_request['rules']['cat_id'])
+        core.dispatch_introduction, introduced = prepare_introductions(core, state['dispatch_introduction'], introduction_events, state['day'], used)
+        for key in introduced:
+            core.cats[key] = Cat(id=key)
+    elif any('introduction' in event for event in introduction_events.values()):
+        raise ValueError('派遣先の猫紹介に必要な設定がありません。')
+    cats=state.get('cats', {state.get('cat',{}).get('id'):state.get('cat')})
     if set(cats)!=set(core.cats):
         raise ValueError('invalid cat roster')
     for key, value in cats.items():
@@ -252,6 +263,8 @@ def restore(data):
         core.activities=validate(core,state['activities'])
     if core.recruitment is not None and (not core.shift_rules or not core.health_rules):
         raise ValueError('受け入れに必要な出勤・病気ルールがありません。')
+    from .cafe_dispatch_introduction import validate as validate_introductions
+    validate_introductions(core)
     if 'adoption' in state:
         from .cafe_adoption import validate as validate_adoption
         core.adoption=validate_adoption(core,state['adoption'])

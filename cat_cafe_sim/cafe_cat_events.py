@@ -17,6 +17,13 @@ def cat_events(core, cat_id):
         add(request['resolved_day'], '加入', '保護猫の受け入れ依頼', f"初期費用 {request['rules']['candidate']['cost']:g}")
 
     for event in (core.activities or {}).get('events', {}).values():
+        offered = event.get('introduction')
+        if offered and offered['status'] == 'accepted' and offered['cat_id'] == cat_id:
+            add(offered['resolved_day'], '加入', event['destination']['name'] + 'からの紹介', f"初期費用 {offered['candidate']['cost']:g}")
+        if offered and offered['presented_day'] is not None and event['cat_id'] == cat_id:
+            result = {'waiting': '回答待ち', 'accepted': '迎えた', 'declined': '見送り'}[offered['status']]
+            add(offered['presented_day'], '猫の紹介', event['destination']['name'], offered['candidate']['name'] + ' / ' + result)
+    for event in (core.activities or {}).get('events', {}).values():
         if event['cat_id'] != cat_id:
             continue
         place = event['destination']['name']

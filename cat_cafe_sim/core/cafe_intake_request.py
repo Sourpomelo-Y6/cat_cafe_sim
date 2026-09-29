@@ -46,7 +46,7 @@ def present(core):
 
 
 def require_response(core):
-    core.require_events_resolved(ignore_intake=True)
+    core.require_events_resolved(ignore_intake=True, ignore_introductions=True)
     if not core.compact or not core.can_set_shifts or not core.shift_rules or not core.health_rules:
         raise ValueError('依頼への回答は営業準備中に行ってください。')
 

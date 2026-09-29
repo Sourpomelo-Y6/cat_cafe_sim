@@ -55,6 +55,11 @@ def cat_details(session, cat_id):
     request = core.intake_request
     if request and request['status']=='accepted' and request['rules']['cat_id']==cat_id:
         basic += [('加入経路', '保護猫の受け入れ依頼'), ('加入日', f"{request['resolved_day']}日目")]
+    from .core.cafe_dispatch_introduction import introductions
+    for event in introductions(core):
+        offered = event['introduction']
+        if offered['status'] == 'accepted' and offered['cat_id'] == cat_id:
+            basic += [('加入経路', '派遣先からの紹介'), ('加入日', f"{offered['resolved_day']}日目")]
     if core.adoption:
         adopted = next((event for event in core.adoption['events'].values()
                         if event['cat_id']==cat_id and event['choice']=='accept'), None)

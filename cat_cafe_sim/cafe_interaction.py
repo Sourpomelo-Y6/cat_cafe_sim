@@ -119,7 +119,16 @@ class CafeInteractionSession:
         from .core.cafe_dispatch_encounters import for_destination
         selected = destination(rules)
         from .core.cafe_items import for_destination as item_reward
-        self.core.dispatch(cat_id, selected, encounter=for_destination(selected), item_reward=item_reward(selected))
+        from .core.cafe_dispatch_introduction import for_departure
+        data = self.store._read()
+        used = set(self.core.cats) | set(data.get('cats', {})) | {row['cat_id'] for row in data['pairs']}
+        used.update((self.core.recruitment or {}).get('candidates', {}))
+        from .core.cafe_dispatch_introduction import reserved_ids
+        used.update(reserved_ids(self.core))
+        if self.core.intake_request:
+            used.add(self.core.intake_request['rules']['cat_id'])
+        introduction = for_departure(self.core, selected, used)
+        self.core.dispatch(cat_id, selected, encounter=for_destination(selected), item_reward=item_reward(selected), introduction=introduction)
 
     def open_recruitment(self):
         from .core.cafe_recruitment import candidates, next_candidate_day, require_preparation, add_candidates
@@ -134,6 +143,8 @@ class CafeInteractionSession:
         self._ready()
         data = self.store._read()
         used = set(self.core.cats) | set(data.get('cats', {})) | {row['cat_id'] for row in data['pairs']}
+        from .core.cafe_dispatch_introduction import reserved_ids
+        used.update(reserved_ids(self.core))
         if self.core.intake_request:
             used.add(self.core.intake_request['rules']['cat_id'])
         if recruitment is None:
@@ -166,6 +177,23 @@ class CafeInteractionSession:
         self.core = updated
         self.profiles = profiles
         self.checkpoint_baseline = baseline
+
+    def resolve_dispatch_introduction(self, event_id, choice):
+        import copy
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に接客結果の保存を再試行してください。')
+        updated = copy.deepcopy(self.core)
+        updated.resolve_dispatch_introduction(event_id, choice)
+        original = self.core.activities['events'][event_id]['introduction']
+        result = updated.activities['events'][event_id]['introduction']
+        if original == result:
+            return
+        if choice == 'accept':
+            self._commit_recruited(updated, result['cat_id'], result['candidate'])
+        else:
+            self.core = updated
 
     def resolve_intake_request(self, choice):
         import copy

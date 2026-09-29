@@ -32,6 +32,10 @@ def validate_progress(core, baseline, current):
     for key,row in request_cats(core).items():
         if baseline.get('cats',{}).get(key)!=dict(name=row['name'],personality=row['personality']):
             raise RelationshipConflict('依頼から加入した猫と関係データが一致しません。')
+    from ..core.cafe_dispatch_introduction import accepted as introduced_cats
+    for key, row in introduced_cats(core).items():
+        if baseline.get('cats', {}).get(key) != dict(name=row['name'], personality=row['personality']):
+            raise RelationshipConflict('派遣紹介から加入した猫と関係データが一致しません。')
     matched = expected.data == current
     persisted = set()
     for session_id, log in core.outcomes.items():

@@ -148,6 +148,10 @@ class ManualCafeInteractionWindow:
             elif kind=='objective_selected':
                 from .core.cafe_objective import MODES
                 text='開始時の目標：'+MODES[event['mode']]
+            elif kind=='dispatch_introduction_waiting':
+                text=f"派遣先から {event['name']}を紹介されました。迎えるか見送るかを確認してください。"
+            elif kind=='dispatch_introduction_resolved':
+                text=f"派遣紹介 {event['name']}：" + ('迎えた' if event['choice']=='accept' else '見送り') + f" · 初期費用 {event['cost']:g}"
             elif kind=='intake_request_initialized':
                 text='保護猫の受け入れ依頼の予定を設定'
             elif kind=='goal_enabled':
@@ -346,6 +350,14 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.stop()
         self.refresh()
         self.items_window = CafeItemsWindow(self.root, self.session, self.refresh)
+
+    def show_dispatch_introduction(self):
+        self.stop(); self.refresh()
+        from .core.cafe_dispatch_introduction import waiting
+        from .cafe_dispatch_introduction_gui import CafeDispatchIntroductionWindow
+        offered = waiting(self.session.core)
+        if offered:
+            self.dispatch_introduction_window = CafeDispatchIntroductionWindow(self.root, self.session, offered[0]['id'], self.refresh)
 
     def show_intake_request(self):
         self.pages.select(self.preparation_page)
@@ -597,6 +609,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .core.cafe_player import active
         from .core.cafe_customer_trust import waiting as trust_waiting
         from .core.cafe_reservation import waiting as reservation_waiting
+        from .core.cafe_dispatch_introduction import waiting as introduction_waiting
         core = self.session.core
         phase = '営業終了' if is_over(core) else '閉店' if core.closed else '営業準備' if core.can_set_shifts else '営業中' if self.running else '営業・一時停止'
         from .core.cafe_weekdays import day_label
@@ -655,7 +668,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             key=mastery_pending(core)[0];name=self.session.profiles.get(key,{}).get('name',key)
             self.notice.set(f'{name}が接客に習熟しました。得意な交流を選んでください。')
             self._attention = self.show_growth
-        elif waiting_events(core):
+        elif waiting_events(core, include_introductions=False):
             from .core.cafe_dispatch_encounters import waiting as choice_waiting
             self.notice.set('派遣中の出来事が回答待ちです。選択肢と効果を確認してください。' if choice_waiting(core) else '派遣から帰還した猫が確認待ちです。帰還と報酬を確認してください。')
             self._attention = self.show_dispatch_choice if choice_waiting(core) else self.show_activities
@@ -671,6 +684,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif core.intake_request and core.intake_request['status']=='waiting':
             self.notice.set('保護猫の受け入れ依頼が届いています。猫と費用を確認し、迎えるか見送るか選んでください。')
             self._attention = self.show_intake_request
+        elif introduction_waiting(core):
+            self.notice.set('派遣先で紹介された猫がいます。情報・費用・空き枠を確認し、迎えるか見送るか選んでください。')
+            self._attention = self.show_dispatch_introduction
         elif active(core):
             self.notice.set('プレイヤーとの交流が途中です。猫の詳細から再開できます。')
             def resume_play():

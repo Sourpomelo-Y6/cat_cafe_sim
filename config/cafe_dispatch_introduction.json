@@ -1,0 +1,8 @@
+{
+  "destination": "shopping_street_event",
+  "name": "セナ",
+  "preset": "遊び好きで繊細な猫",
+  "cost": 200,
+  "trait": "hospitality",
+  "features": ["white", "long_hair"]
+}

@@ -112,6 +112,10 @@ class CafeActivityWindow:
         else:
             self.receive_button.configure(text='帰還・報酬を受け取る')
             self.receive_button.state(['!disabled'] if can_receive else ['disabled'])
+        introduction = event.get('introduction') if event else None
+        if introduction and event['status']=='resolved':
+            self.receive_button.configure(text='猫の紹介…' if introduction['status']=='waiting' else '猫紹介の記録…')
+            self.receive_button.state(['!disabled'])
         can_open = core.recruitment is not None or (core.can_set_shifts and not is_over(core) and not active(core) and not self.session.pending and not waiting_events(core))
         self.recruitment_button.state(['!disabled'] if can_open else ['disabled'])
 
@@ -147,7 +151,7 @@ class CafeActivityWindow:
         labels={'travelling':'派遣中','waiting':'帰還・確認待ち','resolved':'受取済み'}
         if core.activities:
             for key,e in core.activities['events'].items():
-                self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],('派遣中・回答待ち' if e.get('encounter',{}).get('status')=='waiting' else labels[e['status']]),e['remaining'],f"{reward(core,e):g}" + (f" + {e['item_reward']['name']} ×1" if 'item_reward' in e else ''), f"{dispatch_terms(core,e['cat_id'],e['destination']['reward'])['stress']:g}" if e['status']!='resolved' else '確定済み'))
+                self.events.insert('','end',iid=key,values=(self.session.profiles.get(e['cat_id'],{}).get('name',e['cat_id']),e['destination']['name'],('猫紹介・回答待ち' if e.get('introduction',{}).get('status')=='waiting' else '派遣中・回答待ち' if e.get('encounter',{}).get('status')=='waiting' else labels[e['status']]),e['remaining'],f"{reward(core,e):g}" + (f" + {e['item_reward']['name']} ×1" if 'item_reward' in e else ''), f"{dispatch_terms(core,e['cat_id'],e['destination']['reward'])['stress']:g}" if e['status']!='resolved' else '確定済み'))
         waiting=waiting_events(core)
         dispatch_waiting=[event for event in waiting if event.get('kind')=='dispatch_return']
         if previous_events and previous_events[0] in self.events.get_children():self.events.selection_set(previous_events[0])
@@ -168,6 +172,9 @@ class CafeActivityWindow:
         from .core.cafe_dispatch_encounters import waiting as choice_waiting
         if choice_waiting(core) and not is_over(core) and not self.session.pending:
             self.notice.set('派遣中の出来事が回答待ちです。対象を選び「出来事に回答…」から回答してください。')
+        from .core.cafe_dispatch_introduction import waiting as introduction_waiting
+        if introduction_waiting(core) and not is_over(core) and not self.session.pending:
+            self.notice.set('派遣先からの猫紹介が回答待ちです。対象を選び「猫の紹介…」から迎えるか見送るか選んでください。')
         if not self.show_navigation and (returns or offers):
             self.notice.set('家出・譲渡の確認待ちです。この画面を閉じ、営業画面の「確認する」から対応できます。')
         self.buttons()
@@ -210,6 +217,8 @@ class CafeActivityWindow:
         from .core.cafe_dispatch_match import description
         welcome_note='\n'+description(self.session.core,selected[0],self.rules)
         note=f"\n1日目終了時に選択イベント：{encounter['title']}" if encounter else ''
+        if self.session.core.dispatch_introduction and self.rules['id']==self.session.core.dispatch_introduction['destination']:
+            note += '\n帰還報酬を受け取った後、準備中に保護猫の紹介を確認できます。'
         item = item_reward(self.rules)
         if item:
             note += f"\n帰還時に {item['name']} ×1（準備中に在店猫のストレス −{item['stress_relief']:g}）"
@@ -220,7 +229,10 @@ class CafeActivityWindow:
         selected=self.events.selection()
         if not selected:return
         event=self.session.core.activities['events'][selected[0]]
-        if event.get('encounter') and event['status']!='waiting':
+        if event.get('introduction') and event['status']=='resolved':
+            from .cafe_dispatch_introduction_gui import CafeDispatchIntroductionWindow
+            self.introduction_window = CafeDispatchIntroductionWindow(self.window, self.session, selected[0], self.changed)
+        elif event.get('encounter') and event['status']!='waiting':
             from .cafe_dispatch_choice_gui import CafeDispatchChoiceWindow
             self.choice_window=CafeDispatchChoiceWindow(self.window,self.session,selected[0],self.changed)
         else:
