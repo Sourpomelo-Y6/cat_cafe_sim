@@ -561,6 +561,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.refresh_dashboard()
 
     def refresh_dashboard(self):
+        from .core.cafe_store_events import waiting as store_event_waiting
+        from .core.cafe_growth import pending as growth_pending
         from .core.cafe_activities import waiting_events
         from .core.cafe_adoption import waiting as adoptions
         from .core.cafe_management import waiting as returns, is_over
