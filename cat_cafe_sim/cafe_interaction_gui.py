@@ -199,6 +199,10 @@ class ManualCafeInteractionWindow:
                 text=f"保護猫 {event['name']} の受け入れ依頼が届きました。"
             elif kind=='intake_request_resolved':
                 text=f"保護猫 {event['name']}：" + ('迎えました。' if event['choice']=='accept' else '見送りました。')
+            elif kind=='pet_shop_initialized':
+                text='ペットショップの購入候補を設定'
+            elif kind=='cat_purchased':
+                text=f"{event['name']}（{event['cat_id']}）をペットショップで購入 · 購入費 {event['cost']:g} · 休養予定"
             elif kind=='recruitment_opened':
                 text='保護猫の受け入れ候補を確認'
             elif kind=='recruitment_added':
@@ -365,6 +369,15 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.stop()
         self.refresh()
         self.intake_request_window = CafeIntakeRequestWindow(self.root, self.session, self.refresh)
+
+    def show_pet_shop(self):
+        if self.session.core.pet_shop is None:
+            return
+        self.pages.select(self.preparation_page)
+        from .cafe_pet_shop_gui import CafePetShopWindow
+        self.stop()
+        self.refresh()
+        self.pet_shop_window = CafePetShopWindow(self.root, self.session, self.refresh)
 
     def show_recruitment(self):
         from .core.cafe_intake_request import pending
@@ -699,6 +712,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.attention_button.grid()
         else:
             self.attention_button.grid_remove()
+        self.pet_shop_button.state(['!disabled'] if core.pet_shop is not None else ['disabled'])
         self.recruitment_button.state(['!disabled'] if (core.intake_request and core.intake_request['status']=='waiting') or core.recruitment is not None or (core.can_set_shifts and not self._attention) else ['disabled'])
 
     def show_clear_results(self, mode=None):

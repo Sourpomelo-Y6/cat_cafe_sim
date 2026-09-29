@@ -123,6 +123,7 @@ class CafeInteractionSession:
         data = self.store._read()
         used = set(self.core.cats) | set(data.get('cats', {})) | {row['cat_id'] for row in data['pairs']}
         used.update((self.core.recruitment or {}).get('candidates', {}))
+        used.update((self.core.pet_shop or {}).get('candidates', {}))
         from .core.cafe_dispatch_introduction import reserved_ids
         used.update(reserved_ids(self.core))
         if self.core.intake_request:
@@ -145,6 +146,7 @@ class CafeInteractionSession:
         used = set(self.core.cats) | set(data.get('cats', {})) | {row['cat_id'] for row in data['pairs']}
         from .core.cafe_dispatch_introduction import reserved_ids
         used.update(reserved_ids(self.core))
+        used.update((self.core.pet_shop or {}).get('candidates', {}))
         if self.core.intake_request:
             used.add(self.core.intake_request['rules']['cat_id'])
         if recruitment is None:
@@ -153,6 +155,13 @@ class CafeInteractionSession:
             used.update(recruitment['candidates'])
             batch = len(set(recruitment.get('presented_days', {}).values())) or 1
             add_candidates(self.core, candidates(used, batch=batch))
+
+    def purchase_cat(self, cat_id):
+        import copy
+        self._ready()
+        updated = copy.deepcopy(self.core)
+        updated.purchase_cat(cat_id)
+        self._commit_recruited(updated, cat_id, updated.pet_shop['candidates'][cat_id])
 
     def recruit_cat(self, cat_id):
         import copy

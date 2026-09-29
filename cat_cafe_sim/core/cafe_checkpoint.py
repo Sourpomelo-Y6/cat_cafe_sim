@@ -106,16 +106,22 @@ def restore(data):
         core.recruitment = validate_recruitment(state['recruitment'], state['day'], core.cats)
         for key in core.recruitment['accepted']:
             core.cats[key] = Cat(id=key)
+    if 'pet_shop' in state:
+        from .cafe_pet_shop import prepare as prepare_shop
+        used = set(core.cats) | set((core.recruitment or {}).get('candidates', {}))
+        core.pet_shop = prepare_shop(state['pet_shop'], state['day'], used)
+        for key in core.pet_shop['accepted']:
+            core.cats[key] = Cat(id=key)
     if 'intake_request' in state:
         from .cafe_intake_request import validate as validate_request, accepted as request_cats
-        used=set(core.cats)|set((core.recruitment or {}).get('candidates',{}))
+        used=set(core.cats)|set((core.recruitment or {}).get('candidates',{}))|set((core.pet_shop or {}).get('candidates',{}))
         core.intake_request=validate_request(state['intake_request'],state['day'],used)
         for key in request_cats(core):
             core.cats[key]=Cat(id=key)
     introduction_events = (state.get('activities') or {}).get('events', {})
     if 'dispatch_introduction' in state:
         from .cafe_dispatch_introduction import prepare as prepare_introductions
-        used = set(core.cats) | set((core.recruitment or {}).get('candidates', {}))
+        used = set(core.cats) | set((core.recruitment or {}).get('candidates', {})) | set((core.pet_shop or {}).get('candidates', {}))
         if core.intake_request:
             used.add(core.intake_request['rules']['cat_id'])
         core.dispatch_introduction, introduced = prepare_introductions(core, state['dispatch_introduction'], introduction_events, state['day'], used)
@@ -265,6 +271,8 @@ def restore(data):
         raise ValueError('受け入れに必要な出勤・病気ルールがありません。')
     from .cafe_dispatch_introduction import validate as validate_introductions
     validate_introductions(core)
+    from .cafe_pet_shop import validate as validate_shop
+    validate_shop(core)
     if 'adoption' in state:
         from .cafe_adoption import validate as validate_adoption
         core.adoption=validate_adoption(core,state['adoption'])
@@ -402,6 +410,8 @@ def restore(data):
     from .cafe_waiting_area import expenses as waiting_area_expenses
     from .cafe_housing import expenses as housing_expenses
     from .cafe_item_shop import expenses as item_expenses
+    from .cafe_pet_shop import expenses as pet_shop_expenses
+    expected_funds -= pet_shop_expenses(core)
     expected_funds -= item_expenses(core)
     expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core) + seat_expenses(core)+waiting_area_expenses(core)+housing_expenses(core)
     if core.store_events is not None:

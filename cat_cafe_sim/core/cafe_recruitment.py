@@ -95,7 +95,7 @@ def open_candidates(core, rows):
         raise ValueError('受け入れ候補はすでに決まっています。')
     rows = validate_candidates(rows)
     from .cafe_dispatch_introduction import reserved_ids
-    if set(rows) & (set(core.cats) | reserved_ids(core) | ({core.intake_request['rules']['cat_id']} if core.intake_request else set())):
+    if set(rows) & (set(core.cats) | set((core.pet_shop or {}).get('candidates', {})) | reserved_ids(core) | ({core.intake_request['rules']['cat_id']} if core.intake_request else set())):
         raise ValueError('候補の猫IDが所属猫と重複しています。')
     core.recruitment = dict(opened_day=core.day, candidates=copy.deepcopy(rows), accepted={})
     core._tick_events = []
@@ -114,7 +114,7 @@ def add_candidates(core, rows):
         raise ValueError('次の候補追加日までお待ちください。')
     rows = validate_candidates(rows)
     from .cafe_dispatch_introduction import reserved_ids
-    if set(rows) & (set(core.cats) | reserved_ids(core) | set(data['candidates']) | ({core.intake_request['rules']['cat_id']} if core.intake_request else set())):
+    if set(rows) & (set(core.cats) | set((core.pet_shop or {}).get('candidates', {})) | reserved_ids(core) | set(data['candidates']) | ({core.intake_request['rules']['cat_id']} if core.intake_request else set())):
         raise ValueError('追加候補の猫IDが重複しています。')
     if 'presented_days' not in data:
         data['presented_days'] = {key: data['opened_day'] for key in data['candidates']}

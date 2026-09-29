@@ -159,6 +159,7 @@ def build(app):
     card(app.preparation_page, 0, '猫の準備', '猫の体調を確認して、その日の担当を決めます。', (
         ('shift_button','出勤・休養を決める…',app.show_shifts),
         ('recruitment_button','保護猫を迎える…',app.show_recruitment),
+        ('pet_shop_button','ペットショップで迎える…',app.show_pet_shop),
         ('activity_button','派遣・帰還を確認する…',app.show_activities),
     ))
     card(app.preparation_page, 1, 'お店への投資', '費用と効果を確認してから購入できます。', (

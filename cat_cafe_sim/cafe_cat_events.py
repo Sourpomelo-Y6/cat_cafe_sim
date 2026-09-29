@@ -12,6 +12,9 @@ def cat_events(core, cat_id):
     if recruitment and cat_id in recruitment['accepted']:
         row = recruitment['candidates'][cat_id]
         add(recruitment['accepted'][cat_id], '加入', '保護猫の受け入れ', f"初期費用 {row['cost']:g}")
+    if core.pet_shop and cat_id in core.pet_shop['accepted']:
+        row = core.pet_shop['candidates'][cat_id]
+        add(core.pet_shop['accepted'][cat_id], '加入', 'ペットショップ', f"購入費 {row['cost']:g}")
     request = core.intake_request
     if request and request['status'] == 'accepted' and request['rules']['cat_id'] == cat_id:
         add(request['resolved_day'], '加入', '保護猫の受け入れ依頼', f"初期費用 {request['rules']['candidate']['cost']:g}")

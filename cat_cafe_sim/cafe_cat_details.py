@@ -52,6 +52,8 @@ def cat_details(session, cat_id):
                       ('習得対象：静かな交流',f"{growth['mastery_groups']['quiet']:g}")]
     if core.recruitment and cat_id in core.recruitment['accepted']:
         basic += [('加入経路', '保護猫の受け入れ'), ('加入日', f"{core.recruitment['accepted'][cat_id]}日目")]
+    if core.pet_shop and cat_id in core.pet_shop['accepted']:
+        basic += [('加入経路', 'ペットショップ'), ('加入日', f"{core.pet_shop['accepted'][cat_id]}日目")]
     request = core.intake_request
     if request and request['status']=='accepted' and request['rules']['cat_id']==cat_id:
         basic += [('加入経路', '保護猫の受け入れ依頼'), ('加入日', f"{request['resolved_day']}日目")]

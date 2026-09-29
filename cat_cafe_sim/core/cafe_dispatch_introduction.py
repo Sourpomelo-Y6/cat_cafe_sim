@@ -64,7 +64,7 @@ def attach(core, event, data):
     selected = core.dispatch_introduction
     expected = copy.deepcopy(selected['candidate'])
     expected['name'] += f'（派遣紹介{len(introductions(core)) + 1}）'
-    used = set(core.cats) | reserved_ids(core) | set((core.recruitment or {}).get('candidates', {}))
+    used = set(core.cats) | reserved_ids(core) | set((core.recruitment or {}).get('candidates', {})) | set((core.pet_shop or {}).get('candidates', {}))
     if core.intake_request:
         used.add(core.intake_request['rules']['cat_id'])
     if (event['destination']['id'] != selected['destination'] or data['candidate'] != expected

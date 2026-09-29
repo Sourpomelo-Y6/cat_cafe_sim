@@ -56,6 +56,7 @@ class CafeInteractionCore(SimulationCore):
         self.traits = None
         self.cat_features = None
         self.customer_preferences = None
+        self.pet_shop = None
         self.recruitment = None
         self.dispatch_introduction = None
         self.intake_request = None
@@ -112,6 +113,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'store_events': copy.deepcopy(self.store_events)} if self.store_events is not None else {}),
                 **({'growth': copy.deepcopy(self.growth)} if self.growth is not None else {}),
                 **({'dispatch_unlocks':copy.deepcopy(self.dispatch_unlocks)} if self.dispatch_unlocks is not None else {}),
+                **({'pet_shop': copy.deepcopy(self.pet_shop)} if self.pet_shop is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
                 **({'dispatch_introduction': copy.deepcopy(self.dispatch_introduction)} if self.dispatch_introduction is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
@@ -119,7 +121,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'item_purchases': copy.deepcopy(self.item_purchases)} if self.item_purchases else {}),
                 **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
-                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None or self.intake_request is not None or self.dispatch_introduction is not None else {})}
+                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None or self.intake_request is not None or self.dispatch_introduction is not None or self.pet_shop is not None else {})}
 
     def initialize_dispatch_introduction(self, rules=None):
         from .cafe_dispatch_introduction import initialize
@@ -136,6 +138,14 @@ class CafeInteractionCore(SimulationCore):
     def resolve_intake_request(self, choice):
         from .cafe_intake_request import resolve
         resolve(self,choice)
+
+    def initialize_pet_shop(self, candidates):
+        from .cafe_pet_shop import initialize
+        initialize(self, candidates)
+
+    def purchase_cat(self, cat_id):
+        from .cafe_pet_shop import purchase
+        purchase(self, cat_id)
 
     def open_recruitment(self, candidates):
         from .cafe_recruitment import open_candidates
@@ -736,6 +746,7 @@ class CafeInteractionCore(SimulationCore):
     def summary(self):
         from .cafe_goal import summary_status
         from .cafe_recruitment import expenses
+        from .cafe_pet_shop import expenses as pet_shop_expenses
         from .cafe_expansion import expenses as expansion_expenses
         from .cafe_equipment import expenses as equipment_expenses
         from .cafe_activities import reward
@@ -763,6 +774,7 @@ class CafeInteractionCore(SimulationCore):
                     **({'waiting_area_expenses': waiting_area_expenses(self,self.day)} if self.waiting_area is not None else {}),
                     **({'housing_expenses': housing_expenses(self,self.day)} if self.housing is not None else {}),
                     **({'store_event_expenses': store_event_expenses(self,self.day)} if self.store_events is not None else {}),
+                    **({'pet_shop_expenses': pet_shop_expenses(self, self.day)} if self.pet_shop is not None else {}),
                     **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or self.dispatch_introduction is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()

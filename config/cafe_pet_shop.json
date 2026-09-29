@@ -1,0 +1,5 @@
+[
+  {"name": "チロ", "preset": "中立", "cost": 400, "trait": "relaxed", "features": ["white", "long_hair"]},
+  {"name": "レオ", "preset": "穏やかな甘えん坊", "cost": 450, "trait": "outgoing", "features": ["orange_tabby", "short_hair"]},
+  {"name": "ナナ", "preset": "遊び好きで繊細な猫", "cost": 500, "trait": "hospitality", "features": ["black_white", "short_hair"]}
+]

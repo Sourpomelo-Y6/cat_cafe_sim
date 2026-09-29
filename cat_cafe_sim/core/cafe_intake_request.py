@@ -27,7 +27,7 @@ def pending(core):
 def initialize(core,selected=None):
     core.require_events_resolved()
     selected=rules(selected)
-    used=set(core.cats)|set((core.recruitment or {}).get('candidates',{}))
+    used=set(core.cats)|set((core.recruitment or {}).get('candidates',{}))|set((core.pet_shop or {}).get('candidates',{}))
     if not core.compact or core.day!=1 or not core.can_set_shifts or not core.shift_rules or not core.health_rules or core.intake_request or selected['cat_id'] in used:
         raise ValueError('受け入れ依頼は新規ゲームの準備時に一度だけ設定できます。')
     core.intake_request=dict(rules=selected,status='scheduled',presented_day=None,resolved_day=None)

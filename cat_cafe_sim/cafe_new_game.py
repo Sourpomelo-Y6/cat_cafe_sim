@@ -52,7 +52,9 @@ def starting_conditions(mode="popularity"):
     from .core.cafe_store_events import rules as store_event_rules
     from .core.cafe_growth import rules as growth_rules
     from .core.cafe_dispatch_unlocks import rules as dispatch_unlock_rules
-    return dict(dispatch_introduction=introduction_rules(),housing=housing_rules(),dispatch_unlocks=dispatch_unlock_rules(),growth=growth_rules(), store_events=store_event_rules(), waiting_area=waiting_area_rules(), operating_cost=operating_cost_rules(), vip_customer=vip_rules(), reservation=reservation_rules(), customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
+    from .core.cafe_pet_shop import candidates as shop_candidates
+    used = set(profiles['cats']) | {intake_rules()['cat_id']}
+    return dict(pet_shop=shop_candidates(used),dispatch_introduction=introduction_rules(),housing=housing_rules(),dispatch_unlocks=dispatch_unlock_rules(),growth=growth_rules(), store_events=store_event_rules(), waiting_area=waiting_area_rules(), operating_cost=operating_cost_rules(), vip_customer=vip_rules(), reservation=reservation_rules(), customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
 
 
 def create_game(directory='saves/games', conditions=None):
@@ -111,6 +113,8 @@ def create_game(directory='saves/games', conditions=None):
                 session.enable_bond_goal(selected['bond'])
         if 'dispatch_introduction' in selected:
             session.core.initialize_dispatch_introduction(selected['dispatch_introduction'])
+        if 'pet_shop' in selected:
+            session.core.initialize_pet_shop(selected['pet_shop'])
         if 'intake_request' in selected:
             session.core.initialize_intake_request(selected['intake_request'])
         if 'objective' in selected:

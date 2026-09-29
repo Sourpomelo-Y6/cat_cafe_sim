@@ -47,6 +47,8 @@ def apply_operation(core, operation):
     elif kind=='resolve_dispatch_introduction':core.resolve_dispatch_introduction(operation['event_id'],operation['choice'])
     elif kind=='initialize_intake_request':core.initialize_intake_request(operation['rules'])
     elif kind=='resolve_intake_request':core.resolve_intake_request(operation['choice'])
+    elif kind=='initialize_pet_shop':core.initialize_pet_shop(operation['candidates'])
+    elif kind=='purchase_cat':core.purchase_cat(operation['cat_id'])
     elif kind=='open_recruitment':core.open_recruitment(operation['candidates'])
     elif kind=='add_recruitment':
         from .cafe_recruitment import add_candidates
