@@ -512,11 +512,13 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.start_button.state(['!disabled'] if manual and core.queue and selected and selected['available'] else ['disabled'])
         roster_selected = self.roster.selection()
         self.roster.delete(*self.roster.get_children())
+        from .core.cafe_growth import summary as growth_summary, description as growth_description
         for row in rows:
             state = '療養' if row['health_status']=='sick' else '休養' if not row['working'] else '交流中' if any(active.cat_id==row['cat_id'] for active in self.session.active_interactions.values()) else '担当可能' if row['available'] else '交流不可'
             if core.activity(row['cat_id'])!='cafe':state=ACTIVITY_LABELS[core.activity(row['cat_id'])]
             self.roster.insert('','end',iid=row['cat_id'],values=(f"{row['name']}（{row['cat_id']}）",row['personality'],f"{row['stamina']:g}",
-                                               f"{row['affinity']:g}" if self.customer.get() else '—',state,f"{row['fatigue']:g}",health_text(row['health_status'],row['recovery_days_remaining']), '未導入' if row['stress'] is None else f"{row['stress']:g}"))
+                                               f"{row['affinity']:g}" if self.customer.get() else '—',state,f"{row['fatigue']:g}",health_text(row['health_status'],row['recovery_days_remaining']),
+                                               '未導入' if row['stress'] is None else f"{row['stress']:g}",growth_summary(core,row['cat_id'])))
         if roster_selected and self.roster.exists(roster_selected[0]):
             self.roster.selection_set(roster_selected[0])
         if hasattr(core,'seats'):
@@ -533,6 +535,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.details.set('\n'.join(lines))
         if selected and self.customer.get():
             self.details.set(self.details.get() + '\n' + selected['name'] + '：' + selected['compatibility']['features'] + ' / ' + selected['compatibility']['text'])
+        if selected:
+            self.details.set(self.details.get()+'\n'+selected['name']+'の成長：'+growth_description(core,selected['cat_id']))
         if not self.session.pending:
             self.notice.set('自動進行中：交流コマンドは自動で選ばれます。' if self.running else
                             '一時停止中。担当猫を割り当てるか、営業を再開してください。' if not core.closed else '本日の営業は終了しました。')

@@ -33,8 +33,9 @@ class CafeShiftWindow:
         ttk.Label(frame, textvariable=self.schedule_note, wraplength=460).pack(anchor='w')
         body = ttk.Frame(frame)
         body.pack(fill='both', expand=True, pady=8)
-        self.tree = ttk.Treeview(body, columns=('name', 'fatigue', 'shift', 'health', 'basis', 'work_forecast', 'rest_forecast'), show='headings', selectmode='browse')
+        self.tree = ttk.Treeview(body, columns=('name', 'fatigue', 'shift', 'health', 'growth', 'basis', 'work_forecast', 'rest_forecast'), show='headings', selectmode='browse')
         for key, label, width in (('name', '猫', 200), ('fatigue', '現在の疲労', 80), ('shift', '本日の予定', 80), ('health', '体調', 110),
+                                   ('growth', '経験・得意', 100),
                                    ('basis', '前日接客行動数', 110), ('work_forecast', '出勤予測：疲労 / 発症', 170),
                                    ('rest_forecast', '休養予測：疲労 / 発症', 170)):
             self.tree.heading(key, text=label)
@@ -47,10 +48,12 @@ class CafeShiftWindow:
         scroll.pack(side='right', fill='y')
         self.tree.pack(fill='both', expand=True)
         self.working = set(session.core.working_cats)
+        from .core.cafe_growth import summary as growth_summary
         for row in session.cat_choices():
             forecast=self.forecasts[row['cat_id']]
             self.tree.insert('', 'end', iid=row['cat_id'], values=(f"{row['name']}（{row['cat_id']}）",
                              f"{row['fatigue']:g}", '出勤' if row['working'] else '休養', health_text(row['health_status'],row['recovery_days_remaining']),
+                             growth_summary(session.core,row['cat_id']),
                              forecast['previous_actions'] if forecast['previous_actions'] is not None else '記録なし',
                              '出勤不可' if forecast['sick'] else estimate_text(forecast['work']), estimate_text(forecast['rest'])))
         self.tree.selection_set(next(iter(session.core.cats)))
@@ -72,7 +75,14 @@ class CafeShiftWindow:
         selected=self.tree.selection()
         available=bool(selected) and all(self.session.core.cats[key].health_status=='healthy' and self.session.core.activity(key)=='cafe' for key in selected)
         self.work_button.state(['!disabled'] if available else ['disabled'])
-        self.forecast_note.set('在店していない猫は出勤・休養の対象外です。' if selected and self.session.core.activity(selected[0])!='cafe' else forecast_note(self.forecasts[selected[0]]) if selected else '猫を選ぶと予測の根拠を確認できます。')
+        if not selected:
+            text='猫を選ぶと予測の根拠と成長状態を確認できます。'
+        else:
+            text=('在店していない猫は出勤・休養の対象外です。' if self.session.core.activity(selected[0])!='cafe'
+                  else forecast_note(self.forecasts[selected[0]]))
+            from .core.cafe_growth import description as growth_description
+            text+='\n'+growth_description(self.session.core,selected[0])
+        self.forecast_note.set(text)
 
     def set_selected(self, working):
         for key in self.tree.selection():

@@ -62,7 +62,7 @@ class CafeActivityWindow:
         cats_frame.grid(row=0, column=0, sticky='nsew')
         events_frame = ttk.Frame(tables)
         events_frame.grid(row=1, column=0, sticky='nsew')
-        self.cats=CafeHistoryWindow.table(cats_frame,('猫','活動','体調','疲労','特性','参加条件'))
+        self.cats=CafeHistoryWindow.table(cats_frame,('猫','活動','体調','疲労','特性','経験・得意','参加条件'))
         self.events=CafeHistoryWindow.table(events_frame,('対象猫','派遣先','状態','残り日数','報酬','帰還ストレス増加'))
         self.cats.bind('<<TreeviewSelect>>', lambda event: self.buttons())
         self.events.bind('<<TreeviewSelect>>',lambda event:self.buttons())
@@ -88,6 +88,9 @@ class CafeActivityWindow:
         else:
             terms = dispatch_terms(core, cats[0], self.rules['reward'])
             self.selection_info.set(f"参加できます：報酬 {terms['reward']:g} / 帰還時ストレス ＋{terms['stress']:g}")
+        if cats:
+            from .core.cafe_growth import description as growth_description
+            self.selection_info.set(self.selection_info.get()+'\n'+growth_description(core,cats[0]))
         selected=self.events.selection()
         can_receive=bool(selected) and core.activities['events'][selected[0]]['status']=='waiting' and not self.session.pending and not is_over(core)
         from .core.cafe_dispatch_encounters import pending as choice_pending, selected as answered
@@ -124,8 +127,9 @@ class CafeActivityWindow:
             self.destination_info.set(self.destination_info.get()+f" / {item['name']} ×1（ストレス −{item['stress_relief']:g}）")
         selected=self.cats.selection()
         self.cats.delete(*self.cats.get_children());self.events.delete(*self.events.get_children())
+        from .core.cafe_growth import summary as growth_summary
         for key,cat in core.cats.items():
-            self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),ACTIVITY_LABELS[core.activity(key)],health_text(cat.health_status,cat.recovery_days_remaining),f'{cat.fatigue:g}',(trait(core,key) or {}).get('name','なし'), dispatch_reason(core,key,self.rules) or '参加できます'))
+            self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),ACTIVITY_LABELS[core.activity(key)],health_text(cat.health_status,cat.recovery_days_remaining),f'{cat.fatigue:g}',(trait(core,key) or {}).get('name','なし'),growth_summary(core,key),dispatch_reason(core,key,self.rules) or '参加できます'))
         if selected:self.cats.selection_set(selected[0])
         elif core.cats:self.cats.selection_set(next(iter(core.cats)))
         labels={'travelling':'派遣中','waiting':'帰還・確認待ち','resolved':'受取済み'}

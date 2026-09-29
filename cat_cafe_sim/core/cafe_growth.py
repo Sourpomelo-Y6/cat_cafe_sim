@@ -39,6 +39,35 @@ def ensure_cat(core,cat_id):
 def total(row):return row['service']+row['rest']+row['dispatch']
 
 
+def summary(core,cat_id):
+    """Return a short growth label suitable for cat-selection tables."""
+    growth=getattr(core,'growth',None)
+    if growth is None:return '未導入'
+    row=growth['cats'].get(cat_id)
+    if row is None:return '記録なし'
+    if row['specialization'] is not None:return f"得意：{LABELS[row['specialization']]}"
+    return f"経験 {total(row):g}/{growth['rules']['threshold']:g}"
+
+
+def description(core,cat_id):
+    """Describe progress, service practice, and the currently active effect."""
+    growth=getattr(core,'growth',None)
+    if growth is None:return '成長ルールは未導入です。'
+    row=growth['cats'].get(cat_id)
+    if row is None:return 'この猫の成長記録はありません。'
+    selected=growth['rules'];value=total(row)
+    progress=(f"経験 {value:g}（接客 {row['service']:g} / 休養 {row['rest']:g} / 派遣 {row['dispatch']:g}）")
+    practice=(f"接客実績：遊び {row['groups']['play']:g} / 触れ合い {row['groups']['contact']:g} / "
+              f"静かな交流 {row['groups']['quiet']:g}")
+    specialization=row['specialization']
+    if specialization=='service':effect=f"得意：接客（接客終了時に消費体力の{selected['service_stamina_refund']*100:g}%を回復）"
+    elif specialization=='rest':effect=f"得意：休養（在店休養時の疲労回復＋{selected['rest_recovery_bonus']:g}）"
+    elif specialization=='dispatch':effect=f"得意：派遣（派遣報酬×{selected['dispatch_reward_multiplier']:g}）"
+    else:effect=(f"得意分野まであと {max(0,selected['threshold']-value):g}"
+                 if value<selected['threshold'] else '得意分野を選択できます。')
+    return f'{progress} / {effect}\n{practice}'
+
+
 def pending(core):
     if core.growth is None:return []
     threshold=core.growth['rules']['threshold']

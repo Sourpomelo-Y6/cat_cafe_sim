@@ -6,7 +6,7 @@ from pathlib import Path
 
 from cat_cafe_sim.cafe_interaction import CafeInteractionSession
 from cat_cafe_sim.core.cafe_checkpoint import checkpoint,digest,restore
-from cat_cafe_sim.core.cafe_growth import pending,rules
+from cat_cafe_sim.core.cafe_growth import description,pending,rules,summary
 from cat_cafe_sim.core.cafe_interaction import verify_cafe_interaction
 from cat_cafe_sim.core.config import Config
 from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
@@ -73,6 +73,20 @@ class CafeGrowthTests(unittest.TestCase):
                        lambda d: d['state']['growth']['cats'][next(iter(d['state']['growth']['cats']))]['groups'].update(play=2)):
             bad=copy.deepcopy(source);mutate(bad);bad['digest']=digest({k:v for k,v in bad.items() if k!='digest'})
             with self.assertRaises(ValueError):restore(bad)
+
+    def test_selection_text_shows_progress_practice_and_active_effect(self):
+        s=self.session();key=next(iter(s.core.cats));row=s.core.growth['cats'][key]
+        row.update(service=.5,rest=.25,dispatch=.25)
+        row['type_actions']['teaser']=2;row['groups']['play']=2
+        self.assertEqual(summary(s.core,key),'\u7d4c\u9a13 1/1')
+        self.assertIn('\u63a5\u5ba2 0.5 / \u4f11\u990a 0.25 / \u6d3e\u9063 0.25',description(s.core,key))
+        self.assertIn('\u904a\u3073 2 / \u89e6\u308c\u5408\u3044 0 / \u9759\u304b\u306a\u4ea4\u6d41 0',description(s.core,key))
+        s.resolve_growth(key,'dispatch')
+        self.assertEqual(summary(s.core,key),'\u5f97\u610f\uff1a\u6d3e\u9063')
+        self.assertIn('\u6d3e\u9063\u5831\u916c\u00d71.1',description(s.core,key))
+        s.core.growth=None
+        self.assertEqual(summary(s.core,key),'\u672a\u5c0e\u5165')
+        self.assertIn('\u672a\u5c0e\u5165',description(s.core,key))
 
 
 if __name__=='__main__':unittest.main()

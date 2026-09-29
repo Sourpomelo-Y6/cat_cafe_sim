@@ -1788,6 +1788,30 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertIs(self.app.session,self.session)
         self.assertEqual(self.session.core.snapshot(),before)
 
+    def test_growth_progress_and_effect_are_visible_when_choosing_cats(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.cafe_growth import rules
+        session=CafeInteractionSession(store=self.store)
+        session.core.initialize_growth(rules())
+        key=next(iter(session.core.cats));row=session.core.growth['cats'][key]
+        row.update(service=10,rest=5,dispatch=5,specialization='dispatch',selected_day=1)
+        row['type_actions']['teaser']=3;row['groups']['play']=3
+        self.app.replace_game(session)
+        self.assertEqual(self.app.roster.set(key,'growth'),'得意：派遣')
+        self.assertIn('派遣報酬×1.1',self.app.details.get())
+
+        self.app.shift_button.invoke();shifts=self.app.shift_window
+        self.assertEqual(shifts.tree.set(key,'growth'),'得意：派遣')
+        self.assertIn('接客実績：遊び 3',shifts.forecast_note.get())
+        shifts.window.destroy()
+
+        self.app.activity_button.invoke();activity=self.app.activity_window
+        activity.cats.selection_set(key);activity.buttons()
+        self.assertEqual(activity.cats.set(key,'経験・得意'),'得意：派遣')
+        self.assertIn('報酬 110',activity.selection_info.get())
+        self.assertIn('派遣報酬×1.1',activity.selection_info.get())
+        activity.window.destroy()
+
     def test_close_saves_active_exchange_without_finishing_and_cancel_keeps_window(self):
         from cat_cafe_sim.storage.cafe_saves import load_game
         before=self.session.core.snapshot()

@@ -97,11 +97,12 @@ def build(app):
     roster_frame.grid(row=2, column=0, sticky='nsew')
     roster_frame.columnconfigure(0, weight=1)
     roster_frame.rowconfigure(0, weight=1)
-    app.roster = ttk.Treeview(roster_frame, columns=('cat','personality','stamina','affinity','status','fatigue','health','stress'),
-                             displaycolumns=('cat','stamina','fatigue','stress','health','status','affinity','personality'),
+    app.roster = ttk.Treeview(roster_frame, columns=('cat','personality','stamina','affinity','status','fatigue','health','stress','growth'),
+                             displaycolumns=('cat','stamina','fatigue','stress','health','status','growth','affinity','personality'),
                              show='headings', height=3, style='Cafe.Treeview')
     for key, title, width in (('cat','猫',155),('personality','個性',115),('stamina','体力',60),
-                             ('affinity','選択客への親しみ',115),('status','予定・状態',90),('fatigue','疲労',60),('health','体調',100),('stress','ストレス',75)):
+                             ('affinity','選択客への親しみ',115),('status','予定・状態',90),('fatigue','疲労',60),('health','体調',100),('stress','ストレス',75),
+                             ('growth','経験・得意',100)):
         app.roster.heading(key, text=title)
         app.roster.column(key, width=width, minwidth=70 if key=='stress' else 50)
     app.roster.grid(row=0, column=0, sticky='nsew')
