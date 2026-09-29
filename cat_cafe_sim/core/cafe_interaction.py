@@ -37,6 +37,7 @@ class CafeInteractionCore(SimulationCore):
         self.customer_trust = None
         self.reservation = None
         self.vip_customer = None
+        self.quiet_customer = None
         self.player_bond = None
         self.management = None
         self.operating_cost = None
@@ -91,6 +92,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'customer_trust': copy.deepcopy(self.customer_trust)} if self.customer_trust is not None else {}),
                 **({'reservation': copy.deepcopy(self.reservation)} if self.reservation is not None else {}),
                 **({'vip_customer': copy.deepcopy(self.vip_customer)} if self.vip_customer is not None else {}),
+                **({'quiet_customer': copy.deepcopy(self.quiet_customer)} if self.quiet_customer is not None else {}),
                 **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
@@ -472,6 +474,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_reservation import initialize
         initialize(self,rules)
 
+    def initialize_quiet_customer(self, rules=None):
+        from .cafe_quiet_customer import initialize
+        initialize(self, rules)
+
     def initialize_vip_customer(self,rules=None):
         from .cafe_vip_customer import initialize
         initialize(self,rules)
@@ -649,6 +655,8 @@ class CafeInteractionCore(SimulationCore):
         check_equipment(self, interaction, self.seat.id)
         from .cafe_growth import check_interaction as check_growth
         check_growth(self,interaction)
+        from .cafe_quiet_customer import check_interaction as check_quiet
+        check_quiet(self, interaction)
         self._tick_events = []
         self.cat = cat
         self._apply(Command('assign', interaction.customer_id, interaction.cat_id, self.seat.id))
@@ -697,6 +705,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_vip_customer import evaluate as evaluate_vip, result_text as vip_result_text
         vip=evaluate_vip(self,result)
         if vip is not None:bonus+=vip['bonus']
+        from .cafe_quiet_customer import evaluate as evaluate_quiet, result_text as quiet_result_text
+        quiet = evaluate_quiet(self, result)
+        if quiet is not None:
+            bonus += quiet['bonus']
         from .cafe_customer_satisfaction import evaluate as evaluate_satisfaction
         satisfaction = evaluate_satisfaction(self, result, evaluation)
         if satisfaction is not None:
@@ -711,6 +723,8 @@ class CafeInteractionCore(SimulationCore):
             from .cafe_reservation import apply_result
             apply_result(self,result,reservation)
         if vip is not None:self._emit('vip_customer_result',customer_id=visit.id,text=vip_result_text(self,result))
+        if quiet is not None:
+            self._emit('quiet_customer_result', customer_id=visit.id, text=quiet_result_text(self, result))
         if satisfaction is not None:
             self._emit('customer_satisfaction_result', customer_id=visit.id, **satisfaction)
         self.outcomes[interaction.session_id] = interaction.log()

@@ -119,7 +119,8 @@ def earn(core):
     count = sum(qualified(core, outcome_result(row)) for row in rows)
     from .cafe_reservation import popularity_bonus
     from .cafe_vip_customer import popularity_bonus as vip_popularity_bonus
-    extra=sum(popularity_bonus(core,outcome_result(row))+vip_popularity_bonus(core,outcome_result(row)) for row in rows)
+    from .cafe_quiet_customer import popularity_bonus as quiet_popularity_bonus
+    extra=sum(popularity_bonus(core,outcome_result(row))+vip_popularity_bonus(core,outcome_result(row))+quiet_popularity_bonus(core,outcome_result(row)) for row in rows)
     before = core.management['popularity']
     from .cafe_store_events import popularity_bonus as store_event_bonus
     extra+=store_event_bonus(core,core.day)
@@ -146,6 +147,8 @@ def settle(core):
         capture(core, 'popularity')
         if status == 'cleared' and core.advanced_customers is not None and not data.get('history'):
             core._emit('advanced_customer_unlocked', first_day=core.day+1)
+        if status == 'cleared' and core.quiet_customer is not None and not data.get('history'):
+            core._emit('quiet_customer_unlocked', first_day=core.day+1)
         if status=='cleared' and core.reservation is not None and len(data.get('history',[]))==1:
             core._emit('reservation_unlocked',first_request_day=core.day+1)
         if status=='cleared' and core.vip_customer is not None and len(data.get('history',[]))==2:
@@ -223,7 +226,8 @@ def validate(core, data, management):
         count=sum(qualified(core, outcome_result(value)) for value in offsets[day])
         from .cafe_reservation import popularity_bonus
         from .cafe_vip_customer import popularity_bonus as vip_popularity_bonus
-        extra=sum(popularity_bonus(core,outcome_result(value))+vip_popularity_bonus(core,outcome_result(value)) for value in offsets[day])
+        from .cafe_quiet_customer import popularity_bonus as quiet_popularity_bonus
+        extra=sum(popularity_bonus(core,outcome_result(value))+vip_popularity_bonus(core,outcome_result(value))+quiet_popularity_bonus(core,outcome_result(value)) for value in offsets[day])
         from .cafe_store_events import popularity_bonus as store_event_bonus
         extra+=store_event_bonus(core,day)
         after=min(rule['cap'],popularity+count*rule['gain_per_success']+extra)

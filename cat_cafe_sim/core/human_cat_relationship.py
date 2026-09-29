@@ -22,6 +22,7 @@ class RelationshipConfig(TypesConfig):
     customer_tension_multiplier: float = 1
     equipment_engagement_multiplier: float = 1
     equipment_tension_multiplier: float = 1
+    quiet_service: bool = False
     equipment_group: str = ''
     mastery_group: str = ''
     mastery_engagement_multiplier: float = 1
@@ -35,6 +36,8 @@ class RelationshipConfig(TypesConfig):
 
     def __post_init__(self):
         super().__post_init__()
+        if type(self.quiet_service) is not bool:
+            raise ValueError("invalid quiet service flag")
         bounded(self.customer_tension_multiplier, 1, 2, 'customer tension multiplier')
         bounded(self.equipment_engagement_multiplier, 1, 2, 'equipment engagement multiplier')
         bounded(self.equipment_tension_multiplier, 1, 2, 'equipment tension multiplier')
@@ -58,6 +61,8 @@ class RelationshipConfig(TypesConfig):
 
     def to_dict(self):
         data = super().to_dict()
+        if not self.quiet_service:
+            data["rules"].pop("quiet_service")
         if self.customer_tension_multiplier == 1:
             data['rules'].pop('customer_tension_multiplier')
         for key in ("equipment_engagement_multiplier", "equipment_tension_multiplier"):
@@ -147,6 +152,8 @@ class RelationshipInteraction(TypesInteraction):
                       affinity_before=start, affinity_pending=pending, affinity_after=end,
                       affinity_delta=end-start, affinity_unapplied=pending-(end-start), affinity_breakdown=parts,
                       stamina_recovered=sum(r['stamina_recovered'] for r in self.records))
+        if self.config.quiet_service:
+            result['quiet_equipment'] = self.config.equipment_group == 'quiet'
         if self.finish_event:
             result['expired_reservations'] += sum(self.finish_event['expired_reservations'].values())
         return result

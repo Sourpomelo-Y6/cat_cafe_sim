@@ -26,6 +26,7 @@ def apply_operation(core, operation):
     elif kind=='initialize_housing':core.initialize_housing(operation['rules'])
     elif kind=='purchase_housing':core.purchase_housing()
     elif kind=='purchase_waiting_area':core.purchase_waiting_area()
+    elif kind=='initialize_quiet_customer':core.initialize_quiet_customer(operation['rules'])
     elif kind=='initialize_vip_customer':core.initialize_vip_customer(operation['rules'])
     elif kind=='resolve_reservation':core.resolve_reservation(operation['choice'])
     elif kind=='resolve_store_event':core.resolve_store_event(operation['choice'])

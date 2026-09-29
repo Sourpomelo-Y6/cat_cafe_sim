@@ -238,6 +238,9 @@ def restore(data):
         if 'store_events' in state:
             from .cafe_store_events import validate as validate_store_events
             core.store_events=validate_store_events(core,state['store_events'])
+        if 'quiet_customer' in state:
+            from .cafe_quiet_customer import rules as quiet_rules
+            core.quiet_customer = quiet_rules(state['quiet_customer'])
         if 'vip_customer' in state:
             from .cafe_vip_customer import rules as vip_rules
             core.vip_customer=vip_rules(state['vip_customer'])
@@ -314,6 +317,9 @@ def restore(data):
     if 'reservation' in state:
         from .cafe_reservation import validate as validate_reservation
         core.reservation=validate_reservation(core,state['reservation'])
+    if 'quiet_customer' in state:
+        from .cafe_quiet_customer import validate as validate_quiet
+        core.quiet_customer = validate_quiet(core, state['quiet_customer'])
     if 'vip_customer' in state:
         from .cafe_vip_customer import validate as validate_vip
         core.vip_customer=validate_vip(core,state['vip_customer'])
@@ -393,6 +399,8 @@ def restore(data):
         interaction=active[key]
         check_interaction(core, interaction)
         check_equipment(core, interaction, key)
+        from .cafe_quiet_customer import check_interaction as check_quiet
+        check_quiet(core, interaction)
         cat=core.cats[interaction.cat_id]
         if (interaction.state['end_reason'] or core.closed or interaction.cat_id in busy_cats
                 or interaction.customer_id in busy_guests or interaction.customer_id in core.queue

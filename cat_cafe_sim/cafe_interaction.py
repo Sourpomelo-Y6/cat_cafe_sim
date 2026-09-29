@@ -396,8 +396,9 @@ class CafeInteractionSession:
         from .core.cafe_preferences import match
         from .core.cafe_seat_equipment import effects
         from .core.cafe_growth import interaction_terms
+        from .core.cafe_quiet_customer import applies
         actual_seat = seat_id or next(iter(self.free_seats), self.core.seat.id)
-        config = replace(self.interaction_config, **effects(self.core, actual_seat), customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
+        config = replace(self.interaction_config, quiet_service=applies(self.core, customer_id), **effects(self.core, actual_seat), customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
                          mastery_group=interaction_terms(self.core,cat_id)['group'],
                          mastery_engagement_multiplier=interaction_terms(self.core,cat_id)['multiplier'],
                          ticks=min(self.interaction_config.ticks, self.core.config.opening_ticks-self.core.tick))
@@ -433,7 +434,8 @@ class CafeInteractionSession:
             customer_id=self.core.queue[0]
             cat,_=select(self.core,customer_id)
             self.core.automatic_assignment(customer_id,cat.id)
-            self.start(customer_id, cat.id, self.free_seats[0])
+            from .core.cafe_quiet_customer import preferred_seat
+            self.start(customer_id, cat.id, preferred_seat(self.core, customer_id, self.free_seats))
         if isinstance(self.core,MultiSeatCafeCore):
             commands={key:self.policy.choose(active.observation(),active.valid_actions(),active.config)
                       for key,active in self.active_interactions.items()}

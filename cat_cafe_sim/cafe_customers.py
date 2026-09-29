@@ -25,6 +25,9 @@ def customer_name(customer_id):
     if customer_id==RESERVATION_ID:return RESERVATION_NAME
     from .core.cafe_vip_customer import CUSTOMER_ID as VIP_ID,NAME as VIP_NAME
     if customer_id==VIP_ID:return VIP_NAME
+    from .core.cafe_quiet_customer import CUSTOMER_ID as QUIET_ID, NAME as QUIET_NAME
+    if customer_id == QUIET_ID:
+        return QUIET_NAME
     index = number(customer_id)
     if index is None:
         return customer_id
@@ -53,6 +56,9 @@ def preference(core, customer_id):
     existing = data['customers'].get(customer_id)
     if existing is not None:
         return existing
+    from .core.cafe_quiet_customer import CUSTOMER_ID as QUIET_ID
+    if customer_id == QUIET_ID and core.quiet_customer is not None:
+        return preference_for(core.seed, customer_id, data['rules']['pool'])
     index = number(customer_id)
     if index is not None and index <= len(core.config.arrival_ticks):
         return preference_for(core.seed, customer_id, data['rules']['pool'])
@@ -83,6 +89,9 @@ def directory(session):
     if core.vip_customer is not None:
         from .core.cafe_vip_customer import CUSTOMER_ID as VIP_ID
         known.add(VIP_ID)
+    from .core.cafe_quiet_customer import CUSTOMER_ID as QUIET_ID, unlocked_day as quiet_unlocked_day
+    if core.quiet_customer is not None:
+        known.add(QUIET_ID)
     rows = []
     for key in sorted(known, key=lambda key: (number(key) is None, number(key) or 0, key)):
         index = number(key)
@@ -118,6 +127,8 @@ def directory(session):
         from .core.cafe_vip_customer import CUSTOMER_ID as VIP_ID,unlocked_day as vip_unlocked_day
         if key==VIP_ID and core.vip_customer is not None and vip_unlocked_day(core) is None:
             status='未解放（人気最終段階）'
+        if key == QUIET_ID and core.quiet_customer is not None and quiet_unlocked_day(core) is None:
+            status = '未解放（人気第1段階）'
         if discontent and discontent['suspended_until'] is not None:
             status = f"来店停止（{discontent['suspended_until']}日目まで）"
         if trust and trust['status']=='recovery':status='信頼回復中'
