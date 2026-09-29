@@ -89,6 +89,11 @@ class CafeActivityWindow:
             terms = dispatch_terms(core, cats[0], self.rules['reward'])
             self.selection_info.set(f"参加できます：報酬 {terms['reward']:g} / 帰還時ストレス ＋{terms['stress']:g}")
         if cats:
+            from .core.cafe_dispatch_match import description,terms as welcome_terms
+            self.selection_info.set(self.selection_info.get()+'\n'+description(core,cats[0],self.rules))
+            if not reason:
+                bonus=(welcome_terms(core,cats[0],self.rules) or {}).get('reward_bonus',0)
+                self.selection_info.set(self.selection_info.get()+f'\n報酬見込み {terms["reward"]+bonus:g}（歓迎ボーナス込み）')
             from .core.cafe_growth import description as growth_description
             self.selection_info.set(self.selection_info.get()+'\n'+growth_description(core,cats[0]))
         selected=self.events.selection()
@@ -121,6 +126,7 @@ class CafeActivityWindow:
         self.rules = self.destinations[index]
         self.patron_button.configure(text=(f"有力者 {core.patron['satisfaction']:g}/{core.patron['rules']['target']:g}・結果…" if core.patron else '有力者目標・結果…'))
         required = self.rules.get('required_trait_name', '指定なし')
+        from .core.cafe_dispatch_match import description as welcome_description
         self.destination_info.set(f"{self.rules['days']}日 / 基本報酬 {self.rules['reward']:g} / 疲労{self.rules['max_fatigue']:g}以下 / 必要特性：{required}")
         item = item_reward(self.rules)
         if item:
@@ -129,7 +135,7 @@ class CafeActivityWindow:
         self.cats.delete(*self.cats.get_children());self.events.delete(*self.events.get_children())
         from .core.cafe_growth import summary as growth_summary
         for key,cat in core.cats.items():
-            self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),ACTIVITY_LABELS[core.activity(key)],health_text(cat.health_status,cat.recovery_days_remaining),f'{cat.fatigue:g}',(trait(core,key) or {}).get('name','なし'),growth_summary(core,key),dispatch_reason(core,key,self.rules) or '参加できます'))
+            self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),ACTIVITY_LABELS[core.activity(key)],health_text(cat.health_status,cat.recovery_days_remaining),f'{cat.fatigue:g}',(trait(core,key) or {}).get('name','なし'),growth_summary(core,key),(dispatch_reason(core,key,self.rules) or '参加できます')+' / '+welcome_description(core,key,self.rules)))
         if selected:self.cats.selection_set(selected[0])
         elif core.cats:self.cats.selection_set(next(iter(core.cats)))
         labels={'travelling':'派遣中','waiting':'帰還・確認待ち','resolved':'受取済み'}
@@ -193,11 +199,13 @@ class CafeActivityWindow:
         terms=dispatch_terms(self.session.core,selected[0],self.rules['reward'])
         from .core.cafe_dispatch_encounters import for_destination
         encounter=for_destination(self.rules)
+        from .core.cafe_dispatch_match import description
+        welcome_note='\n'+description(self.session.core,selected[0],self.rules)
         note=f"\n1日目終了時に選択イベント：{encounter['title']}" if encounter else ''
         item = item_reward(self.rules)
         if item:
             note += f"\n帰還時に {item['name']} ×1（準備中に在店猫のストレス −{item['stress_relief']:g}）"
-        if not messagebox.askyesno('派遣の出発', f"{self.rules['name']}：{self.rules['days']}日間\n報酬 {terms['reward']:g} / 帰還時ストレス ＋{terms['stress']:g}（現在の経営ルール）\n今から派遣し、帰還まで店内接客から外します。出発しますか？{note}",parent=self.window):return
+        if not messagebox.askyesno('派遣の出発', f"{self.rules['name']}：{self.rules['days']}日間\n報酬 {terms['reward']:g} / 帰還時ストレス ＋{terms['stress']:g}（現在の経営ルール）\n今から派遣し、帰還まで店内接客から外します。出発しますか？{welcome_note}{note}",parent=self.window):return
         self.perform(lambda:self.session.dispatch(selected[0],self.rules))
 
     def receive(self):

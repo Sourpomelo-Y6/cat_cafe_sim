@@ -1819,6 +1819,8 @@ class CafeSaveWindowTests(unittest.TestCase):
         activity.cats.selection_set(key);activity.buttons()
         self.assertEqual(activity.cats.set(key,'経験・得意'),'得意：派遣')
         self.assertIn('報酬 110',activity.selection_info.get())
+        self.assertIn('報酬見込み 130',activity.selection_info.get())
+        self.assertIn('得意分野 派遣 一致',activity.selection_info.get())
         self.assertIn('派遣報酬×1.1',activity.selection_info.get())
         activity.window.destroy()
 

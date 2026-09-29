@@ -10,7 +10,7 @@ ACTIVITY_LABELS = {'cafe':'在店', 'dispatched':'派遣中', 'missing':'行方�
 def destination(data=None):
     if data is None:
         data = json.loads((Path(__file__).resolve().parents[2]/'config/cafe_dispatch.json').read_text())
-    if not isinstance(data, dict) or set(data) not in ({'id','name','days','reward','max_fatigue'}, {'id','name','days','reward','max_fatigue','required_trait','required_trait_name'}):
+    if not isinstance(data, dict) or set(data)-{'welcome'} not in ({'id','name','days','reward','max_fatigue'}, {'id','name','days','reward','max_fatigue','required_trait','required_trait_name'}):
         raise ValueError('派遣先の設定が不正です。')
     if any(not isinstance(data[k], str) or not data[k].strip() for k in ('id','name')):
         raise ValueError('派遣先の名前が不正です。')
@@ -20,6 +20,9 @@ def destination(data=None):
         raise ValueError('派遣先の条件・報酬が不正です。')
     if 'required_trait' in data and any(not isinstance(data[k], str) or not data[k].strip() for k in ('required_trait', 'required_trait_name')):
         raise ValueError('派遣に必要な特性が不正です。')
+    if 'welcome' in data:
+        from .cafe_dispatch_match import validate_rules
+        validate_rules(data['welcome'])
     return copy.deepcopy(data)
 
 
@@ -84,7 +87,7 @@ def reward(core, event):
     from .cafe_traits import effect
     from .cafe_dispatch_encounters import reward_delta
     multiplier=event.get('growth_multiplier',1)
-    return max(0,event['destination']['reward']*effect(core,event['cat_id'],'dispatch_reward')*multiplier+reward_delta(event))
+    return max(0,event['destination']['reward']*effect(core,event['cat_id'],'dispatch_reward')*multiplier+event.get('welcome_match',{}).get('reward_bonus',0)+reward_delta(event))
 
 
 def income(core):
@@ -109,6 +112,9 @@ def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None):
     if core.growth is not None:
         from .cafe_growth import dispatch_multiplier
         event['growth_multiplier']=dispatch_multiplier(core,cat_id)
+    from .cafe_dispatch_match import terms as welcome_terms
+    matched=welcome_terms(core,cat_id,rules)
+    if matched is not None:event["welcome_match"]=matched
     from .cafe_dispatch_encounters import attach
     attach(event, encounter)
     if item_reward is not None:
@@ -176,12 +182,16 @@ def validate(core, data):
             raise ValueError('猫の活動状態が不正です。')
     busy=set()
     for key,e in data['events'].items():
-        if set(e)-{'encounter','item_reward','growth_multiplier'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
+        if set(e)-{'encounter','item_reward','growth_multiplier','welcome_match'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
             raise ValueError('イベントの記録が不正です。')
         if 'item_reward' in e:
             from .cafe_items import definition
             definition(e['item_reward'])
         rule=destination(e['destination'])
+        from .cafe_dispatch_match import terms as welcome_terms
+        expected=welcome_terms(core,e['cat_id'],rule,e['started_day'])
+        if e.get('welcome_match')!=expected:
+            raise ValueError('派遣時の歓迎条件・追加報酬が一致しません。')
         if 'growth_multiplier' in e:
             growth=(core.growth or {}).get('cats',{}).get(e['cat_id'])
             expected=core.growth['rules']['dispatch_reward_multiplier'] if growth and growth['specialization']=='dispatch' and growth['selected_day']<=e['started_day'] else 1

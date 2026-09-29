@@ -7,6 +7,12 @@
     "name": "地域の有力者への訪問",
     "days": 2,
     "reward": 200,
-    "max_fatigue": 40
+    "max_fatigue": 40,
+    "welcome": {
+      "feature": "white",
+      "specialization": "service",
+      "reward_bonus": 20,
+      "satisfaction_bonus": 5
+    }
   }
 }

@@ -46,7 +46,7 @@ def receive(core, event):
     if not data or event['destination']['id'] != DESTINATION_ID:
         return
     before = data['satisfaction']
-    data['satisfaction'] = min(data['rules']['target'], before + data['rules']['gain'])
+    data['satisfaction'] = min(data['rules']['target'], before + data['rules']['gain'] + event.get('welcome_match',{}).get('satisfaction_bonus',0))
     core._emit('patron_satisfaction', gain=data['satisfaction'] - before, satisfaction=data['satisfaction'])
     from .cafe_management import is_over
     if data['status'] == 'active' and data['satisfaction'] >= data['rules']['target'] and not is_over(core):
@@ -87,7 +87,7 @@ def validate(core, data):
     satisfaction = 0
     resolved = None
     for event in received:
-        satisfaction = min(selected['target'], satisfaction + selected['gain'])
+        satisfaction = min(selected['target'], satisfaction + selected['gain'] + event.get('welcome_match',{}).get('satisfaction_bonus',0))
         if resolved is None and satisfaction >= selected['target']:
             resolved = event['resolved_day']
     if (data['satisfaction'] != satisfaction or data['status'] != ('cleared' if resolved is not None else 'active')

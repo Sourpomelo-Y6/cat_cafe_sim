@@ -59,7 +59,7 @@ class CafeGrowthTests(unittest.TestCase):
         self.assertEqual(dispatch.core.funds,before+100)
         dispatch.dispatch(key);dispatch.day_off()
         event=[e for e in dispatch.core.activities['events'] if e!=event][0];before=dispatch.core.funds
-        dispatch.resolve_activity(event);self.assertEqual(dispatch.core.funds,before+110)
+        dispatch.resolve_activity(event);self.assertEqual(dispatch.core.funds,before+130)  # 派遣得意の倍率と歓迎報酬20。
         self.reload(dispatch)
 
     def test_invalid_rules_choices_and_corrupt_growth_are_rejected(self):

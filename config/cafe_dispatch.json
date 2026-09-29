@@ -3,5 +3,11 @@
   "name": "近所のお店への訪問",
   "days": 1,
   "reward": 100,
-  "max_fatigue": 60
+  "max_fatigue": 60,
+  "welcome": {
+    "feature": "long_hair",
+    "specialization": "dispatch",
+    "reward_bonus": 20,
+    "satisfaction_bonus": 0
+  }
 }
