@@ -118,6 +118,9 @@ class ManualCafeInteractionWindow:
                 text=f"{event['seat_count']}席に増設 · 費用 {event['cost']:g}"
             elif kind=='preferences_initialized':
                 text='猫の特徴・お客さんの好みを設定'
+            elif kind=='dispatch_destination_unlocked':
+                names={'shopping_street_event':'商店街の交流会','out_of_town_visit':'郊外への出張訪問'}
+                text='派遣先を解放：'+names[event['destination_id']]
             elif kind=='dispatch_choice_waiting':
                 text=f"派遣イベント回答待ち：{event['title']}（{event['cat_id']}）"
             elif kind=='dispatch_choice_resolved':

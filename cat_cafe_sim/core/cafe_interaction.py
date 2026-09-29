@@ -43,6 +43,7 @@ class CafeInteractionCore(SimulationCore):
         self.waiting_area = None
         self.store_events = None
         self.growth = None
+        self.dispatch_unlocks = None
         self.goal = None
         self.objective = None
         self.clear_results = None
@@ -107,6 +108,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'waiting_area': copy.deepcopy(self.waiting_area)} if self.waiting_area is not None else {}),
                 **({'store_events': copy.deepcopy(self.store_events)} if self.store_events is not None else {}),
                 **({'growth': copy.deepcopy(self.growth)} if self.growth is not None else {}),
+                **({'dispatch_unlocks':copy.deepcopy(self.dispatch_unlocks)} if self.dispatch_unlocks is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
                 **({'item_uses': copy.deepcopy(self.item_uses)} if self.item_uses else {}),
@@ -382,6 +384,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_store_events import initialize
         initialize(self,rules)
 
+    def initialize_dispatch_unlocks(self,rules=None):
+        from .cafe_dispatch_unlocks import initialize
+        initialize(self,rules)
+
     def initialize_growth(self,rules=None):
         from .cafe_growth import initialize
         initialize(self,rules)
@@ -571,6 +577,8 @@ class CafeInteractionCore(SimulationCore):
         self._record(operation)
 
     def _record(self, operation):
+        from .cafe_dispatch_unlocks import update
+        update(self)
         if self.compact:
             from .cafe_checkpoint import record_digest
             self.recorded_digest=record_digest(self)

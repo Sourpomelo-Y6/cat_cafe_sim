@@ -1064,6 +1064,21 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertIn('達成', window.history.item(window.history.get_children()[0], 'values')[-1])
         self.assertTrue(window.next_button.instate(['disabled']))
 
+    def test_dispatch_unlock_conditions_are_visible_and_block_departure(self):
+        from cat_cafe_sim.cafe_new_game import create_game,starting_conditions
+        selected=starting_conditions('free');selected.pop('intake_request');selected['store_events']['probability']=0
+        s=create_game(Path(self.temp.name)/'unlock-games',selected)
+        self.app.replace_game(s);self.app.activity_button.invoke();window=self.app.activity_window
+        window.destination_choice.current(1);window.select_destination()
+        self.assertIn('未解放',window.destination_info.get())
+        self.assertIn('100/120',window.destination_info.get())
+        self.assertIn('0/1回',window.destination_info.get())
+        window.cats.selection_set('cat-mike');window.buttons()
+        self.assertTrue(window.send_button.instate(['disabled']))
+        self.root.deiconify();window.window.geometry('500x400');self.root.update()
+        self.assertTrue(window.close_button.winfo_ismapped())
+        window.window.destroy()
+
     def test_dispatch_result_is_read_only_and_scrollable_after_return(self):
         from cat_cafe_sim.cafe_interaction import CafeInteractionSession
         s=CafeInteractionSession(store=self.store);s.enable_management()

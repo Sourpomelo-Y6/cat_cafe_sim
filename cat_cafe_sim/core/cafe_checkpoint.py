@@ -271,6 +271,9 @@ def restore(data):
         if core.customer_discontent is None or core.management is None:
             raise ValueError('信頼回復に必要な不満・経営設定がありません。')
         core.customer_trust=validate_trust(core,state['customer_trust'])
+    if 'dispatch_unlocks' in state:
+        from .cafe_dispatch_unlocks import validate as validate_unlocks
+        core.dispatch_unlocks=validate_unlocks(core,state['dispatch_unlocks'])
     if 'item_purchases' in state:
         from .cafe_item_shop import validate as validate_purchases
         validate_purchases(core,state['item_purchases'])

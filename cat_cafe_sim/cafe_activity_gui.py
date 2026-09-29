@@ -131,6 +131,8 @@ class CafeActivityWindow:
         required = self.rules.get('required_trait_name', '指定なし')
         from .core.cafe_dispatch_match import description as welcome_description
         self.destination_info.set(f"{self.rules['days']}日 / 基本報酬 {self.rules['reward']:g} / 疲労{self.rules['max_fatigue']:g}以下 / 必要特性：{required}")
+        from .core.cafe_dispatch_unlocks import description as unlock_description
+        self.destination_info.set(self.destination_info.get()+'\n'+unlock_description(core,self.rules['id']))
         item = item_reward(self.rules)
         if item:
             self.destination_info.set(self.destination_info.get()+f" / {item['name']} ×1（ストレス −{item['stress_relief']:g}）")

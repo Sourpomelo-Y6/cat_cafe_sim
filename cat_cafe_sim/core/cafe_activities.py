@@ -49,6 +49,9 @@ def dispatch_reason(core, cat_id, rules):
     from .cafe_patron import DESTINATION_ID
     if rules['id'] == DESTINATION_ID and (not core.patron or rules != core.patron['rules']['destination']):
         return '先に有力者目標を開始してください。派遣条件は開始時の設定を使います。'
+    from .cafe_dispatch_unlocks import reason as unlock_reason
+    locked=unlock_reason(core,rules['id'])
+    if locked:return locked
     cat = core.cats[cat_id]
     if activity(core, cat_id) != 'cafe':
         return '在店していません。'
