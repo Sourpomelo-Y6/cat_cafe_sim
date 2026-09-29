@@ -31,7 +31,7 @@ class CafeRecruitmentWindow:
         ttk.Label(frame, textvariable=self.schedule, wraplength=460).pack(anchor='w')
         self.notice = tk.StringVar()
         ttk.Label(frame, textvariable=self.notice, wraplength=460).pack(anchor='w')
-        self.cats = CafeHistoryWindow.table(frame, ('名前', '個性', '特性', '初期費用', '状態'))
+        self.cats = CafeHistoryWindow.table(frame, ('名前', '特徴', '個性', '特性', '初期費用', '状態'))
         self.details = CafeHistoryWindow.table(frame, ('項目', '値'))
         self.details.column('項目', width=230)
         self.details.column('値', width=220)
@@ -52,11 +52,12 @@ class CafeRecruitmentWindow:
         self.schedule.set(f'次の候補追加：{due}日目（準備中にこの画面を開くと追加）')
         selected = self.cats.selection()
         self.cats.delete(*self.cats.get_children())
+        from .core.cafe_preferences import feature_text
         for key, row in core.recruitment['candidates'].items():
             personality = Personality.from_dict(row['personality'])
             label = next((name for name, value in self.session.presets.items() if value == personality), 'カスタム')
             day = core.recruitment['accepted'].get(key)
-            self.cats.insert('', 'end', iid=key, values=(row['name'], label, row.get('trait',{}).get('name','なし'), f"{row['cost']:g}", f'{day}日目に受入済み' if day else '候補'))
+            self.cats.insert('', 'end', iid=key, values=(row['name'], feature_text(row.get('features', [])), label, row.get('trait',{}).get('name','なし'), f"{row['cost']:g}", f'{day}日目に受入済み' if day else '候補'))
         self.cats.selection_set(selected[0] if selected else next(iter(core.recruitment['candidates'])))
         self.selection_changed()
 

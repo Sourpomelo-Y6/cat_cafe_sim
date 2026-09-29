@@ -11,7 +11,7 @@ from cat_cafe_sim.core.cafe_checkpoint import checkpoint, restore, digest
 from cat_cafe_sim.core.cafe_interaction import CafeInteractionCore, verify_cafe_interaction
 from cat_cafe_sim.core.cafe_health import HealthRules
 from cat_cafe_sim.core.cafe_management import rules as management_rules
-from cat_cafe_sim.core.cafe_recruitment import candidates, expenses
+from cat_cafe_sim.core.cafe_recruitment import candidates, catalog, expenses
 from cat_cafe_sim.core.config import Config
 from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
 from cat_cafe_sim.core.human_cat_types import Personality
@@ -53,6 +53,100 @@ class RecruitmentTests(unittest.TestCase):
     def close(self, s):
         while not s.core.closed:
             s.automatic_step()
+
+    def test_catalog_rotation_covers_distinct_combinations_and_keeps_initial_cats(self):
+        rows = [row for batch in range(4) for row in candidates(set(), batch).values()]
+        self.assertEqual(len(rows), 12)
+        self.assertEqual([row['name'] for row in rows[:3]], ['ハル', 'リン', 'ユキ'])
+        self.assertEqual({row['features'][0] for row in rows},
+                         {'white', 'black', 'calico', 'orange_tabby', 'brown_tabby', 'black_white'})
+        self.assertEqual({row['features'][1] for row in rows}, {'short_hair', 'long_hair'})
+        self.assertEqual(len({digest(row['personality']) for row in rows}), 5)
+        self.assertEqual({row['trait']['id'] for row in rows}, {'hospitality', 'outgoing', 'relaxed'})
+        self.assertEqual(len({(digest(row['personality']), tuple(row['features']), row['trait']['id'])
+                              for row in rows}), 12)
+        self.assertEqual({row['cost'] for row in rows}, {200})
+        repeated = list(candidates(set(), batch=4).values())
+        for original, row in zip(rows[:3], repeated):
+            self.assertEqual(row, dict(original, name=f"{original['name']}（紹介5）"))
+        self.assertEqual(candidates({'rescue-1', 'rescue-3'}, batch=1),
+                         candidates({'rescue-3', 'rescue-1'}, batch=1))
+        self.assertEqual(list(candidates({'rescue-1', 'rescue-3'}, batch=1)),
+                         ['rescue-2', 'rescue-4', 'rescue-5'])
+
+    def test_catalog_invalid_definitions_and_batch_rejected(self):
+        import json
+        data = json.loads((Path(__file__).resolve().parents[1] / 'config/cafe_recruitment.json').read_text())
+        for mutate in (
+                lambda rows: rows[0].update(preset='unknown'),
+                lambda rows: rows[0].update(trait='unknown'),
+                lambda rows: rows[0].update(features=['white', 'black']),
+                lambda rows: rows[0].update(cost=-1),
+                lambda rows: rows[0].update(extra=True),
+                lambda rows: rows[0].update(name=rows[1]['name']),
+                lambda rows: rows.pop()):
+            changed = copy.deepcopy(data); mutate(changed)
+            with self.assertRaises(ValueError):
+                catalog(changed)
+        for bad in ([], {}, [None, None, None]):
+            with self.assertRaises(ValueError):
+                catalog(bad)
+        for bad in (-1, True, 1.5, '1'):
+            with self.assertRaises(ValueError):
+                candidates(set(), bad)
+
+    def test_saved_candidates_stay_fixed_and_future_batch_uses_updated_catalog(self):
+        s = self.session(initial_funds=3000)
+        self.prepare(s)
+        saved = copy.deepcopy(s.core.recruitment['candidates'])
+        with patch('cat_cafe_sim.core.cafe_recruitment.catalog', side_effect=AssertionError('read saved catalog')):
+            s = self.reload(s)
+            s.open_recruitment()
+        replacement = catalog()
+        replacement[3]['cost'] = 250
+        for _ in range(3):
+            s.day_off()
+        with patch('cat_cafe_sim.core.cafe_recruitment.catalog', return_value=replacement):
+            s.open_recruitment()
+        self.assertEqual({key: s.core.recruitment['candidates'][key] for key in saved}, saved)
+        self.assertEqual(s.core.recruitment['candidates']['rescue-4']['cost'], 250)
+        with patch('cat_cafe_sim.core.cafe_recruitment.catalog', side_effect=AssertionError('reroll')):
+            s = self.reload(s)
+            s.recruit_cat('rescue-4')
+            self.reload(s)
+            self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(), s.core.snapshot())
+        self.assertEqual(expenses(s.core), 250)
+
+    def test_added_candidate_features_trait_and_personality_connect_to_play_and_dispatch(self):
+        from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
+        from cat_cafe_sim.core.cafe_dispatch_match import terms
+        from cat_cafe_sim.core.cafe_preferences import match
+        from cat_cafe_sim.core.cafe_activities import destination
+        selected = starting_conditions('free')
+        for field in ('intake_request', 'store_events', 'growth'):
+            selected.pop(field)
+        selected['management']['starting_funds'] = 3000
+        selected['preferences']['pool'] = ['long_hair']
+        s = create_game(Path(self.temp.name) / 'games', selected)
+        s.open_recruitment()
+        for _ in range(3):
+            s.day_off()
+        s.open_recruitment()
+        self.assertEqual(s.core.recruitment['candidates']['rescue-5']['name'], 'モモ（紹介2）')
+        s.recruit_cat('rescue-5')
+        self.assertEqual(s.core.cat_features['rescue-5'], ['black_white', 'long_hair'])
+        self.assertEqual(s.core.traits['rescue-5']['id'], 'outgoing')
+        self.assertTrue(terms(s.core, 'rescue-5', destination())['feature_matched'])
+        s.play_with_player('rescue-5')
+        self.assertEqual(s.core.player_bond['active']['config']['personality'],
+                         s.core.recruitment['candidates']['rescue-5']['personality'])
+        s.player_command(finish=True)
+        s.set_shifts(['rescue-5'])
+        while not s.core.visits and not s.core.closed:
+            s.automatic_step()
+        self.assertTrue(match(s.core, 'rescue-5', next(iter(s.core.visits)))['matched'])
+        self.reload(s)
+        self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(), s.core.snapshot())
 
     def test_fixed_candidates_old_save_cost_and_replay_in_both_seat_modes(self):
         for seats in (1, 2):

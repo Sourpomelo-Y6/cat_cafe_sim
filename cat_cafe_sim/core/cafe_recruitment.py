@@ -10,27 +10,55 @@ from .models import Cat
 
 
 REFRESH_DAYS = 3
+BATCH_SIZE = 3
 
 
-def candidates(used_ids, batch=0):
-    definitions = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_recruitment.json').read_text(encoding='utf-8'))
+def catalog(data=None):
+    """紹介元の組み合わせを検証し、保存できる候補へ展開する。"""
+    if data is None:
+        data = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_recruitment.json').read_text(encoding='utf-8'))
+    if not isinstance(data, list) or not data or len(data) % BATCH_SIZE:
+        raise ValueError('受け入れ紹介元は3匹単位で設定してください。')
     presets = load_presets()
     from .cafe_traits import definitions as trait_definitions
     traits = trait_definitions()
+    rows = []
+    names = set()
+    for row in data:
+        if (not isinstance(row, dict) or not {'name', 'preset', 'cost'} <= set(row)
+                <= {'name', 'preset', 'cost', 'trait', 'features'}
+                or not isinstance(row['preset'], str) or row['preset'] not in presets
+                or ('trait' in row and (not isinstance(row['trait'], str) or row['trait'] not in traits))):
+            raise ValueError('受け入れ紹介元の個性・特性・項目が不正です。')
+        identity(row['name'])
+        if row['name'] in names:
+            raise ValueError('受け入れ紹介元の名前が重複しています。')
+        names.add(row['name'])
+        candidate = dict(name=row['name'], personality=presets[row['preset']].to_dict(), cost=row['cost'])
+        if 'features' in row:
+            candidate['features'] = copy.deepcopy(row['features'])
+        if 'trait' in row:
+            candidate['trait'] = copy.deepcopy(traits[row['trait']])
+        rows.append(validate_candidates({'catalog-cat': candidate})['catalog-cat'])
+    return rows
+
+
+def candidates(used_ids, batch=0):
+    if type(batch) is not int or batch < 0:
+        raise ValueError('紹介回は0以上の整数で指定してください。')
+    definitions = catalog()
+    start = (batch % (len(definitions) // BATCH_SIZE)) * BATCH_SIZE
     used = set(used_ids)
     rows = {}
     index = 1
-    for row in definitions:
+    for row in definitions[start:start + BATCH_SIZE]:
         while f'rescue-{index}' in used:
             index += 1
         key = f'rescue-{index}'
         used.add(key)
-        rows[key] = dict(name=row['name'] if batch == 0 else f"{row['name']}（紹介{batch + 1}）", personality=presets[row['preset']].to_dict(), cost=row['cost'])
-        if 'features' in row:
-            from .cafe_preferences import validate_features
-            rows[key]['features'] = validate_features(row['features'])
-        if row.get('trait') is not None:
-            rows[key]['trait'] = copy.deepcopy(traits[row['trait']])
+        rows[key] = copy.deepcopy(row)
+        if batch:
+            rows[key]['name'] = f"{row['name']}（紹介{batch + 1}）"
     return validate_candidates(rows)
 
 
