@@ -45,13 +45,13 @@ class CafeHistoryWindow:
         self.total=tk.StringVar(value=('期間の収支：未導入' if not rows or 'net_cash_flow' not in rows[0]['summary'] else
             f"期間の収入 {sum(row['summary']['total_income'] for row in rows):g} / 支出 {sum(row['summary']['total_expenses'] for row in rows):g} / 純収支 {sum(row['summary']['net_cash_flow'] for row in rows):+g}"))
         ttk.Label(frame,textvariable=self.total).pack(anchor='w')
-        self.days = self.table(frame, ('日目', '開始資金', '収入', '支出', '純収支', '終了資金', '売上', 'うちボーナス', '交流件数', '接客評価', '満員帰り', '待切れ', '運営費', '派遣収入', '子猫費用', '人気', '受入費用', '獲得人気', '目標結果', '席数', '増設費用', '待合費用', '設備費用', '接客設備費用', '営業区分'))
+        self.days = self.table(frame, ('日目', '店舗イベント', '開始資金', '収入', '支出', '純収支', '終了資金', '売上', 'うちボーナス', '交流件数', '接客評価', '満員帰り', '待切れ', '運営費', '派遣収入', '子猫費用', '人気', '受入費用', '獲得人気', '目標結果', '席数', '増設費用', '待合費用', '設備費用', '接客設備費用', '営業区分'))
         ttk.Label(frame, text='猫ごとの比較（体力消耗は営業開始時からの差、親しみは各お客への実増減の合計）',
                   wraplength=600).pack(anchor='w', pady=(10, 0))
         self.cats = self.table(frame, ('日目', '猫', '接客回数', '体力消耗', '残り体力', '親しみ増減', '出勤・休養', '疲労変化', '体調・療養'))
         for result in rows:
             summary = result['summary']
-            self.days.insert('', 'end', values=(result['day'],
+            self.days.insert('', 'end', values=(result['day'],summary.get('store_event','未導入'),
                 f"{summary.get('opening_funds',summary['funds']):g}",f"{summary.get('total_income',summary['revenue']):g}",
                 f"{summary.get('total_expenses',0):g}",f"{summary.get('net_cash_flow',summary['revenue']):+g}",f"{summary.get('closing_funds',summary['funds']):g}",
                 f"{summary['revenue']:g}",f"{summary['interaction_bonus']:g}", summary['completed_interactions'],

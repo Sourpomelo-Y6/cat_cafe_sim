@@ -17,6 +17,7 @@ class ClearResultsTests(unittest.TestCase):
 
     def create(self,mode):
         conditions=starting_conditions(mode);conditions.pop('intake_request')
+        conditions['store_events']['probability']=0
         if mode=='popularity':
             conditions['goal'].update(target=105,stages=[dict(target=110,days=10),dict(target=115,days=10)])
         elif mode=='patron':conditions['patron']['target']=conditions['patron']['gain']

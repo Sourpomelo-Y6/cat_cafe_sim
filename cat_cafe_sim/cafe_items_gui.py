@@ -65,7 +65,8 @@ class CafeItemsWindow:
             self.cats.insert('', 'end', iid=key, values=(self.session.profiles.get(key, {}).get('name', key),
                 ACTIVITY_LABELS[core.activity(key)], f"{core.management['stress'][key]:g}" if core.management else '未導入'))
         for row in reversed(core.item_uses):
-            item = core.activities['events'][row['source']]['item_reward']
+            from .core.cafe_items import reward_for_source
+            item = reward_for_source(core,row['source'])['item']
             self.history.insert('', 'end', values=(f"{row['day']}日目", self.session.profiles.get(row['cat_id'], {}).get('name', row['cat_id']),
                 item['name'], f"{row['before']:g} → {row['after']:g}"))
         for table, previous in ((self.items, previous_items), (self.cats, previous_cats)):

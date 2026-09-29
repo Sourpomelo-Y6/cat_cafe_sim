@@ -18,6 +18,7 @@ class FourSeatExpansionTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         selected = starting_conditions()
         selected.pop('intake_request')
+        selected['store_events']['probability']=0
         selected['goal']['target'] = 105
         self.session = create_game(Path(self.temp.name)/'games', selected)
 

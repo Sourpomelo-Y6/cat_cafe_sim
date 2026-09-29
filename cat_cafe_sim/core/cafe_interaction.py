@@ -41,6 +41,7 @@ class CafeInteractionCore(SimulationCore):
         self.management = None
         self.operating_cost = None
         self.waiting_area = None
+        self.store_events = None
         self.goal = None
         self.objective = None
         self.clear_results = None
@@ -102,6 +103,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
                 **({'operating_cost': copy.deepcopy(self.operating_cost)} if self.operating_cost is not None else {}),
                 **({'waiting_area': copy.deepcopy(self.waiting_area)} if self.waiting_area is not None else {}),
+                **({'store_events': copy.deepcopy(self.store_events)} if self.store_events is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
                 **({'item_uses': copy.deepcopy(self.item_uses)} if self.item_uses else {}),
@@ -359,6 +361,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_waiting_area import initialize
         initialize(self,rules)
 
+    def initialize_store_events(self,rules=None):
+        from .cafe_store_events import initialize
+        initialize(self,rules)
+
     def purchase_waiting_area(self):
         from .cafe_waiting_area import purchase
         purchase(self)
@@ -520,6 +526,8 @@ class CafeInteractionCore(SimulationCore):
         present_reservation(self)
         from .cafe_intake_request import present
         present(self)
+        from .cafe_store_events import present as present_store_event
+        present_store_event(self)
         self._record(operation)
 
     def _record(self, operation):
@@ -681,6 +689,9 @@ class CafeInteractionCore(SimulationCore):
                         if e['status']=='resolved' and e['resolved_day']==self.day)} if self.activities else {}),
                     service_ticks=self.service_ticks,
                     **({'cat_stamina': {key:cat.stamina for key,cat in self.cats.items()}} if self.roster_ids is not None else {}))
+        if self.store_events is not None:
+            from .cafe_store_events import row,LABELS
+            event=row(self,self.day);result['store_event']=LABELS.get(event['type'],'イベントなし')
         if self.operating_cost is not None:
             from .cafe_finance import add
             add(result)

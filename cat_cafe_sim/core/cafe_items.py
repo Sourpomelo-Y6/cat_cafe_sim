@@ -20,11 +20,21 @@ def for_destination(destination):
     return definition(row) if row is not None else None
 
 
+def rewards(core):
+    result={key:dict(item=copy.deepcopy(event['item_reward']),available_day=event['resolved_day'])
+            for key,event in (core.activities or {}).get('events',{}).items()
+            if event['status']=='resolved' and 'item_reward' in event}
+    from .cafe_store_events import item_rewards
+    result.update(item_rewards(core));return result
+
+
+def reward_for_source(core,source):
+    return rewards(core).get(source)
+
+
 def inventory(core):
     used = {row['source'] for row in core.item_uses}
-    return {key: copy.deepcopy(event['item_reward'])
-            for key, event in (core.activities or {}).get('events', {}).items()
-            if event['status'] == 'resolved' and 'item_reward' in event and key not in used}
+    return {key:copy.deepcopy(value['item']) for key,value in rewards(core).items() if key not in used}
 
 
 def unavailable_reason(core, source, cat_id):
@@ -69,15 +79,15 @@ def validate_uses(core, data):
             raise ValueError('アイテムの使用項目が不正です。')
         if not isinstance(row['source'], str) or not isinstance(row['cat_id'], str):
             raise ValueError('使用したアイテム・対象猫が不正です。')
-        event = (core.activities or {}).get('events', {}).get(row['source'])
-        if not event or event['status'] != 'resolved' or 'item_reward' not in event or row['source'] in sources:
+        reward=reward_for_source(core,row['source'])
+        if not reward or row['source'] in sources:
             raise ValueError('未受取または使用済みのアイテムが消費されています。')
         if (row['cat_id'] not in core.cats or type(row['day']) is not int
-                or not max(last_day, event['resolved_day'], event['occurred_day']+1, core.management['started_day']) <= row['day'] <= core.day):
+                or not max(last_day,reward['available_day'],core.management['started_day']) <= row['day'] <= core.day):
             raise ValueError('アイテムの使用日・対象猫が不正です。')
         if any(type(row[k]) not in (int, float) or not math.isfinite(row[k]) or not 0 <= row[k] <= 100 for k in ('before', 'after')):
             raise ValueError('アイテムによるストレス変化が不正です。')
-        if row['before'] <= 0 or row['after'] != max(0, row['before']-event['item_reward']['stress_relief']):
+        if row['before'] <= 0 or row['after'] != max(0, row['before']-reward['item']['stress_relief']):
             raise ValueError('アイテムの効果と使用結果が一致しません。')
         sources.add(row['source'])
         last_day = row['day']

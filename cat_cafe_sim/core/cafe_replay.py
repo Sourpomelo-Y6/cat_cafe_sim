@@ -18,6 +18,7 @@ def apply_operation(core, operation):
     elif kind=='initialize_reservation':core.initialize_reservation(operation['rules'])
     elif kind=='initialize_operating_cost':core.initialize_operating_cost(operation['rules'])
     elif kind=='initialize_waiting_area':core.initialize_waiting_area(operation['rules'])
+    elif kind=='initialize_store_events':core.initialize_store_events(operation['rules'])
     elif kind=='purchase_waiting_area':core.purchase_waiting_area()
     elif kind=='initialize_vip_customer':core.initialize_vip_customer(operation['rules'])
     elif kind=='resolve_reservation':core.resolve_reservation(operation['choice'])

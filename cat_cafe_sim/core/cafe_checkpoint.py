@@ -215,6 +215,9 @@ def restore(data):
         if 'waiting_area' in state:
             from .cafe_waiting_area import prepare as prepare_waiting_area
             core.waiting_area=prepare_waiting_area(core,state['waiting_area'])
+        if 'store_events' in state:
+            from .cafe_store_events import validate as validate_store_events
+            core.store_events=validate_store_events(core,state['store_events'])
         if 'vip_customer' in state:
             from .cafe_vip_customer import rules as vip_rules
             core.vip_customer=vip_rules(state['vip_customer'])

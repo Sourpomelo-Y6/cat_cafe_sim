@@ -1822,7 +1822,9 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertEqual(window.days.set(row,'支出'),'60')
         self.assertEqual(window.days.set(row,'純収支'),'-60')
         self.assertEqual(window.days.set(row,'終了資金'),'940')
+        self.assertNotEqual(window.days.set(row,'店舗イベント'),'未導入')
         self.assertIn('純収支 -60',window.total.get())
+        self.assertTrue(any('本日の店舗イベント' in str(app.history.item(key,'values')) for key in app.history.get_children()))
         window.window.destroy()
 
     def test_advanced_customer_preview_result_and_small_layout(self):

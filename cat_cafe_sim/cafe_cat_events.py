@@ -62,7 +62,8 @@ def cat_events(core, cat_id):
     for use in core.item_uses:
         if use['cat_id'] != cat_id:
             continue
-        item = core.activities['events'][use['source']]['item_reward']
+        from .core.cafe_items import reward_for_source
+        item=reward_for_source(core,use['source'])['item']
         add(use['day'], 'ケア用品の使用', item['name'], f"1個使用 / ストレス {use['before']:g} → {use['after']:g}")
     # 同日の種類をまたぐ厳密な時系列は記録されていない。日付だけで安定ソートする。
     return sorted(rows, key=lambda row: row[0])

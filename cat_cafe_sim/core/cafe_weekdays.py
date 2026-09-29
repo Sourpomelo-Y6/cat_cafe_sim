@@ -48,6 +48,8 @@ def schedule(core, day=None):
     planned = {**{f'guest-{i+1}': tick for i, tick in enumerate(core.config.arrival_ticks)
                if weekday is None or weekday in customer_days(core, i)}, **advanced_schedule(core, day),
             **extra_schedule(core, day), **loyalty_schedule(core, day), **reservation_schedule(core,day), **vip_schedule(core,day)}
+    from .cafe_store_events import modify_schedule
+    planned=modify_schedule(core,planned,day)
     from .cafe_customer_discontent import filter_schedule
     planned=filter_schedule(core, planned, day)
     from .cafe_customer_trust import available
