@@ -5,8 +5,10 @@ from dataclasses import replace
 from pathlib import Path
 
 from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+from cat_cafe_sim.cafe_cat_details import cat_details
+from cat_cafe_sim.cafe_cat_events import cat_events
 from cat_cafe_sim.core.cafe_checkpoint import checkpoint,digest,restore
-from cat_cafe_sim.core.cafe_growth import description,pending,rules,summary
+from cat_cafe_sim.core.cafe_growth import description,mastery_choices,mastery_pending,pending,rules,service,summary
 from cat_cafe_sim.core.cafe_interaction import verify_cafe_interaction
 from cat_cafe_sim.core.config import Config
 from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
@@ -21,11 +23,11 @@ class CafeGrowthTests(unittest.TestCase):
         self.store=RelationshipStore(Path(self.temp.name)/'relationships.json');add_playtest_cats(self.store)
         self.path=Path(self.temp.name)/'game.json'
 
-    def session(self):
+    def session(self,mastery_threshold=15):
         s=CafeInteractionSession(store=self.store,seat_count=2,
             cafe_config=replace(Config.load(),opening_ticks=8,arrival_ticks=(0,1)),
             interaction_config=replace(RelationshipConfig(),ticks=1))
-        s.core.initialize_growth(dict(rules(),threshold=1));return s
+        s.core.initialize_growth(dict(rules(),threshold=1,mastery_threshold=mastery_threshold));return s
 
     def reload(self,s):
         save_game(s,self.path);loaded,_=load_game(self.path)
@@ -62,7 +64,8 @@ class CafeGrowthTests(unittest.TestCase):
 
     def test_invalid_rules_choices_and_corrupt_growth_are_rejected(self):
         base=rules()
-        for changed in (dict(threshold=0),dict(service_xp=0),dict(service_stamina_refund=1),dict(dispatch_reward_multiplier=float('nan'))):
+        for changed in (dict(threshold=0),dict(service_xp=0),dict(service_stamina_refund=1),dict(dispatch_reward_multiplier=float('nan')),
+                        dict(mastery_threshold=0),dict(mastery_engagement_multiplier=1)):
             with self.assertRaises(ValueError):rules(dict(base,**changed))
         s=self.session();before=s.core.snapshot()
         for cat,choice in (('unknown','service'),(next(iter(s.core.cats)),'invalid')):
@@ -87,6 +90,39 @@ class CafeGrowthTests(unittest.TestCase):
         s.core.growth=None
         self.assertEqual(summary(s.core,key),'\u672a\u5c0e\u5165')
         self.assertIn('\u672a\u5c0e\u5165',description(s.core,key))
+
+    def test_positive_service_unlocks_chosen_mastery_and_boosts_matching_group(self):
+        s=self.session(mastery_threshold=1);key=next(iter(s.core.cats))
+        s.automatic_step();s.start('guest-1',key,'seat-1');s.step('direct')
+        s.resolve_growth(key,'service')
+        self.assertEqual(mastery_pending(s.core),[key])
+        self.assertEqual(mastery_choices(s.core,key),('play',))
+        with self.assertRaisesRegex(ValueError,'接客分類'):s.resolve_growth_mastery(key,'quiet')
+        s.resolve_growth_mastery(key,'play')
+        self.assertIn('遊び',description(s.core,key));self.assertIn('×1.1',description(s.core,key))
+        self.assertEqual(dict(cat_details(s,key)['basic'])['得意な交流'],'遊び')
+        self.assertIn('得意な交流の選択',str(cat_events(s.core,key)))
+
+        s.start('guest-2',key,'seat-1')
+        active=s.active_interactions['seat-1']
+        self.assertEqual((active.config.mastery_group,active.config.mastery_engagement_multiplier),('play',1.1))
+        s.step('direct');record=next(event['record'] for event in reversed(s.core.events) if event['kind']=='human_cat_action')
+        self.assertEqual(record['diagnostic']['mastery_group'],'play')
+        self.assertEqual(record['diagnostic']['mastery_multiplier'],1.1)
+        self.assertGreater(record['engagement_delta'],record['diagnostic']['base_gain'])
+        self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(),s.core.snapshot());self.reload(s)
+
+    def test_failed_service_does_not_qualify_and_legacy_growth_stays_compatible(self):
+        s=self.session();key=next(iter(s.core.cats));row=s.core.growth['cats'][key]
+        service(s.core,dict(cat_id=key,stamina_spent=0,affinity_delta=0,type_actions={'teaser':10}))
+        self.assertEqual(row['groups']['play'],10)
+        self.assertEqual(row['mastery_groups']['play'],0)
+
+        legacy=rules();legacy.pop('mastery_threshold');legacy.pop('mastery_engagement_multiplier')
+        old=CafeInteractionSession(store=self.store,seat_count=2)
+        old.core.initialize_growth(legacy)
+        self.assertNotIn('mastery',old.core.growth['cats'][next(iter(old.core.cats))])
+        self.reload(old)
 
 
 if __name__=='__main__':unittest.main()

@@ -16,6 +16,15 @@ from cat_cafe_sim.human_cat_relationship_gui import RelationshipPlaySession, res
 
 
 class RelationshipCoreTests(unittest.TestCase):
+    def test_matching_mastery_boosts_engagement_only_for_its_group(self):
+        config=RelationshipConfig(mastery_group='play',mastery_engagement_multiplier=1.1)
+        play=RelationshipInteraction(config);boosted=play.step('direct')
+        play.step('switch','voice');quiet=play.step('direct')
+        self.assertEqual(boosted['diagnostic']['mastery_multiplier'],1.1)
+        self.assertNotIn('mastery_multiplier',quiet['diagnostic'])
+        self.assertGreater(boosted['engagement_delta'],boosted['diagnostic']['base_gain'])
+        self.assertEqual(RelationshipConfig.from_dict(config.to_dict()),config)
+
     def test_short_positive_interaction_without_specials(self):
         c=RelationshipInteraction();c.step('direct');r=c.finish()
         self.assertEqual(r['end_reason'],'manual')
@@ -110,6 +119,9 @@ class RelationshipCoreTests(unittest.TestCase):
         for kwargs in ({'affinity':101},{'revision':True},{'cat_id':''},{'customer_id':None},{'session_id':''}):
             with self.assertRaises(ValueError):RelationshipInteraction(**kwargs)
         with self.assertRaises(ValueError):RelationshipConfig(affinity_connect=-1)
+        for kwargs in ({'mastery_group':'unknown','mastery_engagement_multiplier':1.1},
+                       {'mastery_group':'play'},{'mastery_engagement_multiplier':1.1}):
+            with self.assertRaises(ValueError):RelationshipConfig(**kwargs)
         with self.assertRaises(ValueError):RelationshipInteraction().result()
 
     def test_multiple_simultaneous_events_can_occur_before_time_ends(self):

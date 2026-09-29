@@ -22,6 +22,8 @@ class RelationshipConfig(TypesConfig):
     customer_tension_multiplier: float = 1
     equipment_engagement_multiplier: float = 1
     equipment_tension_multiplier: float = 1
+    mastery_group: str = ''
+    mastery_engagement_multiplier: float = 1
     affinity_enthusiastic: float = 1
     affinity_favorable: float = .5
     affinity_turn_away_loss: float = 1
@@ -35,6 +37,11 @@ class RelationshipConfig(TypesConfig):
         bounded(self.customer_tension_multiplier, 1, 2, 'customer tension multiplier')
         bounded(self.equipment_engagement_multiplier, 1, 2, 'equipment engagement multiplier')
         bounded(self.equipment_tension_multiplier, 1, 2, 'equipment tension multiplier')
+        if self.mastery_group not in ('','play','contact','quiet'):
+            raise ValueError('invalid mastery group')
+        bounded(self.mastery_engagement_multiplier, 1, 2, 'mastery engagement multiplier')
+        if bool(self.mastery_group)!=(self.mastery_engagement_multiplier!=1):
+            raise ValueError('mastery group and multiplier must be set together')
         if any(not math.isfinite(value * self.equipment_engagement_multiplier) for key,value in vars(self).items() if key.endswith('_gain') and isinstance(value,(int,float))):
             raise ValueError('equipment engagement overflow')
         if not math.isfinite(max(self.tension_enthusiastic, self.tension_favorable, self.tension_neutral) * self.customer_tension_multiplier * self.equipment_tension_multiplier):
@@ -51,6 +58,9 @@ class RelationshipConfig(TypesConfig):
         for key in ("equipment_engagement_multiplier", "equipment_tension_multiplier"):
             if getattr(self,key) == 1:
                 data["rules"].pop(key)
+        if not self.mastery_group:
+            data['rules'].pop('mastery_group')
+            data['rules'].pop('mastery_engagement_multiplier')
         return data
 
     @classmethod
@@ -80,6 +90,11 @@ class RelationshipInteraction(TypesInteraction):
         if action in INTERACTIONS and score > 0 and self.config.equipment_engagement_multiplier != 1:
             score *= self.config.equipment_engagement_multiplier
             diagnostic = dict(diagnostic, equipment_multiplier=self.config.equipment_engagement_multiplier)
+        if (action in INTERACTIONS and score>0 and self.config.mastery_group
+                and diagnostic.get('boredom_group')==self.config.mastery_group):
+            score*=self.config.mastery_engagement_multiplier
+            diagnostic=dict(diagnostic,mastery_group=self.config.mastery_group,
+                            mastery_multiplier=self.config.mastery_engagement_multiplier,score=score)
         return cost, score, reaction, diagnostic
 
     def _end_reason(self):

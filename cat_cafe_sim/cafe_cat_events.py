@@ -69,5 +69,8 @@ def cat_events(core, cat_id):
     if growth and growth['specialization']:
         from .core.cafe_growth import LABELS
         add(growth['selected_day'],'得意分野の選択','成長',LABELS[growth['specialization']])
+        if growth.get('mastery'):
+            from .core.cafe_growth import GROUP_LABELS
+            add(growth['mastery_selected_day'],'得意な交流の選択','成長',GROUP_LABELS[growth['mastery']])
     # 同日の種類をまたぐ厳密な時系列は記録されていない。日付だけで安定ソートする。
     return sorted(rows, key=lambda row: row[0])

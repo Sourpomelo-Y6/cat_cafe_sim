@@ -288,6 +288,12 @@ class CafeInteractionSession:
         if self.pending:raise ValueError('先に交流結果の保存を再試行してください。')
         self.core.resolve_growth(cat_id,choice)
 
+    def resolve_growth_mastery(self,cat_id,choice):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:raise ValueError('先に交流結果の保存を再試行してください。')
+        self.core.resolve_growth_mastery(cat_id,choice)
+
     def resolve_dispatch_choice(self, event_id, choice):
         from .storage.cafe_saves import check_link
         check_link(self)
@@ -335,8 +341,11 @@ class CafeInteractionSession:
             raise ValueError('営業に参加している猫を選んでください。')
         from .core.cafe_preferences import match
         from .core.cafe_seat_equipment import effects
+        from .core.cafe_growth import interaction_terms
         actual_seat = seat_id or next(iter(self.free_seats), self.core.seat.id)
         config = replace(self.interaction_config, **effects(self.core, actual_seat), customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
+                         mastery_group=interaction_terms(self.core,cat_id)['group'],
+                         mastery_engagement_multiplier=interaction_terms(self.core,cat_id)['multiplier'],
                          ticks=min(self.interaction_config.ticks, self.core.config.opening_ticks-self.core.tick))
         interaction = self.store.begin(config, cat_id, customer_id, stamina=self.core.cats[cat_id].stamina)
         if isinstance(self.core,MultiSeatCafeCore):

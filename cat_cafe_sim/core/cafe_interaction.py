@@ -254,6 +254,8 @@ class CafeInteractionCore(SimulationCore):
             raise ValueError('店舗イベントへの対応を選んでください。')
         from .cafe_growth import pending as growth_pending
         if growth_pending(self):raise ValueError('成長できる猫の得意分野を選んでください。')
+        from .cafe_growth import mastery_pending
+        if mastery_pending(self):raise ValueError('接客を習熟した猫の得意な交流を選んでください。')
 
     @property
     def can_set_shifts(self):
@@ -381,6 +383,10 @@ class CafeInteractionCore(SimulationCore):
     def resolve_growth(self,cat_id,choice):
         from .cafe_growth import resolve
         resolve(self,cat_id,choice)
+
+    def resolve_growth_mastery(self,cat_id,choice):
+        from .cafe_growth import resolve_mastery
+        resolve_mastery(self,cat_id,choice)
 
     def purchase_waiting_area(self):
         from .cafe_waiting_area import purchase
@@ -585,6 +591,8 @@ class CafeInteractionCore(SimulationCore):
         check_interaction(self, interaction)
         from .cafe_seat_equipment import check_interaction as check_equipment
         check_equipment(self, interaction, self.seat.id)
+        from .cafe_growth import check_interaction as check_growth
+        check_growth(self,interaction)
         self._tick_events = []
         self.cat = cat
         self._apply(Command('assign', interaction.customer_id, interaction.cat_id, self.seat.id))

@@ -97,6 +97,8 @@ class ManualCafeInteractionWindow:
             if kind=='human_cat_action':
                 row=history_row(event['record'])
                 text=f'{row[1]} / {row[2]}'
+                if event['record']['diagnostic'].get('mastery_multiplier'):
+                    text+=f" / 得意な交流×{event['record']['diagnostic']['mastery_multiplier']:g}"
             elif kind=='health_enabled':
                 text='病気・療養ルールを開始'
             elif kind=='cat_health':
@@ -171,6 +173,10 @@ class ManualCafeInteractionWindow:
                 text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}が成長可能 · 経験 {event['total']:g}"
             elif kind=='growth_selected':
                 text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}の得意分野：{event['label']}"
+            elif kind=='growth_mastery_ready':
+                text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}が接客に習熟 · 対象実績 {event['total']:g}"
+            elif kind=='growth_mastery_selected':
+                text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}の得意な交流：{event['label']}"
             elif kind=='growth_service_effect':
                 text=f"接客成長効果 · 体力 {event['stamina_refund']:g}回復"
             elif kind=='intake_request_waiting':
@@ -487,8 +493,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.instructions.configure(text='有力者目標クリア！「結果・記録」→「有力者目標・結果…」で結果を確認してください。')
         from .core.cafe_intake_request import pending as intake_pending
         from .core.cafe_store_events import waiting as store_event_waiting
-        from .core.cafe_growth import pending as growth_pending
-        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core) or bool(store_event_waiting(core)) or bool(growth_pending(core))
+        from .core.cafe_growth import pending as growth_pending,mastery_pending
+        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core) or bool(store_event_waiting(core)) or bool(growth_pending(core)) or bool(mastery_pending(core))
         if core.management:
             self.status.set(self.status.get()+f" · 人気 {core.management['popularity']:g}")
         self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
@@ -562,7 +568,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
 
     def refresh_dashboard(self):
         from .core.cafe_store_events import waiting as store_event_waiting
-        from .core.cafe_growth import pending as growth_pending
+        from .core.cafe_growth import pending as growth_pending,mastery_pending
         from .core.cafe_activities import waiting_events
         from .core.cafe_adoption import waiting as adoptions
         from .core.cafe_management import waiting as returns, is_over
@@ -625,6 +631,10 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif growth_pending(core):
             key=growth_pending(core)[0];name=self.session.profiles.get(key,{}).get('name',key)
             self.notice.set(f'{name}が成長できます。得意分野を選んでください。')
+            self._attention = self.show_growth
+        elif mastery_pending(core):
+            key=mastery_pending(core)[0];name=self.session.profiles.get(key,{}).get('name',key)
+            self.notice.set(f'{name}が接客に習熟しました。得意な交流を選んでください。')
             self._attention = self.show_growth
         elif waiting_events(core):
             from .core.cafe_dispatch_encounters import waiting as choice_waiting

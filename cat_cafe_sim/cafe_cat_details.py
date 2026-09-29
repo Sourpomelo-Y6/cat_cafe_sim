@@ -40,11 +40,16 @@ def cat_details(session, cat_id):
     basic += [('ストレス', f"{core.management['stress'][cat_id]:g} / 100" if core.management else 'ルール未導入')]
     growth=(core.growth or {}).get('cats',{}).get(cat_id)
     if growth:
-        from .core.cafe_growth import LABELS,total
+        from .core.cafe_growth import GROUP_LABELS,LABELS,total
         basic += [('経験合計', f"{total(growth):g}"),('接客経験',f"{growth['service']:g}"),('休養経験',f"{growth['rest']:g}"),
                   ('派遣経験',f"{growth['dispatch']:g}"),('得意分野',LABELS.get(growth['specialization'],'未選択')),
                   ('接客熟練：遊び',f"{growth['groups']['play']:g}"),('接客熟練：触れ合い',f"{growth['groups']['contact']:g}"),
                   ('接客熟練：静かな交流',f"{growth['groups']['quiet']:g}")]
+        if 'mastery_groups' in growth:
+            basic += [('得意な交流',GROUP_LABELS.get(growth['mastery'],'未選択')),
+                      ('習得対象：遊び',f"{growth['mastery_groups']['play']:g}"),
+                      ('習得対象：触れ合い',f"{growth['mastery_groups']['contact']:g}"),
+                      ('習得対象：静かな交流',f"{growth['mastery_groups']['quiet']:g}")]
     if core.recruitment and cat_id in core.recruitment['accepted']:
         basic += [('加入経路', '保護猫の受け入れ'), ('加入日', f"{core.recruitment['accepted'][cat_id]}日目")]
     request = core.intake_request

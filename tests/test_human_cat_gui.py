@@ -1812,6 +1812,24 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertIn('派遣報酬×1.1',activity.selection_info.get())
         activity.window.destroy()
 
+    def test_service_mastery_choice_is_presented_and_updates_growth_display(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.core.cafe_growth import rules
+        session=CafeInteractionSession(store=self.store)
+        session.core.initialize_growth(dict(rules(),threshold=1,mastery_threshold=1))
+        key=next(iter(session.core.cats));row=session.core.growth['cats'][key]
+        row.update(service=1,specialization='service',selected_day=1)
+        row['type_actions']['teaser']=1;row['groups']['play']=1;row['mastery_groups']['play']=1
+        self.app.replace_game(session)
+        self.assertIn('接客に習熟',self.app.notice.get())
+        self.app.attention_button.invoke();dialog=self.app.growth_window
+        self.assertTrue(dialog.mastery_mode)
+        self.assertEqual(set(dialog.choice_buttons),{'play'})
+        dialog.choice_buttons['play'].invoke()
+        self.assertEqual(session.core.growth['cats'][key]['mastery'],'play')
+        self.assertEqual(self.app.roster.set(key,'growth'),'得意：接客・遊び')
+        self.assertIn('関心の通常増加×1.1',self.app.details.get())
+
     def test_close_saves_active_exchange_without_finishing_and_cancel_keeps_window(self):
         from cat_cafe_sim.storage.cafe_saves import load_game
         before=self.session.core.snapshot()
