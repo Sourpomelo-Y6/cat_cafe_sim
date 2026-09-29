@@ -2,7 +2,7 @@
 import math
 
 EXPENSE_KEYS=('operating_cost','recruitment_expenses','expansion_expenses',
-              'equipment_expenses','seat_equipment_expenses','waiting_area_expenses','kitten_expenses')
+              'equipment_expenses','seat_equipment_expenses','waiting_area_expenses','store_event_expenses','kitten_expenses')
 
 
 def values(summary):

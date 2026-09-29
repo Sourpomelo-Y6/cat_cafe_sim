@@ -249,7 +249,7 @@ class CafeInteractionCore(SimulationCore):
             raise ValueError('派遣・イベント画面で帰還結果や譲渡・家出イベントを確認してください。')
         from .cafe_store_events import waiting as store_event_waiting
         if not ignore_store and store_event_waiting(self):
-            raise ValueError('設備トラブルへの対応を選んでください。')
+            raise ValueError('店舗イベントへの対応を選んでください。')
 
     @property
     def can_set_shifts(self):
@@ -477,7 +477,8 @@ class CafeInteractionCore(SimulationCore):
 
     def day_off(self):
         from .cafe_store_events import waiting as store_event_waiting,close_for_day
-        closing_for_trouble=bool(store_event_waiting(self))
+        store_event=store_event_waiting(self)
+        closing_for_trouble=bool(store_event and store_event['type']=='trouble')
         self.require_events_resolved(ignore_store=closing_for_trouble)
         from .cafe_reservation import day_off_reason
         if day_off_reason(self):raise ValueError(day_off_reason(self))
@@ -675,6 +676,7 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_seat_equipment import expenses as seat_expenses
         from .cafe_operating_cost import charged as operating_charged
         from .cafe_waiting_area import expenses as waiting_area_expenses
+        from .cafe_store_events import expenses as store_event_expenses
         visits = list(self.visits.values())
         from .cafe_checkpoint import outcome_result
         from .cafe_customer_satisfaction import counts as satisfaction_counts
@@ -690,6 +692,7 @@ class CafeInteractionCore(SimulationCore):
                     **({'expansion_expenses': expansion_expenses(self, self.day)} if self.expansion is not None else {}),
                     **({'operating_cost': operating_charged(self,self.day)} if self.operating_cost is not None else {}),
                     **({'waiting_area_expenses': waiting_area_expenses(self,self.day)} if self.waiting_area is not None else {}),
+                    **({'store_event_expenses': store_event_expenses(self,self.day)} if self.store_events is not None else {}),
                     **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()

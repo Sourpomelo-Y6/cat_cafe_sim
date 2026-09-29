@@ -164,7 +164,9 @@ class ManualCafeInteractionWindow:
             elif kind=='store_event_presented':
                 text='本日の店舗イベント：'+event['label']
             elif kind=='store_event_resolved':
-                text='設備トラブル：'+{'repair':'修理する','patch':'応急処置する','close':'休業する'}[event['choice']]
+                choice={'repair':'修理する','patch':'応急処置する','close':'休業する','full':'支援する','small':'少額支援する','decline':'見送る'}[event['choice']]
+                text=('支援依頼：' if event.get('event_type')=='support' else '設備トラブル：')+choice
+                if event.get('cost'):text+=f" · 支出 {event['cost']:g} · 人気 ＋{event['popularity']:g}"
             elif kind=='intake_request_waiting':
                 text=f"保護猫 {event['name']} の受け入れ依頼が届きました。"
             elif kind=='intake_request_resolved':
@@ -605,7 +607,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.notice.set('翌日の特別予約依頼があります。条件を確認して受け入れるか選んでください。')
             self._attention = self.show_reservation
         elif store_event_waiting(core):
-            self.notice.set('設備トラブルが発生しています。営業前に対応を選んでください。')
+            self.notice.set(('保護団体から支援のお願いが届いています。' if store_event_waiting(core)['type']=='support' else '設備トラブルが発生しています。')+'営業前に対応を選んでください。')
             self._attention = self.show_store_event
         elif waiting_events(core):
             from .core.cafe_dispatch_encounters import waiting as choice_waiting

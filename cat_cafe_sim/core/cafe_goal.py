@@ -121,6 +121,8 @@ def earn(core):
     from .cafe_vip_customer import popularity_bonus as vip_popularity_bonus
     extra=sum(popularity_bonus(core,outcome_result(row))+vip_popularity_bonus(core,outcome_result(row)) for row in rows)
     before = core.management['popularity']
+    from .cafe_store_events import popularity_bonus as store_event_bonus
+    extra+=store_event_bonus(core,core.day)
     after = min(core.goal['rules']['cap'], before+count*core.goal['rules']['gain_per_success']+extra)
     core.management['popularity'] = after
     core.goal['days'].append(dict(day=core.day, qualified=count, gain=after-before))
@@ -222,6 +224,8 @@ def validate(core, data, management):
         from .cafe_reservation import popularity_bonus
         from .cafe_vip_customer import popularity_bonus as vip_popularity_bonus
         extra=sum(popularity_bonus(core,outcome_result(value))+vip_popularity_bonus(core,outcome_result(value)) for value in offsets[day])
+        from .cafe_store_events import popularity_bonus as store_event_bonus
+        extra+=store_event_bonus(core,day)
         after=min(rule['cap'],popularity+count*rule['gain_per_success']+extra)
         expected=dict(day=day,qualified=count,gain=after-popularity)
         if row!=expected:

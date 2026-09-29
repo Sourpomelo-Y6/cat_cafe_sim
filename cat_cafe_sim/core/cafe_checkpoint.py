@@ -373,6 +373,9 @@ def restore(data):
     from .cafe_recruitment import expenses
     from .cafe_waiting_area import expenses as waiting_area_expenses
     expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core) + seat_expenses(core)+waiting_area_expenses(core)
+    if core.store_events is not None:
+        from .cafe_store_events import expenses as store_event_expenses
+        expected_funds-=store_event_expenses(core)
     from .cafe_operating_cost import charged as operating_charged
     expected_funds-=operating_charged(core)
     if not math.isclose(core.funds,expected_funds,rel_tol=1e-12,abs_tol=1e-8):

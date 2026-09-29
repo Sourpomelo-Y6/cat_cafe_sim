@@ -1,1 +1,1 @@
-{"probability":0.4,"festival_customer_tick":3,"trouble_cost":50,"trouble_seat_loss":1,"supply":{"id":"care_supplies","name":"ケア用品","stress_relief":20}}
+{"probability":0.4,"festival_customer_tick":3,"trouble_cost":50,"trouble_seat_loss":1,"support_full_cost":100,"support_full_popularity":5,"support_small_cost":50,"support_small_popularity":2,"supply":{"id":"care_supplies","name":"ケア用品","stress_relief":20}}
