@@ -104,6 +104,11 @@ class CafeInteractionSession:
             raise ValueError('先に交流結果の保存を再試行してください。')
         self.core.player_command(action, target_type, finish=finish)
 
+    def purchase_item(self, selected=None):
+        self._ready()
+        from .core.cafe_item_shop import rules
+        self.core.purchase_item(rules(selected))
+
     def use_item(self, source, cat_id):
         self._ready()
         self.core.use_item(source, cat_id)

@@ -59,6 +59,7 @@ class CafeInteractionCore(SimulationCore):
         self.adoption = None
         self.activities = None
         self.item_uses = []
+        self.item_purchases = []
         self.health_rules = None
         self.initial_health = {}
         self.health_results = {}
@@ -109,6 +110,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
                 **({'item_uses': copy.deepcopy(self.item_uses)} if self.item_uses else {}),
+                **({'item_purchases': copy.deepcopy(self.item_purchases)} if self.item_purchases else {}),
                 **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
                 **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None or self.intake_request is not None else {})}
@@ -216,6 +218,10 @@ class CafeInteractionCore(SimulationCore):
     def resolve_dispatch_choice(self, event_id, choice):
         from .cafe_dispatch_encounters import resolve
         resolve(self,event_id,choice)
+
+    def purchase_item(self, rules):
+        from .cafe_item_shop import purchase
+        purchase(self, rules)
 
     def use_item(self, source, cat_id):
         from .cafe_items import use
@@ -707,6 +713,7 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_operating_cost import charged as operating_charged
         from .cafe_waiting_area import expenses as waiting_area_expenses
         from .cafe_store_events import expenses as store_event_expenses
+        from .cafe_item_shop import expenses as item_expenses
         visits = list(self.visits.values())
         from .cafe_checkpoint import outcome_result
         from .cafe_customer_satisfaction import counts as satisfaction_counts
@@ -716,6 +723,7 @@ class CafeInteractionCore(SimulationCore):
                     departures={reason:sum(v.departure_reason == reason for v in visits)
                                 for reason in sorted({v.departure_reason for v in visits if v.departure_reason})},
                     revenue=sum(v.bill for v in visits), funds=self.funds,
+                    **({"item_expenses":item_expenses(self,self.day)} if self.item_purchases else {}),
                     **({'seat_equipment_expenses': seat_expenses(self, self.day)} if self.equipment_store is not None else {}),
                     **({**({'goal_status': summary_status(self.goal, self.day)} if not self.goal.get('tracking_only') else {}), 'popularity_gain': next((r['gain'] for r in self.goal['days'] if r['day']==self.day),0)} if self.goal else {}),
                     **({'equipment_expenses': equipment_expenses(self, self.day)} if self.rest_space is not None else {}),

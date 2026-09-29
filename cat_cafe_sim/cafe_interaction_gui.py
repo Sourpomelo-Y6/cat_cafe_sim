@@ -229,6 +229,8 @@ class ManualCafeInteractionWindow:
                     text+=f" · ストレス ＋{event['stress_gain']:g}（上限100）"
                 if event.get('item_reward'):
                     text+=f" · {event['item_reward']['name']} ×1 を入手"
+            elif kind=='item_purchased':
+                text=f"{event['name']}を1個購入 · 費用 {event['cost']:g}"
             elif kind=='item_used':
                 text=f"{event['cat_id']}に{event['name']}を使用 · ストレス {event['before']:g} → {event['after']:g}"
             elif kind=='shifts_set':

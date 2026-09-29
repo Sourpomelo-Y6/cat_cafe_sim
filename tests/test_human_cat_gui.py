@@ -1109,6 +1109,14 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertEqual(len(window.history.get_children()), 1)
         self.assertTrue(window.use_button.instate(['disabled']))
         self.assertIn('10 → 0', window.result.get())
+        funds=app.session.core.funds
+        with patch('tkinter.messagebox.askyesno',return_value=False):window.buy_button.invoke()
+        self.assertEqual(app.session.core.funds,funds)
+        with patch('tkinter.messagebox.askyesno',return_value=True):window.buy_button.invoke()
+        self.assertEqual(app.session.core.funds,funds-100)
+        self.assertEqual(len(inventory(app.session.core)),1)
+        self.assertIn('1個 100',window.shop_note.get())
+        self.assertTrue(window.buy_button.winfo_ismapped())
 
     def test_intake_request_attention_answer_and_small_layout(self):
         from cat_cafe_sim.cafe_new_game import create_game

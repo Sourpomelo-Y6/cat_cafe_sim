@@ -271,6 +271,9 @@ def restore(data):
         if core.customer_discontent is None or core.management is None:
             raise ValueError('信頼回復に必要な不満・経営設定がありません。')
         core.customer_trust=validate_trust(core,state['customer_trust'])
+    if 'item_purchases' in state:
+        from .cafe_item_shop import validate as validate_purchases
+        validate_purchases(core,state['item_purchases'])
     if 'item_uses' in state:
         from .cafe_items import validate_uses
         core.item_uses=validate_uses(core,state['item_uses'])
@@ -375,6 +378,8 @@ def restore(data):
     expected_funds += money_adjustment(core)
     from .cafe_recruitment import expenses
     from .cafe_waiting_area import expenses as waiting_area_expenses
+    from .cafe_item_shop import expenses as item_expenses
+    expected_funds -= item_expenses(core)
     expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core) + seat_expenses(core)+waiting_area_expenses(core)
     if core.store_events is not None:
         from .cafe_store_events import expenses as store_event_expenses

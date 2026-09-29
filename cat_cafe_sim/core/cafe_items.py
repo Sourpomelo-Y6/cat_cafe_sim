@@ -25,7 +25,10 @@ def rewards(core):
             for key,event in (core.activities or {}).get('events',{}).items()
             if event['status']=='resolved' and 'item_reward' in event}
     from .cafe_store_events import item_rewards
-    result.update(item_rewards(core));return result
+    result.update(item_rewards(core))
+    result.update({row["source"]:dict(item=copy.deepcopy(row["item"]),available_day=row["day"])
+                   for row in core.item_purchases})
+    return result
 
 
 def reward_for_source(core,source):
