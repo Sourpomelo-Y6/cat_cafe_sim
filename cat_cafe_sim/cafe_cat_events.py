@@ -65,5 +65,9 @@ def cat_events(core, cat_id):
         from .core.cafe_items import reward_for_source
         item=reward_for_source(core,use['source'])['item']
         add(use['day'], 'ケア用品の使用', item['name'], f"1個使用 / ストレス {use['before']:g} → {use['after']:g}")
+    growth=(core.growth or {}).get('cats',{}).get(cat_id)
+    if growth and growth['specialization']:
+        from .core.cafe_growth import LABELS
+        add(growth['selected_day'],'得意分野の選択','成長',LABELS[growth['specialization']])
     # 同日の種類をまたぐ厳密な時系列は記録されていない。日付だけで安定ソートする。
     return sorted(rows, key=lambda row: row[0])

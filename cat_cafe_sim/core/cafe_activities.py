@@ -81,9 +81,10 @@ def waiting_events(core):
 
 
 def reward(core, event):
-    from .cafe_traits import dispatch_terms
+    from .cafe_traits import effect
     from .cafe_dispatch_encounters import reward_delta
-    return max(0,dispatch_terms(core,event['cat_id'],event['destination']['reward'])['reward']+reward_delta(event))
+    multiplier=event.get('growth_multiplier',1)
+    return max(0,event['destination']['reward']*effect(core,event['cat_id'],'dispatch_reward')*multiplier+reward_delta(event))
 
 
 def income(core):
@@ -105,6 +106,9 @@ def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None):
     dispatch_terms(core,cat_id,rules['reward'])
     event = dict(id=event_id, kind='dispatch_return',cat_id=cat_id,
         destination=rules, started_day=core.day, remaining=rules['days'], status='travelling', occurred_day=None, resolved_day=None, choice=None)
+    if core.growth is not None:
+        from .cafe_growth import dispatch_multiplier
+        event['growth_multiplier']=dispatch_multiplier(core,cat_id)
     from .cafe_dispatch_encounters import attach
     attach(event, encounter)
     if item_reward is not None:
@@ -159,6 +163,8 @@ def resolve(core, event_id, choice):
                **({'item_reward':copy.deepcopy(event['item_reward'])} if 'item_reward' in event else {}))
     from .cafe_patron import receive
     receive(core, event)
+    from .cafe_growth import dispatch_return
+    dispatch_return(core,event['cat_id'])
     core._record(dict(kind='resolve_activity',event_id=event_id,choice=choice))
 
 
@@ -170,12 +176,16 @@ def validate(core, data):
             raise ValueError('猫の活動状態が不正です。')
     busy=set()
     for key,e in data['events'].items():
-        if set(e)-{'encounter','item_reward'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
+        if set(e)-{'encounter','item_reward','growth_multiplier'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
             raise ValueError('イベントの記録が不正です。')
         if 'item_reward' in e:
             from .cafe_items import definition
             definition(e['item_reward'])
         rule=destination(e['destination'])
+        if 'growth_multiplier' in e:
+            growth=(core.growth or {}).get('cats',{}).get(e['cat_id'])
+            expected=core.growth['rules']['dispatch_reward_multiplier'] if growth and growth['specialization']=='dispatch' and growth['selected_day']<=e['started_day'] else 1
+            if e['growth_multiplier']!=expected:raise ValueError('派遣時の成長効果が不正です。')
         if e['cat_id'] not in core.cats or e['kind']!='dispatch_return' or e['id']!=key or key!=f"dispatch-{e['started_day']}-{e['cat_id']}":
             raise ValueError('イベントの対象が不正です。')
         if type(e['started_day']) is not int or not 1<=e['started_day']<=core.day or type(e['remaining']) is not int or not 0<=e['remaining']<=rule['days']:

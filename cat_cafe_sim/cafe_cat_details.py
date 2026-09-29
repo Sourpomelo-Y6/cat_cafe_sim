@@ -38,6 +38,13 @@ def cat_details(session, cat_id):
               ('本日この猫とのセット数', str(bond['today'][cat_id])),
               ('本日の残りセット数（店全体）', str(remaining(core)))]
     basic += [('ストレス', f"{core.management['stress'][cat_id]:g} / 100" if core.management else 'ルール未導入')]
+    growth=(core.growth or {}).get('cats',{}).get(cat_id)
+    if growth:
+        from .core.cafe_growth import LABELS,total
+        basic += [('経験合計', f"{total(growth):g}"),('接客経験',f"{growth['service']:g}"),('休養経験',f"{growth['rest']:g}"),
+                  ('派遣経験',f"{growth['dispatch']:g}"),('得意分野',LABELS.get(growth['specialization'],'未選択')),
+                  ('接客熟練：遊び',f"{growth['groups']['play']:g}"),('接客熟練：触れ合い',f"{growth['groups']['contact']:g}"),
+                  ('接客熟練：静かな交流',f"{growth['groups']['quiet']:g}")]
     if core.recruitment and cat_id in core.recruitment['accepted']:
         basic += [('加入経路', '保護猫の受け入れ'), ('加入日', f"{core.recruitment['accepted'][cat_id]}日目")]
     request = core.intake_request
@@ -74,10 +81,12 @@ def cat_details(session, cat_id):
         delta = None if changes is None else sum(item['change'] for item in changes if item['cat_id'] == cat_id)
         fatigue = (f"{row['fatigue_before']:g} → {row['fatigue_after']:g}"
                    if 'fatigue_before' in row and 'fatigue_after' in row else MISSING)
+        experience=row.get('experience_gain')
+        experience_text=(f"接客＋{experience['service']:g}・休養＋{experience['rest']:g}・派遣＋{experience['dispatch']:g}" if experience else MISSING)
         history.append((day['day'], '休業' if day.get('day_type') == 'day_off' else '営業',
                         ACTIVITY_LABELS[row['activity']] if row.get('activity','cafe')!='cafe' else {'work':'出勤','rest':'休養'}.get(row.get('shift'), MISSING),
                         number(row.get('interactions')), number(row.get('service_ticks')), number(row.get('spent')),
-                        fatigue, health_result_text(row['health']) if row.get('health') else MISSING, number(delta)))
+                        fatigue, health_result_text(row['health']) if row.get('health') else MISSING,experience_text, number(delta)))
     from .cafe_cat_events import cat_events
     return dict(basic=basic, relationships=relationships, history=history, events=cat_events(core, cat_id),
                 pending=bool(session.pending))
@@ -120,7 +129,7 @@ class CafeCatDetailsWindow:
             ('basic', '状態・個性', ('項目', '値'), '現在の状態と好みです。準備中は下のボタンで一緒に遊べます。'),
             ('relationships', 'お客との親しみ', ('お客ID','確定済み親しみ','段階','交流経験'),
              '関係データに保存済みの値です。交流中・未保存の変化は含みません。'),
-            ('history', '日次実績', ('日目','営業区分','予定','接客件数','接客行動数','体力消耗','疲労変化','体調変化','親しみ増減合計'),
+            ('history', '日次実績', ('日目','営業区分','予定','接客件数','接客行動数','体力消耗','疲労変化','体調変化','獲得経験','親しみ増減合計'),
              '閉店済みの日次実績です。個々の行動履歴ではありません。体力消耗は回復を差し引いた値です。'),
             ('events', 'できごと', ('日目','できごと','相手・場所','結果'),
              '保存済みの出来事を日付順に表示します。同日の行順は発生順を示しません。記録のない過去は補いません。')):

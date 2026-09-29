@@ -119,6 +119,8 @@ def join_cat(core,cat_id,row):
         raise ValueError('受け入れ後に資金が残る必要があります。')
     cat = Cat(id=cat_id, stamina=core.config.max_stamina, spirit=core.config.max_spirit)
     core.cats[cat_id] = cat
+    from .cafe_growth import ensure_cat
+    ensure_cat(core,cat_id)
     core.cat_service_ticks[cat_id] = 0
     core.initial_fatigue[cat_id] = 0
     core.initial_health[cat_id] = dict(status='healthy', remaining=0)

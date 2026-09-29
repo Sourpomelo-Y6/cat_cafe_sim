@@ -167,6 +167,12 @@ class ManualCafeInteractionWindow:
                 choice={'repair':'修理する','patch':'応急処置する','close':'休業する','full':'支援する','small':'少額支援する','decline':'見送る'}[event['choice']]
                 text=('支援依頼：' if event.get('event_type')=='support' else '設備トラブル：')+choice
                 if event.get('cost'):text+=f" · 支出 {event['cost']:g} · 人気 ＋{event['popularity']:g}"
+            elif kind=='growth_ready':
+                text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}が成長可能 · 経験 {event['total']:g}"
+            elif kind=='growth_selected':
+                text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}の得意分野：{event['label']}"
+            elif kind=='growth_service_effect':
+                text=f"接客成長効果 · 体力 {event['stamina_refund']:g}回復"
             elif kind=='intake_request_waiting':
                 text=f"保護猫 {event['name']} の受け入れ依頼が届きました。"
             elif kind=='intake_request_resolved':
@@ -481,7 +487,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.instructions.configure(text='有力者目標クリア！「結果・記録」→「有力者目標・結果…」で結果を確認してください。')
         from .core.cafe_intake_request import pending as intake_pending
         from .core.cafe_store_events import waiting as store_event_waiting
-        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core) or bool(store_event_waiting(core))
+        from .core.cafe_growth import pending as growth_pending
+        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core) or bool(store_event_waiting(core)) or bool(growth_pending(core))
         if core.management:
             self.status.set(self.status.get()+f" · 人気 {core.management['popularity']:g}")
         self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
@@ -609,6 +616,10 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif store_event_waiting(core):
             self.notice.set(('保護団体から支援のお願いが届いています。' if store_event_waiting(core)['type']=='support' else '設備トラブルが発生しています。')+'営業前に対応を選んでください。')
             self._attention = self.show_store_event
+        elif growth_pending(core):
+            key=growth_pending(core)[0];name=self.session.profiles.get(key,{}).get('name',key)
+            self.notice.set(f'{name}が成長できます。得意分野を選んでください。')
+            self._attention = self.show_growth
         elif waiting_events(core):
             from .core.cafe_dispatch_encounters import waiting as choice_waiting
             self.notice.set('派遣中の出来事が回答待ちです。選択肢と効果を確認してください。' if choice_waiting(core) else '派遣から帰還した猫が確認待ちです。帰還と報酬を確認してください。')
@@ -683,6 +694,11 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .cafe_store_event_gui import CafeStoreEventWindow
         self.pages.select(self.preparation_page);self.stop();self.refresh()
         self.store_event_window=CafeStoreEventWindow(self.root,self.session,self.refresh)
+
+    def show_growth(self):
+        from .cafe_cat_growth_gui import CafeCatGrowthWindow
+        self.pages.select(self.preparation_page);self.stop();self.refresh()
+        self.growth_window=CafeCatGrowthWindow(self.root,self.session,self.refresh)
 
     def take_day_off(self):
         from tkinter import messagebox

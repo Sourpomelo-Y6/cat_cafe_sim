@@ -128,6 +128,9 @@ def restore(data):
     core.cat=core.cats[resume['cat_id']]
     for name in ('day','tick','funds','closed','spirit_spent','service_ticks','interaction_bonus'):
         setattr(core,name,state[name])
+    if 'growth' in state:
+        from .cafe_growth import validate as validate_growth
+        core.growth=validate_growth(core,state['growth'])
     if (type(core.day) is not int or core.day<1 or type(core.tick) is not int
             or not 0<=core.tick<=core.config.opening_ticks or type(core.closed) is not bool
             or core.closed!=(core.tick==core.config.opening_ticks)):

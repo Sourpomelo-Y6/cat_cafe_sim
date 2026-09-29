@@ -61,11 +61,13 @@ def fatigue_change(core, cat_id, working, service_ticks):
     if working:
         return service_ticks * core.shift_rules.fatigue_per_service_tick * effect(core, cat_id, 'service_fatigue')
     from .cafe_equipment import bonus
-    return -(core.shift_rules.rest_day_recovery * effect(core, cat_id, 'rest_fatigue') + bonus(core, cat_id))
+    from .cafe_growth import rest_bonus
+    return -(core.shift_rules.rest_day_recovery * effect(core, cat_id, 'rest_fatigue') + bonus(core, cat_id)+rest_bonus(core,cat_id))
 
 
 def dispatch_terms(core, cat_id, base_reward):
-    reward = base_reward * effect(core, cat_id, 'dispatch_reward')
+    from .cafe_growth import dispatch_multiplier
+    reward = base_reward * effect(core, cat_id, 'dispatch_reward')*dispatch_multiplier(core,cat_id)
     if not math.isfinite(reward):
         raise ValueError('派遣報酬が大きすぎます。')
     return dict(reward=reward, stress=effect(core, cat_id, 'return_stress') if core.management else 0)

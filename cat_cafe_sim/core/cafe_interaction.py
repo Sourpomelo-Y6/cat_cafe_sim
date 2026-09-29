@@ -42,6 +42,7 @@ class CafeInteractionCore(SimulationCore):
         self.operating_cost = None
         self.waiting_area = None
         self.store_events = None
+        self.growth = None
         self.goal = None
         self.objective = None
         self.clear_results = None
@@ -104,6 +105,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'operating_cost': copy.deepcopy(self.operating_cost)} if self.operating_cost is not None else {}),
                 **({'waiting_area': copy.deepcopy(self.waiting_area)} if self.waiting_area is not None else {}),
                 **({'store_events': copy.deepcopy(self.store_events)} if self.store_events is not None else {}),
+                **({'growth': copy.deepcopy(self.growth)} if self.growth is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
                 **({'item_uses': copy.deepcopy(self.item_uses)} if self.item_uses else {}),
@@ -250,6 +252,8 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_store_events import waiting as store_event_waiting
         if not ignore_store and store_event_waiting(self):
             raise ValueError('店舗イベントへの対応を選んでください。')
+        from .cafe_growth import pending as growth_pending
+        if growth_pending(self):raise ValueError('成長できる猫の得意分野を選んでください。')
 
     @property
     def can_set_shifts(self):
@@ -331,6 +335,8 @@ class CafeInteractionCore(SimulationCore):
                 from .cafe_traits import fatigue_change
                 change = fatigue_change(self, key, key in self.working_cats, self.cat_service_ticks[key])
                 cat.fatigue = max(0, min(self.shift_rules.max_fatigue, self.initial_fatigue[key] + change))
+            from .cafe_growth import rest_day
+            rest_day(self)
         if kind == 'closed' and self.health_rules:
             self._settle_health()
         super()._emit(kind, **data)
@@ -367,6 +373,14 @@ class CafeInteractionCore(SimulationCore):
     def initialize_store_events(self,rules=None):
         from .cafe_store_events import initialize
         initialize(self,rules)
+
+    def initialize_growth(self,rules=None):
+        from .cafe_growth import initialize
+        initialize(self,rules)
+
+    def resolve_growth(self,cat_id,choice):
+        from .cafe_growth import resolve
+        resolve(self,cat_id,choice)
 
     def purchase_waiting_area(self):
         from .cafe_waiting_area import purchase
@@ -450,6 +464,7 @@ class CafeInteractionCore(SimulationCore):
             result = outcome_result(log)
             key = (result['cat_id'], result['customer_id'])
             changes[key] = changes.get(key, 0) + result['affinity_after'] - result['affinity_before']
+        from .cafe_growth import day_gain
         return dict(day=self.day, summary=self.summary(),
                     **({"customer_visits": sorted(self.visits)} if self.weekdays is not None else {}),
                     **({'customer_outcomes': [dict(customer_id=v.id, reason=v.departure_reason, discontent=v.discontent)
@@ -464,6 +479,7 @@ class CafeInteractionCore(SimulationCore):
                          **(dict(shift='work' if key in self.working_cats else 'rest',
                                  fatigue_before=self.initial_fatigue[key], fatigue_after=cat.fatigue,
                                  service_ticks=self.cat_service_ticks[key]) if self.shift_rules else {}),
+                         **(dict(experience_gain=day_gain(self,key)) if self.growth is not None else {}),
                          **(dict(health=copy.deepcopy(self.health_results[key])) if self.health_rules else {}))
                           for key,cat in self.cats.items()},
                     affinity_changes=[dict(cat_id=key[0], customer_id=key[1], change=value)
@@ -637,6 +653,8 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_customer_trust import apply_service as apply_trust
         apply_trust(self,result,satisfaction)
         self._emit('interaction_completed', session_id=interaction.session_id, result=result)
+        from .cafe_growth import service as growth_service
+        growth_service(self,result)
         from .cafe_adoption import consider
         consider(self, result)
         if self.cat.stamina == 0:
