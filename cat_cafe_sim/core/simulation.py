@@ -71,7 +71,8 @@ class SimulationCore:
             visit = Visit(f"guest-{i + 1}", arrival)
             self.visits[visit.id] = visit
             self._emit("arrival", customer_id=visit.id)
-            if len(self.queue) >= self.config.queue_capacity:
+            from .cafe_waiting_area import queue_capacity
+            if len(self.queue) >= queue_capacity(self):
                 self._depart(visit, "queue_full")
             else:
                 self.queue.append(visit.id)
@@ -192,7 +193,8 @@ class SimulationCore:
         action = self._interact(cat_action)
         for customer_id in list(self.queue):
             v = self.visits[customer_id]
-            if self.tick - v.arrival_tick + 1 >= self.config.max_wait_ticks:
+            from .cafe_waiting_area import max_wait_ticks
+            if self.tick - v.arrival_tick + 1 >= max_wait_ticks(self):
                 self._depart(v, "wait_timeout")
         if self.tick + 1 >= self.config.opening_ticks:
             for v in self.visits.values():

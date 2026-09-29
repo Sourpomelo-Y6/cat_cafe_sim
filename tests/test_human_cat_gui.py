@@ -1931,6 +1931,26 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertIn('来店予定', customers.customers.set(EXTRA_CUSTOMER_ID, '本日の状態'))
         customers.window.destroy()
 
+    def test_waiting_area_unlock_purchase_and_history_layout(self):
+        from cat_cafe_sim.cafe_new_game import create_game,starting_conditions
+        selected=starting_conditions();selected.pop('intake_request');selected['goal']['target']=105
+        s=create_game(self.directory,selected);self.start.show_game(s,False);app=self.start.app
+        app.waiting_area_button.invoke();window=app.waiting_area_window
+        self.assertIn('待機上限：4 → 5人',window.details.get())
+        self.assertIn('人気目標の第1段階',window.notice.get());window.close_button.invoke()
+        while not s.core.closed:s.automatic_step()
+        s.continue_goal();s.next_day();app.refresh();app.waiting_area_button.invoke();window=app.waiting_area_window
+        window.window.geometry('500x280');self.root.update()
+        self.assertNotIn('disabled',window.purchase_button.state())
+        with patch('tkinter.messagebox.askyesno',return_value=True):window.purchase_button.invoke()
+        self.assertIn('強化済み',window.details.get());self.assertIn('disabled',window.purchase_button.state())
+        self.assertLessEqual(window.close_button.winfo_rooty()+window.close_button.winfo_height(),window.window.winfo_rooty()+window.window.winfo_height())
+        window.close_button.invoke();s.day_off();app.show_history();history=app.history_window
+        row=history.days.get_children()[-1]
+        self.assertEqual(history.days.set(row,'待合費用'),'800')
+        self.assertEqual(history.days.set(row,'運営費'),'70')
+        history.window.destroy()
+
     def test_customer_loyalty_regular_preview_and_small_layout(self):
         from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
         selected = starting_conditions('free'); selected.pop('intake_request')

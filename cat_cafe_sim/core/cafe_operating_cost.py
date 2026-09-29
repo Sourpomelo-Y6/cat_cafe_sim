@@ -28,7 +28,8 @@ def estimate(core,seat_count=None):
     if core.operating_cost is None:return 0
     count=seat_count if seat_count is not None else len(core.seats) if hasattr(core,'seats') else 1
     selected=core.operating_cost['rules']
-    return selected['base_cost']+selected['per_seat_cost']*count
+    from .cafe_waiting_area import daily_cost
+    return selected['base_cost']+selected['per_seat_cost']*count+daily_cost(core)
 
 
 def charge(core):
@@ -38,6 +39,9 @@ def charge(core):
     count=len(core.seats) if hasattr(core,'seats') else 1;selected=data['rules'];total=estimate(core,count)
     row=dict(day=core.day,base=selected['base_cost'],seat_count=count,
              seat_cost=selected['per_seat_cost']*count,total=total)
+    if core.waiting_area is not None:
+        from .cafe_waiting_area import daily_cost
+        row['facility_cost']=daily_cost(core)
     data['charges'].append(row);core.funds-=total
     core._emit('operating_cost_charged',**row)
 
@@ -65,6 +69,10 @@ def validate(core,data):
         expected_row=dict(day=row['day'],base=selected['base_cost'],seat_count=count,
                           seat_cost=selected['per_seat_cost']*count,
                           total=selected['base_cost']+selected['per_seat_cost']*count)
+        if core.waiting_area is not None:
+            from .cafe_waiting_area import purchased
+            cost=core.waiting_area['rules']['daily_cost'] if purchased(core) and row['day']>=purchased(core)['day'] else 0
+            fields.add('facility_cost');expected_row['facility_cost']=cost;expected_row['total']+=cost
         if set(row)!=fields or row!=expected_row or summary.get('operating_cost',0)!=row['total']:
             raise ValueError('店舗運営費の内訳が営業結果と一致しません。')
     return copy.deepcopy(data)

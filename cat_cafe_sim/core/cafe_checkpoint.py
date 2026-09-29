@@ -212,6 +212,9 @@ def restore(data):
         if 'reservation' in state:
             from .cafe_reservation import prepare as prepare_reservation
             core.reservation=prepare_reservation(core,state['reservation'])
+        if 'waiting_area' in state:
+            from .cafe_waiting_area import prepare as prepare_waiting_area
+            core.waiting_area=prepare_waiting_area(core,state['waiting_area'])
         if 'vip_customer' in state:
             from .cafe_vip_customer import rules as vip_rules
             core.vip_customer=vip_rules(state['vip_customer'])
@@ -327,6 +330,9 @@ def restore(data):
         from .cafe_operating_cost import validate as validate_operating_cost
         if core.management is None:raise ValueError('店舗運営費に必要な経営設定がありません。')
         core.operating_cost=validate_operating_cost(core,state['operating_cost'])
+    if 'waiting_area' in state:
+        from .cafe_waiting_area import validate as validate_waiting_area
+        core.waiting_area=validate_waiting_area(core,state['waiting_area'])
     from .cafe_seat_equipment import validate as validate_seat_equipment, expenses as seat_expenses, check_interaction as check_equipment
     if 'equipment_store' in state:
         core.equipment_store = validate_seat_equipment(core, state['equipment_store'])
@@ -362,7 +368,8 @@ def restore(data):
     from .cafe_management import money_adjustment
     expected_funds += money_adjustment(core)
     from .cafe_recruitment import expenses
-    expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core) + seat_expenses(core)
+    from .cafe_waiting_area import expenses as waiting_area_expenses
+    expected_funds -= expenses(core) + expansion_expenses(core) + equipment_expenses(core) + seat_expenses(core)+waiting_area_expenses(core)
     from .cafe_operating_cost import charged as operating_charged
     expected_funds-=operating_charged(core)
     if not math.isclose(core.funds,expected_funds,rel_tol=1e-12,abs_tol=1e-8):

@@ -40,6 +40,7 @@ class CafeInteractionCore(SimulationCore):
         self.player_bond = None
         self.management = None
         self.operating_cost = None
+        self.waiting_area = None
         self.goal = None
         self.objective = None
         self.clear_results = None
@@ -100,6 +101,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'goal': copy.deepcopy(self.goal)} if self.goal is not None else {}),
                 **({'management': copy.deepcopy(self.management)} if self.management is not None else {}),
                 **({'operating_cost': copy.deepcopy(self.operating_cost)} if self.operating_cost is not None else {}),
+                **({'waiting_area': copy.deepcopy(self.waiting_area)} if self.waiting_area is not None else {}),
                 **({'recruitment': copy.deepcopy(self.recruitment)} if self.recruitment is not None else {}),
                 **({'adoption': copy.deepcopy(self.adoption)} if self.adoption is not None else {}),
                 **({'item_uses': copy.deepcopy(self.item_uses)} if self.item_uses else {}),
@@ -353,6 +355,14 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_operating_cost import initialize
         initialize(self,rules)
 
+    def initialize_waiting_area(self,rules=None):
+        from .cafe_waiting_area import initialize
+        initialize(self,rules)
+
+    def purchase_waiting_area(self):
+        from .cafe_waiting_area import purchase
+        purchase(self)
+
     def initialize_advanced_customers(self, rules=None):
         from .cafe_advanced_customers import initialize
         initialize(self, rules)
@@ -408,7 +418,8 @@ class CafeInteractionCore(SimulationCore):
                 visit = Visit(key, tick)
                 self.visits[key] = visit
                 self._emit('arrival', customer_id=key)
-                if len(self.queue) >= self.config.queue_capacity:
+                from .cafe_waiting_area import queue_capacity
+                if len(self.queue) >= queue_capacity(self):
                     self._depart(visit, 'queue_full')
                 else:
                     self.queue.append(key)
@@ -644,6 +655,7 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_activities import reward
         from .cafe_seat_equipment import expenses as seat_expenses
         from .cafe_operating_cost import charged as operating_charged
+        from .cafe_waiting_area import expenses as waiting_area_expenses
         visits = list(self.visits.values())
         from .cafe_checkpoint import outcome_result
         from .cafe_customer_satisfaction import counts as satisfaction_counts
@@ -658,6 +670,7 @@ class CafeInteractionCore(SimulationCore):
                     **({'equipment_expenses': equipment_expenses(self, self.day)} if self.rest_space is not None else {}),
                     **({'expansion_expenses': expansion_expenses(self, self.day)} if self.expansion is not None else {}),
                     **({'operating_cost': operating_charged(self,self.day)} if self.operating_cost is not None else {}),
+                    **({'waiting_area_expenses': waiting_area_expenses(self,self.day)} if self.waiting_area is not None else {}),
                     **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()

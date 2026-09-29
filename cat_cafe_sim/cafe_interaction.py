@@ -194,6 +194,10 @@ class CafeInteractionSession:
         self._ready()
         self.core.expand_seats(rules)
 
+    def purchase_waiting_area(self):
+        self._ready()
+        self.core.purchase_waiting_area()
+
     def enable_bond_goal(self, rules=None):
         self._ready()
         self.core.enable_bond_goal(rules)

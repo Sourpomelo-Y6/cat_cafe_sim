@@ -88,7 +88,8 @@ class MultiSeatCafeCore(CafeInteractionCore):
             self._interact(commands[seat_id])
         for customer_id in list(self.queue):
             visit=self.visits[customer_id]
-            if self.tick-visit.arrival_tick+1 >= self.config.max_wait_ticks:
+            from .cafe_waiting_area import max_wait_ticks
+            if self.tick-visit.arrival_tick+1 >= max_wait_ticks(self):
                 self._depart(visit,'wait_timeout')
         if self.tick+1 >= self.config.opening_ticks:
             for visit in self.visits.values():

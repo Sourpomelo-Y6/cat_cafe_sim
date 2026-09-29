@@ -162,6 +162,7 @@ def build(app):
     ))
     card(app.preparation_page, 1, 'お店への投資', '費用と効果を確認してから購入できます。', (
         ('expansion_button','席を増やす…',app.show_expansion),
+        ('waiting_area_button','待合スペースを強化する…',app.show_waiting_area),
         ('equipment_button','休養スペースを購入する…',app.show_equipment),
         ('seat_equipment_button','席の接客設備を整える…',app.show_seat_equipment),
     ))

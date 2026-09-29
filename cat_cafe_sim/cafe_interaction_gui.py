@@ -155,7 +155,11 @@ class ManualCafeInteractionWindow:
                 text='日次の店舗運営費を有効化'
             elif kind=='operating_cost_charged':
                 text=(f"店舗運営費 {event['total']:g}（基本 {event['base']:g}＋"
-                      f"{event['seat_count']}席分 {event['seat_cost']:g}）")
+                      f"{event['seat_count']}席分 {event['seat_cost']:g}"+
+                      (f"＋施設分 {event['facility_cost']:g}" if event.get('facility_cost') else '')+'）')
+            elif kind=='waiting_area_purchased':
+                text=(f"待合スペースを強化 · 費用 {event['cost']:g} · 待機上限 {event['queue_capacity']}人 · "
+                      f"待機猶予 {event['max_wait_ticks']}tick · 日次運営費 ＋{event['daily_cost']:g}")
             elif kind=='intake_request_waiting':
                 text=f"保護猫 {event['name']} の受け入れ依頼が届きました。"
             elif kind=='intake_request_resolved':
@@ -392,6 +396,11 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.stop()
         self.refresh()
         self.expansion_window = CafeExpansionWindow(self.root, self.session, self.refresh, show_navigation=False)
+
+    def show_waiting_area(self):
+        self.pages.select(self.preparation_page);self.stop();self.refresh()
+        from .cafe_waiting_area_gui import CafeWaitingAreaWindow
+        self.waiting_area_window=CafeWaitingAreaWindow(self.root,self.session,self.refresh)
 
     def show_compatibility(self):
         from .cafe_preferences_gui import CafePreferencesWindow
@@ -716,6 +725,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                 lines.append(f"店の人気：{summary['popularity']:g} / 子猫の引き渡し費用：{summary['kitten_expenses']:g}")
             if 'operating_cost' in summary:
                 lines.append(f"店舗運営費：{summary['operating_cost']:g}")
+            lines.append(f"混雑による退店：満員 {summary['departures'].get('queue_full',0)} / 待ち時間切れ {summary['departures'].get('wait_timeout',0)}")
             if 'customer_satisfaction' in summary:
                 values=summary['customer_satisfaction']
                 lines.append(f"接客評価：満足 {values['satisfied']} / 普通 {values['normal']} / 不満 {values['dissatisfied']}")
