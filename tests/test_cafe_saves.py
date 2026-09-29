@@ -144,6 +144,14 @@ class CafeSaveTests(unittest.TestCase):
         self.assertEqual(loaded.core.snapshot(),snapshot(old.core))
         self.assertFalse(loaded.automatic_step())
 
+    def test_version_one_automatic_policy_save_remains_loadable(self):
+        session=self.session();self.active(session);save_game(session,self.path)
+        data=json.loads(self.path.read_text())
+        data['policy_version']='automatic-interaction-v1'
+        self.path.write_text(json.dumps(data))
+        loaded,_=load_game(self.path)
+        self.assertEqual(loaded.core.snapshot(),session.core.snapshot())
+
     def test_unlogged_state_mutation_is_not_silently_lost(self):
         session=self.session();self.active(session)
         session.core.cats['c'].spirit-=1

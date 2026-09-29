@@ -103,7 +103,8 @@ def load_game(path):
     fields={'kind','format_version','core','interaction_config','relationship_path','relationships','policy_version','auto_assign'}
     if (not isinstance(data,dict) or set(data)!=fields or data['kind']!='cafe-save'
             or type(data['format_version']) is not int or data['format_version'] not in (1,2)
-            or type(data['auto_assign']) is not bool or data['policy_version']!=AutomaticInteractionPolicy.version):
+            or type(data['auto_assign']) is not bool
+            or data['policy_version'] not in AutomaticInteractionPolicy.compatible_versions):
         raise ValueError('対応していない営業セーブです。再生ログとは別の形式です。')
     if not isinstance(data['relationship_path'],str) or not Path(data['relationship_path']).is_absolute():
         raise ValueError('invalid relationship path')
@@ -138,7 +139,7 @@ def convert_game(source, target):
     fields={'kind','format_version','core','interaction_config','relationship_path','relationships','policy_version','auto_assign'}
     if (set(data)!=fields or data['kind']!='cafe-save' or type(data['format_version']) is not int
             or data['format_version'] not in (1,2) or type(data['auto_assign']) is not bool
-            or data['policy_version']!=AutomaticInteractionPolicy.version):
+            or data['policy_version'] not in AutomaticInteractionPolicy.compatible_versions):
         raise ValueError('対応していない営業セーブです。')
     relation=Path(data['relationship_path'])
     if not relation.is_absolute() or target==relation.resolve() or source==relation.resolve():
@@ -149,6 +150,6 @@ def convert_game(source, target):
     persisted=validate_progress(core,baseline,baseline)
     state=checkpoint(core,set(core.outcomes)-persisted)
     restore(state)  # 書き出す前に復元と会計集計を検証する。
-    converted=dict(data,format_version=2,core=state)
+    converted=dict(data,format_version=2,core=state,policy_version=AutomaticInteractionPolicy.version)
     RelationshipStore(target)._write(converted)
     return target

@@ -3,14 +3,46 @@ from ..core.human_cat_types import TYPE_IDS
 
 
 class AutomaticInteractionPolicy:
-    version = 'automatic-interaction-v1'
+    version = 'automatic-interaction-v2'
+    compatible_versions = ('automatic-interaction-v1', version)
 
-    def choose(self, observation, valid_actions):
+    @staticmethod
+    def _type_map(config):
+        return {row.id:row for row in config.types} if config is not None else {}
+
+    def _best_type(self,config,group,current,exclude_group=None):
+        rows=self._type_map(config)
+        if not rows:return None
+        preferences=config.personality.type_preferences
+        ranked=[]
+        for index,key in enumerate(TYPE_IDS):
+            row=rows[key]
+            if key!=current and row.group!=exclude_group and (group is None or row.group==group):
+                ranked.append((row.gain*preferences[index],-index,key))
+        return max(ranked)[2] if ranked else None
+
+    def choose(self, observation, valid_actions, config=None):
         if 'connect' in valid_actions:
             return 'connect', None
         if observation['stamina'] <= 20:
             return 'pause', None
+        rows=self._type_map(config);current=observation['mode']
+        current_group=rows[current].group if current in rows else None
+        mastery=getattr(config,'mastery_group','')
+        if ('switch' in valid_actions and mastery and current_group!=mastery
+                and observation.get('last_interaction_group') is None):
+            target=self._best_type(config,mastery,current)
+            if target:return 'switch',target
         if observation['previous_reaction'] in ('turn_away', 'confused'):
-            target = TYPE_IDS[(TYPE_IDS.index(observation['mode']) + 1) % len(TYPE_IDS)]
+            if not mastery:
+                target=TYPE_IDS[(TYPE_IDS.index(current)+1)%len(TYPE_IDS)]
+            else:
+                target=(self._best_type(config,mastery,current) if current_group!=mastery else
+                        self._best_type(config,None,current,current_group))
             return 'switch', target
+        if ('switch' in valid_actions and mastery and observation.get('interaction_streak',0)>=2
+                and observation.get('previous_action')!='switch'):
+            target=(self._best_type(config,mastery,current) if mastery and current_group!=mastery else
+                    self._best_type(config,None,current,current_group if mastery else None))
+            if target:return 'switch',target
         return 'direct', None

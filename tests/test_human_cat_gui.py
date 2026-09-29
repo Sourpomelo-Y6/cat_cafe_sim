@@ -1483,8 +1483,7 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertEqual(self.app.roster.set(self.app.roster.get_children()[0],'stress'),'未導入')
         with patch('tkinter.messagebox.askyesno',return_value=False) as dialog:
             self.app.day_button.invoke()
-        self.assertIn('発症',dialog.call_args.args[1])
-        self.assertIn('療養あと2日',dialog.call_args.args[1])
+        self.assertEqual(dialog.call_args.args[1],'翌日へ進みますか？')
         self.app.history_button.invoke()
         history=self.app.history_window
         values=history.cats.item(history.cats.get_children()[0],'values')
@@ -1819,16 +1818,19 @@ class CafeSaveWindowTests(unittest.TestCase):
         session.core.initialize_growth(dict(rules(),threshold=1,mastery_threshold=1))
         key=next(iter(session.core.cats));row=session.core.growth['cats'][key]
         row.update(service=1,specialization='service',selected_day=1)
-        row['type_actions']['teaser']=1;row['groups']['play']=1;row['mastery_groups']['play']=1
+        row['type_actions']['pet']=1;row['groups']['contact']=1;row['mastery_groups']['contact']=1
         self.app.replace_game(session)
         self.assertIn('接客に習熟',self.app.notice.get())
         self.app.attention_button.invoke();dialog=self.app.growth_window
         self.assertTrue(dialog.mastery_mode)
-        self.assertEqual(set(dialog.choice_buttons),{'play'})
-        dialog.choice_buttons['play'].invoke()
-        self.assertEqual(session.core.growth['cats'][key]['mastery'],'play')
-        self.assertEqual(self.app.roster.set(key,'growth'),'得意：接客・遊び')
+        self.assertEqual(set(dialog.choice_buttons),{'contact'})
+        dialog.choice_buttons['contact'].invoke()
+        self.assertEqual(session.core.growth['cats'][key]['mastery'],'contact')
+        self.assertEqual(self.app.roster.set(key,'growth'),'得意：接客・触れ合い')
         self.assertIn('関心の通常増加×1.1',self.app.details.get())
+        session.automatic_step();session.automatic_step();self.app.refresh()
+        lines=[self.app.history.item(item,'values')[1] for item in self.app.history.get_children()]
+        self.assertTrue(any('得意な交流を考慮して切り替え' in line for line in lines))
 
     def test_close_saves_active_exchange_without_finishing_and_cancel_keeps_window(self):
         from cat_cafe_sim.storage.cafe_saves import load_game

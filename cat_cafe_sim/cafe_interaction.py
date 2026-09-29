@@ -378,13 +378,13 @@ class CafeInteractionSession:
             cat = min(self.available_cats(), key=lambda cat: (-cat.stamina, cat.id))
             self.start(self.core.queue[0], cat.id, self.free_seats[0])
         if isinstance(self.core,MultiSeatCafeCore):
-            commands={key:self.policy.choose(active.observation(),active.valid_actions())
+            commands={key:self.policy.choose(active.observation(),active.valid_actions(),active.config)
                       for key,active in self.active_interactions.items()}
             self.core.step(commands)
             self.persist()
         elif self.core.active:
             active=self.core.active
-            self.step(*self.policy.choose(active.observation(),active.valid_actions()))
+            self.step(*self.policy.choose(active.observation(),active.valid_actions(),active.config))
         else:
             self.step()
         return True

@@ -103,6 +103,9 @@ class RelationshipInteraction(TypesInteraction):
     def step(self, action, target_type=None):
         record = super().step(action, target_type)
         c = self.config
+        if (action=='switch' and c.mastery_group
+                and self.type_map[target_type].group==c.mastery_group):
+            record['diagnostic']=dict(record['diagnostic'],mastery_switch=True,mastery_group=c.mastery_group)
         normal = record['normal_reaction']
         normal_delta = (c.affinity_enthusiastic if normal == 'enthusiastic' else c.affinity_favorable if normal == 'favorable'
                         else -c.affinity_turn_away_loss if normal == 'turn_away' else 0) if action in INTERACTIONS else 0

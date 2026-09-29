@@ -9,7 +9,7 @@ from unittest.mock import patch
 from cat_cafe_sim.cafe_interaction import CafeInteractionSession
 from cat_cafe_sim.core.cafe_interaction import CafeInteractionCore, verify_cafe_interaction
 from cat_cafe_sim.core.config import Config
-from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig
+from cat_cafe_sim.core.human_cat_relationship import RelationshipConfig, RelationshipInteraction
 from cat_cafe_sim.core.models import StartState
 from cat_cafe_sim.storage.relationships import RelationshipStore
 
@@ -174,7 +174,34 @@ class CafeInteractionTests(unittest.TestCase):
         obs['stamina']=100
         self.assertEqual(policy.choose(obs,('direct','pause','switch')),('switch','ball'))
         obs['previous_reaction']='favorable'
+        obs.update(interaction_streak=2,previous_action='direct')
         self.assertEqual(policy.choose(obs,('direct','pause','switch')),('direct',None))
+
+    def test_automatic_policy_uses_mastery_personality_and_boredom(self):
+        from cat_cafe_sim.core.human_cat_types import Personality
+        from cat_cafe_sim.policies.human_cat import AutomaticInteractionPolicy
+        policy=AutomaticInteractionPolicy()
+        config=replace(RelationshipConfig(),mastery_group='contact',mastery_engagement_multiplier=1.1,
+                       personality=Personality(type_preferences=(1,1,1,1,1,2,1,1)))
+        obs=dict(stamina=100,previous_reaction=None,previous_action=None,mode='teaser',
+                 last_interaction_group=None,interaction_streak=0)
+        actions=('direct','pause','switch')
+        self.assertEqual(policy.choose(obs,actions,config),('switch','brush'))
+        obs.update(mode='brush',last_interaction_group='contact',interaction_streak=2,
+                   previous_action='direct',previous_reaction='favorable')
+        self.assertEqual(policy.choose(obs,actions,config),('switch','tunnel'))
+        obs.update(mode='tunnel',last_interaction_group='play',interaction_streak=2)
+        self.assertEqual(policy.choose(obs,actions,config),('switch','brush'))
+
+    def test_mastery_aware_switch_is_recorded(self):
+        from cat_cafe_sim.policies.human_cat import AutomaticInteractionPolicy
+        config=replace(RelationshipConfig(),mastery_group='contact',mastery_engagement_multiplier=1.1)
+        interaction=RelationshipInteraction(config)
+        action,target=AutomaticInteractionPolicy().choose(interaction.observation(),interaction.valid_actions(),config)
+        record=interaction.step(action,target)
+        self.assertEqual((action,target),('switch','pet'))
+        self.assertEqual(record['diagnostic']['mastery_group'],'contact')
+        self.assertTrue(record['diagnostic']['mastery_switch'])
 
     def test_automatic_save_failure_stops_and_retries_without_reaccounting(self):
         session=self.session();session.interaction_config=replace(RelationshipConfig(),ticks=1)

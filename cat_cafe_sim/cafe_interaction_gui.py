@@ -99,6 +99,8 @@ class ManualCafeInteractionWindow:
                 text=f'{row[1]} / {row[2]}'
                 if event['record']['diagnostic'].get('mastery_multiplier'):
                     text+=f" / 得意な交流×{event['record']['diagnostic']['mastery_multiplier']:g}"
+                elif event['record']['diagnostic'].get('mastery_switch'):
+                    text+=' / 得意な交流を考慮して切り替え'
             elif kind=='health_enabled':
                 text='病気・療養ルールを開始'
             elif kind=='cat_health':
