@@ -18,9 +18,13 @@ class CafeCatGrowthWindow:
         frame=ttk.Frame(self.window,padding=12);frame.pack(fill='both',expand=True)
         if self.type_mastery_mode:
             choices=type_mastery_choices(session.core,self.cat_id)
-            practice=' / '.join(f"{type_label(key)} {row['type_mastery_actions'][key]:g}回" for key in choices)
-            text=(f"{name}の得意な行動を1つ選んでください。\n"
-                  f"分類習得後、親しみが増えた接客の対象実績：{practice}\n\n"
+            second=row['type_mastery'] is not None
+            actions=row['second_type_mastery_actions'] if second else row['type_mastery_actions']
+            practice=' / '.join(f"{type_label(key)} {actions[key]:g}回" for key in choices)
+            stage='2つ目の得意な行動' if second else '得意な行動'
+            period='初回習得後、未習得行動で' if second else '分類習得後、'
+            text=(f"{name}の{stage}を1つ選んでください。\n"
+                  f"{period}親しみが増えた接客の対象実績：{practice}\n\n"
                   f"選んだ行動では、関心の通常増加が追加で{selected['type_mastery_engagement_multiplier']:g}倍になります。")
             buttons=tuple((type_label(value)+'を得意にする',value) for value in choices)
         elif self.mastery_mode:

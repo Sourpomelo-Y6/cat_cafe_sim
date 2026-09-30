@@ -119,7 +119,7 @@ class CafeGrowthTests(unittest.TestCase):
         self.assertEqual(row['mastery_groups']['play'],0)
 
         legacy=rules()
-        for field in ('mastery_threshold','mastery_engagement_multiplier','type_mastery_threshold','type_mastery_engagement_multiplier'):legacy.pop(field)
+        for field in ('mastery_threshold','mastery_engagement_multiplier','type_mastery_threshold','type_mastery_engagement_multiplier','second_type_mastery_threshold'):legacy.pop(field)
         old=CafeInteractionSession(store=self.store,seat_count=2)
         old.core.initialize_growth(legacy)
         self.assertNotIn('mastery',old.core.growth['cats'][next(iter(old.core.cats))])

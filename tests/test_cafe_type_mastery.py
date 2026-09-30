@@ -33,7 +33,7 @@ class TypeMasteryTests(unittest.TestCase):
             interaction_config=replace(RelationshipConfig(),ticks=1))
         selected=dict(rules(),threshold=1,mastery_threshold=1,type_mastery_threshold=1)
         if legacy:
-            selected.pop('type_mastery_threshold'); selected.pop('type_mastery_engagement_multiplier')
+            selected.pop('type_mastery_threshold'); selected.pop('type_mastery_engagement_multiplier'); selected.pop('second_type_mastery_threshold')
         s.core.initialize_growth(selected)
         return s
 

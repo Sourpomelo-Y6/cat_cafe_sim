@@ -17,10 +17,12 @@ def rules(data=None):
     legacy={'threshold','service_xp','rest_xp','dispatch_xp','service_stamina_refund','rest_recovery_bonus','dispatch_reward_multiplier'}
     fields=legacy|{'mastery_threshold','mastery_engagement_multiplier'}
     individual=fields|{'type_mastery_threshold','type_mastery_engagement_multiplier'}
-    if (not isinstance(data,dict) or set(data) not in (legacy,fields,individual) or type(data['threshold']) is not int or data['threshold']<1
+    second=individual|{'second_type_mastery_threshold'}
+    if (not isinstance(data,dict) or set(data) not in (legacy,fields,individual,second) or type(data['threshold']) is not int or data['threshold']<1
             or ('mastery_threshold' in data and (type(data['mastery_threshold']) is not int or data['mastery_threshold']<1))
             or ('type_mastery_threshold' in data and (type(data['type_mastery_threshold']) is not int or data['type_mastery_threshold']<1))
-            or any(type(data[k]) not in (int,float) or not math.isfinite(data[k]) or data[k]<=0 for k in set(data)-{'threshold','mastery_threshold','type_mastery_threshold'})
+            or ('second_type_mastery_threshold' in data and (type(data['second_type_mastery_threshold']) is not int or data['second_type_mastery_threshold']<1))
+            or any(type(data[k]) not in (int,float) or not math.isfinite(data[k]) or data[k]<=0 for k in set(data)-{'threshold','mastery_threshold','type_mastery_threshold','second_type_mastery_threshold'})
             or not 0<data['service_stamina_refund']<1):raise ValueError('猫の成長設定が不正です。')
     if 'mastery_engagement_multiplier' in data and not 1<data['mastery_engagement_multiplier']<=2:
         raise ValueError('猫の成長設定が不正です。')
@@ -36,6 +38,8 @@ def blank(selected=None):
         row.update(mastery_groups=dict.fromkeys(MASTERY_GROUPS,0),mastery=None,mastery_selected_day=None)
     if selected is not None and 'type_mastery_threshold' in selected:
         row.update(type_mastery_actions=dict.fromkeys(TYPE_GROUPS,0),type_mastery=None,type_mastery_selected_day=None)
+    if selected is not None and 'second_type_mastery_threshold' in selected:
+        row.update(second_type_mastery_actions=dict.fromkeys(TYPE_GROUPS,0),second_type_mastery=None,second_type_mastery_selected_day=None)
     return row
 
 
@@ -61,7 +65,8 @@ def summary(core,cat_id):
     row=growth['cats'].get(cat_id)
     if row is None:return '記録なし'
     if row.get('type_mastery') is not None:
-        return f"得意：接客・{GROUP_LABELS[row['mastery']]}・{type_label(row['type_mastery'])}"
+        names='・'.join(type_label(key) for key in learned_types(row))
+        return f"得意：接客・{GROUP_LABELS[row['mastery']]}・{names}"
     if row.get('mastery') is not None:return f"得意：接客・{GROUP_LABELS[row['mastery']]}"
     if row['specialization'] is not None:return f"得意：{LABELS[row['specialization']]}"
     return f"経験 {total(row):g}/{growth['rules']['threshold']:g}"
@@ -94,10 +99,14 @@ def description(core,cat_id):
     individual=''
     if 'type_mastery_actions' in row and row['mastery'] is not None:
         if row['type_mastery'] is not None:
-            individual=f"\n得意な行動：{type_label(row['type_mastery'])}（関心の通常増加×{selected['type_mastery_engagement_multiplier']:g}）"
+            names='・'.join(type_label(key) for key in learned_types(row))
+            individual=f"\n得意な行動：{names}（関心の通常増加×{selected['type_mastery_engagement_multiplier']:g}）"
         else:
             remaining=max(0,selected['type_mastery_threshold']-sum(row['type_mastery_actions'].values()))
             individual=f"\n個別行動熟練まであと {remaining:g}（分類習得後、得意分類で親しみが増えた接客のみ）"
+    if 'second_type_mastery_actions' in row and row['type_mastery'] is not None and row['second_type_mastery'] is None:
+        remaining=max(0,selected['second_type_mastery_threshold']-sum(row['second_type_mastery_actions'].values()))
+        individual+=f"\n2つ目の個別行動熟練まであと {remaining:g}（初回習得後、未習得行動で親しみが増えた接客のみ）"
     return f'{progress} / {effect}\n{practice}{mastery}{individual}'
 
 
@@ -126,19 +135,32 @@ def type_label(type_id):
     return next(row.name for row in default_types() if row.id==type_id)
 
 
+def learned_types(row):
+    return tuple(key for key in (row.get('type_mastery'),row.get('second_type_mastery')) if key is not None)
+
+
+def second_type_mastery_pending(core):
+    if core.growth is None or 'second_type_mastery_threshold' not in core.growth['rules']:return []
+    threshold=core.growth['rules']['second_type_mastery_threshold']
+    return [key for key,row in core.growth['cats'].items()
+            if row['type_mastery'] is not None and row['second_type_mastery'] is None
+            and sum(row['second_type_mastery_actions'].values())>=threshold]
+
+
 def type_mastery_pending(core):
     if core.growth is None or 'type_mastery_threshold' not in core.growth['rules']:return []
     threshold=core.growth['rules']['type_mastery_threshold']
     return [key for key,row in core.growth['cats'].items()
             if row['mastery'] is not None and row['type_mastery'] is None
-            and sum(row['type_mastery_actions'].values())>=threshold]
+            and sum(row['type_mastery_actions'].values())>=threshold] + second_type_mastery_pending(core)
 
 
 def type_mastery_choices(core,cat_id):
     if cat_id not in type_mastery_pending(core):return ()
     row=core.growth['cats'][cat_id]
+    actions=row['second_type_mastery_actions'] if row['type_mastery'] is not None else row['type_mastery_actions']
     return tuple(key for key,group in TYPE_GROUPS.items()
-                 if group==row['mastery'] and row['type_mastery_actions'][key]>0)
+                 if group==row['mastery'] and key not in learned_types(row) and actions[key]>0)
 
 
 def _gain(core,cat_id,field,amount):
@@ -154,6 +176,7 @@ def service(core,result):
     cat_id=result['cat_id'];_gain(core,cat_id,'service',core.growth['rules']['service_xp']);row=core.growth['cats'][cat_id]
     mastery_before=sum(row.get('mastery_groups',{}).values())
     individual_before=sum(row.get('type_mastery_actions',{}).values())
+    second_before=sum(row.get('second_type_mastery_actions',{}).values())
     for key,count in result.get('type_actions',{}).items():
         if key in row['type_actions']:
             row['type_actions'][key]+=count;row['groups'][TYPE_GROUPS[key]]+=count
@@ -162,6 +185,10 @@ def service(core,result):
             if ('type_mastery_actions' in row and row['mastery']==TYPE_GROUPS[key]
                     and result.get('affinity_delta',0)>0):
                 row['type_mastery_actions'][key]+=count
+            if ('second_type_mastery_actions' in row and row['type_mastery'] is not None
+                    and key!=row['type_mastery'] and row['mastery']==TYPE_GROUPS[key]
+                    and result.get('affinity_delta',0)>0):
+                row['second_type_mastery_actions'][key]+=count
     if ('mastery_groups' in row and row['specialization']=='service' and row['mastery'] is None
             and mastery_before<core.growth['rules']['mastery_threshold']
             and sum(row['mastery_groups'].values())>=core.growth['rules']['mastery_threshold']):
@@ -170,6 +197,10 @@ def service(core,result):
             and individual_before<core.growth['rules']['type_mastery_threshold']
             and sum(row['type_mastery_actions'].values())>=core.growth['rules']['type_mastery_threshold']):
         core._emit('growth_type_mastery_ready',cat_id=cat_id,total=sum(row['type_mastery_actions'].values()))
+    if ('second_type_mastery_actions' in row and row['type_mastery'] is not None and row['second_type_mastery'] is None
+            and second_before<core.growth['rules']['second_type_mastery_threshold']
+            and sum(row['second_type_mastery_actions'].values())>=core.growth['rules']['second_type_mastery_threshold']):
+        core._emit('growth_second_type_mastery_ready',cat_id=cat_id,total=sum(row['second_type_mastery_actions'].values()))
     if row['specialization']=='service':
         refund=result['stamina_spent']*core.growth['rules']['service_stamina_refund']
         core.cats[cat_id].stamina=min(core.config.max_stamina,core.cats[cat_id].stamina+refund)
@@ -218,7 +249,13 @@ def resolve_mastery(core,cat_id,choice):
 def resolve_type_mastery(core,cat_id,choice):
     core.require_running()
     if choice not in type_mastery_choices(core,cat_id):raise ValueError('熟練できる猫と個別行動を選んでください。')
-    row=core.growth['cats'][cat_id];row.update(type_mastery=choice,type_mastery_selected_day=core.day)
+    row=core.growth['cats'][cat_id]
+    if row['type_mastery'] is not None:
+        row.update(second_type_mastery=choice,second_type_mastery_selected_day=core.day)
+        core._tick_events=[];core._emit('growth_second_type_mastery_selected',cat_id=cat_id,type_mastery=choice,label=type_label(choice))
+        core._record(dict(kind='resolve_growth_type_mastery',cat_id=cat_id,choice=choice))
+        return
+    row.update(type_mastery=choice,type_mastery_selected_day=core.day)
     core._tick_events=[];core._emit('growth_type_mastery_selected',cat_id=cat_id,type_mastery=choice,label=type_label(choice))
     core._record(dict(kind='resolve_growth_type_mastery',cat_id=cat_id,choice=choice))
 
@@ -228,7 +265,7 @@ def interaction_terms(core,cat_id):
     mastery=row.get('mastery')
     individual=row.get('type_mastery')
     return dict(group=mastery or '',multiplier=(growth['rules']['mastery_engagement_multiplier'] if mastery else 1),
-                type=individual or '',type_multiplier=(growth['rules']['type_mastery_engagement_multiplier'] if individual else 1))
+                type=individual or '',second_type=row.get('second_type_mastery') or '',type_multiplier=(growth['rules']['type_mastery_engagement_multiplier'] if individual else 1))
 
 
 def check_interaction(core,interaction):
@@ -236,7 +273,8 @@ def check_interaction(core,interaction):
     if (interaction.config.mastery_group!=selected['group']
             or interaction.config.mastery_engagement_multiplier!=selected['multiplier']
             or interaction.config.type_mastery!=selected['type']
-            or interaction.config.type_mastery_engagement_multiplier!=selected['type_multiplier']):
+            or interaction.config.type_mastery_engagement_multiplier!=selected['type_multiplier']
+            or interaction.config.second_type_mastery!=selected['second_type']):
         raise ValueError('接客熟練の条件が営業状態と一致しません。')
 
 
@@ -287,4 +325,18 @@ def validate(core,data):
                         or sum(actions.values())<selected['type_mastery_threshold']))
                     or (day is not None and (type(day) is not int or not row['mastery_selected_day']<=day<=core.day))):
                 raise ValueError('猫の個別行動熟練記録が不正です。')
+        if 'second_type_mastery_actions' in row:
+            actions=row['second_type_mastery_actions'];choice=row['second_type_mastery'];day=row['second_type_mastery_selected_day']
+            if (not isinstance(actions,dict) or set(actions)!=set(TYPE_GROUPS)
+                    or any(type(v) is not int or v<0 for v in actions.values())
+                    or any(actions[key]>row['type_mastery_actions'][key] for key in TYPE_GROUPS)
+                    or any(actions[key]>0 and (row['type_mastery'] is None or key==row['type_mastery']
+                        or TYPE_GROUPS[key]!=row['mastery']) for key in TYPE_GROUPS)
+                    or choice not in (None,*TYPE_GROUPS)
+                    or (choice is None)!=(day is None)
+                    or (choice is not None and (row['type_mastery'] is None or choice==row['type_mastery']
+                        or TYPE_GROUPS[choice]!=row['mastery'] or actions[choice]<=0
+                        or sum(actions.values())<selected['second_type_mastery_threshold']))
+                    or (day is not None and (type(day) is not int or not row['type_mastery_selected_day']<=day<=core.day))):
+                raise ValueError('猫の2つ目の個別行動熟練記録が不正です。')
     core.growth=copy.deepcopy(data);return core.growth

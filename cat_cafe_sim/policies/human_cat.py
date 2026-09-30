@@ -18,7 +18,12 @@ class AutomaticInteractionPolicy:
         for index,key in enumerate(TYPE_IDS):
             row=rows[key]
             if key!=current and row.group!=exclude_group and (group is None or row.group==group):
-                ranked.append((key==getattr(config,'type_mastery',''),row.gain*preferences[index],-index,key))
+                if getattr(config,'second_type_mastery',''):
+                    learned=key in (config.type_mastery,config.second_type_mastery)
+                    multiplier=config.type_mastery_engagement_multiplier if learned else 1
+                    ranked.append((False,row.gain*preferences[index]*multiplier,-index,key))
+                else:
+                    ranked.append((key==getattr(config,'type_mastery',''),row.gain*preferences[index],-index,key))
         return max(ranked)[-1] if ranked else None
 
     def choose(self, observation, valid_actions, config=None):
@@ -32,6 +37,8 @@ class AutomaticInteractionPolicy:
                    'play' if getattr(config, 'play_service', False) else
                    'quiet' if getattr(config, 'quiet_service', False) else getattr(config,'mastery_group',''))
         individual=getattr(config,'type_mastery','')
+        if getattr(config,'second_type_mastery',''):
+            individual=self._best_type(config,mastery,'')
         if ('switch' in valid_actions and individual and current!=individual
                 and rows[individual].group==mastery and observation.get('last_interaction_group') is None):
             return 'switch',individual

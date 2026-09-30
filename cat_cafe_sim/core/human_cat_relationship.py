@@ -29,6 +29,7 @@ class RelationshipConfig(TypesConfig):
     mastery_group: str = ''
     mastery_engagement_multiplier: float = 1
     type_mastery: str = ''
+    second_type_mastery: str = ''
     type_mastery_engagement_multiplier: float = 1
     affinity_enthusiastic: float = 1
     affinity_favorable: float = .5
@@ -66,6 +67,11 @@ class RelationshipConfig(TypesConfig):
             raise ValueError('individual mastery type and multiplier must be set together')
         if self.type_mastery and next(row.group for row in self.types if row.id==self.type_mastery)!=self.mastery_group:
             raise ValueError('individual mastery must belong to mastered group')
+        if not isinstance(self.second_type_mastery,str) or self.second_type_mastery not in ('',*TYPE_IDS):
+            raise ValueError('invalid second individual mastery type')
+        if self.second_type_mastery and (not self.type_mastery or self.second_type_mastery==self.type_mastery
+                or next(row.group for row in self.types if row.id==self.second_type_mastery)!=self.mastery_group):
+            raise ValueError('second individual mastery must be distinct and belong to mastered group')
         if any(not math.isfinite(value * self.equipment_engagement_multiplier) for key,value in vars(self).items() if key.endswith('_gain') and isinstance(value,(int,float))):
             raise ValueError('equipment engagement overflow')
         if not math.isfinite(max(self.tension_enthusiastic, self.tension_favorable, self.tension_neutral) * self.customer_tension_multiplier * self.equipment_tension_multiplier):
@@ -96,6 +102,8 @@ class RelationshipConfig(TypesConfig):
         if not self.type_mastery:
             data['rules'].pop('type_mastery')
             data['rules'].pop('type_mastery_engagement_multiplier')
+        if not self.second_type_mastery:
+            data['rules'].pop('second_type_mastery')
         return data
 
     @classmethod
@@ -133,9 +141,9 @@ class RelationshipInteraction(TypesInteraction):
             score*=self.config.mastery_engagement_multiplier
             diagnostic=dict(diagnostic,mastery_group=self.config.mastery_group,
                             mastery_multiplier=self.config.mastery_engagement_multiplier,score=score)
-        if action in INTERACTIONS and score>0 and self.state['mode']==self.config.type_mastery:
+        if action in INTERACTIONS and score>0 and self.state['mode'] in (self.config.type_mastery,self.config.second_type_mastery):
             score*=self.config.type_mastery_engagement_multiplier
-            diagnostic=dict(diagnostic,type_mastery=self.config.type_mastery,
+            diagnostic=dict(diagnostic,type_mastery=self.state['mode'],
                             type_mastery_multiplier=self.config.type_mastery_engagement_multiplier,score=score)
         return cost, score, reaction, diagnostic
 
@@ -148,8 +156,8 @@ class RelationshipInteraction(TypesInteraction):
         if (action=='switch' and c.mastery_group
                 and self.type_map[target_type].group==c.mastery_group):
             record['diagnostic']=dict(record['diagnostic'],mastery_switch=True,mastery_group=c.mastery_group)
-        if action=='switch' and target_type==c.type_mastery:
-            record['diagnostic']=dict(record['diagnostic'],type_mastery_switch=True,type_mastery=c.type_mastery)
+        if action=='switch' and target_type in (c.type_mastery,c.second_type_mastery):
+            record['diagnostic']=dict(record['diagnostic'],type_mastery_switch=True,type_mastery=target_type)
         normal = record['normal_reaction']
         normal_delta = (c.affinity_enthusiastic if normal == 'enthusiastic' else c.affinity_favorable if normal == 'favorable'
                         else -c.affinity_turn_away_loss if normal == 'turn_away' else 0) if action in INTERACTIONS else 0

@@ -410,6 +410,7 @@ class CafeInteractionSession:
                          mastery_group=interaction_terms(self.core,cat_id)['group'],
                          mastery_engagement_multiplier=interaction_terms(self.core,cat_id)['multiplier'],
                          type_mastery=interaction_terms(self.core,cat_id)['type'],
+                         second_type_mastery=interaction_terms(self.core,cat_id)['second_type'],
                          type_mastery_engagement_multiplier=interaction_terms(self.core,cat_id)['type_multiplier'],
                          ticks=min(self.interaction_config.ticks, self.core.config.opening_ticks-self.core.tick))
         interaction = self.store.begin(config, cat_id, customer_id, stamina=self.core.cats[cat_id].stamina)
