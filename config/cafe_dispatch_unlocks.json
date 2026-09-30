@@ -32,5 +32,18 @@
       "required_trait": "relaxed",
       "required_trait_name": "のんびり屋"
     }
+  },
+  "cat_photo_studio": {
+    "popularity": 120,
+    "returns": 1,
+    "destination": {
+      "id": "cat_photo_studio",
+      "name": "猫の撮影スタジオ",
+      "days": 2,
+      "reward": 350,
+      "max_fatigue": 40,
+      "required_trait": "hospitality",
+      "required_trait_name": "接客好き"
+    }
   }
 }

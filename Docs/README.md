@@ -49,6 +49,7 @@
 - [猫の活動状態・派遣と帰還イベント](HumanToCatCafeActivities.md)
 - [猫の運動教室への派遣](HumanToCatExerciseDispatch.md)
 - [静かな読書サロンへの派遣](HumanToCatReadingDispatch.md)
+- [猫の撮影スタジオへの派遣](HumanToCatPhotoDispatch.md)
 - [派遣中の選択イベント](HumanToCatDispatchEncounters.md)
 - [派遣先からの猫紹介](HumanToCatDispatchIntroduction.md)
 - [常連のお客さんからの猫紹介](HumanToCatRegularIntroduction.md)

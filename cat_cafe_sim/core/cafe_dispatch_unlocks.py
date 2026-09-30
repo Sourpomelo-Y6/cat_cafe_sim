@@ -7,7 +7,8 @@ from pathlib import Path
 LEGACY_IDS={'shopping_street_event','out_of_town_visit'}
 EXERCISE_ID='cat_exercise_class'
 READING_ID='quiet_reading_salon'
-SPECIAL_DESTINATIONS={EXERCISE_ID:('hardy','体力自慢'),READING_ID:('relaxed','のんびり屋')}
+PHOTO_ID='cat_photo_studio'
+SPECIAL_DESTINATIONS={EXERCISE_ID:('hardy','体力自慢'),READING_ID:('relaxed','のんびり屋'),PHOTO_ID:('hospitality','接客好き')}
 IDS=LEGACY_IDS | set(SPECIAL_DESTINATIONS)
 
 
@@ -38,6 +39,10 @@ def exercise_destination(core):
 
 def reading_destination(core):
     return saved_destination(core,READING_ID)
+
+
+def photo_destination(core):
+    return saved_destination(core,PHOTO_ID)
 
 
 def saved_destination(core,destination_id):

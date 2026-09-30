@@ -14,5 +14,9 @@
   {"id":"reading_extension","destination":"quiet_reading_salon","title":"延長の触れ合いをお願いされました","choices":[
     {"id":"accept","label":"延長の触れ合いに参加する","reward":80,"fatigue":0,"stress":10},
     {"id":"decline","label":"予定どおり終える","reward":0,"fatigue":0,"stress":0}
+  ]},
+  {"id":"extra_photo_session","destination":"cat_photo_studio","title":"追加の撮影をお願いされました","choices":[
+    {"id":"accept","label":"追加撮影を続ける","reward":100,"fatigue":15,"stress":15},
+    {"id":"decline","label":"追加撮影を断って切り上げる","reward":0,"fatigue":5,"stress":5}
   ]}
 ]
