@@ -67,6 +67,7 @@
 - [お客さんの信頼回復と永久離脱](HumanToCatCustomerTrust.md)
 - [白猫好きのこだわり客](HumanToCatAdvancedCustomers.md)
 - [静かに過ごしたいお客さん](HumanToCatQuietCustomer.md)
+- [遊び好きのお客さん](HumanToCatPlayCustomer.md)
 - [人気第2段階で解放する特別予約](HumanToCatReservations.md)
 - [人気最終段階で解放するVIP客](HumanToCatVipCustomer.md)
 

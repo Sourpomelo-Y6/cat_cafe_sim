@@ -44,6 +44,10 @@ def unlocked_day(core):
 
 def schedule(core, day):
     unlocked = unlocked_day(core)
+    if core.play_customer is not None:
+        weekday = (core.weekdays['start_weekday'] + day - 1) % 7
+        if weekday not in core.play_customer['quiet_weekdays']:
+            return {}
     return {CUSTOMER_ID: 0} if unlocked is not None and day > unlocked else {}
 
 
@@ -93,6 +97,9 @@ def description(core):
         return ''
     day = unlocked_day(core)
     status = '人気第1段階達成で解放' if day is None else f'{day}日目に解放・翌日から営業日に1名'
+    if core.play_customer is not None:
+        from .cafe_weekdays import DAYS
+        status += '（来店曜日：' + '・'.join(DAYS[day] for day in core.play_customer['quiet_weekdays']) + '）'
     return (f"{NAME}：{status}。静かな交流スペースの席で通常の静かな交流（声かけ・そばにいる）を"
             f"合計{selected['quiet_count']}回以上行うと追加料金＋{selected['bonus']:g}・人気＋{selected['popularity_bonus']:g}。")
 

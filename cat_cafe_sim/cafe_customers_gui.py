@@ -114,6 +114,14 @@ class CafeCustomersWindow:
             self.details.set(quiet_description(self.session.core) + "\n" +
                              ("直近の接客：" + quiet_result_text(self.session.core, latest) if latest else "接客結果はまだありません。") +
                              "\n" + self.details.get())
+        from .core.cafe_play_customer import CUSTOMER_ID as PLAY_ID, description as play_description, result_text as play_result_text
+        if key == PLAY_ID and self.session.core.play_customer is not None:
+            from .core.cafe_checkpoint import outcome_result
+            latest = next((outcome_result(value) for value in reversed(list(self.session.core.outcomes.values()))
+                           if outcome_result(value)["customer_id"] == key), None)
+            self.details.set(play_description(self.session.core) + "\n" +
+                             ("直近の接客：" + play_result_text(self.session.core, latest) if latest else "接客結果はまだありません。") +
+                             "\n" + self.details.get())
         for row in cat_rows(self.session, key):
             status = ACTIVITY_LABELS[row['activity']] if row['activity'] != 'cafe' else ('出勤予定' if row['working'] else '休養予定')
             from .cafe_health_text import health_text

@@ -28,6 +28,9 @@ def customer_name(customer_id):
     from .core.cafe_quiet_customer import CUSTOMER_ID as QUIET_ID, NAME as QUIET_NAME
     if customer_id == QUIET_ID:
         return QUIET_NAME
+    from .core.cafe_play_customer import CUSTOMER_ID as PLAY_ID, NAME as PLAY_NAME
+    if customer_id == PLAY_ID:
+        return PLAY_NAME
     index = number(customer_id)
     if index is None:
         return customer_id
@@ -58,6 +61,9 @@ def preference(core, customer_id):
         return existing
     from .core.cafe_quiet_customer import CUSTOMER_ID as QUIET_ID
     if customer_id == QUIET_ID and core.quiet_customer is not None:
+        return preference_for(core.seed, customer_id, data['rules']['pool'])
+    from .core.cafe_play_customer import CUSTOMER_ID as PLAY_ID
+    if customer_id == PLAY_ID and core.play_customer is not None:
         return preference_for(core.seed, customer_id, data['rules']['pool'])
     index = number(customer_id)
     if index is not None and index <= len(core.config.arrival_ticks):
@@ -92,6 +98,9 @@ def directory(session):
     from .core.cafe_quiet_customer import CUSTOMER_ID as QUIET_ID, unlocked_day as quiet_unlocked_day
     if core.quiet_customer is not None:
         known.add(QUIET_ID)
+    from .core.cafe_play_customer import CUSTOMER_ID as PLAY_ID, unlocked_day as play_unlocked_day
+    if core.play_customer is not None:
+        known.add(PLAY_ID)
     rows = []
     for key in sorted(known, key=lambda key: (number(key) is None, number(key) or 0, key)):
         index = number(key)
@@ -129,6 +138,8 @@ def directory(session):
             status='未解放（人気最終段階）'
         if key == QUIET_ID and core.quiet_customer is not None and quiet_unlocked_day(core) is None:
             status = '未解放（人気第1段階）'
+        if key == PLAY_ID and core.play_customer is not None and play_unlocked_day(core) is None:
+            status = '未解放（人気第1段階）'
         if discontent and discontent['suspended_until'] is not None:
             status = f"来店停止（{discontent['suspended_until']}日目まで）"
         if trust and trust['status']=='recovery':status='信頼回復中'
@@ -138,6 +149,9 @@ def directory(session):
         weekday_text = '・'.join(DAYS[d] for d in customer_days(core, index-1)) if key in all_customers and core.weekdays else '毎日' if key in all_customers else '—'
         if loyalty and loyalty['regular_day'] is not None and weekday_text != '毎日':
             weekday_text += f"＋常連:{DAYS[extra_weekday(core,key)]}"
+        if core.play_customer is not None and key in (PLAY_ID, QUIET_ID):
+            days = core.play_customer['weekdays' if key == PLAY_ID else 'quiet_weekdays']
+            weekday_text = '・'.join(DAYS[day] for day in days)
         rows.append(dict(customer_id=key, name=customer_name(key), visits=count,
                          arrival_tick=planned, tomorrow_tick=tomorrow.get(key),
                          weekdays=weekday_text,

@@ -1,0 +1,16 @@
+{
+  "equipment": "cat_tower",
+  "play_count": 4,
+  "bonus": 180,
+  "popularity_bonus": 4,
+  "weekdays": [
+    1,
+    3,
+    5
+  ],
+  "quiet_weekdays": [
+    0,
+    2,
+    4
+  ]
+}

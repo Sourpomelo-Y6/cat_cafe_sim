@@ -43,7 +43,7 @@ class InteractionConfig:
         if type(self.ticks) is not int or self.ticks < 1:
             raise ValueError('ticks must be a positive integer')
         for key, value in asdict(self).items():
-            if key in ('ticks', 'preferences', 'types', 'personality', 'mastery_group', 'equipment_group', 'quiet_service'):
+            if key in ('ticks', 'preferences', 'types', 'personality', 'mastery_group', 'equipment_group', 'quiet_service', 'play_service'):
                 continue
             if type(value) not in (int, float) or not math.isfinite(value) or value < 0:
                 raise ValueError(f'invalid {key}')
