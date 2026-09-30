@@ -32,7 +32,8 @@ class SecondMasteryTests(unittest.TestCase):
             cafe_config=replace(Config.load(),opening_ticks=30,arrival_ticks=(0,1,2,3)),
             interaction_config=replace(RelationshipConfig(),ticks=3))
         selected=dict(rules(),threshold=1,mastery_threshold=1,type_mastery_threshold=1,second_type_mastery_threshold=2)
-        if legacy:selected.pop('second_type_mastery_threshold')
+        if legacy:
+            selected.pop('second_type_mastery_threshold'); selected.pop('second_mastery_threshold')
         s.core.initialize_growth(selected)
         return s
 

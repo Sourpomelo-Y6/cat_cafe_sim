@@ -92,6 +92,8 @@ def cat_events(core, cat_id):
         if growth.get('mastery'):
             from .core.cafe_growth import GROUP_LABELS
             add(growth['mastery_selected_day'],'得意な交流の選択','成長',GROUP_LABELS[growth['mastery']])
+        if growth.get('second_mastery'):
+            add(growth['second_mastery_selected_day'],'2つ目の得意な交流の選択','成長',GROUP_LABELS[growth['second_mastery']])
         if growth.get('type_mastery'):
             from .core.cafe_growth import type_label
             add(growth['type_mastery_selected_day'],'得意な行動の選択','成長',type_label(growth['type_mastery']))

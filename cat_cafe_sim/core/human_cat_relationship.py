@@ -27,6 +27,7 @@ class RelationshipConfig(TypesConfig):
     quiet_service: bool = False
     equipment_group: str = ''
     mastery_group: str = ''
+    second_mastery_group: str = ''
     mastery_engagement_multiplier: float = 1
     type_mastery: str = ''
     second_type_mastery: str = ''
@@ -56,6 +57,9 @@ class RelationshipConfig(TypesConfig):
             raise ValueError('group equipment requires engagement bonus without tension bonus')
         if self.mastery_group not in ('','play','contact','quiet'):
             raise ValueError('invalid mastery group')
+        if self.second_mastery_group not in ('','play','contact','quiet') or (self.second_mastery_group
+                and (not self.mastery_group or self.second_mastery_group==self.mastery_group)):
+            raise ValueError('second mastery group must be distinct and require first mastery')
         bounded(self.mastery_engagement_multiplier, 1, 2, 'mastery engagement multiplier')
         if bool(self.mastery_group)!=(self.mastery_engagement_multiplier!=1):
             raise ValueError('mastery group and multiplier must be set together')
@@ -99,6 +103,8 @@ class RelationshipConfig(TypesConfig):
         if not self.mastery_group:
             data['rules'].pop('mastery_group')
             data['rules'].pop('mastery_engagement_multiplier')
+        if not self.second_mastery_group:
+            data['rules'].pop('second_mastery_group')
         if not self.type_mastery:
             data['rules'].pop('type_mastery')
             data['rules'].pop('type_mastery_engagement_multiplier')
@@ -137,9 +143,9 @@ class RelationshipInteraction(TypesInteraction):
             if self.config.equipment_group:
                 diagnostic = dict(diagnostic, equipment_group=self.config.equipment_group)
         if (action in INTERACTIONS and score>0 and self.config.mastery_group
-                and diagnostic.get('boredom_group')==self.config.mastery_group):
+                and diagnostic.get('boredom_group') in (self.config.mastery_group,self.config.second_mastery_group)):
             score*=self.config.mastery_engagement_multiplier
-            diagnostic=dict(diagnostic,mastery_group=self.config.mastery_group,
+            diagnostic=dict(diagnostic,mastery_group=diagnostic['boredom_group'],
                             mastery_multiplier=self.config.mastery_engagement_multiplier,score=score)
         if action in INTERACTIONS and score>0 and self.state['mode'] in (self.config.type_mastery,self.config.second_type_mastery):
             score*=self.config.type_mastery_engagement_multiplier
@@ -154,8 +160,8 @@ class RelationshipInteraction(TypesInteraction):
         record = super().step(action, target_type)
         c = self.config
         if (action=='switch' and c.mastery_group
-                and self.type_map[target_type].group==c.mastery_group):
-            record['diagnostic']=dict(record['diagnostic'],mastery_switch=True,mastery_group=c.mastery_group)
+                and self.type_map[target_type].group in (c.mastery_group,c.second_mastery_group)):
+            record['diagnostic']=dict(record['diagnostic'],mastery_switch=True,mastery_group=self.type_map[target_type].group)
         if action=='switch' and target_type in (c.type_mastery,c.second_type_mastery):
             record['diagnostic']=dict(record['diagnostic'],type_mastery_switch=True,type_mastery=target_type)
         normal = record['normal_reaction']
