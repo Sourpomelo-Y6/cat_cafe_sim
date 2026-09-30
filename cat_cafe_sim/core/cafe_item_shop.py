@@ -51,3 +51,8 @@ def validate(core,data):
         if day['summary'].get('item_expenses',0)!=expenses(core,day['day']):
             raise ValueError('アイテム購入費と日次結果が一致しません。')
     return core.item_purchases
+
+
+def catalog():
+    snack = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_nutrition_snack.json').read_text(encoding='utf-8'))
+    return [rules(), rules(snack)]

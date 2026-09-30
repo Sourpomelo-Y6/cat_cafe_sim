@@ -52,7 +52,7 @@
 - [派遣先からの猫紹介](HumanToCatDispatchIntroduction.md)
 - [常連のお客さんからの猫紹介](HumanToCatRegularIntroduction.md)
 - [山あいの宿への派遣と家出トラブル](HumanToCatDispatchTrouble.md)
-- [アイテムの購入・派遣報酬と猫のケア](HumanToCatItems.md)
+- [ケア用品・栄養おやつの購入、派遣報酬と猫のケア](HumanToCatItems.md)
 
 ## 施設・経営・顧客
 

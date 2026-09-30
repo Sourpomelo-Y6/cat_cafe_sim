@@ -272,7 +272,8 @@ class ManualCafeInteractionWindow:
             elif kind=='item_purchased':
                 text=f"{event['name']}を1個購入 · 費用 {event['cost']:g}"
             elif kind=='item_used':
-                text=f"{event['cat_id']}に{event['name']}を使用 · ストレス {event['before']:g} → {event['after']:g}"
+                item_stat='疲労' if event.get('stat')=='fatigue' else 'ストレス'
+                text=f"{event['cat_id']}に{event['name']}を使用 · {item_stat} {event['before']:g} → {event['after']:g}"
             elif kind=='shifts_set':
                 text='出勤・休養を設定 · 出勤 '+('、'.join(event['working_cats']) or 'なし')
             elif kind=='day_off':
