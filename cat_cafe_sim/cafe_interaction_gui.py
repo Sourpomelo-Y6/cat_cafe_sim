@@ -681,7 +681,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if core.objective is not None:
             from .cafe_objective import progress
             self.results_summary.set(f"今日の接客売上 {core.summary()['revenue']:g} / 終了した交流 {core.summary()['completed_interactions']}件。\n" + progress(core))
-            self.goal_button.configure(text='人気目標・結果…' if not core.goal.get('tracking_only') else '人気3段階へ挑戦…' if core.objective in ('free','bond') else '人気の増減ルール…')
+            self.goal_button.configure(text='人気目標・結果…' if not core.goal.get('tracking_only') else '人気3段階へ挑戦…' if core.objective in ('free','bond','patron') else '人気の増減ルール…')
         else:
             self.goal_button.configure(text='人気目標・結果…')
         self._attention = None

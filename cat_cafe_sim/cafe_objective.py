@@ -9,7 +9,7 @@ def description(conditions, mode):
         return ' → '.join(f"人気{r['target']:g}（{r['days']}日間）" for r in stages) + '。段階ごとに次の挑戦か自由営業を選べます。第1段階達成で白猫好きのこだわり客が解放されます。'
     if mode == 'patron':
         rules = conditions['patron']
-        return f"{rules['name']}への派遣で満足度{rules['target']:g}を目指します。期限なし。帰還報酬の受取時に加算します。"
+        return f"{rules['name']}への派遣で満足度{rules['target']:g}を目指します。期限なし。帰還報酬の受取時に加算します。人気3段階への挑戦も任意で追加できます。"
     if mode == 'bond':
         rules = conditions['bond']
         return f"プレイヤーへの好感度{rules['affinity']:g}以上の在籍猫を同時に{rules['target']}匹。期限なし。猫を迎え、準備中の交流で親しくなります。人気3段階への挑戦も任意で追加できます。"
@@ -19,11 +19,11 @@ def description(conditions, mode):
 
 
 def progress(core):
-    if core.objective == 'patron':
-        from .core.cafe_patron import progress
-        return progress(core)
-    if core.objective == 'bond':
-        from .core.cafe_bond_goal import progress
+    if core.objective in ('patron', 'bond'):
+        if core.objective == 'patron':
+            from .core.cafe_patron import progress
+        else:
+            from .core.cafe_bond_goal import progress
         text = progress(core)
         if 'challenge_started_day' in (core.goal or {}):
             from .cafe_goal_gui import progress as popularity_progress

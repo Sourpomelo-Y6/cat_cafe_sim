@@ -1,4 +1,4 @@
-"""自由営業・好感度モードの人気集計を維持し、任意操作で3段階の挑戦を開始する。"""
+"""自由営業・好感度・有力者モードの人気集計を維持し、任意操作で3段階の挑戦を開始する。"""
 import copy
 
 CUSTOMERS=('advanced_customers','reservation','quiet_customer','play_customer','contact_customer','vip_customer')
@@ -22,8 +22,8 @@ def rules(core, selected=None):
 
 
 def reason(core):
-    if core.objective not in ('free','bond') or not core.goal or not core.goal.get('tracking_only'):
-        return '人気への挑戦開始は、まだ挑戦していない自由営業・好感度モードが対象です。'
+    if core.objective not in ('free','bond','patron') or not core.goal or not core.goal.get('tracking_only'):
+        return '人気への挑戦開始は、まだ挑戦していない自由営業・好感度・有力者モードが対象です。'
     try:core.require_events_resolved()
     except ValueError as exc:return str(exc)
     if not core.compact or not core.can_set_shifts:

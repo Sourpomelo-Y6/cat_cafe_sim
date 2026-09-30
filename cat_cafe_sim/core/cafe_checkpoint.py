@@ -352,8 +352,8 @@ def restore(data):
     if 'clear_results' in state:
         from .cafe_clear_results import validate as validate_clear_results
         core.clear_results=validate_clear_results(core,state['clear_results'])
-    if 'challenge_started_day' in (core.goal or {}) and state.get('objective') not in ('free','bond'):
-        raise ValueError('自由営業・好感度モード以外に人気挑戦の開始記録があります。')
+    if 'challenge_started_day' in (core.goal or {}) and state.get('objective') not in ('free','bond','patron'):
+        raise ValueError('自由営業・好感度・有力者モード以外に人気挑戦の開始記録があります。')
     if 'objective' in state:
         from .cafe_objective import validate as validate_objective
         core.objective = validate_objective(core, state['objective'])

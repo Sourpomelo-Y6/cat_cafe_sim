@@ -58,12 +58,12 @@ class CafeGoalWindow:
             for button in (self.enable_button,self.continue_button,self.next_button):
                 button.pack_forget()
                 button.state(['disabled'])
-            if core.objective in ('free','bond'):
+            if core.objective in ('free','bond','patron'):
                 self.enable_button.configure(text='人気3段階へ挑戦')
                 self.enable_button.pack(side='left')
                 problem='先に接客結果の保存を再試行してください。' if self.session.pending else challenge_reason(core)
                 self.enable_button.state(['disabled'] if problem else ['!disabled'])
-                self.notice.set(problem or (('好感度目標を維持し、' if core.objective=='bond' else '')+'店の状態と人気を引き継ぎ、今日から各段階10日間の人気挑戦を開始できます。'))
+                self.notice.set(problem or (dict(bond='好感度目標を維持し、',patron='有力者目標を維持し、').get(core.objective,'')+'店の状態と人気を引き継ぎ、今日から各段階10日間の人気挑戦を開始できます。'))
             return
         self.status.set(progress(core))
         self.details.set(f"開始日を含む{selected['days']}日以内に人気{selected['target']:g}が目標です。\n好感度につながる反応合計がプラスの接客1件につき＋{base['gain_per_success']:g}。閉店時に加算（上限{base['cap']:g}）し、家出の減少を反映後に判定します。休業も日数に含みます。")
@@ -111,7 +111,7 @@ class CafeGoalWindow:
             from .core.cafe_popularity_challenge import rules as challenge_rules
             selected=challenge_rules(self.session.core)
             targets=' → '.join(f"人気{row['target']:g}（{row['days']}日間）" for row in [selected['goal'],*selected['goal']['stages']])
-            if messagebox.askyesno('人気3段階へ挑戦',('好感度目標の進捗・結果は維持します。\n' if self.session.core.objective=='bond' else '')+f"店の状態と現在の人気を引き継ぎ、{self.session.core.day}日目から挑戦します。\n{targets}\n開始後の取消・やり直しはできません。開始しますか？",parent=self.window):
+            if messagebox.askyesno('人気3段階へ挑戦',dict(bond='好感度目標の進捗・結果は維持します。\n',patron='有力者の派遣・満足度・成果は維持します。\n').get(self.session.core.objective,'')+f"店の状態と現在の人気を引き継ぎ、{self.session.core.day}日目から挑戦します。\n{targets}\n開始後の取消・やり直しはできません。開始しますか？",parent=self.window):
                 self.perform(lambda:self.session.start_popularity_challenge(selected))
             return
         selected=rules()
