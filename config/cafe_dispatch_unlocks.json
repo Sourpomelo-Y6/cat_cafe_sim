@@ -43,7 +43,13 @@
       "reward": 350,
       "max_fatigue": 40,
       "required_trait": "hospitality",
-      "required_trait_name": "接客好き"
+      "required_trait_name": "接客好き",
+      "welcome": {
+        "feature": "white",
+        "specialization": "service",
+        "reward_bonus": 20,
+        "satisfaction_bonus": 0
+      }
     }
   }
 }

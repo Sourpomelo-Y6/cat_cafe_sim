@@ -234,8 +234,11 @@ class CafeActivityWindow:
         terms=dispatch_terms(self.session.core,selected[0],self.rules['reward'])
         from .core.cafe_dispatch_encounters import for_destination
         encounter=for_destination(self.rules)
-        from .core.cafe_dispatch_match import description
+        from .core.cafe_dispatch_match import description,terms as welcome_terms
+        matched=welcome_terms(self.session.core,selected[0],self.rules)
         welcome_note='\n'+description(self.session.core,selected[0],self.rules)
+        if matched:
+            welcome_note+=f'\n報酬見込み {terms["reward"]+matched["reward_bonus"]:g}（歓迎ボーナス込み）'
         note=f"\n1日目終了時に選択イベント：{encounter['title']}" if encounter else ''
         from .core.cafe_dispatch_introduction import for_departure
         if for_departure(self.session.core,self.rules,set()) is not None:
