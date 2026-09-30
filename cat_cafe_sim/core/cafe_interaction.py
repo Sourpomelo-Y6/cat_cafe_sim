@@ -205,6 +205,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_management import require_running
         require_running(self)
 
+    def upgrade_rest_space(self, rules=None):
+        from .cafe_equipment import upgrade
+        upgrade(self, rules)
+
     def purchase_rest_space(self, rules=None):
         from .cafe_equipment import purchase
         purchase(self, rules)

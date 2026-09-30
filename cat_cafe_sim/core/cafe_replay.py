@@ -36,6 +36,7 @@ def apply_operation(core, operation):
     elif kind=='resolve_store_event':core.resolve_store_event(operation['choice'])
     elif kind=='purchase_seat_equipment':core.purchase_seat_equipment(operation['seat_id'],operation['rules'])
     elif kind=='equip_seat':core.equip_seat(operation['seat_id'],operation['item_id'])
+    elif kind=='upgrade_rest_space':core.upgrade_rest_space(operation['rules'])
     elif kind=='purchase_rest_space':core.purchase_rest_space(operation['rules'])
     elif kind=='expand_seats':core.expand_seats(operation['rules'])
     elif kind=='initialize_preferences':core.initialize_preferences(operation['cats'], operation['rules'])

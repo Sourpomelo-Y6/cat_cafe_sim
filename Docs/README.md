@@ -59,7 +59,7 @@
 
 - [店の段階的な増設：2席から7席へ](HumanToCatExpansion.md)
 - [席ごとの接客設備](HumanToCatSeatEquipment.md)
-- [休養設備：休養スペース](HumanToCatRestEquipment.md)
+- [休養設備：休養スペースの購入・強化](HumanToCatRestEquipment.md)
 - [待合スペースの施設強化](HumanToCatWaitingArea.md)
 - [日次の店舗運営費](HumanToCatOperatingCosts.md)
 - [日次収支と期間比較](HumanToCatDailyFinance.md)

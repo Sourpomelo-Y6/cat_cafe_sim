@@ -339,6 +339,8 @@ def restore(data):
         if not core.management:
             raise ValueError('目標には経営ルールが必要です。')
         core.goal=validate_goal(core,state['goal'],core.management)
+    from .cafe_equipment import validate_upgrade
+    validate_upgrade(core)
     from .cafe_visiting_cat import validate as validate_visitor
     validate_visitor(core)
     if 'advanced_customers' in state:
