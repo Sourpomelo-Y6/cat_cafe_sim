@@ -126,6 +126,8 @@ class CafeInteractionSession:
         used.update((self.core.pet_shop or {}).get('candidates', {}))
         from .core.cafe_dispatch_introduction import reserved_ids
         used.update(reserved_ids(self.core))
+        from .core.cafe_regular_introduction import reserved_ids as regular_ids
+        used.update(regular_ids(self.core))
         if self.core.intake_request:
             used.add(self.core.intake_request['rules']['cat_id'])
         introduction = for_departure(self.core, selected, used)
@@ -148,6 +150,8 @@ class CafeInteractionSession:
         used = set(self.core.cats) | set(data.get('cats', {})) | {row['cat_id'] for row in data['pairs']}
         from .core.cafe_dispatch_introduction import reserved_ids
         used.update(reserved_ids(self.core))
+        from .core.cafe_regular_introduction import reserved_ids as regular_ids
+        used.update(regular_ids(self.core))
         used.update((self.core.pet_shop or {}).get('candidates', {}))
         if self.core.intake_request:
             used.add(self.core.intake_request['rules']['cat_id'])
@@ -205,6 +209,22 @@ class CafeInteractionSession:
             self._commit_recruited(updated, result['cat_id'], result['candidate'])
         else:
             self.core = updated
+
+    def resolve_regular_introduction(self, choice):
+        import copy
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:
+            raise ValueError('先に接客結果の保存を再試行してください。')
+        updated=copy.deepcopy(self.core)
+        updated.resolve_regular_introduction(choice)
+        if self.core.regular_introduction==updated.regular_introduction:
+            return
+        if choice=='accept':
+            rule=updated.regular_introduction['rules']
+            self._commit_recruited(updated,rule['cat_id'],rule['candidate'])
+        else:
+            self.core=updated
 
     def resolve_intake_request(self, choice):
         import copy

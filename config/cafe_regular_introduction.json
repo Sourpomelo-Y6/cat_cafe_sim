@@ -1,0 +1,8 @@
+{
+  "cat_id": "regular-rescue-1",
+  "name": "マロン",
+  "preset": "穏やかな甘えん坊",
+  "cost": 200,
+  "trait": "relaxed",
+  "features": ["orange_tabby", "short_hair"]
+}

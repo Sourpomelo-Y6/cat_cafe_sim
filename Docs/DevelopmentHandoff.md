@@ -4,7 +4,7 @@
 
 ## 現在の状態
 
-作業フォルダは `/home/hi-wa/learning2/cat_cafe_sim`、ブランチは `main`。最新コミットは `a4dc871`（好感度モードからの人気挑戦）。有力者モードからの人気挑戦は実装済み・未コミットです。コミットは別途依頼を受けて行います。
+作業フォルダは `/home/hi-wa/learning2/cat_cafe_sim`、ブランチは `main`。最新コミットは `155cecf`（有力者モードからの人気挑戦）。常連からの猫紹介は実装済み・未コミットです。コミットは別途依頼を受けて行います。
 
 現行機能は[全体計画](HumanToCatGameFlowPlan.md)、詳細仕様は[資料索引](README.md)、後続候補は[実装予定](HumanToCatPlannedFeatures.md)を参照してください。整理前の追記と当時の検証結果は[履歴](History/2026-09-30/DevelopmentHandoff.md)に保存しています。
 
@@ -23,6 +23,7 @@
 
 | コミット | 内容 | 仕様 |
 | --- | --- | --- |
+| `155cecf` | 有力者の派遣・満足度・成果を維持した人気挑戦 | [途中開始](HumanToCatPopularityChallenge.md) |
 | `a4dc871` | 好感度目標を維持した人気挑戦、独立した進捗・成果 | [途中開始](HumanToCatPopularityChallenge.md) |
 | `dc0f144` | 自由営業から任意で人気3段階へ挑戦。店と過去の人気獲得履歴を維持 | [途中開始](HumanToCatPopularityChallenge.md) |
 | `e90720f` | 最終段階達成後の6席目。費用1,500、翌営業日から通常客1名追加 | [増設](HumanToCatExpansion.md) |
@@ -51,7 +52,7 @@
 | 営業状態・日次結果 | `core/cafe_interaction.py`、`core/multi_seat_cafe.py` |
 | 保存・詳細再生 | `storage/cafe_saves.py`、`core/cafe_checkpoint.py`、`core/cafe_replay.py` |
 | 関係・自動接客 | `core/human_cat_relationship.py`、`storage/relationships.py`、`policies/human_cat.py` |
-| 加入・飼育 | `core/cafe_recruitment.py`、`core/cafe_intake_request.py`、`core/cafe_pet_shop.py`、`core/cafe_dispatch_introduction.py`、`core/cafe_housing.py` |
+| 加入・飼育 | `core/cafe_recruitment.py`、`core/cafe_intake_request.py`、`core/cafe_pet_shop.py`、`core/cafe_dispatch_introduction.py`、`core/cafe_regular_introduction.py`、`core/cafe_housing.py` |
 | 設備・収支 | `core/cafe_seat_equipment.py`、`core/cafe_finance.py`、`core/cafe_operating_cost.py` |
 | 静かな交流客 | `core/cafe_quiet_customer.py`、`cafe_customers_gui.py`、`tests/test_cafe_quiet_customer.py`（テストはリポジトリ直下） |
 
@@ -59,7 +60,7 @@
 
 新規専用ルールを旧セーブへ後付けせず、保存済みの猫・顧客ID、固定した候補・条件、既存設備の効果を維持します。一部機能は旧ゲームの新しい購入・出発から適用するため、個別仕様の互換欄を確認してください。
 
-最新の検証は有力者モードからの人気挑戦追加後の仮想ディスプレイでGUIを含む全741件成功です。好感度モードからの人気挑戦追加時は全730件成功でした。自由営業からの人気挑戦追加時は全721件成功でした。6席目追加時は全712件成功でした。2つ目の個別熟練追加時は全703件成功でした。初回個別熟練の追加時は全692件成功でした。触れ合い客追加時は全682件成功でした。遊び客追加時は全670件成功でした。保存先改善時は全658件成功でした。前回の `8b95545` は全655件成功でした。静かな交流客の追加9件では、解放・条件判定・実際の自動接客・会計と人気・設備移動後の過去結果・保存失敗の再試行・旧セーブ・他モード・リプレイ・不正データ・名簿表示を確認しました。
+最新の検証は常連からの猫紹介追加後の仮想ディスプレイでGUIを含む全756件成功です。有力者モードからの人気挑戦追加時は全741件成功でした。好感度モードからの人気挑戦追加時は全730件成功でした。自由営業からの人気挑戦追加時は全721件成功でした。6席目追加時は全712件成功でした。2つ目の個別熟練追加時は全703件成功でした。初回個別熟練の追加時は全692件成功でした。触れ合い客追加時は全682件成功でした。遊び客追加時は全670件成功でした。保存先改善時は全658件成功でした。前回の `8b95545` は全655件成功でした。静かな交流客の追加9件では、解放・条件判定・実際の自動接客・会計と人気・設備移動後の過去結果・保存失敗の再試行・旧セーブ・他モード・リプレイ・不正データ・名簿表示を確認しました。
 
 ```bash
 python3 -m unittest discover -s tests
@@ -109,6 +110,10 @@ GUI検証は仮想ディスプレイを使います。サンドボックス内�
 ## 有力者モードから人気3段階へ挑戦
 
 有力者への派遣・満足度・達成成果を維持し、準備中に人気挑戦を任意で追加できる。両進捗を併記し、帰還と人気結果が同時に確認待ちでも帰還の受取後にそれぞれ確認して継続できる。人気未達後も有力者目標を進められる。旧セーブは明示開始まで変更しない。追加検証は `tests/test_cafe_patron_popularity_challenge.py`、詳細は[途中開始](HumanToCatPopularityChallenge.md)。追加11件を含む全741件成功。ローカルリンク810件、差分チェック成功。
+
+## 常連からの猫紹介
+
+新規ゲームの全モードに[常連紹介](HumanToCatRegularIntroduction.md)を追加。最初の常連化日の翌日準備で固定1匹のマロンを紹介し、費用200で迎える／見送る。猫の詳細・できごと・日次収支・保存・詳細リプレイへ接続。旧セーブへ後付けしない。中心は `core/cafe_regular_introduction.py`、画面は `cafe_regular_introduction_gui.py`、検証は `tests/test_cafe_regular_introduction.py`。常連度の既存テストは新イベントを外し、従来形式の来店・互換を維持して検証する。追加15件を含む全756件成功。ローカルリンク823件、差分チェック成功。
 
 ## 次の作業
 

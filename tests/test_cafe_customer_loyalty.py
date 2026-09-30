@@ -21,6 +21,7 @@ class CustomerLoyaltyTests(unittest.TestCase):
     def create(self, mode='free', loyalty=None, legacy=False, satisfaction=None):
         selected = starting_conditions(mode)
         selected.pop('intake_request')
+        selected.pop('regular_introduction')  # 常連度単独の旧形式・追加来店を検証する。
         if legacy:
             selected.pop('customer_loyalty')
             selected.pop('customer_discontent')

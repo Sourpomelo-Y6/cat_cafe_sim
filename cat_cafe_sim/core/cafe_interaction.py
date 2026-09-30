@@ -64,6 +64,7 @@ class CafeInteractionCore(SimulationCore):
         self.dispatch_trouble = None
         self.dispatch_introduction = None
         self.intake_request = None
+        self.regular_introduction = None
         self.adoption = None
         self.activities = None
         self.item_uses = []
@@ -86,6 +87,7 @@ class CafeInteractionCore(SimulationCore):
         return {**super().snapshot(),
                 'interaction': self.active.log() if self.active else None,
                 **({'intake_request': copy.deepcopy(self.intake_request)} if self.intake_request is not None else {}),
+                **({'regular_introduction': copy.deepcopy(self.regular_introduction)} if self.regular_introduction is not None else {}),
                 **({'weekdays': copy.deepcopy(self.weekdays)} if self.weekdays is not None else {}),
                 **({'advanced_customers': copy.deepcopy(self.advanced_customers)} if self.advanced_customers is not None else {}),
                 **({'customer_satisfaction': copy.deepcopy(self.customer_satisfaction)} if self.customer_satisfaction is not None else {}),
@@ -129,7 +131,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'item_purchases': copy.deepcopy(self.item_purchases)} if self.item_purchases else {}),
                 **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
-                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None or self.intake_request is not None or self.dispatch_introduction is not None or self.pet_shop is not None else {})}
+                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None or self.intake_request is not None or self.dispatch_introduction is not None or self.pet_shop is not None or self.regular_introduction is not None else {})}
 
     def initialize_dispatch_trouble(self, rules=None):
         from .cafe_dispatch_trouble import initialize
@@ -146,6 +148,14 @@ class CafeInteractionCore(SimulationCore):
     def resolve_dispatch_introduction(self, event_id, choice):
         from .cafe_dispatch_introduction import resolve
         resolve(self, event_id, choice)
+
+    def initialize_regular_introduction(self, rules=None):
+        from .cafe_regular_introduction import initialize
+        initialize(self, rules)
+
+    def resolve_regular_introduction(self, choice):
+        from .cafe_regular_introduction import resolve
+        resolve(self, choice)
 
     def initialize_intake_request(self, rules=None):
         from .cafe_intake_request import initialize
@@ -279,7 +289,7 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_activities import resolve
         resolve(self, event_id, choice)
 
-    def require_events_resolved(self, *, ignore_intake=False, ignore_store=False, ignore_introductions=False):
+    def require_events_resolved(self, *, ignore_intake=False, ignore_store=False, ignore_introductions=False, ignore_regular_introduction=False):
         self.require_running()
         from .cafe_intake_request import pending as intake_pending
         if not ignore_intake and intake_pending(self):
@@ -293,6 +303,9 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_goal import pending
         if pending(self):
             raise ValueError('目標画面で結果を確認し、継続営業を選んでください。')
+        from .cafe_regular_introduction import pending as regular_pending
+        if not ignore_regular_introduction and regular_pending(self):
+            raise ValueError('常連からの猫紹介で迎えるか見送るかを選んでください。')
         from .cafe_player import active
         if active(self):
             raise ValueError('進行中のプレイヤー交流を終了してください。')
@@ -642,6 +655,8 @@ class CafeInteractionCore(SimulationCore):
         present(self)
         from .cafe_dispatch_introduction import present as present_introduction
         present_introduction(self)
+        from .cafe_regular_introduction import present as present_regular
+        present_regular(self)
         from .cafe_store_events import present as present_store_event
         present_store_event(self)
         self._record(operation)
@@ -839,7 +854,7 @@ class CafeInteractionCore(SimulationCore):
                     **({'store_event_expenses': store_event_expenses(self,self.day)} if self.store_events is not None else {}),
                     **({'dispatch_trouble_expenses': trouble_expenses(self, self.day)} if self.dispatch_trouble is not None else {}),
                     **({'pet_shop_expenses': pet_shop_expenses(self, self.day)} if self.pet_shop is not None else {}),
-                    **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or self.dispatch_introduction is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
+                    **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or self.dispatch_introduction is not None or self.regular_introduction is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()
                                                  if e['resolved_day']==self.day)) if self.management else {}),

@@ -162,6 +162,12 @@ class ManualCafeInteractionWindow:
                 text=f"派遣先から {event['name']}を紹介されました。迎えるか見送るかを確認してください。"
             elif kind=='dispatch_introduction_resolved':
                 text=f"派遣紹介 {event['name']}：" + ('迎えた' if event['choice']=='accept' else '見送り') + f" · 初期費用 {event['cost']:g}"
+            elif kind=='regular_introduction_waiting':
+                from .cafe_customers import customer_name
+                text=f"{customer_name(event['customer_id'])}から {event['name']}の紹介"
+            elif kind=='regular_introduction_resolved':
+                text=f"常連紹介の{event['name']}を"+('迎えました' if event['choice']=='accept' else '見送りました')
+                if event['cost']:text+=f" · 初期費用 {event['cost']:g}"
             elif kind=='intake_request_initialized':
                 text='保護猫の受け入れ依頼の予定を設定'
             elif kind=='goal_enabled':
@@ -395,6 +401,14 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if offered:
             self.dispatch_introduction_window = CafeDispatchIntroductionWindow(self.root, self.session, offered[0]['id'], self.refresh)
 
+    def show_regular_introduction(self):
+        if self.session.core.regular_introduction is None:
+            return
+        self.pages.select(self.preparation_page)
+        from .cafe_regular_introduction_gui import CafeRegularIntroductionWindow
+        self.stop(); self.refresh()
+        self.regular_introduction_window=CafeRegularIntroductionWindow(self.root,self.session,self.refresh)
+
     def show_intake_request(self):
         self.pages.select(self.preparation_page)
         from .cafe_intake_request_gui import CafeIntakeRequestWindow
@@ -570,7 +584,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         from .core.cafe_intake_request import pending as intake_pending
         from .core.cafe_store_events import waiting as store_event_waiting
         from .core.cafe_growth import pending as growth_pending,mastery_pending,type_mastery_pending
-        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core) or bool(store_event_waiting(core)) or bool(growth_pending(core)) or bool(mastery_pending(core)) or bool(type_mastery_pending(core))
+        from .core.cafe_regular_introduction import pending as regular_pending
+        events_waiting=regular_pending(core) or bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core) or bool(store_event_waiting(core)) or bool(growth_pending(core)) or bool(mastery_pending(core)) or bool(type_mastery_pending(core))
         if core.management:
             self.status.set(self.status.get()+f" · 人気 {core.management['popularity']:g}")
         self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
@@ -738,6 +753,9 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif introduction_waiting(core):
             self.notice.set('派遣先で紹介された猫がいます。情報・費用・空き枠を確認し、迎えるか見送るか選んでください。')
             self._attention = self.show_dispatch_introduction
+        elif core.regular_introduction and core.regular_introduction['status']=='waiting':
+            self.notice.set('常連のお客さんから猫の紹介が届いています。情報・費用・空き枠を確認し、迎えるか見送るか選んでください。')
+            self._attention = self.show_regular_introduction
         elif active(core):
             self.notice.set('プレイヤーとの交流が途中です。猫の詳細から再開できます。')
             def resume_play():
@@ -750,6 +768,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.attention_button.grid()
         else:
             self.attention_button.grid_remove()
+        self.regular_introduction_button.state(['!disabled'] if core.regular_introduction is not None else ['disabled'])
         self.pet_shop_button.state(['!disabled'] if core.pet_shop is not None else ['disabled'])
         self.recruitment_button.state(['!disabled'] if (core.intake_request and core.intake_request['status']=='waiting') or core.recruitment is not None or (core.can_set_shifts and not self._attention) else ['disabled'])
 

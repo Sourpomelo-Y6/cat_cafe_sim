@@ -49,6 +49,7 @@
 - [猫の活動状態・派遣と帰還イベント](HumanToCatCafeActivities.md)
 - [派遣中の選択イベント](HumanToCatDispatchEncounters.md)
 - [派遣先からの猫紹介](HumanToCatDispatchIntroduction.md)
+- [常連のお客さんからの猫紹介](HumanToCatRegularIntroduction.md)
 - [山あいの宿への派遣と家出トラブル](HumanToCatDispatchTrouble.md)
 - [アイテムの購入・派遣報酬と猫のケア](HumanToCatItems.md)
 

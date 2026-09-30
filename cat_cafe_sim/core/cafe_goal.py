@@ -69,7 +69,8 @@ def advance_reason(core):
         return 'ゲームオーバー後は次の目標を開始できません。'
     if not data or data['status'] != 'cleared' or next_rules(data) is None:
         return '次に挑戦できる人気目標はありません。'
-    if waiting_events(core) or active(core) or patron_pending(core) or bond_pending(core):
+    from .cafe_regular_introduction import pending as regular_pending
+    if waiting_events(core) or active(core) or patron_pending(core) or bond_pending(core) or regular_pending(core):
         return '先に交流・帰還・イベント・他の目標結果を確認してください。'
     if not (core.closed or core.can_set_shifts):
         return '次の目標は閉店結果または営業準備中に選べます。'

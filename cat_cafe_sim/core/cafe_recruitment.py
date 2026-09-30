@@ -94,8 +94,9 @@ def open_candidates(core, rows):
     if core.recruitment is not None:
         raise ValueError('受け入れ候補はすでに決まっています。')
     rows = validate_candidates(rows)
-    from .cafe_dispatch_introduction import reserved_ids
-    if set(rows) & (set(core.cats) | set((core.pet_shop or {}).get('candidates', {})) | reserved_ids(core) | ({core.intake_request['rules']['cat_id']} if core.intake_request else set())):
+    from .cafe_dispatch_introduction import reserved_ids as dispatch_ids
+    from .cafe_regular_introduction import reserved_ids as regular_ids
+    if set(rows) & (set(core.cats) | set((core.pet_shop or {}).get('candidates', {})) | (dispatch_ids(core)|regular_ids(core)) | ({core.intake_request['rules']['cat_id']} if core.intake_request else set())):
         raise ValueError('候補の猫IDが所属猫と重複しています。')
     core.recruitment = dict(opened_day=core.day, candidates=copy.deepcopy(rows), accepted={})
     core._tick_events = []
@@ -113,8 +114,9 @@ def add_candidates(core, rows):
     if data is None or core.day < next_candidate_day(data):
         raise ValueError('次の候補追加日までお待ちください。')
     rows = validate_candidates(rows)
-    from .cafe_dispatch_introduction import reserved_ids
-    if set(rows) & (set(core.cats) | set((core.pet_shop or {}).get('candidates', {})) | reserved_ids(core) | set(data['candidates']) | ({core.intake_request['rules']['cat_id']} if core.intake_request else set())):
+    from .cafe_dispatch_introduction import reserved_ids as dispatch_ids
+    from .cafe_regular_introduction import reserved_ids as regular_ids
+    if set(rows) & (set(core.cats) | set((core.pet_shop or {}).get('candidates', {})) | (dispatch_ids(core)|regular_ids(core)) | set(data['candidates']) | ({core.intake_request['rules']['cat_id']} if core.intake_request else set())):
         raise ValueError('追加候補の猫IDが重複しています。')
     if 'presented_days' not in data:
         data['presented_days'] = {key: data['opened_day'] for key in data['candidates']}
@@ -181,8 +183,9 @@ def expenses(core, day=None):
     data = core.recruitment
     from .cafe_intake_request import expenses as request_expenses
     from .cafe_dispatch_introduction import expenses as introduction_expenses
+    from .cafe_regular_introduction import expenses as regular_expenses
     return (sum(data['candidates'][key]['cost'] for key, joined in data['accepted'].items()
-               if day is None or joined == day) if data else 0) + request_expenses(core,day) + introduction_expenses(core,day)
+               if day is None or joined == day) if data else 0) + request_expenses(core,day) + introduction_expenses(core,day) + regular_expenses(core,day)
 
 
 def validate(data, day, initial_ids):

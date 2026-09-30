@@ -132,6 +132,13 @@ def restore(data):
             core.cats[key] = Cat(id=key)
     elif any('introduction' in event for event in introduction_events.values()):
         raise ValueError('派遣先の猫紹介に必要な設定がありません。')
+    if 'regular_introduction' in state:
+        from .cafe_regular_introduction import prepare as prepare_regular, accepted as regular_cats
+        used=set(core.cats)|set((core.recruitment or {}).get('candidates',{}))|set((core.pet_shop or {}).get('candidates',{}))
+        if core.intake_request:used.add(core.intake_request['rules']['cat_id'])
+        used.update(event['introduction']['cat_id'] for event in introduction_events.values() if 'introduction' in event)
+        core.regular_introduction=prepare_regular(state['regular_introduction'],state['day'],used)
+        for key in regular_cats(core):core.cats[key]=Cat(id=key)
     cats=state.get('cats', {state.get('cat',{}).get('id'):state.get('cat')})
     if set(cats)!=set(core.cats):
         raise ValueError('invalid cat roster')
@@ -296,6 +303,8 @@ def restore(data):
     if 'management' in state:
         from .cafe_management import validate as validate_management
         core.management=validate_management(core,state['management'])
+    from .cafe_regular_introduction import validate as validate_regular
+    validate_regular(core)
     from .cafe_dispatch_trouble import validate as validate_trouble
     validate_trouble(core)
     if 'customer_trust' in state:
@@ -361,7 +370,8 @@ def restore(data):
     from .cafe_activities import waiting_events
     from .cafe_management import is_over
     from .cafe_goal import pending as goal_pending
-    if player_active(core) and (waiting_events(core) or is_over(core) or goal_pending(core) or patron_pending(core) or bond_pending(core) or request_pending(core)):
+    from .cafe_regular_introduction import pending as regular_pending
+    if player_active(core) and (regular_pending(core) or waiting_events(core) or is_over(core) or goal_pending(core) or patron_pending(core) or bond_pending(core) or request_pending(core)):
         raise ValueError('プレイヤー交流と未解決イベント・終了状態が矛盾しています。')
     if data['seat_count']>=2:
         core.seats={key:Seat(**row) for key,row in state['seats'].items()}
@@ -430,7 +440,7 @@ def restore(data):
                 or cat.id not in core.working_cats or cat.cannot_continue or core.activity(cat.id)!='cafe'):
             raise ValueError('invalid active interaction')
         busy_cats.add(cat.id);busy_guests.add(interaction.customer_id)
-    if (is_over(core) or goal_pending(core) or patron_pending(core) or bond_pending(core) or request_pending(core)) and active:
+    if (is_over(core) or goal_pending(core) or patron_pending(core) or bond_pending(core) or request_pending(core) or regular_pending(core)) and active:
         raise ValueError('終了後に接客が進行しています。')
     if not set(active)<=set(seats) or snapshot(core)!=state or core.summary()!=data['summary']:
         raise ValueError('営業セーブの状態と集計が一致しません。')

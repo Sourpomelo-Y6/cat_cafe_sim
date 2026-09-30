@@ -22,6 +22,9 @@ def unavailable_reason(core, cat_id):
     from .cafe_management import is_over
     from .cafe_bond_goal import pending as bond_pending
     from .cafe_intake_request import pending as intake_pending
+    from .cafe_regular_introduction import pending as regular_pending
+    if regular_pending(core):
+        return '常連からの猫紹介に回答してください。'
     if intake_pending(core):
         return '保護猫の受け入れ依頼に回答してください。'
     if bond_pending(core):

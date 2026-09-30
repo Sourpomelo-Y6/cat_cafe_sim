@@ -28,7 +28,8 @@ def initialize(core, rows):
         raise ValueError('ペットショップは新規ゲームの準備中に一度だけ設定できます。')
     rows = validate_candidates(rows)
     from .cafe_dispatch_introduction import reserved_ids
-    used = set(core.cats) | set((core.recruitment or {}).get('candidates', {})) | reserved_ids(core)
+    from .cafe_regular_introduction import reserved_ids as regular_ids
+    used = regular_ids(core) | set(core.cats) | set((core.recruitment or {}).get('candidates', {})) | reserved_ids(core)
     if core.intake_request:
         used.add(core.intake_request['rules']['cat_id'])
     if set(rows) & used:

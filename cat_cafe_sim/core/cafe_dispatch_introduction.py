@@ -45,7 +45,8 @@ def for_departure(core, destination, used_ids):
     selected = core.dispatch_introduction
     if selected is None or selected['destination'] != destination['id']:
         return None
-    used = set(used_ids) | reserved_ids(core)
+    from .cafe_regular_introduction import reserved_ids as regular_ids
+    used = set(used_ids) | reserved_ids(core) | regular_ids(core)
     index = 1
     while f'dispatch-rescue-{index}' in used:
         index += 1
@@ -64,7 +65,8 @@ def attach(core, event, data):
     selected = core.dispatch_introduction
     expected = copy.deepcopy(selected['candidate'])
     expected['name'] += f'（派遣紹介{len(introductions(core)) + 1}）'
-    used = set(core.cats) | reserved_ids(core) | set((core.recruitment or {}).get('candidates', {})) | set((core.pet_shop or {}).get('candidates', {}))
+    from .cafe_regular_introduction import reserved_ids as regular_ids
+    used = regular_ids(core) | set(core.cats) | reserved_ids(core) | set((core.recruitment or {}).get('candidates', {})) | set((core.pet_shop or {}).get('candidates', {}))
     if core.intake_request:
         used.add(core.intake_request['rules']['cat_id'])
     if (event['destination']['id'] != selected['destination'] or data['candidate'] != expected
@@ -91,7 +93,7 @@ def present(core):
 def response_reason(core, event_id):
     try:
         # A daily intake request may coexist; each can be answered independently.
-        core.require_events_resolved(ignore_intake=True, ignore_introductions=True)
+        core.require_events_resolved(ignore_intake=True, ignore_introductions=True, ignore_regular_introduction=True)
     except ValueError as exc:
         return str(exc)
     event = (core.activities or {}).get('events', {}).get(event_id)
