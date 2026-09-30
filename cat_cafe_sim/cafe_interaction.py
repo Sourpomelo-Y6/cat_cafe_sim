@@ -79,12 +79,14 @@ class CafeInteractionSession:
     def pending(self):
         return set(self.core.outcomes) - self.persisted
 
-    def _ready(self):
+    def _ready(self, *, for_housing=False):
         from .storage.cafe_saves import check_link
         check_link(self)
         if self.pending:
             raise ValueError('未保存の交流結果があります。先に保存を再試行してください。')
-        self.core.require_events_resolved()
+        self.core.require_events_resolved(ignore_intake=for_housing,
+                                          ignore_introductions=for_housing,
+                                          ignore_regular_introduction=for_housing)
 
     def play_with_player(self, cat_id):
         self._ready()
@@ -259,7 +261,7 @@ class CafeInteractionSession:
         self.core.expand_seats(rules)
 
     def purchase_housing(self):
-        self._ready()
+        self._ready(for_housing=True)
         self.core.purchase_housing()
 
     def purchase_waiting_area(self):

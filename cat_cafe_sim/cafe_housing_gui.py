@@ -3,10 +3,11 @@ from .core.cafe_housing import reason, status, capacity
 
 
 class CafeHousingWindow:
-    def __init__(self, parent, session, on_changed):
+    def __init__(self, parent, session, on_changed, on_closed=None):
         import tkinter as tk
         from tkinter import ttk
         self.session, self.on_changed = session, on_changed
+        self.parent, self.on_closed = parent, on_closed
         self.window = tk.Toplevel(parent)
         self.window.title('飼育スペースの拡張')
         self.window.geometry('540x340')
@@ -19,15 +20,23 @@ class CafeHousingWindow:
         footer.pack(side='bottom', fill='x')
         self.purchase_button = ttk.Button(footer, text='飼育スペースを拡張する', command=self.purchase)
         self.purchase_button.pack(side='left')
-        self.close_button = ttk.Button(footer, text='閉じる', command=self.window.destroy)
+        self.close_button = ttk.Button(footer, text='閉じる', command=self.close)
         self.close_button.pack(side='right')
         self.details, self.notice = tk.StringVar(), tk.StringVar()
         ttk.Label(frame, textvariable=self.details, wraplength=470).pack(anchor='w', pady=8)
         ttk.Label(frame, text='派遣中・家出中も在籍に含み、譲渡済みは除きます。接客席数は変わりません。',
                   wraplength=470).pack(anchor='w')
         ttk.Label(frame, textvariable=self.notice, wraplength=470).pack(anchor='w', pady=8)
-        self.window.bind('<Escape>', lambda event: self.window.destroy())
+        self.window.protocol('WM_DELETE_WINDOW', self.close)
+        self.window.bind('<Escape>', lambda event: self.close())
         self.refresh()
+
+    def close(self):
+        self.window.destroy()
+        if self.parent.winfo_exists() and self.parent.master is not None:
+            self.parent.grab_set()
+        if self.on_closed:
+            self.on_closed()
 
     def refresh(self):
         core = self.session.core
@@ -65,3 +74,28 @@ class CafeHousingWindow:
             messagebox.showerror('拡張できません', str(exc), parent=self.window)
         self.on_changed()
         self.refresh()
+
+
+def add_introduction_housing(owner, footer):
+    """紹介の回答画面に共通の拡張導線を付ける。"""
+    from tkinter import ttk
+
+    def changed():
+        owner.on_changed()
+        owner.refresh()
+
+    def open_housing():
+        child = getattr(owner, 'housing_window', None)
+        if child and child.window.winfo_exists():
+            child.window.lift()
+            child.window.grab_set()
+            return
+        owner.housing_window = CafeHousingWindow(owner.window, owner.session, changed, owner.refresh)
+
+    owner.housing_button = ttk.Button(footer, text='飼育スペースを拡張…', command=open_housing)
+    owner.housing_button.pack(side='left')
+
+
+def refresh_introduction_housing(owner, waiting):
+    problem = owner.session.pending or not waiting or reason(owner.session.core)
+    owner.housing_button.state(['disabled'] if problem else ['!disabled'])

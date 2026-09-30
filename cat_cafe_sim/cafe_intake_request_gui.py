@@ -20,6 +20,8 @@ class CafeIntakeRequestWindow:
         self.accept_button.pack(side='left')
         self.decline_button = ttk.Button(footer, text='見送る', command=lambda: self.respond('decline'))
         self.decline_button.pack(side='left', padx=8)
+        from .cafe_housing_gui import add_introduction_housing
+        add_introduction_housing(self, footer)
         self.close_button = ttk.Button(footer, text='閉じる', command=self.close)
         self.close_button.pack(side='right')
         self.title = tk.StringVar()
@@ -48,6 +50,8 @@ class CafeIntakeRequestWindow:
         data = core.intake_request
         rule, status = data['rules'], data['status']
         row = rule['candidate']
+        from .cafe_housing_gui import refresh_introduction_housing
+        refresh_introduction_housing(self, pending(core))
         personality = Personality.from_dict(row['personality'])
         preset = next((name for name, value in self.session.presets.items() if value == personality), 'カスタム')
         self.title.set(f"{row['name']}の受け入れ依頼 · {rule['day']}日目")

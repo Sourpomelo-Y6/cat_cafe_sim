@@ -15,6 +15,8 @@ class CafeRegularIntroductionWindow:
         self.accept_button.pack(side='left')
         self.decline_button=ttk.Button(footer,text='見送る',command=lambda:self.respond('decline'))
         self.decline_button.pack(side='left',padx=8)
+        from .cafe_housing_gui import add_introduction_housing
+        add_introduction_housing(self, footer)
         self.close_button=ttk.Button(footer,text='閉じる',command=self.window.destroy)
         self.close_button.pack(side='right')
         self.title,self.notice=tk.StringVar(),tk.StringVar()
@@ -34,6 +36,8 @@ class CafeRegularIntroductionWindow:
         from .core.human_cat_types import Personality
         from .cafe_customers import customer_name
         core=self.session.core; data=core.regular_introduction; row=data['rules']['candidate']
+        from .cafe_housing_gui import refresh_introduction_housing
+        refresh_introduction_housing(self, data['status']=='waiting')
         personality=Personality.from_dict(row['personality'])
         preset=next((name for name,value in self.session.presets.items() if value==personality),'カスタム')
         self.title.set(f"{customer_name(data['customer_id'])}から {row['name']}の紹介" if data['customer_id'] else '常連からの猫紹介 · まだ届いていません')

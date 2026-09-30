@@ -58,7 +58,9 @@ def initialize(core, selected=None):
 
 def reason(core):
     try:
-        core.require_events_resolved()
+        # 紹介への回答は拡張後に行える。他の確認待ちは引き続き止める。
+        core.require_events_resolved(ignore_intake=True, ignore_introductions=True,
+                                     ignore_regular_introduction=True)
     except ValueError as exc:
         return str(exc)
     if core.housing is None:

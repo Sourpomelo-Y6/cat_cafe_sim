@@ -96,8 +96,7 @@ class HousingTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, '満員'):
                 s.resolve_intake_request('accept')
         self.assertEqual(s.core.snapshot(), before)
-        with self.assertRaises(ValueError):
-            s.purchase_housing()
+        self.assertEqual(reason(s.core), '')
         s.resolve_intake_request('decline')
         self.assertEqual(s.core.funds, before['funds'])
         s.day_off()

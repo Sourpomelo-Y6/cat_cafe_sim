@@ -16,6 +16,8 @@ class CafeDispatchIntroductionWindow:
         self.accept_button.pack(side='left')
         self.decline_button = ttk.Button(footer, text='見送る', command=lambda: self.respond('decline'))
         self.decline_button.pack(side='left', padx=8)
+        from .cafe_housing_gui import add_introduction_housing
+        add_introduction_housing(self, footer)
         self.close_button = ttk.Button(footer, text='閉じる', command=self.close)
         self.close_button.pack(side='right')
         self.title, self.notice = tk.StringVar(), tk.StringVar()
@@ -41,6 +43,8 @@ class CafeDispatchIntroductionWindow:
         from .core.human_cat_types import Personality
         core = self.session.core
         event = core.activities['events'][self.event_id]; data = event['introduction']; row = data['candidate']
+        from .cafe_housing_gui import refresh_introduction_housing
+        refresh_introduction_housing(self, data['status']=='waiting')
         personality = Personality.from_dict(row['personality'])
         preset = next((name for name, value in self.session.presets.items() if value == personality), 'カスタム')
         self.title.set(f"{event['destination']['name']}から {row['name']}の紹介")
