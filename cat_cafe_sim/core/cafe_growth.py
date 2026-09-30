@@ -135,7 +135,10 @@ def description(core,cat_id):
         extra=third.get('individual',{})
         group=GROUP_LABELS[third['mastery']]
         if extra.get('type_mastery'):
-            individual+=f"\n3つ目の分類（{group}）の得意な行動：{type_label(extra['type_mastery'])}（関心の通常増加×{selected['type_mastery_engagement_multiplier']:g}）"
+            individual+=f"\n3つ目の分類（{group}）の得意な行動：{'・'.join(type_label(key) for key in (extra['type_mastery'],extra.get('second',{}).get('type_mastery')) if key)}（関心の通常増加×{selected['type_mastery_engagement_multiplier']:g}）"
+            if 'second_type_mastery_threshold' in selected and not extra.get('second',{}).get('type_mastery'):
+                remaining=max(0,selected['second_type_mastery_threshold']-sum(extra.get('second',{}).get('actions',{}).values()))
+                individual+=f'\n3つ目の分類の追加個別行動熟練まであと {remaining:g}（初回習得後に開始した接客の未習得通常行動のみ）'
         else:
             remaining=max(0,selected['type_mastery_threshold']-sum(extra.get('actions',{}).values()))
             individual+=f'\n3つ目の分類（{group}）の個別行動熟練まであと {remaining:g}（分類習得後に開始した接客の成功通常行動のみ）'
@@ -205,7 +208,8 @@ def learned_types(row):
     return tuple(key for key in (row.get('type_mastery'),row.get('second_type_mastery'),
                  row.get('second_group_type_practice',{}).get('type_mastery'),
                  row.get('second_group_type_practice',{}).get('second',{}).get('type_mastery'),
-                 row.get('third_group_practice',{}).get('individual',{}).get('type_mastery')) if key is not None)
+                 row.get('third_group_practice',{}).get('individual',{}).get('type_mastery'),
+                 row.get('third_group_practice',{}).get('individual',{}).get('second',{}).get('type_mastery')) if key is not None)
 
 
 def begin_second_group_type_practice(core,cat_id):
@@ -241,6 +245,24 @@ def begin_third_group_type_practice(core,cat_id):
         raise ValueError('3つ目の分類を習得した猫の個別行動実績を開始してください。')
     third['individual']=dict(started_day=core.day,actions=dict.fromkeys(TYPE_GROUPS,0),type_mastery=None,selected_day=None)
     core._tick_events=[];core._record(dict(kind='begin_third_group_type_practice',cat_id=cat_id))
+
+
+def begin_third_group_second_type_practice(core,cat_id):
+    core.require_events_resolved()
+    practice=(core.growth or {}).get('cats',{}).get(cat_id,{}).get('third_group_practice',{}).get('individual',{})
+    if (not practice.get('type_mastery') or 'second' in practice
+            or 'second_type_mastery_threshold' not in core.growth['rules']):
+        raise ValueError('3つ目の分類で初回の個別行動を習得した猫の追加実績を開始してください。')
+    practice['second']=dict(started_day=core.day,actions=dict.fromkeys(TYPE_GROUPS,0),type_mastery=None,selected_day=None)
+    core._tick_events=[];core._record(dict(kind='begin_third_group_second_type_practice',cat_id=cat_id))
+
+
+def third_group_second_type_mastery_pending(core):
+    if core.growth is None or 'second_type_mastery_threshold' not in core.growth['rules']:return []
+    threshold=core.growth['rules']['second_type_mastery_threshold']
+    return [key for key,row in core.growth['cats'].items()
+            if (practice:=row.get('third_group_practice',{}).get('individual',{}).get('second'))
+            and practice['type_mastery'] is None and sum(practice['actions'].values())>=threshold]
 
 
 def third_group_type_mastery_pending(core):
@@ -281,7 +303,7 @@ def type_mastery_pending(core):
     first=[key for key,row in core.growth['cats'].items()
             if row['mastery'] is not None and row['type_mastery'] is None
             and sum(row['type_mastery_actions'].values())>=threshold]
-    return list(dict.fromkeys(first + second_type_mastery_pending(core) + second_group_type_mastery_pending(core) + second_group_second_type_mastery_pending(core) + third_group_type_mastery_pending(core)))
+    return list(dict.fromkeys(first + second_type_mastery_pending(core) + second_group_type_mastery_pending(core) + second_group_second_type_mastery_pending(core) + third_group_type_mastery_pending(core) + third_group_second_type_mastery_pending(core)))
 
 
 def type_mastery_stage(core,cat_id):
@@ -292,15 +314,18 @@ def type_mastery_stage(core,cat_id):
     if cat_id in second_type_mastery_pending(core):return 'second'
     if cat_id in second_group_type_mastery_pending(core):return 'second_group'
     if cat_id in second_group_second_type_mastery_pending(core):return 'second_group_second'
-    return 'third_group'
+    if cat_id in third_group_type_mastery_pending(core):return 'third_group'
+    return 'third_group_second'
 
 
 def type_mastery_choices(core,cat_id):
     if cat_id not in type_mastery_pending(core):return ()
     row=core.growth['cats'][cat_id]
     stage=type_mastery_stage(core,cat_id)
-    if stage=='third_group':
-        actions=row['third_group_practice']['individual']['actions'];group=row['third_group_practice']['mastery']
+    if stage in ('third_group','third_group_second'):
+        practice=row['third_group_practice']['individual']
+        if stage=='third_group_second':practice=practice['second']
+        actions=practice['actions'];group=row['third_group_practice']['mastery']
     elif stage in ('second_group','second_group_second'):
         practice=row['second_group_type_practice']
         if stage=='second_group_second':practice=practice['second']
@@ -325,6 +350,8 @@ def service(core,result):
     third=row.get('third_group_practice')
     third_before=sum(third['groups'].values()) if third else 0
     third_individual=third.get('individual') if third else None
+    third_extra=third_individual.get('second') if third_individual else None
+    third_extra_before=sum(third_extra['actions'].values()) if third_extra else 0
     third_individual_before=sum(third_individual['actions'].values()) if third_individual else 0
     second_group_before=cat_id in second_mastery_pending(core)
     mastery_before=sum(row.get('mastery_groups',{}).values())
@@ -353,6 +380,8 @@ def service(core,result):
                 third['groups'][TYPE_GROUPS[key]]+=count
             if third_individual and TYPE_GROUPS[key]==third['mastery'] and result.get('affinity_delta',0)>0:
                 third_individual['actions'][key]+=count
+                if third_extra and key!=third_individual['type_mastery']:
+                    third_extra['actions'][key]+=count
             if practice and TYPE_GROUPS[key]==row['second_mastery'] and result.get('affinity_delta',0)>0:
                 practice['actions'][key]+=count
                 if extra and key!=practice['type_mastery']:
@@ -386,6 +415,10 @@ def service(core,result):
             and third_individual_before<core.growth['rules']['type_mastery_threshold']
             and sum(third_individual['actions'].values())>=core.growth['rules']['type_mastery_threshold']):
         core._emit('growth_third_group_type_mastery_ready',cat_id=cat_id,total=sum(third_individual['actions'].values()))
+    if (third_extra and third_extra['type_mastery'] is None
+            and third_extra_before<core.growth['rules']['second_type_mastery_threshold']
+            and sum(third_extra['actions'].values())>=core.growth['rules']['second_type_mastery_threshold']):
+        core._emit('growth_third_group_second_type_mastery_ready',cat_id=cat_id,total=sum(third_extra['actions'].values()))
     if row['specialization']=='service':
         refund=result['stamina_spent']*core.growth['rules']['service_stamina_refund']
         core.cats[cat_id].stamina=min(core.config.max_stamina,core.cats[cat_id].stamina+refund)
@@ -446,6 +479,11 @@ def resolve_type_mastery(core,cat_id,choice):
     core.require_running()
     if choice not in type_mastery_choices(core,cat_id):raise ValueError('熟練できる猫と個別行動を選んでください。')
     row=core.growth['cats'][cat_id]
+    if type_mastery_stage(core,cat_id)=='third_group_second':
+        row['third_group_practice']['individual']['second'].update(type_mastery=choice,selected_day=core.day)
+        core._tick_events=[];core._emit('growth_third_group_second_type_mastery_selected',cat_id=cat_id,type_mastery=choice,label=type_label(choice))
+        core._record(dict(kind='resolve_growth_type_mastery',cat_id=cat_id,choice=choice))
+        return
     if type_mastery_stage(core,cat_id)=='third_group':
         row['third_group_practice']['individual'].update(type_mastery=choice,selected_day=core.day)
         core._tick_events=[];core._emit('growth_third_group_type_mastery_selected',cat_id=cat_id,type_mastery=choice,label=type_label(choice))
@@ -478,7 +516,7 @@ def interaction_terms(core,cat_id):
     second_group_individual=row.get('second_group_type_practice',{}).get('type_mastery')
     third_group_individual=row.get('third_group_practice',{}).get('individual',{}).get('type_mastery')
     return dict(group=mastery or '',multiplier=(growth['rules']['mastery_engagement_multiplier'] if mastery else 1),
-                second_group=row.get('second_mastery') or '',third_group=row.get('third_group_practice',{}).get('mastery') or '',third_group_type=third_group_individual or '',type=individual or '',second_type=row.get('second_type_mastery') or '',
+                second_group=row.get('second_mastery') or '',third_group=row.get('third_group_practice',{}).get('mastery') or '',third_group_type=third_group_individual or '',third_group_second_type=row.get('third_group_practice',{}).get('individual',{}).get('second',{}).get('type_mastery') or '',type=individual or '',second_type=row.get('second_type_mastery') or '',
                 second_group_type=second_group_individual or '',second_group_second_type=row.get('second_group_type_practice',{}).get('second',{}).get('type_mastery') or '',type_multiplier=(growth['rules']['type_mastery_engagement_multiplier'] if individual or second_group_individual or third_group_individual else 1))
 
 
@@ -488,6 +526,7 @@ def check_interaction(core,interaction):
             or interaction.config.second_mastery_group!=selected['second_group']
             or interaction.config.third_mastery_group!=selected['third_group']
             or interaction.config.third_group_type_mastery!=selected['third_group_type']
+            or interaction.config.third_group_second_type_mastery!=selected['third_group_second_type']
             or interaction.config.mastery_engagement_multiplier!=selected['multiplier']
             or interaction.config.type_mastery!=selected['type']
             or interaction.config.type_mastery_engagement_multiplier!=selected['type_multiplier']
@@ -629,7 +668,7 @@ def validate_third_group_practice(core,selected,row):
     if 'individual' in practice:
         individual=practice['individual']
         if (choice is None or 'type_mastery_threshold' not in selected or not isinstance(individual,dict)
-                or set(individual)!={'started_day','actions','type_mastery','selected_day'}):
+                or set(individual) not in ({'started_day','actions','type_mastery','selected_day'},{'started_day','actions','type_mastery','selected_day','second'})):
             raise ValueError('3つ目の分類の個別行動熟練記録が不正です。')
         actions=individual['actions'];type_choice=individual['type_mastery'];type_day=individual['selected_day']
         if (type(individual['started_day']) is not int or not day<=individual['started_day']<=core.day
@@ -642,3 +681,19 @@ def validate_third_group_practice(core,selected,row):
                     or sum(actions.values())<selected['type_mastery_threshold']))
                 or (type_day is not None and (type(type_day) is not int or not individual['started_day']<=type_day<=core.day))):
             raise ValueError('3つ目の分類の個別行動実績・選択が不正です。')
+
+        if 'second' in individual:
+            extra=individual['second']
+            if (not type_choice or 'second_type_mastery_threshold' not in selected or not isinstance(extra,dict)
+                    or set(extra)!={'started_day','actions','type_mastery','selected_day'}):
+                raise ValueError('3つ目の分類の追加個別熟練記録が不正です。')
+            counts=extra['actions'];extra_choice=extra['type_mastery'];extra_day=extra['selected_day']
+            if (type(extra['started_day']) is not int or not type_day<=extra['started_day']<=core.day
+                    or not isinstance(counts,dict) or set(counts)!=set(TYPE_GROUPS)
+                    or any(type(count) is not int or count<0 or count>actions[key] for key,count in counts.items())
+                    or any(count>0 and (TYPE_GROUPS[key]!=choice or key==type_choice) for key,count in counts.items())
+                    or extra_choice not in (None,*TYPE_GROUPS) or (extra_choice is None)!=(extra_day is None)
+                    or (extra_choice is not None and (TYPE_GROUPS[extra_choice]!=choice or extra_choice==type_choice
+                        or counts[extra_choice]<=0 or sum(counts.values())<selected['second_type_mastery_threshold']))
+                    or (extra_day is not None and (type(extra_day) is not int or not extra['started_day']<=extra_day<=core.day))):
+                raise ValueError('3つ目の分類の追加個別実績・選択が不正です。')

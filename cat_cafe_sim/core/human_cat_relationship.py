@@ -30,6 +30,7 @@ class RelationshipConfig(TypesConfig):
     second_mastery_group: str = ''
     third_mastery_group: str = ''
     third_group_type_mastery: str = ''
+    third_group_second_type_mastery: str = ''
     mastery_engagement_multiplier: float = 1
     type_mastery: str = ''
     second_type_mastery: str = ''
@@ -108,6 +109,13 @@ class RelationshipConfig(TypesConfig):
         if not math.isfinite(maximum * self.ticks):
             raise ValueError('affinity accumulation overflow')
 
+        if not isinstance(self.third_group_second_type_mastery,str) or self.third_group_second_type_mastery not in ('',*TYPE_IDS):
+            raise ValueError('3つ目の分類の追加個別行動熟練が不正です。')
+        if self.third_group_second_type_mastery and (not self.third_group_type_mastery
+                or self.third_group_second_type_mastery==self.third_group_type_mastery
+                or next(row.group for row in self.types if row.id==self.third_group_second_type_mastery)!=self.third_mastery_group):
+            raise ValueError('3つ目の分類の追加個別行動熟練が不正です。')
+
     def to_dict(self):
         data = super().to_dict()
         if not self.contact_service:
@@ -126,6 +134,8 @@ class RelationshipConfig(TypesConfig):
         if not self.mastery_group:
             data['rules'].pop('mastery_group')
             data['rules'].pop('mastery_engagement_multiplier')
+        if not self.third_group_second_type_mastery:
+            data['rules'].pop('third_group_second_type_mastery')
         if not self.third_group_type_mastery:
             data['rules'].pop('third_group_type_mastery')
         if not self.third_mastery_group:
@@ -179,7 +189,7 @@ class RelationshipInteraction(TypesInteraction):
             score*=self.config.mastery_engagement_multiplier
             diagnostic=dict(diagnostic,mastery_group=diagnostic['boredom_group'],
                             mastery_multiplier=self.config.mastery_engagement_multiplier,score=score)
-        if action in INTERACTIONS and score>0 and self.state['mode'] in (self.config.type_mastery,self.config.second_type_mastery,self.config.second_group_type_mastery,self.config.second_group_second_type_mastery,self.config.third_group_type_mastery):
+        if action in INTERACTIONS and score>0 and self.state['mode'] in (self.config.type_mastery,self.config.second_type_mastery,self.config.second_group_type_mastery,self.config.second_group_second_type_mastery,self.config.third_group_type_mastery,self.config.third_group_second_type_mastery):
             score*=self.config.type_mastery_engagement_multiplier
             diagnostic=dict(diagnostic,type_mastery=self.state['mode'],
                             type_mastery_multiplier=self.config.type_mastery_engagement_multiplier,score=score)
@@ -194,7 +204,7 @@ class RelationshipInteraction(TypesInteraction):
         if (action=='switch' and c.mastery_group
                 and self.type_map[target_type].group in (c.mastery_group,c.second_mastery_group,c.third_mastery_group)):
             record['diagnostic']=dict(record['diagnostic'],mastery_switch=True,mastery_group=self.type_map[target_type].group)
-        if action=='switch' and target_type in (c.type_mastery,c.second_type_mastery,c.second_group_type_mastery,c.second_group_second_type_mastery,c.third_group_type_mastery):
+        if action=='switch' and target_type in (c.type_mastery,c.second_type_mastery,c.second_group_type_mastery,c.second_group_second_type_mastery,c.third_group_type_mastery,c.third_group_second_type_mastery):
             record['diagnostic']=dict(record['diagnostic'],type_mastery_switch=True,type_mastery=target_type)
         normal = record['normal_reaction']
         normal_delta = (c.affinity_enthusiastic if normal == 'enthusiastic' else c.affinity_favorable if normal == 'favorable'

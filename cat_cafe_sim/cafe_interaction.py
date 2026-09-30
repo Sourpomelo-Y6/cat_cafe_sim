@@ -473,6 +473,7 @@ class CafeInteractionSession:
         config = replace(self.interaction_config, contact_service=contact_applies(self.core, customer_id), play_service=play_applies(self.core, customer_id), quiet_service=applies(self.core, customer_id), **effects(self.core, actual_seat), customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
                          mastery_group=interaction_terms(self.core,cat_id)['group'],
                          third_group_type_mastery=interaction_terms(self.core,cat_id)['third_group_type'],
+                         third_group_second_type_mastery=interaction_terms(self.core,cat_id)['third_group_second_type'],
                          third_mastery_group=interaction_terms(self.core,cat_id)['third_group'],
                          second_mastery_group=interaction_terms(self.core,cat_id)['second_group'],
                          mastery_engagement_multiplier=interaction_terms(self.core,cat_id)['multiplier'],
@@ -501,6 +502,9 @@ class CafeInteractionSession:
         third=row.get('third_group_practice',{})
         if third.get('mastery') and 'type_mastery_threshold' in growth['rules'] and 'individual' not in third:
             self.core.begin_third_group_type_practice(cat_id)
+        individual=third.get('individual',{})
+        if individual.get('type_mastery') and 'second_type_mastery_threshold' in growth['rules'] and 'second' not in individual:
+            self.core.begin_third_group_second_type_practice(cat_id)
 
     def step(self, action=None, target_type=None):
         self._ready()

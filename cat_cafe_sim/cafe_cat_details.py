@@ -60,6 +60,9 @@ def cat_details(session, cat_id):
             from .core.cafe_growth import type_label
             basic += [('3つ目の分類の得意な行動',type_label(individual['type_mastery']) if individual.get('type_mastery') else '未選択')]
             basic += [(f'3つ目の分類の個別習得対象：{type_label(key)}',f'{individual.get("actions",{}).get(key,0):g}') for key in growth['type_actions']]
+            extra=individual.get('second',{})
+            basic += [('3つ目の分類の追加の得意な行動',type_label(extra['type_mastery']) if extra.get('type_mastery') else '未選択')]
+            basic += [(f'3つ目の分類の追加個別習得対象：{type_label(key)}',f'{extra.get("actions",{}).get(key,0):g}') for key in growth['type_actions']]
             basic += [(f'3つ目の分類習得対象：{GROUP_LABELS[key]}',f'{third.get("groups",{}).get(key,0):g}') for key in GROUP_LABELS]
         if 'type_mastery_actions' in growth:
             from .core.cafe_growth import type_label

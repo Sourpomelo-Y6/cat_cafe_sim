@@ -19,16 +19,18 @@ class CafeCatGrowthWindow:
         if self.type_mastery_mode:
             choices=type_mastery_choices(session.core,self.cat_id)
             slot=type_mastery_stage(session.core,self.cat_id)
-            actions=(row['third_group_practice']['individual']['actions'] if slot=='third_group' else
+            actions=(row['third_group_practice']['individual']['second']['actions'] if slot=='third_group_second' else
+                     row['third_group_practice']['individual']['actions'] if slot=='third_group' else
                      row['second_group_type_practice']['second']['actions'] if slot=='second_group_second' else
                      row['second_group_type_practice']['actions'] if slot=='second_group' else
                      row['second_type_mastery_actions'] if slot=='second' else row['type_mastery_actions'])
             practice=' / '.join(f"{type_label(key)} {actions[key]:g}回" for key in choices)
-            stage=(f"3つ目の分類（{GROUP_LABELS[row['third_group_practice']['mastery']]}）の得意な行動" if slot=='third_group' else
+            stage=(f"3つ目の分類（{GROUP_LABELS[row['third_group_practice']['mastery']]}）の追加の得意な行動" if slot=='third_group_second' else
+                   f"3つ目の分類（{GROUP_LABELS[row['third_group_practice']['mastery']]}）の得意な行動" if slot=='third_group' else
                    f"2つ目の分類（{GROUP_LABELS[row['second_mastery']]}）の追加の得意な行動" if slot=='second_group_second' else
                    f"2つ目の分類（{GROUP_LABELS[row['second_mastery']]}）の得意な行動" if slot=='second_group' else
                    '2つ目の得意な行動' if slot=='second' else '得意な行動')
-            period='初回習得後に開始した接客の未習得行動で、' if slot=='second_group_second' else '初回習得後、未習得行動で' if slot=='second' else '分類習得後に開始した接客で、' if slot=='second_group' else '分類習得後に開始した接客で、' if slot=='third_group' else '分類習得後、'
+            period='初回習得後に開始した接客の未習得行動で、' if slot in ('second_group_second','third_group_second') else '初回習得後、未習得行動で' if slot=='second' else '分類習得後に開始した接客で、' if slot=='second_group' else '分類習得後に開始した接客で、' if slot=='third_group' else '分類習得後、'
             text=(f"{name}の{stage}を1つ選んでください。\n"
                   f"{period}親しみが増えた接客の対象実績：{practice}\n\n"
                   f"選んだ行動では、関心の通常増加が追加で{selected['type_mastery_engagement_multiplier']:g}倍になります。")

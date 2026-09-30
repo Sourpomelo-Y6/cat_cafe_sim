@@ -106,6 +106,10 @@ def cat_events(core, cat_id):
         if individual.get('type_mastery'):
             from .core.cafe_growth import type_label
             add(individual['selected_day'],'3つ目の分類の得意な行動の選択','成長',type_label(individual['type_mastery']))
+        extra=individual.get('second',{})
+        if extra.get('type_mastery'):
+            from .core.cafe_growth import type_label
+            add(extra['selected_day'],'3つ目の分類の追加の得意な行動の選択','成長',type_label(extra['type_mastery']))
         if growth.get('type_mastery'):
             from .core.cafe_growth import type_label
             add(growth['type_mastery_selected_day'],'得意な行動の選択','成長',type_label(growth['type_mastery']))
