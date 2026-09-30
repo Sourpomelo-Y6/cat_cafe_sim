@@ -291,8 +291,9 @@ class ManualCafeInteractionWindow:
             elif kind=='item_sold':
                 text=f"{event['name']}を1個売却 · 収入 {event['price']:g}"
             elif kind=='item_used':
-                item_stat='疲労' if event.get('stat')=='fatigue' else 'ストレス'
-                text=f"{event['cat_id']}に{event['name']}を使用 · {item_stat} {event['before']:g} → {event['after']:g}"
+                from .core.cafe_items import change_text
+                item_id='special_care_set' if event.get('stat')=='both' else 'nutrition_snack' if event.get('stat')=='fatigue' else 'care_supplies'
+                text=f"{event['cat_id']}に{event['name']}を使用 · "+change_text(dict(id=item_id),event['before'],event['after'])
             elif kind=='shifts_set':
                 text='出勤・休養を設定 · 出勤 '+('、'.join(event['working_cats']) or 'なし')
             elif kind=='day_off':

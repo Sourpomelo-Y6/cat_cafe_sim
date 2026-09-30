@@ -87,9 +87,9 @@ def cat_events(core, cat_id):
             continue
         from .core.cafe_items import reward_for_source
         item=reward_for_source(core,use['source'])['item']
-        from .core.cafe_items import label, stat
-        title = '栄養おやつの使用' if stat(item) == 'fatigue' else 'ケア用品の使用'
-        add(use['day'], title, item['name'], f"1個使用 / {label(item)} {use['before']:g} → {use['after']:g}")
+        from .core.cafe_items import change_text, stat
+        title = '特製ケアセットの使用' if stat(item)=='both' else '栄養おやつの使用' if stat(item) == 'fatigue' else 'ケア用品の使用'
+        add(use['day'], title, item['name'], '1個使用 / '+change_text(item,use['before'],use['after']))
     growth=(core.growth or {}).get('cats',{}).get(cat_id)
     if growth and growth['specialization']:
         from .core.cafe_growth import LABELS

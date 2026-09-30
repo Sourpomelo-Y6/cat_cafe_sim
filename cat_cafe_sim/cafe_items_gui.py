@@ -1,5 +1,5 @@
 """所持品と在店猫を選び、準備中にケア用品を使う。"""
-from .core.cafe_items import inventory, unavailable_reason, stat, label, relief, current, effect_text
+from .core.cafe_items import inventory, unavailable_reason, stat, relief, current, effect_text,after_value,change_text
 
 
 class CafeItemsWindow:
@@ -45,7 +45,7 @@ class CafeItemsWindow:
         self.use_button.pack(side='left')
         self.close_button = ttk.Button(footer, text='閉じる', command=self.window.destroy)
         self.close_button.pack(side='right')
-        ttk.Label(frame, text='ケア用品は購入または近所のお店への訪問、栄養おやつは購入で入手できます。\n帰還報酬を受け取った後、準備中に在店猫へ使えます。', wraplength=540).pack(anchor='w', pady=(0, 8))
+        ttk.Label(frame, text='ケア用品は購入または近所のお店への訪問、栄養おやつ・特製ケアセットは購入で入手できます。\n準備中に在店猫へ使えます。', wraplength=540).pack(anchor='w', pady=(0, 8))
         pages = ttk.Notebook(frame)
         pages.pack(fill='both', expand=True)
         use_page = ttk.Frame(pages)
@@ -96,7 +96,8 @@ class CafeItemsWindow:
             self.sale_history.insert('', 'end', values=(f"{row['day']}日目", item['name'], f"{row['price']:g}"))
         groups = {}
         for source, item in inventory(core).items():
-            key = (item['id'], item['name'], relief(item))
+            amount=relief(item)
+            key = (item['id'], item['name'], tuple(amount.items()) if isinstance(amount,dict) else amount)
             groups.setdefault(key, []).append(source)
         for (_, name, _), sources in groups.items():
             self.items.insert('', 'end', iid=sources[0], values=(name, len(sources), effect_text(inventory(core)[sources[0]])))
@@ -107,7 +108,7 @@ class CafeItemsWindow:
             from .core.cafe_items import reward_for_source
             item = reward_for_source(core,row['source'])['item']
             self.history.insert('', 'end', values=(f"{row['day']}日目", self.session.profiles.get(row['cat_id'], {}).get('name', row['cat_id']),
-                item['name'], f"{label(item)} {row['before']:g} → {row['after']:g}"))
+                item['name'], change_text(item,row['before'],row['after'])))
         for table, previous in ((self.items, previous_items), (self.cats, previous_cats)):
             keys = table.get_children()
             if keys:
@@ -137,7 +138,8 @@ class CafeItemsWindow:
         item = inventory(self.session.core)[sources[0]]
         before = current(self.session.core, item, cats[0])
         note = '体力・ストレス・好感度、病気の療養日数は変わりません。' if stat(item)=='fatigue' else '体力・疲労・好感度は変わりません。'
-        self.notice.set(f'1個消費：{label(item)} {before:g} → {max(0, before-relief(item)):g}。'+note)
+        if stat(item)=='both':note='体力・好感度、病気の状態・療養日数は変わりません。'
+        self.notice.set('1個消費：'+change_text(item,before,after_value(item,before))+'。'+note)
         self.use_button.state(['!disabled'])
 
     def use(self):
@@ -156,7 +158,7 @@ class CafeItemsWindow:
             name = self.session.profiles.get(cats[0], {}).get('name', cats[0])
             from .core.cafe_items import reward_for_source
             item = reward_for_source(self.session.core, sources[0])['item']
-            self.result.set(f"{name}に使用しました。{label(item)} {row['before']:g} → {row['after']:g}")
+            self.result.set(f"{name}に使用しました。"+change_text(item,row['before'],row['after']))
         self.on_changed()
         self.refresh()
 

@@ -44,7 +44,7 @@ flowchart TD
 | 施設と投資 | 2→3→4→5→6→7席、休養スペースの購入・1段階強化、待合の購入・2段階目の強化、従来2種＋分類別3種の接客設備 | [施設計画](HumanToCatStoreDevelopmentPlan.md)、[設備](HumanToCatSeatEquipment.md) |
 | 顧客と評価 | 名簿と予定、曜日、好み・相性、満足／普通／不満、常連、累積不満、停止・回復・永久離脱 | [名簿](HumanToCatCustomers.md)、[相性](HumanToCatCustomerPreferences.md)、[評価](HumanToCatCustomerSatisfaction.md)、[常連](HumanToCatCustomerLoyalty.md)、[不満](HumanToCatCustomerDiscontent.md)、[信頼](HumanToCatCustomerTrust.md) |
 | 追加客層 | 第1段階の白猫好き・静かな交流客・遊び客・触れ合い客、第2段階の予約、最終段階のVIP | [白猫好き](HumanToCatAdvancedCustomers.md)、[静かな交流客](HumanToCatQuietCustomer.md)、[遊び客](HumanToCatPlayCustomer.md)、[触れ合い客](HumanToCatContactCustomer.md)、[予約](HumanToCatReservations.md)、[VIP](HumanToCatVipCustomer.md) |
-| 経営とイベント | 運営費、日次・期間収支、ケア用品・栄養おやつの購入・使用・売却、店舗イベント、在店猫の家出と帰還 | [経営](HumanToCatManagement.md)、[運営費](HumanToCatOperatingCosts.md)、[収支](HumanToCatDailyFinance.md)、[用品](HumanToCatItems.md)、[店舗イベント](HumanToCatStoreEvents.md) |
+| 経営とイベント | 運営費、日次・期間収支、ケア用品・栄養おやつ・特製ケアセットの購入・使用・売却、店舗イベント、在店猫の家出と帰還 | [経営](HumanToCatManagement.md)、[運営費](HumanToCatOperatingCosts.md)、[収支](HumanToCatDailyFinance.md)、[用品](HumanToCatItems.md)、[店舗イベント](HumanToCatStoreEvents.md) |
 | 目標と終了 | 人気150→225→300を各10日（自由営業・好感度・有力者モードから任意開始も可能）、有力者満足度100、プレイヤー好感度80以上の在籍猫6匹、自由営業、共通結果 | [人気](HumanToCatPopularityGoal.md)、[有力者](HumanToCatPatronGoal.md)、[好感度](HumanToCatBondGoal.md)、[結果](HumanToCatClearResults.md) |
 | 保存・再現 | 営業セーブ形式2、旧形式の読込、詳細ログとリプレイ、日次比較 | [営業セーブ](HumanToCatCafeSaves.md)、[軽量化](HumanToCatCompactSaves.md)、[日程](HumanToCatCafeDays.md) |
 

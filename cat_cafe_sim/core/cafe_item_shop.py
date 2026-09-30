@@ -55,4 +55,5 @@ def validate(core,data):
 
 def catalog():
     snack = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_nutrition_snack.json').read_text(encoding='utf-8'))
-    return [rules(), rules(snack)]
+    care_set = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_special_care_set.json').read_text(encoding='utf-8'))
+    return [rules(), rules(snack), rules(care_set)]
