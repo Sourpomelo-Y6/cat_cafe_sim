@@ -2166,7 +2166,8 @@ class CafeStartWindowTests(unittest.TestCase):
         app.show_goal()
         self.assertIn('期限付き目標なし',app.goal_window.status.get())
         self.assertEqual(app.goal_window.history.get_children(),())
-        self.assertTrue(app.goal_window.enable_button.instate(['disabled']))
+        self.assertEqual(app.goal_window.enable_button['text'],'人気3段階へ挑戦')
+        self.assertFalse(app.goal_window.enable_button.instate(['disabled']))
 
     def test_cancel_create_and_restart_failure_then_success(self):
         from cat_cafe_sim.storage.cafe_saves import load_game

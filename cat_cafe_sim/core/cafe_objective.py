@@ -8,10 +8,10 @@ def validate(core, mode):
     if core.goal['started_day'] != 1 or core.management['started_day'] != 1:
         raise ValueError('新規ゲームの目標・経営開始日は1日目です。')
     challenge='challenge_started_day' in core.goal
-    if challenge and (mode!='free' or core.goal.get('tracking_only')
+    if challenge and (mode not in ('free','bond') or core.goal.get('tracking_only')
             or 'stages' not in core.goal['rules'] or any(getattr(core,key) is None for key in
                 ('advanced_customers','reservation','quiet_customer','play_customer','contact_customer','vip_customer'))):
-        raise ValueError('自由営業からの人気挑戦と追加客設定が一致しません。')
+        raise ValueError('途中開始の人気挑戦と追加客設定が一致しません。')
     if not challenge and (mode == 'popularity') == bool(core.goal.get('tracking_only')):
         raise ValueError('選択した目標と人気の期限設定が一致しません。')
     data = core.patron if mode == 'patron' else core.bond_goal if mode == 'bond' else None

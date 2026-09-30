@@ -22,7 +22,7 @@
 | アイテム | 売却、種類追加、抽選報酬、所持上限 | [用品](HumanToCatItems.md) |
 | 派遣 | 新しい派遣先・出来事・報酬。宿以外への家出トラブル追加は未採用 | [派遣](HumanToCatCafeActivities.md)、[宿のトラブル](HumanToCatDispatchTrouble.md) |
 | 履歴・イベント編集 | 営業セーブに毎行動の詳細履歴を持つ方法、汎用的なイベント編集・抽選基盤 | [猫の詳細](HumanToCatCatDetailsPlan.md)、[軽量保存](HumanToCatCompactSaves.md)、[店舗イベント](HumanToCatStoreEvents.md) |
-| 目標 | 複数の有力者、有力者・好感度モードでの人気への挑戦開始・客層解放、新規ゲームへの解放引き継ぎ | [有力者](HumanToCatPatronGoal.md)、[目標選択](HumanToCatObjectiveSelection.md)、[施設計画](HumanToCatStoreDevelopmentPlan.md) |
+| 目標 | 複数の有力者、有力者モードでの人気への挑戦開始・客層解放、新規ゲームへの解放引き継ぎ | [有力者](HumanToCatPatronGoal.md)、[目標選択](HumanToCatObjectiveSelection.md)、[施設計画](HumanToCatStoreDevelopmentPlan.md) |
 | 検証 | エンディングまでの自動プレイヤー、細かな数値調整・長期バランス比較 | [全体計画](HumanToCatGameFlowPlan.md)、[100日評価](HumanToCatLongTermEvaluation.md) |
 
 この表の候補は新しい採用仕様ではありません。追加前に発生条件、選択肢、費用・報酬、終了時の扱い、旧セーブへの適用範囲を決めます。基盤があることだけで、すべての候補が実装済みとは扱いません。

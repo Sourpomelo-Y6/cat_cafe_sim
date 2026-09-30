@@ -103,7 +103,7 @@ class PopularityChallengeTests(unittest.TestCase):
         self.assertEqual(s.core.goal['status'],'cleared'); self.reload(s)
 
     def test_wrong_modes_closed_service_player_exchange_and_event_waits_are_blocked(self):
-        for mode in ('popularity','patron','bond'):
+        for mode in ('popularity','patron'):
             s=self.game(mode); self.rejected(s,s.start_popularity_challenge)
         s=self.game(); s.step(); self.rejected(s,s.start_popularity_challenge)
         self.close(s); self.rejected(s,s.start_popularity_challenge)
