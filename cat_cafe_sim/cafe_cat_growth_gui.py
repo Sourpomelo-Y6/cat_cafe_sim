@@ -5,16 +5,25 @@ class CafeCatGrowthWindow:
     def __init__(self,parent,session,on_changed):
         import tkinter as tk
         from tkinter import ttk
-        from .core.cafe_growth import pending,mastery_pending,mastery_choices,GROUP_LABELS
+        from .core.cafe_growth import pending,mastery_pending,mastery_choices,GROUP_LABELS,type_mastery_pending,type_mastery_choices,type_label
         self.session,self.on_changed=session,on_changed
-        regular=pending(session.core);self.mastery_mode=not bool(regular)
-        self.cat_id=(regular or mastery_pending(session.core))[0]
+        regular=pending(session.core);groups=mastery_pending(session.core)
+        self.type_mastery_mode=not bool(regular or groups)
+        self.mastery_mode=not bool(regular) and not self.type_mastery_mode
+        self.cat_id=(regular or groups or type_mastery_pending(session.core))[0]
         name=session.profiles.get(self.cat_id,{}).get('name',self.cat_id)
         selected=session.core.growth['rules'];row=session.core.growth['cats'][self.cat_id]
         self.window=tk.Toplevel(parent);self.window.title('猫の得意分野')
         self.window.geometry('650x330');self.window.minsize(540,300);self.window.transient(parent);self.window.grab_set()
         frame=ttk.Frame(self.window,padding=12);frame.pack(fill='both',expand=True)
-        if self.mastery_mode:
+        if self.type_mastery_mode:
+            choices=type_mastery_choices(session.core,self.cat_id)
+            practice=' / '.join(f"{type_label(key)} {row['type_mastery_actions'][key]:g}回" for key in choices)
+            text=(f"{name}の得意な行動を1つ選んでください。\n"
+                  f"分類習得後、親しみが増えた接客の対象実績：{practice}\n\n"
+                  f"選んだ行動では、関心の通常増加が追加で{selected['type_mastery_engagement_multiplier']:g}倍になります。")
+            buttons=tuple((type_label(value)+'を得意にする',value) for value in choices)
+        elif self.mastery_mode:
             counts=row['mastery_groups']
             text=(f"{name}が接客に習熟しました。得意な交流を1つ選んでください。\n"
                   f"親しみが増えた接客の実績：遊び {counts['play']:g} / 触れ合い {counts['contact']:g} / 静かな交流 {counts['quiet']:g}\n\n"
@@ -29,17 +38,20 @@ class CafeCatGrowthWindow:
             buttons=(('接客を得意にする','service'),('休養を得意にする','rest'),('派遣を得意にする','dispatch'))
         ttk.Label(frame,text=text,wraplength=600,justify='left').pack(anchor='w',pady=8)
         footer=ttk.Frame(frame);footer.pack(side='bottom',fill='x')
+        choices_frame=ttk.Frame(footer);choices_frame.pack(side='left',fill='x',expand=True)
+        choices_frame.columnconfigure((0,1),weight=1)
         self.choice_buttons={}
         for index,(label,choice) in enumerate(buttons):
-            button=ttk.Button(footer,text=label,command=lambda value=choice:self.resolve(value))
-            button.pack(side='left',padx=(0 if index==0 else 4,0));self.choice_buttons[choice]=button
+            button=ttk.Button(choices_frame,text=label,command=lambda value=choice:self.resolve(value))
+            button.grid(row=index//2,column=index%2,sticky='ew',padx=2,pady=2);self.choice_buttons[choice]=button
         ttk.Button(footer,text='閉じる',command=self.close).pack(side='right')
         self.window.protocol('WM_DELETE_WINDOW',self.close);self.window.bind('<Escape>',lambda e:self.close())
 
     def resolve(self,choice):
         from tkinter import messagebox
         try:
-            if self.mastery_mode:self.session.resolve_growth_mastery(self.cat_id,choice)
+            if self.type_mastery_mode:self.session.resolve_growth_type_mastery(self.cat_id,choice)
+            elif self.mastery_mode:self.session.resolve_growth_mastery(self.cat_id,choice)
             else:self.session.resolve_growth(self.cat_id,choice)
         except (ValueError,OSError) as exc:messagebox.showerror('得意分野を選べません',str(exc),parent=self.window);return
         self.close()

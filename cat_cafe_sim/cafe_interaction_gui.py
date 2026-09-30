@@ -101,6 +101,10 @@ class ManualCafeInteractionWindow:
                     text+=f" / 得意な交流×{event['record']['diagnostic']['mastery_multiplier']:g}"
                 elif event['record']['diagnostic'].get('mastery_switch'):
                     text+=' / 得意な交流を考慮して切り替え'
+                if event['record']['diagnostic'].get('type_mastery_multiplier'):
+                    text+=f" / 得意な行動×{event['record']['diagnostic']['type_mastery_multiplier']:g}"
+                elif event['record']['diagnostic'].get('type_mastery_switch'):
+                    text+=' / 得意な行動を考慮して切り替え'
             elif kind=='automatic_assignment':
                 name=self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])
                 text=(f"自動割り当て：{customer_label(event['customer_id'])} → {name} / "+
@@ -199,6 +203,10 @@ class ManualCafeInteractionWindow:
                 text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}が接客に習熟 · 対象実績 {event['total']:g}"
             elif kind=='growth_mastery_selected':
                 text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}の得意な交流：{event['label']}"
+            elif kind=='growth_type_mastery_ready':
+                text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}が個別行動に習熟 · 対象実績 {event['total']:g}"
+            elif kind=='growth_type_mastery_selected':
+                text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}の得意な行動：{event['label']}"
             elif kind=='growth_service_effect':
                 text=f"接客成長効果 · 体力 {event['stamina_refund']:g}回復"
             elif kind=='intake_request_waiting':
@@ -555,8 +563,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.instructions.configure(text='有力者目標クリア！「結果・記録」→「有力者目標・結果…」で結果を確認してください。')
         from .core.cafe_intake_request import pending as intake_pending
         from .core.cafe_store_events import waiting as store_event_waiting
-        from .core.cafe_growth import pending as growth_pending,mastery_pending
-        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core) or bool(store_event_waiting(core)) or bool(growth_pending(core)) or bool(mastery_pending(core))
+        from .core.cafe_growth import pending as growth_pending,mastery_pending,type_mastery_pending
+        events_waiting=bool(waiting_events(core)) or playing or ended or goal_waiting or intake_pending(core) or bool(store_event_waiting(core)) or bool(growth_pending(core)) or bool(mastery_pending(core)) or bool(type_mastery_pending(core))
         if core.management:
             self.status.set(self.status.get()+f" · 人気 {core.management['popularity']:g}")
         self.day_off_button.state(['!disabled'] if core.can_set_shifts and not self.session.pending and not events_waiting else ['disabled'])
@@ -630,7 +638,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
 
     def refresh_dashboard(self):
         from .core.cafe_store_events import waiting as store_event_waiting
-        from .core.cafe_growth import pending as growth_pending,mastery_pending
+        from .core.cafe_growth import pending as growth_pending,mastery_pending,type_mastery_pending
         from .core.cafe_activities import waiting_events
         from .core.cafe_adoption import waiting as adoptions
         from .core.cafe_management import waiting as returns, is_over
@@ -698,6 +706,10 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         elif mastery_pending(core):
             key=mastery_pending(core)[0];name=self.session.profiles.get(key,{}).get('name',key)
             self.notice.set(f'{name}が接客に習熟しました。得意な交流を選んでください。')
+            self._attention = self.show_growth
+        elif type_mastery_pending(core):
+            key=type_mastery_pending(core)[0];name=self.session.profiles.get(key,{}).get('name',key)
+            self.notice.set(f'{name}が個別行動に習熟しました。得意な行動を選んでください。')
             self._attention = self.show_growth
         elif waiting_events(core, include_introductions=False):
             from .core.cafe_dispatch_encounters import waiting as choice_waiting

@@ -50,6 +50,10 @@ def cat_details(session, cat_id):
                       ('習得対象：遊び',f"{growth['mastery_groups']['play']:g}"),
                       ('習得対象：触れ合い',f"{growth['mastery_groups']['contact']:g}"),
                       ('習得対象：静かな交流',f"{growth['mastery_groups']['quiet']:g}")]
+        if 'type_mastery_actions' in growth:
+            from .core.cafe_growth import type_label
+            basic += [('得意な行動',type_label(growth['type_mastery']) if growth['type_mastery'] else '未選択')]
+            basic += [(f'個別習得対象：{type_label(key)}',f'{count:g}') for key,count in growth['type_mastery_actions'].items()]
     if core.recruitment and cat_id in core.recruitment['accepted']:
         basic += [('加入経路', '保護猫の受け入れ'), ('加入日', f"{core.recruitment['accepted'][cat_id]}日目")]
     if core.pet_shop and cat_id in core.pet_shop['accepted']:

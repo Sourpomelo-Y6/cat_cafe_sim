@@ -411,6 +411,8 @@ def restore(data):
         interaction=active[key]
         check_interaction(core, interaction)
         check_equipment(core, interaction, key)
+        from .cafe_growth import check_interaction as check_growth
+        check_growth(core, interaction)
         from .cafe_quiet_customer import check_interaction as check_quiet
         check_quiet(core, interaction)
         from .cafe_play_customer import check_interaction as check_play

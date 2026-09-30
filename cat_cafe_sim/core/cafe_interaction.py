@@ -302,6 +302,8 @@ class CafeInteractionCore(SimulationCore):
         if growth_pending(self):raise ValueError('成長できる猫の得意分野を選んでください。')
         from .cafe_growth import mastery_pending
         if mastery_pending(self):raise ValueError('接客を習熟した猫の得意な交流を選んでください。')
+        from .cafe_growth import type_mastery_pending
+        if type_mastery_pending(self):raise ValueError('個別行動を習熟した猫の得意な行動を選んでください。')
 
     @property
     def can_set_shifts(self):
@@ -433,6 +435,10 @@ class CafeInteractionCore(SimulationCore):
     def resolve_growth(self,cat_id,choice):
         from .cafe_growth import resolve
         resolve(self,cat_id,choice)
+
+    def resolve_growth_type_mastery(self,cat_id,choice):
+        from .cafe_growth import resolve_type_mastery
+        resolve_type_mastery(self,cat_id,choice)
 
     def resolve_growth_mastery(self,cat_id,choice):
         from .cafe_growth import resolve_mastery

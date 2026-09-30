@@ -37,7 +37,7 @@ flowchart TD
 | --- | --- | --- |
 | 開始・操作 | 新規／再開／試遊、4つの目標選択、3メニューの営業画面、手動／自動割り当て | [新規開始](HumanToCatNewGame.md)、[目標選択](HumanToCatObjectiveSelection.md)、[UI](HumanToCatUIFlow.md)、[自動交流](HumanToCatAutomaticCafe.md) |
 | 交流・関係 | 8種類の交流、特別行動、任意・時間・体力切れの終了、猫と客ごとの親しみ | [交流種類](HumanToCatInteractionTypes.md)、[特別行動](HumanToCatSpecialActionsSpecification.md)、[関係](HumanToCatRelationshipSpecification.md) |
-| 猫の状態と成長 | 詳細とできごと、出勤・休養・疲労・療養、特性3種類、活動経験・得意分野・3分類の熟練 | [詳細](HumanToCatCatDetailsPlan.md)、[出勤](HumanToCatCafeShifts.md)、[健康](HumanToCatCafeHealth.md)、[特性](HumanToCatTraits.md)、[成長](HumanToCatCatGrowthPlan.md) |
+| 猫の状態と成長 | 詳細とできごと、出勤・休養・疲労・療養、特性3種類、活動経験・得意分野・3分類と個別行動の熟練 | [詳細](HumanToCatCatDetailsPlan.md)、[出勤](HumanToCatCafeShifts.md)、[健康](HumanToCatCafeHealth.md)、[特性](HumanToCatTraits.md)、[成長](HumanToCatCatGrowthPlan.md) |
 | 加入と飼育 | 定期保護猫候補、4日目の依頼、購入、派遣からの紹介、6→9匹の飼育枠 | [加入経路](HumanToCatRecruitmentPlan.md)、[飼育枠](HumanToCatHousing.md) |
 | プレイヤーとの関係 | 準備中の交流、プレイヤー好感度、任意ON/OFFの譲渡と予防 | [プレイヤー交流](HumanToCatPlayerInteraction.md)、[譲渡](HumanToCatAdoption.md) |
 | 派遣 | 基本3派遣先、有力者訪問、山あいの宿、段階解放、歓迎条件、資金・アイテム報酬、選択と帰還 | [活動・派遣](HumanToCatCafeActivities.md)、[選択イベント](HumanToCatDispatchEncounters.md)、[宿のトラブル](HumanToCatDispatchTrouble.md) |
