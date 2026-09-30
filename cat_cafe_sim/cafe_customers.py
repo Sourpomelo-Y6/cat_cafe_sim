@@ -2,7 +2,7 @@
 import re
 from .core.cafe_preferences import FEATURES, preference_for
 from .core.cafe_advanced_customers import CUSTOMER_ID, NAME
-from .core.cafe_expansion import EXTRA_CUSTOMER_ID,FIFTH_CUSTOMER_ID,SIXTH_CUSTOMER_ID,four_seat_purchase,five_seat_purchase,six_seat_purchase
+from .core.cafe_expansion import EXTRA_CUSTOMER_ID,FIFTH_CUSTOMER_ID,SIXTH_CUSTOMER_ID,SEVENTH_CUSTOMER_ID,four_seat_purchase,five_seat_purchase,six_seat_purchase,seven_seat_purchase
 
 # IDとの対応は保存再開・既存ゲームで維持する。追加するときも順番を変更しない。
 _NAMES = ('佐藤', '鈴木', '高橋', '田中', '伊藤', '渡辺', '山本', '中村', '小林', '加藤',
@@ -23,6 +23,8 @@ def customer_name(customer_id):
         return '5席目の増設で来店したお客さん'
     if customer_id==SIXTH_CUSTOMER_ID:
         return '6席目の増設で来店したお客さん'
+    if customer_id==SEVENTH_CUSTOMER_ID:
+        return '7席目の増設で来店したお客さん'
     from .core.cafe_reservation import CUSTOMER_ID as RESERVATION_ID,NAME as RESERVATION_NAME
     if customer_id==RESERVATION_ID:return RESERVATION_NAME
     from .core.cafe_vip_customer import CUSTOMER_ID as VIP_ID,NAME as VIP_NAME
@@ -63,6 +65,8 @@ def preference(core, customer_id):
         return preference_for(core.seed,customer_id,data['rules']['pool'])
     if customer_id==SIXTH_CUSTOMER_ID and six_seat_purchase(core):
         return preference_for(core.seed,customer_id,data['rules']['pool'])
+    if customer_id==SEVENTH_CUSTOMER_ID and seven_seat_purchase(core):
+        return preference_for(core.seed,customer_id,data['rules']['pool'])
     existing = data['customers'].get(customer_id)
     if existing is not None:
         return existing
@@ -101,6 +105,8 @@ def directory(session):
         known.add(FIFTH_CUSTOMER_ID)
     if six_seat_purchase(core):
         known.add(SIXTH_CUSTOMER_ID)
+    if seven_seat_purchase(core):
+        known.add(SEVENTH_CUSTOMER_ID)
     if core.reservation is not None:
         from .core.cafe_reservation import CUSTOMER_ID as RESERVATION_ID
         known.add(RESERVATION_ID)

@@ -134,12 +134,13 @@ class SixSeatExpansionTests(unittest.TestCase):
         self.rejected(s,lambda:s.dispatch(other))
         self.reload(s)
 
-    def test_funds_boundary_save_failure_and_no_seventh_purchase(self):
+    def test_funds_boundary_save_failure_and_legacy_six_seat_limit(self):
         s=self.unlocked(); self.assertEqual(estimate(s.core,6)-estimate(s.core),10)
         s.core.funds=1500; self.rejected(s,s.expand_seats)
         s.core.funds=1501; s.core.recorded_digest=None; s.expand_seats()
         self.assertEqual(s.core.funds,1); self.rejected(s,s.expand_seats)
-        self.assertIsNone(next_step(s.core)); self.assertIn('現在追加できる席',reason(s.core,rules()))
+        old=rules(); old.pop('seven_seat_cost')
+        self.assertIsNone(next_step(s.core,old)); self.assertIn('現在追加できる席',reason(s.core,old))
         with patch('cat_cafe_sim.storage.cafe_saves.RelationshipStore._write',side_effect=OSError('full')):
             with self.assertRaises(OSError):save_game(s,s.checkpoint_path)
         self.assertEqual(s.core.funds,1)
@@ -151,11 +152,12 @@ class SixSeatExpansionTests(unittest.TestCase):
             with self.assertRaises(OSError):save_game(s,s.checkpoint_path)
         self.assertEqual(s.core.funds,funds)
         s=self.reload(s); self.assertEqual(len(s.core.expansion['purchases']),4)
-        self.rejected(s,s.expand_seats)
+        old=rules(); old.pop('seven_seat_cost')
+        self.rejected(s,lambda:s.expand_seats(old))
         self.assertEqual(s.core.summary()['expansion_expenses'],1500)
 
     def test_old_rules_single_stage_and_other_modes_do_not_unlock_sixth(self):
-        s=self.unlocked(); old=rules(); old.pop('six_seat_cost')
+        s=self.unlocked(); old=rules(); old.pop('six_seat_cost'); old.pop('seven_seat_cost')
         self.assertIsNone(next_step(s.core,old)); self.rejected(s,lambda:s.expand_seats(old))
         self.assertNotIn(SIXTH_CUSTOMER_ID,extra_schedule(s.core,s.core.day+1))
         self.reload(s); self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(),s.core.snapshot())
@@ -201,5 +203,5 @@ class SixSeatExpansionGuiTests(unittest.TestCase):
         with patch('tkinter.messagebox.askyesno',return_value=True):w.purchase_button.invoke()
         self.assertEqual(len(s.core.seats),6); self.assertTrue(changed)
         w.window.geometry('500x300'); root.update()
-        self.assertTrue(w.purchase_button.instate(['disabled']))
+        self.assertIn('6席 → 7席',w.details.get())
         self.assertGreater(w.purchase_button.winfo_width(),0); w.window.destroy()
