@@ -288,6 +288,10 @@ class CafeInteractionSession:
         self._ready()
         self.core.expand_seats(rules)
 
+    def upgrade_housing(self,rules=None):
+        self._ready(for_housing=True)
+        self.core.upgrade_housing(rules)
+
     def purchase_housing(self):
         self._ready(for_housing=True)
         self.core.purchase_housing()

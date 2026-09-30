@@ -218,7 +218,7 @@ class IntroductionHousingWindowTests(unittest.TestCase):
                 with patch('tkinter.messagebox.askyesno', return_value=True):
                     child.purchase_button.invoke()
                 self.assertFalse(owner.accept_button.instate(['disabled']))
-                self.assertTrue(owner.housing_button.instate(['disabled']))
+                self.assertFalse(owner.housing_button.instate(['disabled']))  # 追加拡張を選べる。
                 self.assertIn('上限 9匹', str([owner.details.item(key)['values'] for key in owner.details.get_children()]))
                 child.window.focus_force(); root.update()
                 child.window.event_generate('<Escape>'); root.update()

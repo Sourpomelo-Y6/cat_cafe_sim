@@ -28,6 +28,7 @@ def apply_operation(core, operation):
     elif kind=='resolve_growth_type_mastery':core.resolve_growth_type_mastery(operation['cat_id'],operation['choice'])
     elif kind=='resolve_growth_mastery':core.resolve_growth_mastery(operation['cat_id'],operation['choice'])
     elif kind=='initialize_housing':core.initialize_housing(operation['rules'])
+    elif kind=='upgrade_housing':core.upgrade_housing(operation['rules'])
     elif kind=='purchase_housing':core.purchase_housing()
     elif kind=='purchase_waiting_area':core.purchase_waiting_area()
     elif kind=='upgrade_waiting_area':core.upgrade_waiting_area(operation['rules'])

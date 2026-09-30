@@ -493,6 +493,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_housing import initialize
         initialize(self, rules)
 
+    def upgrade_housing(self,rules=None):
+        from .cafe_housing import upgrade
+        upgrade(self,rules)
+
     def purchase_housing(self):
         from .cafe_housing import purchase
         purchase(self)
