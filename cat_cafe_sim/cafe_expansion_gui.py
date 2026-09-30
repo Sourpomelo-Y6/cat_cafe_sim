@@ -40,10 +40,10 @@ class CafeExpansionWindow:
         if step:
             unlocked=(step['to_seats']==3 or step['to_seats']==4 and first_popularity_cleared(core)
                       or step['to_seats']==5 and second_popularity_cleared(core)
-                      or step['to_seats'] in (6,7) and final_popularity_cleared(core))
-            stage="最終段階" if step["to_seats"] in (6,7) else f"第{step['to_seats']-3}段階"
+                      or step['to_seats'] in (6,7,8) and final_popularity_cleared(core))
+            stage="最終段階" if step["to_seats"] in (6,7,8) else f"第{step['to_seats']-3}段階"
             unlock='' if unlocked else f"\n{step['to_seats']}席は人気目標の{stage}達成後に解放されます。"
-            visitors = '\n購入翌日から通常のお客さんが営業日ごとに1人増えます。' if step['to_seats'] in (4,5,6,7) else '\n来客数はまだ変わりません。'
+            visitors = '\n購入翌日から通常のお客さんが営業日ごとに1人増えます。' if step['to_seats'] in (4,5,6,7,8) else '\n来客数はまだ変わりません。'
             from .core.cafe_operating_cost import estimate
             running=('' if core.operating_cost is None else
                      f"\n日次運営費：{estimate(core):g} → {estimate(core,step['to_seats']):g}（毎日）")
@@ -55,7 +55,7 @@ class CafeExpansionWindow:
             self.details.set((history+'\n' if history else '')+'現在予定されている席の増設はすべて購入済みです。')
             self.purchase_button.configure(text='増設済み')
         problem = '先に接客結果の保存を再試行してください。' if self.session.pending else reason(core, self.selected)
-        self.notice.set(problem or ('増設した席は今日から使用できます。追加のお客さんは翌日から来店します。' if step and step['to_seats'] in (4,5,6,7) else '増設した席は今日から使用できます。'))
+        self.notice.set(problem or ('増設した席は今日から使用できます。追加のお客さんは翌日から来店します。' if step and step['to_seats'] in (4,5,6,7,8) else '増設した席は今日から使用できます。'))
         self.purchase_button.state(['disabled'] if problem else ['!disabled'])
 
     def show_equipment(self):

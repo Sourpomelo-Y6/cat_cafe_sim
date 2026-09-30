@@ -58,7 +58,7 @@
 
 ## 施設・経営・顧客
 
-- [店の段階的な増設：2席から7席へ](HumanToCatExpansion.md)
+- [店の段階的な増設：2席から8席へ](HumanToCatExpansion.md)
 - [席ごとの接客設備](HumanToCatSeatEquipment.md)
 - [休養設備：休養スペースの購入・強化](HumanToCatRestEquipment.md)
 - [待合スペースの施設強化](HumanToCatWaitingArea.md)

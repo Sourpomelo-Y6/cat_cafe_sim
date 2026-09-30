@@ -59,7 +59,7 @@ class FiveSeatExpansionTests(unittest.TestCase):
         self.assertIn('seat-5',s.free_seats);self.assertIsNotNone(five_seat_purchase(s.core))
         self.rejected(s,s.expand_seats)
         self.assertIn('最終段階',reason(s.core,rules()))
-        old=rules();old.pop('six_seat_cost');old.pop('seven_seat_cost')
+        old=rules();old.pop('six_seat_cost');old.pop('seven_seat_cost'); old.pop('eight_seat_cost')
         self.assertIn('現在追加できる席はありません',reason(s.core,old))
 
     def test_corrupt_record_and_old_rules(self):
