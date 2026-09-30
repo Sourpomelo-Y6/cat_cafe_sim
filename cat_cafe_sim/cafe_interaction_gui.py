@@ -245,6 +245,10 @@ class ManualCafeInteractionWindow:
                 text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}が3つ目の交流分類に習熟 · 対象実績 {event['total']:g}"
             elif kind=='growth_third_mastery_selected':
                 text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}の3つ目の得意な交流：{event['label']}"
+            elif kind=='growth_third_group_type_mastery_ready':
+                text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}が3つ目の分類の個別行動に習熟 · 対象実績 {event['total']:g}"
+            elif kind=='growth_third_group_type_mastery_selected':
+                text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}の3つ目の分類の得意な行動：{event['label']}"
             elif kind=='growth_service_effect':
                 text=f"接客成長効果 · 体力 {event['stamina_refund']:g}回復"
             elif kind=='intake_request_waiting':
@@ -770,7 +774,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             key=type_mastery_pending(core)[0];name=self.session.profiles.get(key,{}).get('name',key)
             from .core.cafe_growth import type_mastery_stage
             slot=type_mastery_stage(core,key)
-            stage='2つ目の分類の追加個別行動' if slot=='second_group_second' else '2つ目の分類の個別行動' if slot=='second_group' else '2つ目の個別行動' if slot=='second' else '個別行動'
+            stage='3つ目の分類の個別行動' if slot=='third_group' else '2つ目の分類の追加個別行動' if slot=='second_group_second' else '2つ目の分類の個別行動' if slot=='second_group' else '2つ目の個別行動' if slot=='second' else '個別行動'
             self.notice.set(f'{name}が{stage}に習熟しました。得意な行動を選んでください。')
             self._attention = self.show_growth
         elif waiting_events(core, include_introductions=False):

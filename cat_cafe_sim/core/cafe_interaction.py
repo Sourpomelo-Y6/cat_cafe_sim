@@ -481,6 +481,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_growth import begin_second_group_second_type_practice
         begin_second_group_second_type_practice(self,cat_id)
 
+    def begin_third_group_type_practice(self,cat_id):
+        from .cafe_growth import begin_third_group_type_practice
+        begin_third_group_type_practice(self,cat_id)
+
     def begin_third_group_practice(self,cat_id):
         from .cafe_growth import begin_third_group_practice
         begin_third_group_practice(self,cat_id)

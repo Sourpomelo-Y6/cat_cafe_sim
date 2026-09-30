@@ -19,12 +19,16 @@ class AutomaticInteractionPolicy:
             row=rows[key]
             if key!=current and row.group!=exclude_group and (group is None or row.group==group):
                 if getattr(config,'second_type_mastery','') or getattr(config,'second_group_second_type_mastery',''):
-                    learned=key in (config.type_mastery,config.second_type_mastery,getattr(config,'second_group_type_mastery',''),getattr(config,'second_group_second_type_mastery',''))
+                    learned=key in (config.type_mastery,config.second_type_mastery,getattr(config,'second_group_type_mastery',''),getattr(config,'second_group_second_type_mastery',''),getattr(config,'third_group_type_mastery',''))
                     multiplier=config.type_mastery_engagement_multiplier if learned else 1
                     second_group_choice=getattr(config,'second_group_type_mastery','')
-                    ranked.append((bool(second_group_choice and group==config.second_mastery_group and key in (second_group_choice,getattr(config,'second_group_second_type_mastery',''))),row.gain*preferences[index]*multiplier,-index,key))
+                    preferred=(bool(second_group_choice and group==config.second_mastery_group
+                                    and key in (second_group_choice,getattr(config,'second_group_second_type_mastery','')))
+                               or bool(getattr(config,'third_group_type_mastery','') and group==config.third_mastery_group
+                                       and key==config.third_group_type_mastery))
+                    ranked.append((preferred,row.gain*preferences[index]*multiplier,-index,key))
                 else:
-                    ranked.append((key in (getattr(config,'type_mastery',''),getattr(config,'second_group_type_mastery','')),row.gain*preferences[index],-index,key))
+                    ranked.append((key in (getattr(config,'type_mastery',''),getattr(config,'second_group_type_mastery',''),getattr(config,'third_group_type_mastery','')),row.gain*preferences[index],-index,key))
         return max(ranked)[-1] if ranked else None
 
     def choose(self, observation, valid_actions, config=None):
@@ -42,6 +46,8 @@ class AutomaticInteractionPolicy:
             individual=(self._best_type(config,mastery,'') if getattr(config,'second_group_second_type_mastery','') else config.second_group_type_mastery)
         if getattr(config,'second_type_mastery','') and not (getattr(config,'second_group_type_mastery','') and mastery==config.second_mastery_group):
             individual=self._best_type(config,mastery,'')
+        if getattr(config,'third_group_type_mastery','') and mastery==config.third_mastery_group:
+            individual=config.third_group_type_mastery
         if ('switch' in valid_actions and individual and current!=individual
                 and rows[individual].group==mastery and observation.get('last_interaction_group') is None):
             return 'switch',individual

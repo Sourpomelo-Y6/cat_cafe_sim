@@ -1,6 +1,6 @@
 # 未着手機能と検討事項
 
-更新日：2026-09-30 / 状態：後続候補。実装順・未指定の数値は未確定
+更新日：2026-10-01 / 状態：後続候補。実装順・未指定の数値は未確定
 
 実装済み機能は[全体計画](HumanToCatGameFlowPlan.md)へ集約しました。本書には初回範囲を超える候補だけを残します。原案の「未決定」は当時の状態なので、現在の未着手項目とは区別します。ユーザーの提示案・修正と当時の論点は[整理前の記録](History/2026-09-30/HumanToCatPlannedFeatures.md)に保存しています。
 
@@ -16,7 +16,7 @@
 | --- | --- | --- |
 | 店舗発展 | 9席以上、飼育枠の3段階目以降、1席からの拡張、新しい発展段階に応じた客数・客層 | [施設計画](HumanToCatStoreDevelopmentPlan.md)、[増設](HumanToCatExpansion.md) |
 | 顧客 | 確率来店、客種別の回復条件・評価規則、他モードの高難度客解放経路 | [常連](HumanToCatCustomerLoyalty.md)、[評価](HumanToCatCustomerSatisfaction.md)、[施設計画](HumanToCatStoreDevelopmentPlan.md) |
-| 猫の成長 | 各分類で3行動以上の個別熟練、3つ目の分類の個別熟練、再選択・複数回成長、体力消費や苦手行動への追加効果 | [成長](HumanToCatCatGrowthPlan.md) |
+| 猫の成長 | 最初の2分類で3行動以上・3つ目の分類で2行動以上の個別熟練、再選択・複数回成長、体力消費や苦手行動への追加効果 | [成長](HumanToCatCatGrowthPlan.md) |
 | 特徴・特性 | 新しい種類、複数保持・重複効果、後天的な取得や変化 | [特性](HumanToCatTraits.md)、[相性の検討](HumanToCatCustomerPreferencesPlan.md) |
 | 加入経路 | 固定の常連紹介以外のイベント加入、通い猫の複数候補・抽選・交流方法の拡張、一時預かり。野良猫スカウトは低優先度 | [加入計画](HumanToCatRecruitmentPlan.md) |
 | アイテム | 既存3種類以外の種類追加、抽選報酬、所持上限 | [用品](HumanToCatItems.md) |

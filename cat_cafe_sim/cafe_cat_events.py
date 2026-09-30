@@ -102,6 +102,10 @@ def cat_events(core, cat_id):
         third=growth.get('third_group_practice',{})
         if third.get('mastery'):
             add(third['selected_day'],'3つ目の得意な交流の選択','成長',GROUP_LABELS[third['mastery']])
+        individual=third.get('individual',{})
+        if individual.get('type_mastery'):
+            from .core.cafe_growth import type_label
+            add(individual['selected_day'],'3つ目の分類の得意な行動の選択','成長',type_label(individual['type_mastery']))
         if growth.get('type_mastery'):
             from .core.cafe_growth import type_label
             add(growth['type_mastery_selected_day'],'得意な行動の選択','成長',type_label(growth['type_mastery']))
