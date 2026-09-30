@@ -53,6 +53,10 @@ def cat_details(session, cat_id):
         if 'second_mastery_groups' in growth:
             basic += [('2つ目の得意な交流',GROUP_LABELS.get(growth['second_mastery'],'未選択'))]
             basic += [(f'2つ目の分類習得対象：{GROUP_LABELS[key]}',f'{count:g}') for key,count in growth['second_mastery_groups'].items()]
+        if growth.get('second_mastery'):
+            third=growth.get('third_group_practice',{})
+            basic += [('3つ目の得意な交流',GROUP_LABELS[third['mastery']] if third.get('mastery') else '未選択')]
+            basic += [(f'3つ目の分類習得対象：{GROUP_LABELS[key]}',f'{third.get("groups",{}).get(key,0):g}') for key in GROUP_LABELS]
         if 'type_mastery_actions' in growth:
             from .core.cafe_growth import type_label
             basic += [('得意な行動',type_label(growth['type_mastery']) if growth['type_mastery'] else '未選択')]

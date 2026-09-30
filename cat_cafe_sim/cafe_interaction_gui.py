@@ -241,6 +241,10 @@ class ManualCafeInteractionWindow:
                 text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}が2つ目の分類の追加個別行動に習熟 · 対象実績 {event['total']:g}"
             elif kind=='growth_second_group_second_type_mastery_selected':
                 text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}の2つ目の分類の追加の得意な行動：{event['label']}"
+            elif kind=='growth_third_mastery_ready':
+                text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}が3つ目の交流分類に習熟 · 対象実績 {event['total']:g}"
+            elif kind=='growth_third_mastery_selected':
+                text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}の3つ目の得意な交流：{event['label']}"
             elif kind=='growth_service_effect':
                 text=f"接客成長効果 · 体力 {event['stamina_refund']:g}回復"
             elif kind=='intake_request_waiting':
@@ -759,7 +763,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self._attention = self.show_growth
         elif mastery_pending(core):
             key=mastery_pending(core)[0];name=self.session.profiles.get(key,{}).get('name',key)
-            stage='2つ目の得意な交流' if core.growth['cats'][key]['mastery'] is not None else '得意な交流'
+            stage='3つ目の得意な交流' if core.growth['cats'][key].get('second_mastery') else '2つ目の得意な交流' if core.growth['cats'][key]['mastery'] is not None else '得意な交流'
             self.notice.set(f'{name}が接客に習熟しました。{stage}を選んでください。')
             self._attention = self.show_growth
         elif type_mastery_pending(core):

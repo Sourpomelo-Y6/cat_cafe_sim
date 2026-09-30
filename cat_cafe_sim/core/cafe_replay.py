@@ -23,6 +23,7 @@ def apply_operation(core, operation):
     elif kind=='start_popularity_challenge':core.start_popularity_challenge(operation['rules'])
     elif kind=='initialize_growth':core.initialize_growth(operation['rules'])
     elif kind=='begin_second_group_second_type_practice':core.begin_second_group_second_type_practice(operation['cat_id'])
+    elif kind=='begin_third_group_practice':core.begin_third_group_practice(operation['cat_id'])
     elif kind=='begin_second_group_type_practice':core.begin_second_group_type_practice(operation['cat_id'])
     elif kind=='resolve_growth':core.resolve_growth(operation['cat_id'],operation['choice'])
     elif kind=='resolve_growth_type_mastery':core.resolve_growth_type_mastery(operation['cat_id'],operation['choice'])

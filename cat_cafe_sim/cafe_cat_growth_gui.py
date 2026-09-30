@@ -32,10 +32,11 @@ class CafeCatGrowthWindow:
                   f"選んだ行動では、関心の通常増加が追加で{selected['type_mastery_engagement_multiplier']:g}倍になります。")
             buttons=tuple((type_label(value)+'を得意にする',value) for value in choices)
         elif self.mastery_mode:
+            third=row.get('second_mastery') is not None
             second=row['mastery'] is not None
-            counts=row['second_mastery_groups'] if second else row['mastery_groups']
-            stage='2つ目の得意な交流' if second else '得意な交流'
-            period='最初の分類習得後、各分類で' if second else ''
+            counts=row['third_group_practice']['groups'] if third else row['second_mastery_groups'] if second else row['mastery_groups']
+            stage='3つ目の得意な交流' if third else '2つ目の得意な交流' if second else '得意な交流'
+            period='2分類習得後に開始した接客の未習得分類で、' if third else '最初の分類習得後、各分類で' if second else ''
             text=(f"{name}が接客に習熟しました。{stage}を1つ選んでください。\n"
                   f"{period}親しみが増えた接客の実績：遊び {counts['play']:g} / 触れ合い {counts['contact']:g} / 静かな交流 {counts['quiet']:g}\n\n"
                   f"選んだ分類では、関心の通常増加が{selected['mastery_engagement_multiplier']:g}倍になります。")
