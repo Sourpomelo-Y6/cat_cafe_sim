@@ -33,7 +33,7 @@
     "name": "ソラ",
     "preset": "遊び好きで繊細な猫",
     "cost": 200,
-    "trait": "hospitality",
+    "trait": "hardy",
     "features": [
       "orange_tabby",
       "short_hair"
@@ -113,7 +113,7 @@
     "name": "フク",
     "preset": "活発な探検家",
     "cost": 200,
-    "trait": "hospitality",
+    "trait": "hardy",
     "features": [
       "black_white",
       "short_hair"

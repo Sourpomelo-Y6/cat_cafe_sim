@@ -62,7 +62,7 @@ class RecruitmentTests(unittest.TestCase):
                          {'white', 'black', 'calico', 'orange_tabby', 'brown_tabby', 'black_white'})
         self.assertEqual({row['features'][1] for row in rows}, {'short_hair', 'long_hair'})
         self.assertEqual(len({digest(row['personality']) for row in rows}), 5)
-        self.assertEqual({row['trait']['id'] for row in rows}, {'hospitality', 'outgoing', 'relaxed'})
+        self.assertEqual({row['trait']['id'] for row in rows}, {'hospitality', 'outgoing', 'relaxed', 'hardy'})
         self.assertEqual(len({(digest(row['personality']), tuple(row['features']), row['trait']['id'])
                               for row in rows}), 12)
         self.assertEqual({row['cost'] for row in rows}, {200})

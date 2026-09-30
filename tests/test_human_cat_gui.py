@@ -1288,7 +1288,7 @@ class CafeSaveWindowTests(unittest.TestCase):
         added = next(key for key in window.cats.get_children() if key not in original)
         self.assertEqual(window.cats.set(added, '特徴'), '茶トラ・短毛')
         self.assertEqual(window.cats.set(added, '個性'), '遊び好きで繊細な猫')
-        self.assertEqual(window.cats.set(added, '特性'), '接客好き')
+        self.assertEqual(window.cats.set(added, '特性'), '体力自慢')
         window.cats.selection_set(added)
         window.selection_changed()
         values = [window.details.item(key)['values'] for key in window.details.get_children()]
