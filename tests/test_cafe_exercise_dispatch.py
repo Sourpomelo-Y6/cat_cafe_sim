@@ -127,13 +127,15 @@ class ExerciseDispatchTests(unittest.TestCase):
                 s.dispatch('cat-mugi', row); event_id = 'dispatch-2-cat-mugi'
                 self.rejected(s, lambda: s.dispatch('cat-mugi', row), '在店')
                 event = s.core.activities['events'][event_id]
-                for field in ('trouble', 'encounter', 'introduction', 'item_reward'):
+                for field in ('trouble', 'introduction', 'item_reward'):
                     self.assertNotIn(field, event)
                 self.assertEqual(dict(result_rows(s.core, event))['基本報酬'], '300')
                 s = self.reload_replay(s); s.day_off()
                 self.assertEqual(s.core.activities['events'][event_id]['remaining'], 1)
                 self.assertEqual(s.core.activity('cat-mugi'), 'dispatched')
-                s = self.reload_replay(s); s.day_off()
+                s = self.reload_replay(s)
+                s.resolve_dispatch_choice(event_id, 'decline')
+                s.day_off()
                 self.assertEqual(s.core.activities['events'][event_id]['status'], 'waiting')
                 self.rejected(s, s.day_off)
                 s = self.reload_replay(s)
@@ -166,7 +168,9 @@ class ExerciseDispatchTests(unittest.TestCase):
         s.dispatch('cat-mugi', exercise_destination(s.core))
         while not s.core.closed: s.automatic_step()
         self.assertEqual(s.core.activities['events']['dispatch-2-cat-mugi']['remaining'], 1)
-        s = self.reload_replay(s); s.next_day(); s.day_off()
+        s = self.reload_replay(s)
+        s.resolve_dispatch_choice('dispatch-2-cat-mugi', 'decline')
+        s.next_day(); s.day_off()
         s.resolve_activity('dispatch-2-cat-mugi')
         self.reload_replay(s)
 
@@ -187,7 +191,8 @@ class ExerciseDispatchTests(unittest.TestCase):
         s = self.unlock(self.game())
         row = exercise_destination(s.core)
         s.dispatch('cat-mugi', row)
-        s.day_off(); s.day_off(); s.resolve_activity('dispatch-2-cat-mugi')
+        s.day_off(); s.resolve_dispatch_choice('dispatch-2-cat-mugi', 'decline')
+        s.day_off(); s.resolve_activity('dispatch-2-cat-mugi')
         funds = s.core.funds
         with patch('cat_cafe_sim.storage.cafe_saves.RelationshipStore._write', side_effect=OSError('disk full')):
             with self.assertRaises(OSError): save_game(s, s.checkpoint_path)
@@ -250,7 +255,8 @@ class ExerciseDispatchWindowTests(unittest.TestCase):
         self.assertEqual(s.core.snapshot(), before)
         with patch('tkinter.messagebox.askyesno', return_value=True): window.send_button.invoke()
         event_id = 'dispatch-2-cat-mugi'
-        s.day_off(); s.day_off(); window.refresh()
+        s.day_off(); s.resolve_dispatch_choice(event_id, 'decline')
+        s.day_off(); window.refresh()
         window.events.selection_set(event_id); window.buttons()
         window.receive_button.invoke()
         self.assertEqual(s.core.activities['events'][event_id]['status'], 'resolved')

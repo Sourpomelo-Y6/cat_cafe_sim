@@ -6,5 +6,9 @@
   {"id":"rest_stop","destination":"out_of_town_visit","title":"移動の途中で休憩できます","choices":[
     {"id":"rest","label":"報酬の一部を使って休憩する","reward":-50,"fatigue":-10,"stress":-10},
     {"id":"continue","label":"予定どおり進む","reward":0,"fatigue":0,"stress":0}
+  ]},
+  {"id":"exercise_program","destination":"cat_exercise_class","title":"追加の運動プログラムに参加できます","choices":[
+    {"id":"accept","label":"追加の運動プログラムに参加する","reward":80,"fatigue":10,"stress":0},
+    {"id":"decline","label":"予定どおり終える","reward":0,"fatigue":0,"stress":0}
   ]}
 ]
