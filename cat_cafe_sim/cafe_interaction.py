@@ -398,8 +398,9 @@ class CafeInteractionSession:
         from .core.cafe_growth import interaction_terms
         from .core.cafe_quiet_customer import applies
         from .core.cafe_play_customer import applies as play_applies
+        from .core.cafe_contact_customer import applies as contact_applies
         actual_seat = seat_id or next(iter(self.free_seats), self.core.seat.id)
-        config = replace(self.interaction_config, play_service=play_applies(self.core, customer_id), quiet_service=applies(self.core, customer_id), **effects(self.core, actual_seat), customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
+        config = replace(self.interaction_config, contact_service=contact_applies(self.core, customer_id), play_service=play_applies(self.core, customer_id), quiet_service=applies(self.core, customer_id), **effects(self.core, actual_seat), customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
                          mastery_group=interaction_terms(self.core,cat_id)['group'],
                          mastery_engagement_multiplier=interaction_terms(self.core,cat_id)['multiplier'],
                          ticks=min(self.interaction_config.ticks, self.core.config.opening_ticks-self.core.tick))
@@ -437,7 +438,13 @@ class CafeInteractionSession:
             self.core.automatic_assignment(customer_id,cat.id)
             from .core.cafe_quiet_customer import preferred_seat
             from .core.cafe_play_customer import preferred_seat as play_seat, applies as play_applies
-            seat_id = play_seat(self.core, customer_id, self.free_seats) if play_applies(self.core, customer_id) else preferred_seat(self.core, customer_id, self.free_seats)
+            from .core.cafe_contact_customer import preferred_seat as contact_seat, applies as contact_applies
+            if contact_applies(self.core, customer_id):
+                seat_id = contact_seat(self.core, customer_id, self.free_seats)
+            elif play_applies(self.core, customer_id):
+                seat_id = play_seat(self.core, customer_id, self.free_seats)
+            else:
+                seat_id = preferred_seat(self.core, customer_id, self.free_seats)
             self.start(customer_id, cat.id, seat_id)
         if isinstance(self.core,MultiSeatCafeCore):
             commands={key:self.policy.choose(active.observation(),active.valid_actions(),active.config)

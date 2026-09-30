@@ -76,6 +76,11 @@ def evaluate(core, result, advanced=None):
     if play is not None:
         score += 1 if play['success'] else -1
         reasons.append('遊び条件達成' if play['success'] else '遊び条件未達')
+    from .cafe_contact_customer import evaluate as contact_evaluate
+    contact = contact_evaluate(core, result)
+    if contact is not None:
+        score += 1 if contact['success'] else -1
+        reasons.append('触れ合い条件達成' if contact['success'] else '触れ合い条件未達')
     if result['end_reason'] == 'exhausted':
         score -= 2
         reasons.append('体力切れ')
@@ -140,7 +145,9 @@ def validate(core, data):
             quiet = quiet_evaluate(core, outcome)
             from .cafe_play_customer import evaluate as play_evaluate
             play = play_evaluate(core, outcome)
-            bonus += outcome['bonus_funds'] + (advanced['bonus'] if advanced else 0) + (reservation['bonus'] if reservation else 0) + (vip['bonus'] if vip else 0) + (quiet['bonus'] if quiet else 0) + (play['bonus'] if play else 0) + evaluate(core, outcome, advanced)['bonus']
+            from .cafe_contact_customer import evaluate as contact_evaluate
+            contact = contact_evaluate(core, outcome)
+            bonus += outcome['bonus_funds'] + (advanced['bonus'] if advanced else 0) + (reservation['bonus'] if reservation else 0) + (vip['bonus'] if vip else 0) + (quiet['bonus'] if quiet else 0) + (play['bonus'] if play else 0) + (contact['bonus'] if contact else 0) + evaluate(core, outcome, advanced)['bonus']
         if day['summary']['interaction_bonus'] != bonus:
             raise ValueError('接客評価の追加料金と接客記録が一致しません。')
         if index < len(core.day_results):

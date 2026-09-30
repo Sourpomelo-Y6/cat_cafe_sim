@@ -28,7 +28,8 @@ class AutomaticInteractionPolicy:
             return 'pause', None
         rows=self._type_map(config);current=observation['mode']
         current_group=rows[current].group if current in rows else None
-        mastery = ('play' if getattr(config, 'play_service', False) else
+        mastery = ('contact' if getattr(config, 'contact_service', False) else
+                   'play' if getattr(config, 'play_service', False) else
                    'quiet' if getattr(config, 'quiet_service', False) else getattr(config,'mastery_group',''))
         if ('switch' in valid_actions and mastery and current_group!=mastery
                 and observation.get('last_interaction_group') is None):

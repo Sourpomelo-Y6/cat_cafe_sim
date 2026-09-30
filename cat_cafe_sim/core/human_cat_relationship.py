@@ -22,6 +22,7 @@ class RelationshipConfig(TypesConfig):
     customer_tension_multiplier: float = 1
     equipment_engagement_multiplier: float = 1
     equipment_tension_multiplier: float = 1
+    contact_service: bool = False
     play_service: bool = False
     quiet_service: bool = False
     equipment_group: str = ''
@@ -37,6 +38,8 @@ class RelationshipConfig(TypesConfig):
 
     def __post_init__(self):
         super().__post_init__()
+        if type(self.contact_service) is not bool or (self.contact_service and (self.play_service or self.quiet_service)):
+            raise ValueError('invalid contact service flag')
         if type(self.play_service) is not bool or (self.play_service and self.quiet_service):
             raise ValueError('invalid play service flag')
         if type(self.quiet_service) is not bool:
@@ -64,6 +67,8 @@ class RelationshipConfig(TypesConfig):
 
     def to_dict(self):
         data = super().to_dict()
+        if not self.contact_service:
+            data['rules'].pop('contact_service')
         if not self.play_service:
             data['rules'].pop('play_service')
         if not self.quiet_service:
@@ -157,6 +162,8 @@ class RelationshipInteraction(TypesInteraction):
                       affinity_before=start, affinity_pending=pending, affinity_after=end,
                       affinity_delta=end-start, affinity_unapplied=pending-(end-start), affinity_breakdown=parts,
                       stamina_recovered=sum(r['stamina_recovered'] for r in self.records))
+        if self.config.contact_service:
+            result['contact_equipment'] = self.config.equipment_group == 'contact'
         if self.config.play_service:
             result['play_equipment'] = self.config.equipment_group == 'play'
         if self.config.quiet_service:

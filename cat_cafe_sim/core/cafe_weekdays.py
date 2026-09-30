@@ -47,9 +47,10 @@ def schedule(core, day=None):
     from .cafe_vip_customer import schedule as vip_schedule
     from .cafe_quiet_customer import schedule as quiet_schedule
     from .cafe_play_customer import schedule as play_schedule
+    from .cafe_contact_customer import schedule as contact_schedule
     planned = {**{f'guest-{i+1}': tick for i, tick in enumerate(core.config.arrival_ticks)
                if weekday is None or weekday in customer_days(core, i)}, **advanced_schedule(core, day),
-            **extra_schedule(core, day), **loyalty_schedule(core, day), **reservation_schedule(core,day), **vip_schedule(core,day), **quiet_schedule(core, day), **play_schedule(core, day)}
+            **extra_schedule(core, day), **loyalty_schedule(core, day), **reservation_schedule(core,day), **vip_schedule(core,day), **quiet_schedule(core, day), **play_schedule(core, day), **contact_schedule(core, day)}
     from .cafe_store_events import modify_schedule
     planned=modify_schedule(core,planned,day)
     from .cafe_customer_discontent import filter_schedule

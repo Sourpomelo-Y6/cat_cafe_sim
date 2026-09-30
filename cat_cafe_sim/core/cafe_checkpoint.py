@@ -238,6 +238,9 @@ def restore(data):
         if 'store_events' in state:
             from .cafe_store_events import validate as validate_store_events
             core.store_events=validate_store_events(core,state['store_events'])
+        if 'contact_customer' in state:
+            from .cafe_contact_customer import rules as contact_rules
+            core.contact_customer = contact_rules(state['contact_customer'])
         if 'play_customer' in state:
             from .cafe_play_customer import rules as play_rules
             core.play_customer = play_rules(state['play_customer'])
@@ -320,6 +323,9 @@ def restore(data):
     if 'reservation' in state:
         from .cafe_reservation import validate as validate_reservation
         core.reservation=validate_reservation(core,state['reservation'])
+    if 'contact_customer' in state:
+        from .cafe_contact_customer import validate as validate_contact
+        core.contact_customer = validate_contact(core, state['contact_customer'])
     if 'play_customer' in state:
         from .cafe_play_customer import validate as validate_play
         core.play_customer = validate_play(core, state['play_customer'])
@@ -409,6 +415,8 @@ def restore(data):
         check_quiet(core, interaction)
         from .cafe_play_customer import check_interaction as check_play
         check_play(core, interaction)
+        from .cafe_contact_customer import check_interaction as check_contact
+        check_contact(core, interaction)
         cat=core.cats[interaction.cat_id]
         if (interaction.state['end_reason'] or core.closed or interaction.cat_id in busy_cats
                 or interaction.customer_id in busy_guests or interaction.customer_id in core.queue
