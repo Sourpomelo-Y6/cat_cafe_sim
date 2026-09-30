@@ -7,20 +7,40 @@ from .cafe_recruitment import validate_candidates
 from .human_cat_relationship import identity
 
 
+PHOTO_DESTINATION='cat_photo_studio'
+
+
+def configured(row):
+    from .cafe_traits import definitions
+    from .human_cat_types import load_presets
+    return dict(destination=row['destination'], candidate=dict(name=row['name'], cost=row['cost'],
+                personality=load_presets()[row['preset']].to_dict(), trait=definitions()[row['trait']],
+                features=row['features']))
+
+
 def rules(data=None):
     if data is None:
-        from .cafe_traits import definitions
-        from .human_cat_types import load_presets
-        row = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_dispatch_introduction.json').read_text())
-        data = dict(destination=row['destination'], candidate=dict(name=row['name'], cost=row['cost'],
-                    personality=load_presets()[row['preset']].to_dict(), trait=definitions()[row['trait']],
-                    features=row['features']))
-    if not isinstance(data, dict) or set(data) != {'destination', 'candidate'}:
+        directory=Path(__file__).resolve().parents[2]/'config'
+        data=configured(json.loads((directory/'cafe_dispatch_introduction.json').read_text()))
+        data['photo_studio']=configured(json.loads((directory/'cafe_photo_introduction.json').read_text()))
+    if not isinstance(data,dict) or set(data) not in ({'destination','candidate'},{'destination','candidate','photo_studio'}):
         raise ValueError('派遣先の猫紹介設定が不正です。')
-    if data['destination'] != 'shopping_street_event':
+    if data['destination']!='shopping_street_event':
         raise ValueError('初回の猫紹介は商店街の交流会が対象です。')
-    validate_candidates({'introduced-cat': data['candidate']})
+    validate_candidates({'introduced-cat':data['candidate']})
+    if 'photo_studio' in data:
+        photo=data['photo_studio']
+        if not isinstance(photo,dict) or set(photo)!={'destination','candidate'} or photo['destination']!=PHOTO_DESTINATION:
+            raise ValueError('撮影スタジオの猫紹介設定が不正です。')
+        validate_candidates({'photo-introduced-cat':photo['candidate']})
     return copy.deepcopy(data)
+
+
+def for_destination(selected,destination_id):
+    if selected is None:return None
+    if selected['destination']==destination_id:return selected
+    photo=selected.get('photo_studio')
+    return photo if photo and photo['destination']==destination_id else None
 
 
 def initialize(core, selected=None):
@@ -42,8 +62,10 @@ def reserved_ids(core):
 
 
 def for_departure(core, destination, used_ids):
-    selected = core.dispatch_introduction
-    if selected is None or selected['destination'] != destination['id']:
+    selected = for_destination(core.dispatch_introduction,destination['id'])
+    if selected is None:
+        return None
+    if destination['id']==PHOTO_DESTINATION and any(event['destination']['id']==PHOTO_DESTINATION for event in introductions(core)):
         return None
     from .cafe_regular_introduction import reserved_ids as regular_ids
     from .cafe_visiting_cat import reserved_ids as visiting_ids
@@ -63,7 +85,9 @@ def attach(core, event, data):
         raise ValueError('派遣先の猫紹介候補が不正です。')
     identity(data['cat_id'])
     validate_candidates({data['cat_id']: data['candidate']})
-    selected = core.dispatch_introduction
+    selected = for_destination(core.dispatch_introduction,event['destination']['id'])
+    if selected is None or (event['destination']['id']==PHOTO_DESTINATION and any(e['destination']['id']==PHOTO_DESTINATION for e in introductions(core))):
+        raise ValueError('この派遣先の紹介設定がないか、初回の紹介が記録済みです。')
     expected = copy.deepcopy(selected['candidate'])
     expected['name'] += f'（派遣紹介{len(introductions(core)) + 1}）'
     from .cafe_regular_introduction import reserved_ids as regular_ids
@@ -158,6 +182,7 @@ def prepare(core, data, events, day, used_ids):
     used = set(used_ids)
     joined = {}
     ordinal = 0
+    photo_seen=False
     for event in events.values():
         if 'introduction' not in event:
             continue
@@ -167,10 +192,14 @@ def prepare(core, data, events, day, used_ids):
             raise ValueError('派遣先の猫紹介記録が不正です。')
         identity(row['cat_id'])
         validate_candidates({row['cat_id']: row['candidate']})
-        expected = copy.deepcopy(selected['candidate'])
+        source=for_destination(selected,event['destination']['id'])
+        if source is None or (event['destination']['id']==PHOTO_DESTINATION and photo_seen):
+            raise ValueError('派遣先の紹介設定または初回紹介の記録が不正です。')
+        if event['destination']['id']==PHOTO_DESTINATION:photo_seen=True
+        expected = copy.deepcopy(source['candidate'])
         expected['name'] += f'（派遣紹介{ordinal}）'
         if (row['cat_id'] in used or row['candidate'] != expected
-                or event['destination']['id'] != selected['destination']):
+                or event['destination']['id'] != source['destination']):
             raise ValueError('派遣先の猫紹介候補・IDが不正です。')
         used.add(row['cat_id'])
         if row['status'] == 'scheduled':

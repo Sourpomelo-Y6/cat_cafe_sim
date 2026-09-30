@@ -237,7 +237,8 @@ class CafeActivityWindow:
         from .core.cafe_dispatch_match import description
         welcome_note='\n'+description(self.session.core,selected[0],self.rules)
         note=f"\n1日目終了時に選択イベント：{encounter['title']}" if encounter else ''
-        if self.session.core.dispatch_introduction and self.rules['id']==self.session.core.dispatch_introduction['destination']:
+        from .core.cafe_dispatch_introduction import for_departure
+        if for_departure(self.session.core,self.rules,set()) is not None:
             note += '\n帰還報酬を受け取った後、準備中に保護猫の紹介を確認できます。'
         if self.rules['id'] == 'mountain_lodge_visit' and self.session.core.dispatch_trouble:
             from .core.cafe_dispatch_trouble import probability

@@ -22,6 +22,7 @@ class PhotoDispatchTests(unittest.TestCase):
 
     def game(self, mode='free', threshold=100, legacy=False, no_unlocks=False, growth_threshold=1000):
         selected = starting_conditions(mode)
+        selected['dispatch_introduction'].pop('photo_studio',None)
         for key in ('store_events', 'intake_request', 'regular_introduction', 'customer_trust', 'customer_discontent'):
             selected.pop(key)
         selected['management'].update(starting_funds=10000, stress_per_service_tick=0)
