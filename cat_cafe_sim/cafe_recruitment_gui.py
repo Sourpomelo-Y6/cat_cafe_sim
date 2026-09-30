@@ -38,6 +38,26 @@ class CafeRecruitmentWindow:
         if not pet_shop:
             self.show_accepted_button=ttk.Checkbutton(frame,text='受け入れ済みも表示',variable=self.show_accepted,command=self.refresh)
             self.show_accepted_button.pack(anchor='w')
+            from .core.cafe_preferences import FEATURES
+            filters=ttk.Frame(frame);filters.pack(fill='x')
+            self.filters={};self.filter_choices={};self.filter_ids={}
+            from .core.cafe_traits import definitions
+            trait_options={'':'なし',**{key:row['name'] for key,row in definitions().items()}}
+            trait_options.update({row.get('trait',{}).get('id',''):row.get('trait',{}).get('name','なし') for row in self.data['candidates'].values()})
+            options={'trait':trait_options,
+                     'coat':{key:value[0] for key,value in FEATURES.items() if value[1]=='coat'},
+                     'hair':{key:value[0] for key,value in FEATURES.items() if value[1]=='hair'}}
+            for index,(key,title) in enumerate((('trait','特性'),('coat','毛色'),('hair','毛の長さ'))):
+                group=ttk.Frame(filters);group.grid(row=0,column=index,sticky='ew',padx=(0,4))
+                filters.columnconfigure(index,weight=1)
+                ttk.Label(group,text=title).pack(anchor='w')
+                self.filters[key]=tk.StringVar(value='すべて')
+                self.filter_ids[key]={'すべて':None,**{label:ident for ident,label in options[key].items()}}
+                choice=ttk.Combobox(group,state='readonly',textvariable=self.filters[key],values=tuple(self.filter_ids[key]),width=12)
+                choice.pack(fill='x');choice.bind('<<ComboboxSelected>>',lambda event:self.refresh())
+                self.filter_choices[key]=choice
+            self.clear_filters_button=ttk.Button(filters,text='条件解除',command=self.clear_filters)
+            self.clear_filters_button.grid(row=0,column=3,sticky='s')
         self.notice = tk.StringVar()
         ttk.Label(frame, textvariable=self.notice, wraplength=460).pack(anchor='w')
         self.cats = CafeHistoryWindow.table(frame, ('名前', '特徴', '個性', '特性', self.cost_label, '状態'))
@@ -57,6 +77,18 @@ class CafeRecruitmentWindow:
         from .cafe_intake_request_gui import CafeIntakeRequestWindow
         self.request_window = CafeIntakeRequestWindow(self.window, self.session, lambda: (self.on_changed(), self.refresh()))
 
+    def clear_filters(self):
+        for value in self.filters.values():value.set('すべて')
+        self.refresh()
+
+    def matches_filters(self,row):
+        for key,value in self.filters.items():
+            ident=self.filter_ids[key].get(value.get())
+            if ident is None:continue
+            matches=row.get('trait',{}).get('id','')==ident if key=='trait' else ident in row.get('features',[])
+            if not matches:return False
+        return True
+
     def refresh(self):
         core = self.session.core
         from .core.cafe_housing import status
@@ -74,6 +106,8 @@ class CafeRecruitmentWindow:
         if not self.pet_shop:
             candidates=[(key,row) for key,row in candidates if key not in self.data['accepted']]+(
                 [(key,row) for key,row in candidates if key in self.data['accepted']] if self.show_accepted.get() else [])
+        if not self.pet_shop:
+            candidates=[(key,row) for key,row in candidates if self.matches_filters(row)]
         for key, row in candidates:
             personality = Personality.from_dict(row['personality'])
             label = next((name for name, value in self.session.presets.items() if value == personality), 'カスタム')
@@ -91,6 +125,9 @@ class CafeRecruitmentWindow:
         self.details.delete(*self.details.get_children())
         self.receive_button.state(['disabled'])
         if not selected:
+            if not self.pet_shop and not self.cats.get_children() and any(value.get()!='すべて' for value in self.filters.values()):
+                self.notice.set('条件に合う候補はありません。「条件解除」で絞り込みを解除できます。')
+                return
             self.notice.set('受け入れ可能な候補はありません。「受け入れ済みも表示」で履歴を確認できます。'
                             if not self.pet_shop and not self.cats.get_children() and not self.show_accepted.get() else '候補を選んでください。')
             return
