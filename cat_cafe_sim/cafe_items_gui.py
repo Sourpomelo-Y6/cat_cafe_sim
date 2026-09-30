@@ -62,6 +62,9 @@ class CafeItemsWindow:
         item_frame.grid(row=0, column=0, sticky='nsew')
         cat_frame = ttk.Frame(use_page)
         cat_frame.grid(row=1, column=0, sticky='nsew', pady=(8, 0))
+        self.usable_only=tk.BooleanVar(value=False)
+        self.usable_only_button=ttk.Checkbutton(cat_frame,text='選んだ用品を使える猫だけ表示',variable=self.usable_only,command=self.selection_changed)
+        self.usable_only_button.pack(anchor='w')
         self.items = CafeHistoryWindow.table(item_frame, ('アイテム', '所持数', '効果'))
         self.cats = CafeHistoryWindow.table(cat_frame, ('猫', '活動', 'ストレス', '疲労'))
         self.history = CafeHistoryWindow.table(history_page, ('使用日', '猫', 'アイテム', '変化'))
@@ -75,7 +78,6 @@ class CafeItemsWindow:
         self.refresh()
 
     def refresh(self):
-        from .core.cafe_activities import ACTIVITY_LABELS
         core = self.session.core
         from .core.cafe_item_shop import reason
         selected=self.shop_rules
@@ -85,9 +87,8 @@ class CafeItemsWindow:
         self.shop_note.set(f"資金 {core.funds:g} / {selected['item']['name']} 1個 {selected['cost']:g} / 所持 {count}個 / {effect_text(selected['item'])}"+(f'\n{problem}' if problem else ''))
         self.buy_button.configure(text=selected['item']['name']+'を1個購入')
         self.buy_button.state(['disabled'] if problem else ['!disabled'])
-        previous_items, previous_cats = self.items.selection(), self.cats.selection()
+        previous_items = self.items.selection()
         self.items.delete(*self.items.get_children())
-        self.cats.delete(*self.cats.get_children())
         self.history.delete(*self.history.get_children())
         self.sale_history.delete(*self.sale_history.get_children())
         from .core.cafe_items import reward_for_source
@@ -101,21 +102,38 @@ class CafeItemsWindow:
             groups.setdefault(key, []).append(source)
         for (_, name, _), sources in groups.items():
             self.items.insert('', 'end', iid=sources[0], values=(name, len(sources), effect_text(inventory(core)[sources[0]])))
-        for key in core.cats:
-            self.cats.insert('', 'end', iid=key, values=(self.session.profiles.get(key, {}).get('name', key),
-                ACTIVITY_LABELS[core.activity(key)], f"{core.management['stress'][key]:g}" if core.management else '未導入', f'{core.cats[key].fatigue:g}'))
         for row in reversed(core.item_uses):
             from .core.cafe_items import reward_for_source
             item = reward_for_source(core,row['source'])['item']
             self.history.insert('', 'end', values=(f"{row['day']}日目", self.session.profiles.get(row['cat_id'], {}).get('name', row['cat_id']),
                 item['name'], change_text(item,row['before'],row['after'])))
-        for table, previous in ((self.items, previous_items), (self.cats, previous_cats)):
+        for table, previous in ((self.items, previous_items),):
             keys = table.get_children()
             if keys:
                 table.selection_set(previous[0] if previous and previous[0] in keys else keys[0])
+        self.refresh_cats(force=True)
         self.selection_changed()
 
+    def use_reason(self, source, cat_id):
+        if self.session.pending:return '先に交流結果の保存を再試行してください。'
+        return unavailable_reason(self.session.core,source,cat_id)
+
+    def refresh_cats(self, *, force=False):
+        from .core.cafe_activities import ACTIVITY_LABELS
+        core=self.session.core
+        sources=self.items.selection()
+        keys=tuple(key for key in core.cats if not self.usable_only.get() or
+                   (sources and not self.use_reason(sources[0],key)))
+        if not force and keys==self.cats.get_children():return
+        previous=self.cats.selection()
+        self.cats.delete(*self.cats.get_children())
+        for key in keys:
+            self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),
+                ACTIVITY_LABELS[core.activity(key)],f"{core.management['stress'][key]:g}" if core.management else '未導入',f'{core.cats[key].fatigue:g}'))
+        if keys:self.cats.selection_set(previous[0] if previous and previous[0] in keys else keys[0])
+
     def selection_changed(self):
+        self.refresh_cats()
         self.use_button.state(['disabled'])
         sources, cats = self.items.selection(), self.cats.selection()
         from .core.cafe_item_sales import reason as sale_reason
@@ -127,11 +145,13 @@ class CafeItemsWindow:
             self.notice.set('所持品はありません。購入や派遣の帰還報酬で入手できます。')
             return
         if not cats:
-            self.notice.set('対象の猫を選んでください。')
+            if self.usable_only.get():
+                reasons=list(dict.fromkeys(self.use_reason(sources[0],key) for key in self.session.core.cats))
+                detail=('例：'+reasons[0]) if reasons else ''
+                self.notice.set('使える猫はいません。'+detail+'表示切り替えを解除すると全員を確認できます。')
+            else:self.notice.set('対象の猫を選んでください。')
             return
-        reason = unavailable_reason(self.session.core, sources[0], cats[0])
-        if self.session.pending:
-            reason = '先に交流結果の保存を再試行してください。'
+        reason = self.use_reason(sources[0], cats[0])
         if reason:
             self.notice.set(reason)
             return
@@ -147,7 +167,13 @@ class CafeItemsWindow:
         sources, cats = self.items.selection(), self.cats.selection()
         if not sources or not cats:
             return
-        if not messagebox.askyesno('アイテムの使用', self.notice.get()+'\nこの猫に使いますか？', parent=self.window):
+        self.selection_changed()
+        if self.use_reason(sources[0],cats[0]):return
+        item=inventory(self.session.core)[sources[0]]
+        before=current(self.session.core,item,cats[0])
+        name=self.session.profiles.get(cats[0],{}).get('name',cats[0])
+        confirmation=f"{name}に{item['name']}を1個使いますか？\n"+change_text(item,before,after_value(item,before))
+        if not messagebox.askyesno('アイテムの使用', confirmation, parent=self.window):
             return
         try:
             self.session.use_item(sources[0], cats[0])
