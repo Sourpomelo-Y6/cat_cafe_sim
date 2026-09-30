@@ -819,6 +819,11 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.assertEqual(self.app.session.core.funds,201)
         self.assertIn(key,self.app.roster.get_children())
         self.assertIn(key,self.app.cat_labels.values())
+        self.assertNotIn(key,window.cats.get_children())
+        self.assertNotEqual(window.cats.selection()[0],key)
+        self.assertNotIn('disabled',window.receive_button.state())
+        window.show_accepted_button.invoke()
+        window.cats.selection_set(key);window.selection_changed()
         self.assertIn('disabled',window.receive_button.state())
         window.close_button.invoke();activity.close_button.invoke()
         self.app.roster.selection_set(key)
@@ -838,6 +843,9 @@ class CafeSaveWindowTests(unittest.TestCase):
         self.app.logged=0;self.app.refresh()
         self.app.activity_button.invoke();activity=self.app.activity_window
         activity.recruitment_button.invoke();window=activity.recruitment_window
+        self.assertNotIn(key,window.cats.get_children())
+        self.assertFalse(window.show_accepted.get())
+        window.show_accepted_button.invoke()
         self.assertIn('受入済み',str(window.cats.item(key)['values']))
         other=next(k for k in window.cats.get_children() if k!=key)
         window.cats.selection_set(other);window.selection_changed()

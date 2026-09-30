@@ -34,9 +34,14 @@ class CafeRecruitmentWindow:
         ttk.Label(frame, text=('準備中に購入できます。加入時は健康・体力全回復・休養予定です。候補は固定で、各猫を1回だけ迎えられます。' if pet_shop else '準備中に受け入れます。加入時は健康・体力全回復・休養予定です。3日ごとに候補を3匹追加します。以前の候補も残ります。'), wraplength=460).pack(anchor='w')
         self.schedule = tk.StringVar()
         ttk.Label(frame, textvariable=self.schedule, wraplength=460).pack(anchor='w')
+        self.show_accepted=tk.BooleanVar(value=False)
+        if not pet_shop:
+            self.show_accepted_button=ttk.Checkbutton(frame,text='受け入れ済みも表示',variable=self.show_accepted,command=self.refresh)
+            self.show_accepted_button.pack(anchor='w')
         self.notice = tk.StringVar()
         ttk.Label(frame, textvariable=self.notice, wraplength=460).pack(anchor='w')
         self.cats = CafeHistoryWindow.table(frame, ('名前', '特徴', '個性', '特性', self.cost_label, '状態'))
+        self.cats.tag_configure('accepted',foreground='#666666',background='#eeeeee')
         self.details = CafeHistoryWindow.table(frame, ('項目', '値'))
         self.details.column('項目', width=230)
         self.details.column('値', width=220)
@@ -65,12 +70,18 @@ class CafeRecruitmentWindow:
         selected = self.cats.selection()
         self.cats.delete(*self.cats.get_children())
         from .core.cafe_preferences import feature_text
-        for key, row in self.data['candidates'].items():
+        candidates=list(self.data['candidates'].items())
+        if not self.pet_shop:
+            candidates=[(key,row) for key,row in candidates if key not in self.data['accepted']]+(
+                [(key,row) for key,row in candidates if key in self.data['accepted']] if self.show_accepted.get() else [])
+        for key, row in candidates:
             personality = Personality.from_dict(row['personality'])
             label = next((name for name, value in self.session.presets.items() if value == personality), 'カスタム')
             day = self.data['accepted'].get(key)
-            self.cats.insert('', 'end', iid=key, values=(row['name'], feature_text(row.get('features', [])), label, row.get('trait',{}).get('name','なし'), f"{row['cost']:g}", f'{day}日目に{self.status_label}済み' if day else '候補'))
-        self.cats.selection_set(selected[0] if selected else next(iter(self.data['candidates'])))
+            self.cats.insert('', 'end', iid=key, values=(row['name'], feature_text(row.get('features', [])), label, row.get('trait',{}).get('name','なし'), f"{row['cost']:g}", f'{day}日目に{self.status_label}済み' if day else '候補'),tags=('accepted',) if day and not self.pet_shop else ())
+        visible=self.cats.get_children()
+        if visible:
+            self.cats.selection_set(selected[0] if selected and selected[0] in visible else visible[0])
         self.selection_changed()
 
     def selection_changed(self):
@@ -80,7 +91,8 @@ class CafeRecruitmentWindow:
         self.details.delete(*self.details.get_children())
         self.receive_button.state(['disabled'])
         if not selected:
-            self.notice.set('候補を選んでください。')
+            self.notice.set('受け入れ可能な候補はありません。「受け入れ済みも表示」で履歴を確認できます。'
+                            if not self.pet_shop and not self.cats.get_children() and not self.show_accepted.get() else '候補を選んでください。')
             return
         key = selected[0]
         row = self.data['candidates'][key]
