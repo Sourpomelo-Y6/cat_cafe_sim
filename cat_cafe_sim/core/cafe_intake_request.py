@@ -28,7 +28,8 @@ def initialize(core,selected=None):
     core.require_events_resolved()
     selected=rules(selected)
     from .cafe_regular_introduction import reserved_ids as regular_ids
-    used=regular_ids(core)|set(core.cats)|set((core.recruitment or {}).get('candidates',{}))|set((core.pet_shop or {}).get('candidates',{}))
+    from .cafe_visiting_cat import reserved_ids as visiting_ids
+    used=(regular_ids(core)|visiting_ids(core))|set(core.cats)|set((core.recruitment or {}).get('candidates',{}))|set((core.pet_shop or {}).get('candidates',{}))
     if not core.compact or core.day!=1 or not core.can_set_shifts or not core.shift_rules or not core.health_rules or core.intake_request or selected['cat_id'] in used:
         raise ValueError('受け入れ依頼は新規ゲームの準備時に一度だけ設定できます。')
     core.intake_request=dict(rules=selected,status='scheduled',presented_day=None,resolved_day=None)

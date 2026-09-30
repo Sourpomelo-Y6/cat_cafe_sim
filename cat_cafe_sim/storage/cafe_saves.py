@@ -40,6 +40,10 @@ def validate_progress(core, baseline, current):
     for key,row in regular_cats(core).items():
         if baseline.get('cats',{}).get(key)!=dict(name=row['name'],personality=row['personality']):
             raise RelationshipConflict('常連紹介から加入した猫と関係データが一致しません。')
+    from ..core.cafe_visiting_cat import accepted as visiting_cats
+    for key,row in visiting_cats(core).items():
+        if baseline.get('cats',{}).get(key)!=dict(name=row['name'],personality=row['personality']):
+            raise RelationshipConflict('店先から加入した猫と関係データが一致しません。')
     from ..core.cafe_pet_shop import accepted as purchased_cats
     for key, row in purchased_cats(core).items():
         if baseline.get('cats', {}).get(key) != dict(name=row['name'], personality=row['personality']):

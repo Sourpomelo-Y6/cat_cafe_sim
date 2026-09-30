@@ -65,6 +65,7 @@ class CafeInteractionCore(SimulationCore):
         self.dispatch_introduction = None
         self.intake_request = None
         self.regular_introduction = None
+        self.visiting_cat = None
         self.adoption = None
         self.activities = None
         self.item_uses = []
@@ -89,6 +90,7 @@ class CafeInteractionCore(SimulationCore):
                 'interaction': self.active.log() if self.active else None,
                 **({'intake_request': copy.deepcopy(self.intake_request)} if self.intake_request is not None else {}),
                 **({'regular_introduction': copy.deepcopy(self.regular_introduction)} if self.regular_introduction is not None else {}),
+                **({'visiting_cat': copy.deepcopy(self.visiting_cat)} if self.visiting_cat is not None else {}),
                 **({'weekdays': copy.deepcopy(self.weekdays)} if self.weekdays is not None else {}),
                 **({'advanced_customers': copy.deepcopy(self.advanced_customers)} if self.advanced_customers is not None else {}),
                 **({'customer_satisfaction': copy.deepcopy(self.customer_satisfaction)} if self.customer_satisfaction is not None else {}),
@@ -133,7 +135,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'item_sales': copy.deepcopy(self.item_sales)} if self.item_sales else {}),
                 **({'activities': copy.deepcopy(self.activities)} if self.activities is not None else {}),
                 'outcomes': copy.deepcopy(self.outcomes), 'interaction_bonus': self.interaction_bonus,
-                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None or self.intake_request is not None or self.dispatch_introduction is not None or self.pet_shop is not None or self.regular_introduction is not None else {})}
+                **({'cats': {key:asdict(cat) for key,cat in self.cats.items()}} if self.roster_ids is not None or self.recruitment is not None or self.intake_request is not None or self.dispatch_introduction is not None or self.pet_shop is not None or self.regular_introduction is not None or self.visiting_cat is not None else {})}
 
     def initialize_dispatch_trouble(self, rules=None):
         from .cafe_dispatch_trouble import initialize
@@ -150,6 +152,14 @@ class CafeInteractionCore(SimulationCore):
     def resolve_dispatch_introduction(self, event_id, choice):
         from .cafe_dispatch_introduction import resolve
         resolve(self, event_id, choice)
+
+    def initialize_visiting_cat(self, rules=None):
+        from .cafe_visiting_cat import initialize
+        initialize(self, rules)
+
+    def resolve_visiting_cat(self, choice):
+        from .cafe_visiting_cat import resolve
+        resolve(self, choice)
 
     def initialize_regular_introduction(self, rules=None):
         from .cafe_regular_introduction import initialize
@@ -663,6 +673,8 @@ class CafeInteractionCore(SimulationCore):
         present_introduction(self)
         from .cafe_regular_introduction import present as present_regular
         present_regular(self)
+        from .cafe_visiting_cat import present as present_visitor
+        present_visitor(self)
         from .cafe_store_events import present as present_store_event
         present_store_event(self)
         self._record(operation)
@@ -862,7 +874,7 @@ class CafeInteractionCore(SimulationCore):
                     **({'store_event_expenses': store_event_expenses(self,self.day)} if self.store_events is not None else {}),
                     **({'dispatch_trouble_expenses': trouble_expenses(self, self.day)} if self.dispatch_trouble is not None else {}),
                     **({'pet_shop_expenses': pet_shop_expenses(self, self.day)} if self.pet_shop is not None else {}),
-                    **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or self.dispatch_introduction is not None or self.regular_introduction is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
+                    **({'recruitment_expenses': expenses(self, self.day)} if self.recruitment is not None or self.dispatch_introduction is not None or self.regular_introduction is not None or self.visiting_cat is not None or (self.intake_request and self.intake_request['status']=='accepted') else {}),
                     **(dict(popularity=self.management['popularity'],game_over=copy.deepcopy(self.management['game_over']),
                              kitten_expenses=sum(e['cost'] for e in self.management['events'].values()
                                                  if e['resolved_day']==self.day)) if self.management else {}),

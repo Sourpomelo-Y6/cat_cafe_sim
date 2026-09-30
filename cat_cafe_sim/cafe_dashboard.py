@@ -161,6 +161,7 @@ def build(app):
         ('recruitment_button','保護猫を迎える…',app.show_recruitment),
         ('pet_shop_button','ペットショップで迎える…',app.show_pet_shop),
         ('regular_introduction_button','常連からの猫紹介…',app.show_regular_introduction),
+        ('visiting_cat_button','店先に通う猫…',app.show_visiting_cat),
         ('activity_button','派遣・帰還を確認する…',app.show_activities),
     ))
     card(app.preparation_page, 1, 'お店への投資', '費用と効果を確認してから購入できます。', (

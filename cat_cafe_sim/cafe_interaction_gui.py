@@ -162,6 +162,12 @@ class ManualCafeInteractionWindow:
                 text=f"派遣先から {event['name']}を紹介されました。迎えるか見送るかを確認してください。"
             elif kind=='dispatch_introduction_resolved':
                 text=f"派遣紹介 {event['name']}：" + ('迎えた' if event['choice']=='accept' else '見送り') + f" · 初期費用 {event['cost']:g}"
+            elif kind=='visiting_cat_presented':
+                text=f"{event['name']}が店先に通うようになりました"
+            elif kind=='visiting_cat_resolved':
+                action={'interact':'店先で交流','skip':'今日は見送り','accept':'迎えた'}[event['choice']]
+                text=f"{event['name']} · {action} · 交流 {event['progress']}/{event['required']}回"
+                if event['choice']=='accept':text+=f" · 費用 {event['cost']:g}"
             elif kind=='regular_introduction_waiting':
                 from .cafe_customers import customer_name
                 text=f"{customer_name(event['customer_id'])}から {event['name']}の紹介"
@@ -407,6 +413,13 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         offered = waiting(self.session.core)
         if offered:
             self.dispatch_introduction_window = CafeDispatchIntroductionWindow(self.root, self.session, offered[0]['id'], self.refresh)
+
+    def show_visiting_cat(self):
+        if self.session.core.visiting_cat is None:return
+        self.pages.select(self.preparation_page)
+        from .cafe_visiting_cat_gui import CafeVisitingCatWindow
+        self.stop(); self.refresh()
+        self.visiting_cat_window=CafeVisitingCatWindow(self.root,self.session,self.refresh)
 
     def show_regular_introduction(self):
         if self.session.core.regular_introduction is None:
@@ -771,11 +784,18 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                 self.show_cat_details()
             self._attention = resume_play
         elif core.can_set_shifts and working:
-            self.notice.set('「準備・お店」で予定を確認し、営業を開始してください。接客コマンドは自動で進みます。')
+            from .core.cafe_visiting_cat import response_reason as visitor_reason, daily_reason as visitor_daily, progress as visitor_progress
+            visitor=core.visiting_cat
+            if visitor and not visitor_reason(core) and (visitor['status']=='ready' or not visitor_daily(core)):
+                name=visitor['rules']['candidate']['name']
+                text='迎えられます' if visitor['status']=='ready' else f"交流できます（{visitor_progress(core)}/{visitor['rules']['interactions_required']}回）"
+                self.notice.set(f'{name}と店先で{text}。「準備・お店」の「店先に通う猫…」から確認できます。営業も開始できます。')
+            else:self.notice.set('「準備・お店」で予定を確認し、営業を開始してください。接客コマンドは自動で進みます。')
         if self._attention:
             self.attention_button.grid()
         else:
             self.attention_button.grid_remove()
+        self.visiting_cat_button.state(['!disabled'] if core.visiting_cat is not None else ['disabled'])
         self.regular_introduction_button.state(['!disabled'] if core.regular_introduction is not None else ['disabled'])
         self.pet_shop_button.state(['!disabled'] if core.pet_shop is not None else ['disabled'])
         self.recruitment_button.state(['!disabled'] if (core.intake_request and core.intake_request['status']=='waiting') or core.recruitment is not None or (core.can_set_shifts and not self._attention) else ['disabled'])

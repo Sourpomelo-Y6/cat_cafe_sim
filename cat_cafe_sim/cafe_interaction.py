@@ -139,6 +139,8 @@ class CafeInteractionSession:
         used.update(reserved_ids(self.core))
         from .core.cafe_regular_introduction import reserved_ids as regular_ids
         used.update(regular_ids(self.core))
+        from .core.cafe_visiting_cat import reserved_ids as visiting_ids
+        used.update(visiting_ids(self.core))
         if self.core.intake_request:
             used.add(self.core.intake_request['rules']['cat_id'])
         introduction = for_departure(self.core, selected, used)
@@ -163,6 +165,8 @@ class CafeInteractionSession:
         used.update(reserved_ids(self.core))
         from .core.cafe_regular_introduction import reserved_ids as regular_ids
         used.update(regular_ids(self.core))
+        from .core.cafe_visiting_cat import reserved_ids as visiting_ids
+        used.update(visiting_ids(self.core))
         used.update((self.core.pet_shop or {}).get('candidates', {}))
         if self.core.intake_request:
             used.add(self.core.intake_request['rules']['cat_id'])
@@ -220,6 +224,17 @@ class CafeInteractionSession:
             self._commit_recruited(updated, result['cat_id'], result['candidate'])
         else:
             self.core = updated
+
+    def resolve_visiting_cat(self, choice):
+        import copy
+        self._ready()
+        updated=copy.deepcopy(self.core)
+        updated.resolve_visiting_cat(choice)
+        if self.core.visiting_cat==updated.visiting_cat:return
+        if choice=='accept':
+            rule=updated.visiting_cat['rules']
+            self._commit_recruited(updated,rule['cat_id'],rule['candidate'])
+        else:self.core=updated
 
     def resolve_regular_introduction(self, choice):
         import copy

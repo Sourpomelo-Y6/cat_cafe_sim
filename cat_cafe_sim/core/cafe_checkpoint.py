@@ -139,6 +139,14 @@ def restore(data):
         used.update(event['introduction']['cat_id'] for event in introduction_events.values() if 'introduction' in event)
         core.regular_introduction=prepare_regular(state['regular_introduction'],state['day'],used)
         for key in regular_cats(core):core.cats[key]=Cat(id=key)
+    if 'visiting_cat' in state:
+        from .cafe_visiting_cat import prepare as prepare_visitor, accepted as visiting_cats
+        from .cafe_regular_introduction import reserved_ids as regular_ids
+        used=set(core.cats)|set((core.recruitment or {}).get('candidates',{}))|set((core.pet_shop or {}).get('candidates',{}))|regular_ids(core)
+        if core.intake_request:used.add(core.intake_request['rules']['cat_id'])
+        used.update(event['introduction']['cat_id'] for event in introduction_events.values() if 'introduction' in event)
+        core.visiting_cat=prepare_visitor(state['visiting_cat'],state['day'],used)
+        for key in visiting_cats(core):core.cats[key]=Cat(id=key)
     cats=state.get('cats', {state.get('cat',{}).get('id'):state.get('cat')})
     if set(cats)!=set(core.cats):
         raise ValueError('invalid cat roster')
@@ -331,6 +339,8 @@ def restore(data):
         if not core.management:
             raise ValueError('目標には経営ルールが必要です。')
         core.goal=validate_goal(core,state['goal'],core.management)
+    from .cafe_visiting_cat import validate as validate_visitor
+    validate_visitor(core)
     if 'advanced_customers' in state:
         from .cafe_advanced_customers import validate as validate_advanced
         core.advanced_customers = validate_advanced(core, state['advanced_customers'])

@@ -46,7 +46,8 @@ def for_departure(core, destination, used_ids):
     if selected is None or selected['destination'] != destination['id']:
         return None
     from .cafe_regular_introduction import reserved_ids as regular_ids
-    used = set(used_ids) | reserved_ids(core) | regular_ids(core)
+    from .cafe_visiting_cat import reserved_ids as visiting_ids
+    used = set(used_ids) | reserved_ids(core) | (regular_ids(core)|visiting_ids(core))
     index = 1
     while f'dispatch-rescue-{index}' in used:
         index += 1
@@ -66,7 +67,8 @@ def attach(core, event, data):
     expected = copy.deepcopy(selected['candidate'])
     expected['name'] += f'（派遣紹介{len(introductions(core)) + 1}）'
     from .cafe_regular_introduction import reserved_ids as regular_ids
-    used = regular_ids(core) | set(core.cats) | reserved_ids(core) | set((core.recruitment or {}).get('candidates', {})) | set((core.pet_shop or {}).get('candidates', {}))
+    from .cafe_visiting_cat import reserved_ids as visiting_ids
+    used = (regular_ids(core)|visiting_ids(core)) | set(core.cats) | reserved_ids(core) | set((core.recruitment or {}).get('candidates', {})) | set((core.pet_shop or {}).get('candidates', {}))
     if core.intake_request:
         used.add(core.intake_request['rules']['cat_id'])
     if (event['destination']['id'] != selected['destination'] or data['candidate'] != expected

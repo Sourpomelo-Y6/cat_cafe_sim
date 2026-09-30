@@ -28,7 +28,8 @@ def initialize(core, selected=None):
     core.require_events_resolved()
     selected=rules(selected)
     from .cafe_dispatch_introduction import reserved_ids as dispatch_ids
-    used=set(core.cats)|set((core.recruitment or {}).get('candidates',{}))|set((core.pet_shop or {}).get('candidates',{}))|dispatch_ids(core)
+    from .cafe_visiting_cat import reserved_ids as visiting_ids
+    used=set(core.cats)|set((core.recruitment or {}).get('candidates',{}))|set((core.pet_shop or {}).get('candidates',{}))|dispatch_ids(core)|visiting_ids(core)
     if core.intake_request:used.add(core.intake_request['rules']['cat_id'])
     if (not core.compact or core.day!=1 or not core.can_set_shifts or core.regular_introduction is not None
             or core.customer_loyalty is None or not core.shift_rules or not core.health_rules

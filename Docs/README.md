@@ -51,6 +51,7 @@
 - [派遣中の選択イベント](HumanToCatDispatchEncounters.md)
 - [派遣先からの猫紹介](HumanToCatDispatchIntroduction.md)
 - [常連のお客さんからの猫紹介](HumanToCatRegularIntroduction.md)
+- [店先に通う猫との交流・加入](HumanToCatVisitingCat.md)
 - [山あいの宿への派遣と家出トラブル](HumanToCatDispatchTrouble.md)
 - [ケア用品・栄養おやつの購入・売却、派遣報酬と猫のケア](HumanToCatItems.md)
 

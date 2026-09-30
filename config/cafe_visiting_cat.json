@@ -1,0 +1,9 @@
+{
+  "cat_id": "visiting-cat-1",
+  "name": "ココ",
+  "preset": "距離を大切にする猫",
+  "cost": 200,
+  "trait": "relaxed",
+  "features": ["brown_tabby", "short_hair"],
+  "interactions_required": 3
+}

@@ -67,6 +67,9 @@ def cat_details(session, cat_id):
     request = core.intake_request
     if request and request['status']=='accepted' and request['rules']['cat_id']==cat_id:
         basic += [('加入経路', '保護猫の受け入れ依頼'), ('加入日', f"{request['resolved_day']}日目")]
+    visitor=core.visiting_cat
+    if visitor and visitor['status']=='accepted' and visitor['rules']['cat_id']==cat_id:
+        basic += [('加入経路','店先に通う猫'),('加入日',f"{visitor['accepted_day']}日目")]
     regular = core.regular_introduction
     if regular and regular['status']=='accepted' and regular['rules']['cat_id']==cat_id:
         from .cafe_customers import customer_name

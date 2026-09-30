@@ -19,6 +19,11 @@ def cat_events(core, cat_id):
     if request and request['status'] == 'accepted' and request['rules']['cat_id'] == cat_id:
         add(request['resolved_day'], '加入', '保護猫の受け入れ依頼', f"初期費用 {request['rules']['candidate']['cost']:g}")
 
+    visitor=core.visiting_cat
+    if visitor and visitor['status']=='accepted' and visitor['rules']['cat_id']==cat_id:
+        for row in visitor['actions']:
+            add(row['day'],'店先での交流','店先','交流した' if row['choice']=='interact' else '今日は見送った')
+        add(visitor['accepted_day'],'加入','店先に通う猫',f"初期費用 {visitor['rules']['candidate']['cost']:g}")
     regular = core.regular_introduction
     if regular and regular['status']=='accepted' and regular['rules']['cat_id']==cat_id:
         from .cafe_customers import customer_name

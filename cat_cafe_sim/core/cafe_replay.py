@@ -52,6 +52,8 @@ def apply_operation(core, operation):
     elif kind=='resolve_dispatch_trouble':core.resolve_dispatch_trouble(operation['event_id'],operation['choice'])
     elif kind=='initialize_dispatch_introduction':core.initialize_dispatch_introduction(operation['rules'])
     elif kind=='resolve_dispatch_introduction':core.resolve_dispatch_introduction(operation['event_id'],operation['choice'])
+    elif kind=='initialize_visiting_cat':core.initialize_visiting_cat(operation['rules'])
+    elif kind=='resolve_visiting_cat':core.resolve_visiting_cat(operation['choice'])
     elif kind=='initialize_regular_introduction':core.initialize_regular_introduction(operation['rules'])
     elif kind=='resolve_regular_introduction':core.resolve_regular_introduction(operation['choice'])
     elif kind=='initialize_intake_request':core.initialize_intake_request(operation['rules'])
