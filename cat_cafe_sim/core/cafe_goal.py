@@ -175,7 +175,7 @@ def continue_game(core):
 
 
 def validate(core, data, management):
-    if not isinstance(data,dict) or set(data) not in ({'rules','started_day','days','status','resolved_day','continued'}, {'rules','started_day','days','status','resolved_day','continued','history','stage_started_day'}, {'rules','started_day','days','status','resolved_day','continued','tracking_only'}):
+    if not isinstance(data,dict) or set(data) not in ({'rules','started_day','days','status','resolved_day','continued'}, {'rules','started_day','days','status','resolved_day','continued','history','stage_started_day'}, {'rules','started_day','days','status','resolved_day','continued','history','stage_started_day','challenge_started_day'}, {'rules','started_day','days','status','resolved_day','continued','tracking_only'}):
         raise ValueError('目標の状態が不正です。')
     rule=rules(data['rules'])
     if 'tracking_only' in data and (data['tracking_only'] is not True or 'stages' in rule):
@@ -185,6 +185,10 @@ def validate(core, data, management):
     start=data['started_day']
     if type(start) is not int or not management['started_day']<=start<=core.day or type(data['continued']) is not bool:
         raise ValueError('目標の開始日・確認状態が不正です。')
+    challenge=data.get('challenge_started_day')
+    if 'challenge_started_day' in data and (type(challenge) is not int or not start<=challenge<=core.day
+            or 'stages' not in rule or data.get('tracking_only')):
+        raise ValueError('人気挑戦の開始日が不正です。')
     attempts = []
     if 'stages' in rule:
         history = data.get('history')
@@ -198,7 +202,7 @@ def validate(core, data, management):
                     or row['status'] != 'cleared' or type(row['continued']) is not bool):
                 raise ValueError('達成済み目標の記録が不正です。')
         attempts = history + [dict(started_day=stage_start, status=data['status'], resolved_day=data['resolved_day'], continued=data['continued'])]
-        if attempts[0]['started_day'] != start:
+        if attempts[0]['started_day'] != (challenge if challenge is not None else start):
             raise ValueError('最初の目標の開始日が一致しません。')
         for previous, following in zip(attempts, attempts[1:]):
             if (not previous['started_day'] <= previous['resolved_day'] < following['started_day']

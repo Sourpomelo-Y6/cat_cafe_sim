@@ -18,6 +18,7 @@
 
 - [新規ゲーム・セーブ再開・終了後の再開始](HumanToCatNewGame.md)
 - [新規ゲーム開始時の目標選択](HumanToCatObjectiveSelection.md)
+- [自由営業から人気3段階へ挑戦](HumanToCatPopularityChallenge.md)
 - [通常営業UIの構成](HumanToCatUIFlow.md)
 - [営業の割り当てと自動交流](HumanToCatAutomaticCafe.md)
 - [お客さんの名簿と当日の来店予定](HumanToCatCustomers.md)

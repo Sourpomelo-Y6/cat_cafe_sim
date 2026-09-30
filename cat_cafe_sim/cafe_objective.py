@@ -14,7 +14,7 @@ def description(conditions, mode):
         rules = conditions['bond']
         return f"プレイヤーへの好感度{rules['affinity']:g}以上の在籍猫を同時に{rules['target']}匹。期限なし。猫を迎え、準備中の交流で親しくなります。"
     if mode == 'free':
-        return '開始時のクリア目標・期限はありません。営業、猫との交流、派遣などを自由に続けられます。'
+        return '開始時のクリア目標・期限はありません。営業、猫との交流、派遣などを自由に続けられます。準備中に人気3段階への挑戦も開始できます。'
     raise ValueError('目標を選んでください。')
 
 
@@ -26,6 +26,9 @@ def progress(core):
         from .core.cafe_bond_goal import progress
         return progress(core)
     if core.objective == 'free':
+        if 'challenge_started_day' in (core.goal or {}):
+            from .cafe_goal_gui import progress
+            return '自由営業から挑戦 · '+progress(core)
         return '自由営業 · クリア目標・期限なし'
     from .cafe_goal_gui import progress
     return progress(core)

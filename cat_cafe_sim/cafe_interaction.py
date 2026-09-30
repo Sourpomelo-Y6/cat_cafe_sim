@@ -329,6 +329,12 @@ class CafeInteractionSession:
         if self.pending:raise ValueError('先に交流結果の保存を再試行してください。')
         self.core.resolve_store_event(choice)
 
+    def start_popularity_challenge(self, rules=None):
+        from .storage.cafe_saves import check_link
+        check_link(self)
+        if self.pending:raise ValueError('先に交流結果の保存を再試行してください。')
+        self.core.start_popularity_challenge(rules)
+
     def resolve_growth(self,cat_id,choice):
         from .storage.cafe_saves import check_link
         check_link(self)

@@ -219,6 +219,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_clear_results import initialize
         initialize(self)
 
+    def start_popularity_challenge(self, rules=None):
+        from .cafe_popularity_challenge import start
+        start(self,rules)
+
     def initialize_objective(self, mode):
         from .cafe_objective import initialize
         initialize(self, mode)

@@ -54,9 +54,16 @@ class CafeGoalWindow:
             self.details.set(f"好感度につながる反応合計がプラスの接客1件につき人気＋{base['gain_per_success']:g}。上限{base['cap']:g}。家出による人気低下と、人気0のゲームオーバーは有効です。")
             self.notice.set('開始時に選んだ目標では、人気の期限判定はありません。')
             self.history.delete(*self.history.get_children())
+            from .core.cafe_popularity_challenge import reason as challenge_reason
             for button in (self.enable_button,self.continue_button,self.next_button):
                 button.pack_forget()
                 button.state(['disabled'])
+            if core.objective=='free':
+                self.enable_button.configure(text='人気3段階へ挑戦')
+                self.enable_button.pack(side='left')
+                problem='先に接客結果の保存を再試行してください。' if self.session.pending else challenge_reason(core)
+                self.enable_button.state(['disabled'] if problem else ['!disabled'])
+                self.notice.set(problem or '店の状態と人気を引き継ぎ、今日から各段階10日間の人気挑戦を開始できます。')
             return
         self.status.set(progress(core))
         self.details.set(f"開始日を含む{selected['days']}日以内に人気{selected['target']:g}が目標です。\n好感度につながる反応合計がプラスの接客1件につき＋{base['gain_per_success']:g}。閉店時に加算（上限{base['cap']:g}）し、家出の減少を反映後に判定します。休業も日数に含みます。")
@@ -100,6 +107,13 @@ class CafeGoalWindow:
 
     def enable(self):
         from tkinter import messagebox
+        if self.session.core.goal and self.session.core.goal.get('tracking_only'):
+            from .core.cafe_popularity_challenge import rules as challenge_rules
+            selected=challenge_rules(self.session.core)
+            targets=' → '.join(f"人気{row['target']:g}（{row['days']}日間）" for row in [selected['goal'],*selected['goal']['stages']])
+            if messagebox.askyesno('人気3段階へ挑戦',f"店の状態と現在の人気を引き継ぎ、{self.session.core.day}日目から挑戦します。\n{targets}\n開始後の取消・やり直しはできません。開始しますか？",parent=self.window):
+                self.perform(lambda:self.session.start_popularity_challenge(selected))
+            return
         selected=rules()
         if messagebox.askyesno('人気目標を開始',f"今日を含む{selected['days']}日以内に人気{selected['target']:g}を目指します。開始後の取消・やり直しはできません。開始しますか？",parent=self.window):
             self.perform(lambda:self.session.enable_goal(selected))

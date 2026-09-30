@@ -195,6 +195,8 @@ class ManualCafeInteractionWindow:
                 choice={'repair':'修理する','patch':'応急処置する','close':'休業する','full':'支援する','small':'少額支援する','decline':'見送る'}[event['choice']]
                 text=('支援依頼：' if event.get('event_type')=='support' else '設備トラブル：')+choice
                 if event.get('cost'):text+=f" · 支出 {event['cost']:g} · 人気 ＋{event['popularity']:g}"
+            elif kind=='popularity_challenge_started':
+                text=f"自由営業から人気3段階へ挑戦開始 · {event['started_day']}日目から"
             elif kind=='growth_ready':
                 text=f"{self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])}が成長可能 · 経験 {event['total']:g}"
             elif kind=='growth_selected':
@@ -679,7 +681,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if core.objective is not None:
             from .cafe_objective import progress
             self.results_summary.set(f"今日の接客売上 {core.summary()['revenue']:g} / 終了した交流 {core.summary()['completed_interactions']}件。\n" + progress(core))
-            self.goal_button.configure(text='人気目標・結果…' if not core.goal.get('tracking_only') else '人気の増減ルール…')
+            self.goal_button.configure(text='人気目標・結果…' if not core.goal.get('tracking_only') else '人気3段階へ挑戦…' if core.objective=='free' else '人気の増減ルール…')
         else:
             self.goal_button.configure(text='人気目標・結果…')
         self._attention = None
