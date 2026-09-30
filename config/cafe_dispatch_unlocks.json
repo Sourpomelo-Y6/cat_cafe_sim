@@ -1,4 +1,23 @@
 {
-  "shopping_street_event": {"popularity": 120, "returns": 1},
-  "out_of_town_visit": {"popularity": 150, "returns": 3}
+  "shopping_street_event": {
+    "popularity": 120,
+    "returns": 1
+  },
+  "out_of_town_visit": {
+    "popularity": 150,
+    "returns": 3
+  },
+  "cat_exercise_class": {
+    "popularity": 120,
+    "returns": 1,
+    "destination": {
+      "id": "cat_exercise_class",
+      "name": "猫の運動教室",
+      "days": 2,
+      "reward": 300,
+      "max_fatigue": 40,
+      "required_trait": "hardy",
+      "required_trait_name": "体力自慢"
+    }
+  }
 }

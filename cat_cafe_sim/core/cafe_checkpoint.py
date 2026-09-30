@@ -315,6 +315,8 @@ def restore(data):
     if 'dispatch_unlocks' in state:
         from .cafe_dispatch_unlocks import validate as validate_unlocks
         core.dispatch_unlocks=validate_unlocks(core,state['dispatch_unlocks'])
+    from .cafe_dispatch_unlocks import validate_exercise
+    validate_exercise(core)
     if 'item_purchases' in state:
         from .cafe_item_shop import validate as validate_purchases
         validate_purchases(core,state['item_purchases'])

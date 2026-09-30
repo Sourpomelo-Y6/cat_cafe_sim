@@ -31,10 +31,15 @@ def destinations(core=None):
     if not isinstance(extra, list):
         raise ValueError('派遣先一覧が不正です。')
     rows = [destination()] + [destination(row) for row in extra]
-    if len({row['id'] for row in rows}) != len(rows):
-        raise ValueError('派遣先IDが重複しています。')
+    if core is not None:
+        from .cafe_dispatch_unlocks import exercise_destination
+        exercise = exercise_destination(core)
+        if exercise:
+            rows.append(exercise)
     if core is not None and core.dispatch_trouble is not None:
         rows.append(copy.deepcopy(core.dispatch_trouble['destination']))
+    if len({row['id'] for row in rows}) != len(rows):
+        raise ValueError('派遣先IDが重複しています。')
     return rows
 
 
@@ -51,6 +56,9 @@ def dispatch_reason(core, cat_id, rules):
     from .cafe_patron import DESTINATION_ID
     if rules['id'] == DESTINATION_ID and (not core.patron or rules != core.patron['rules']['destination']):
         return '先に有力者目標を開始してください。派遣条件は開始時の設定を使います。'
+    from .cafe_dispatch_unlocks import EXERCISE_ID, exercise_destination
+    if rules['id'] == EXERCISE_ID and rules != exercise_destination(core):
+        return 'この営業には猫の運動教室の派遣設定がありません。開始時の設定を使ってください。'
     from .cafe_dispatch_unlocks import reason as unlock_reason
     locked=unlock_reason(core,rules['id'])
     if locked:return locked
