@@ -45,8 +45,11 @@ class CafeActivityWindow:
         self.recruitment_button.pack(side='left')
         self.base_destinations = destinations(session.core)
         self.destinations = list(self.base_destinations)
-        self.destination_choice = ttk.Combobox(frame, state='readonly', values=[row['name'] for row in self.destinations])
-        self.destination_choice.pack(fill='x')
+        destination_controls=ttk.Frame(frame);destination_controls.pack(fill='x')
+        self.compare_button=ttk.Button(destination_controls,text='派遣先を比較…',command=self.show_comparison)
+        self.compare_button.pack(side='right',padx=(6,0))
+        self.destination_choice = ttk.Combobox(destination_controls, state='readonly', values=[row['name'] for row in self.destinations])
+        self.destination_choice.pack(side='left',fill='x',expand=True)
         self.destination_choice.current(0)
         self.rules = self.destinations[0]
         self.destination_info = tk.StringVar()
@@ -71,6 +74,20 @@ class CafeActivityWindow:
         self.window.bind('<Escape>',lambda event:self.window.destroy())
         self.refresh()
 
+    def show_comparison(self):
+        selected=self.cats.selection()
+        if not selected:return
+        from .cafe_dispatch_comparison_gui import CafeDispatchComparisonWindow
+        self.comparison_window=CafeDispatchComparisonWindow(self.window,self.session,selected[0],self.select_compared_destination)
+
+    def select_compared_destination(self,destination_id,cat_id):
+        self.refresh()
+        index=next((i for i,row in enumerate(self.destinations) if row['id']==destination_id),None)
+        if index is None or cat_id not in self.session.core.cats:return
+        self.destination_choice.current(index);self.select_destination()
+        self.cats.selection_set(cat_id);self.buttons()
+        if self.send_button.instate(['!disabled']):self.send()
+
     def select_destination(self):
         self.rules = self.destinations[self.destination_choice.current()]
         self.refresh()
@@ -81,6 +98,7 @@ class CafeActivityWindow:
         from .core.cafe_player import active
         from .core.cafe_management import is_over
         cats = self.cats.selection()
+        self.compare_button.state(['!disabled'] if cats else ['disabled'])
         reason = dispatch_reason(core, cats[0], self.rules) if cats else '猫を選んでください。'
         self.send_button.state(['!disabled'] if not reason and not self.session.pending else ['disabled'])
         if self.session.pending:

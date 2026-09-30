@@ -47,6 +47,7 @@
 - [ペットショップで猫を迎える](HumanToCatPetShop.md)
 - [飼育スペースと受け入れ上限](HumanToCatHousing.md)
 - [猫の活動状態・派遣と帰還イベント](HumanToCatCafeActivities.md)
+- [選んだ猫の派遣先比較](HumanToCatDispatchComparison.md)
 - [猫の運動教室への派遣](HumanToCatExerciseDispatch.md)
 - [静かな読書サロンへの派遣](HumanToCatReadingDispatch.md)
 - [猫の撮影スタジオへの派遣](HumanToCatPhotoDispatch.md)
