@@ -19,5 +19,18 @@
       "required_trait": "hardy",
       "required_trait_name": "体力自慢"
     }
+  },
+  "quiet_reading_salon": {
+    "popularity": 120,
+    "returns": 1,
+    "destination": {
+      "id": "quiet_reading_salon",
+      "name": "静かな読書サロン",
+      "days": 2,
+      "reward": 300,
+      "max_fatigue": 40,
+      "required_trait": "relaxed",
+      "required_trait_name": "のんびり屋"
+    }
   }
 }

@@ -6,39 +6,50 @@ from pathlib import Path
 
 LEGACY_IDS={'shopping_street_event','out_of_town_visit'}
 EXERCISE_ID='cat_exercise_class'
-IDS=LEGACY_IDS | {EXERCISE_ID}
+READING_ID='quiet_reading_salon'
+SPECIAL_DESTINATIONS={EXERCISE_ID:('hardy','体力自慢'),READING_ID:('relaxed','のんびり屋')}
+IDS=LEGACY_IDS | set(SPECIAL_DESTINATIONS)
 
 
 def rules(data=None):
     if data is None:data=json.loads((Path(__file__).resolve().parents[2]/'config/cafe_dispatch_unlocks.json').read_text())
-    if not isinstance(data,dict) or set(data) not in (LEGACY_IDS, IDS):raise ValueError('派遣解放設定が不正です。')
+    if not isinstance(data,dict) or not LEGACY_IDS<=set(data)<=IDS:raise ValueError('派遣解放設定が不正です。')
     for row in data.values():
         if (not isinstance(row,dict) or set(row) not in ({'popularity','returns'}, {'popularity','returns','destination'})
                 or type(row['returns']) is not int or row['returns']<1
                 or type(row['popularity']) not in (int,float) or not math.isfinite(row['popularity']) or row['popularity']<=0):
             raise ValueError('派遣解放条件が不正です。')
     for key, row in data.items():
-        if key == EXERCISE_ID:
+        if key in SPECIAL_DESTINATIONS:
             from .cafe_activities import destination
             selected = destination(row.get('destination', {}))
-            if (selected['id'] != EXERCISE_ID or selected.get('required_trait') != 'hardy'
-                    or selected.get('required_trait_name') != '体力自慢'):
-                raise ValueError('猫の運動教室の参加条件が不正です。')
+            trait_id,trait_name=SPECIAL_DESTINATIONS[key]
+            if (selected['id'] != key or selected.get('required_trait') != trait_id
+                    or selected.get('required_trait_name') != trait_name):
+                raise ValueError('特性に応じた派遣先の参加条件が不正です。')
         elif 'destination' in row:
             raise ValueError('従来の派遣解放設定に派遣先は指定できません。')
     return copy.deepcopy(data)
 
 
 def exercise_destination(core):
+    return saved_destination(core,EXERCISE_ID)
+
+
+def reading_destination(core):
+    return saved_destination(core,READING_ID)
+
+
+def saved_destination(core,destination_id):
     data = core.dispatch_unlocks
-    return copy.deepcopy(data['rules'][EXERCISE_ID]['destination']) if data and EXERCISE_ID in data['rules'] else None
+    return copy.deepcopy(data['rules'][destination_id]['destination']) if data and destination_id in data['rules'] else None
 
 
-def validate_exercise(core):
-    selected = exercise_destination(core)
+def validate_destinations(core):
     for event in (core.activities or {}).get('events', {}).values():
-        if event['destination']['id'] == EXERCISE_ID and event['destination'] != selected:
-            raise ValueError('猫の運動教室の派遣記録と開始時の設定が一致しません。')
+        key=event['destination']['id']
+        if key in SPECIAL_DESTINATIONS and event['destination'] != saved_destination(core,key):
+            raise ValueError('特性に応じた派遣記録と開始時の設定が一致しません。')
 
 
 def count(core):

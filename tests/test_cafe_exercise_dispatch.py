@@ -33,6 +33,7 @@ class ExerciseDispatchTests(unittest.TestCase):
             selected['traits']['cat-mugi'] = definitions()['hardy']
         if legacy:
             selected['dispatch_unlocks'].pop(EXERCISE_ID)
+            selected['dispatch_unlocks'].pop('quiet_reading_salon')  # Original two-destination rules.
         if no_unlocks:
             selected.pop('dispatch_unlocks')
         return create_game(Path(self.temp.name) / 'games', selected)

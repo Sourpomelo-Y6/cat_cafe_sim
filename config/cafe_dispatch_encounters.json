@@ -10,5 +10,9 @@
   {"id":"exercise_program","destination":"cat_exercise_class","title":"追加の運動プログラムに参加できます","choices":[
     {"id":"accept","label":"追加の運動プログラムに参加する","reward":80,"fatigue":10,"stress":0},
     {"id":"decline","label":"予定どおり終える","reward":0,"fatigue":0,"stress":0}
+  ]},
+  {"id":"reading_extension","destination":"quiet_reading_salon","title":"延長の触れ合いをお願いされました","choices":[
+    {"id":"accept","label":"延長の触れ合いに参加する","reward":80,"fatigue":0,"stress":10},
+    {"id":"decline","label":"予定どおり終える","reward":0,"fatigue":0,"stress":0}
   ]}
 ]
