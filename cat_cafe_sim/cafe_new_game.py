@@ -1,7 +1,7 @@
 """通常ゲームの初期条件とゲームごとの独立した保存先。"""
 import json
 import shutil
-import tempfile
+from datetime import datetime
 from dataclasses import replace
 from pathlib import Path
 
@@ -65,7 +65,15 @@ def create_game(directory='saves/games', conditions=None):
     selected = starting_conditions() if conditions is None else conditions
     directory = Path(directory).resolve()
     directory.mkdir(parents=True, exist_ok=True)
-    location = Path(tempfile.mkdtemp(prefix='game-', dir=directory))
+    started = datetime.now().strftime('%Y%m%d%H%M%S')
+    suffix = 0
+    while True:
+        location = directory / (started if suffix == 0 else f'{started}_{suffix}')
+        try:
+            location.mkdir()
+            break
+        except FileExistsError:
+            suffix += 1
     try:
         store = RelationshipStore(location / 'relationships.json')
         store._write(selected['profiles'])

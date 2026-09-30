@@ -2207,6 +2207,28 @@ class CafeStartWindowTests(unittest.TestCase):
         self.assertEqual(load_game(first.checkpoint_path)[0].core.snapshot(), first.core.snapshot())
         self.assertEqual(app.session.core.funds, 1000)
 
+    def test_open_before_save_uses_same_directory_and_follows_saved_location(self):
+        from cat_cafe_sim.cafe_interaction import CafeInteractionSession
+        from cat_cafe_sim.storage.relationships import RelationshipStore
+        self.start.new_button.invoke(); self.start.new_window.start_button.invoke()
+        app = self.start.app
+        for session in (app.session, CafeInteractionSession(store=RelationshipStore(Path(self.temp.name)/'trial.json'))):
+            app.replace_game(session)
+            with patch('tkinter.filedialog.askopenfilename', return_value='') as opened:
+                app.open_game()
+            with patch('tkinter.filedialog.asksaveasfilename', return_value='') as saved:
+                app.save_game()
+            self.assertEqual(opened.call_args.kwargs['initialdir'], saved.call_args.kwargs['initialdir'])
+            current = session.checkpoint_path or Path('saves/cafe_day.json')
+            self.assertEqual(opened.call_args.kwargs['initialdir'], str(current.parent))
+            self.assertIs(app.session, session)
+        chosen = Path(self.temp.name)/'elsewhere'/'cafe.json'
+        with patch('tkinter.filedialog.asksaveasfilename', return_value=str(chosen)):
+            self.assertTrue(app.save_game())
+        with patch('tkinter.filedialog.askopenfilename', return_value='') as opened:
+            app.open_game()
+        self.assertEqual(opened.call_args.kwargs['initialdir'], str(chosen.parent))
+
     def test_traits_details_dispatch_preview_return_and_recruitment(self):
         self.start.new_button.invoke();self.start.new_window.start_button.invoke()
         app=self.start.app

@@ -1,3 +1,4 @@
+from datetime import datetime
 import tempfile
 import unittest
 from pathlib import Path
@@ -15,6 +16,42 @@ class NewGameTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.directory = Path(self.temp.name) / 'games'
+
+    def test_start_timestamp_collision_and_failed_retry_preserve_existing_games(self):
+        stamp = datetime(2026, 9, 30, 10, 30, 0)
+        with patch('cat_cafe_sim.cafe_new_game.datetime') as clock:
+            clock.now.return_value = stamp
+            first = create_game(self.directory)
+            second = create_game(self.directory)
+            self.assertEqual(first.checkpoint_path.parent.name, '20260930103000')
+            self.assertEqual(second.checkpoint_path.parent.name, '20260930103000_1')
+            before = {p: p.read_bytes() for game in (first, second) for p in game.checkpoint_path.parent.iterdir()}
+            with patch('cat_cafe_sim.cafe_new_game.save_game', side_effect=OSError('full')):
+                with self.assertRaises(OSError):
+                    create_game(self.directory)
+            self.assertFalse((self.directory / '20260930103000_2').exists())
+            third = create_game(self.directory)
+            self.assertEqual(third.checkpoint_path.parent.name, '20260930103000_2')
+            self.assertEqual(before, {p: p.read_bytes() for p in before})
+        save_game(first, first.checkpoint_path)
+        self.assertEqual(first.checkpoint_path.parent.name, '20260930103000')
+        self.assertEqual(load_game(second.checkpoint_path)[0].core.snapshot(), second.core.snapshot())
+
+    def test_timestamp_collision_with_existing_file_and_legacy_folder(self):
+        self.directory.mkdir()
+        (self.directory / '20260930103000').write_text('keep')
+        with patch('cat_cafe_sim.cafe_new_game.datetime') as clock:
+            clock.now.return_value = datetime(2026, 9, 30, 10, 30, 0)
+            session = create_game(self.directory)
+        self.assertEqual(session.checkpoint_path.parent.name, '20260930103000_1')
+        self.assertEqual((self.directory / '20260930103000').read_text(), 'keep')
+        legacy = self.directory / 'game-existing'
+        legacy.mkdir()
+        save_game(session, legacy / 'cafe.json')
+        original = {p: p.read_bytes() for p in legacy.iterdir()}
+        loaded, _ = load_game(legacy / 'cafe.json')
+        self.assertEqual(loaded.checkpoint_path.parent, legacy)
+        self.assertEqual(original, {p: p.read_bytes() for p in legacy.iterdir()})
 
     def test_initial_conditions_and_initial_save_resume(self):
         session = create_game(self.directory)

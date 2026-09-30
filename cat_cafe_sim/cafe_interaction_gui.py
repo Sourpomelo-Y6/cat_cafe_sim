@@ -841,11 +841,14 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         return True
 
     def open_game(self):
+        from pathlib import Path
         from tkinter import filedialog,messagebox
         from .storage.cafe_saves import load_game
         self.stop()
         self.refresh()
-        path=filedialog.askopenfilename(parent=self.root,title='営業の続きから開く',filetypes=[('営業セーブ','*.json')])
+        current = self.session.checkpoint_path or Path('saves/cafe_day.json')
+        path=filedialog.askopenfilename(parent=self.root,title='営業の続きから開く',
+                                        initialdir=str(current.parent),filetypes=[('営業セーブ','*.json')])
         if not path:
             return
         try:
