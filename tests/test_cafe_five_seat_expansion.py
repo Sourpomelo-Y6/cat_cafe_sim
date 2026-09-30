@@ -54,11 +54,13 @@ class FiveSeatExpansionTests(unittest.TestCase):
         while s.core.tick<=6:s.step()
         self.assertIn(FIFTH_CUSTOMER_ID,s.core.visits);self.reload(s)
 
-    def test_fifth_seat_is_available_immediately_and_no_sixth_step(self):
+    def test_fifth_seat_is_available_immediately_and_sixth_requires_final_stage(self):
         s=self.unlock_and_buy()
         self.assertIn('seat-5',s.free_seats);self.assertIsNotNone(five_seat_purchase(s.core))
         self.rejected(s,s.expand_seats)
-        self.assertIn('現在追加できる席はありません',reason(s.core,rules()))
+        self.assertIn('最終段階',reason(s.core,rules()))
+        old=rules();old.pop('six_seat_cost')
+        self.assertIn('現在追加できる席はありません',reason(s.core,old))
 
     def test_corrupt_record_and_old_rules(self):
         self.assertNotIn('five_seat_cost',rules(dict(cost=500,four_seat_cost=1000)))
