@@ -296,6 +296,10 @@ class CafeInteractionSession:
         self._ready()
         self.core.purchase_waiting_area()
 
+    def upgrade_waiting_area(self,rules=None):
+        self._ready()
+        self.core.upgrade_waiting_area(rules)
+
     def enable_bond_goal(self, rules=None):
         self._ready()
         self.core.enable_bond_goal(rules)

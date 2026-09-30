@@ -497,6 +497,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_waiting_area import purchase
         purchase(self)
 
+    def upgrade_waiting_area(self,rules=None):
+        from .cafe_waiting_area import upgrade
+        upgrade(self,rules)
+
     def initialize_advanced_customers(self, rules=None):
         from .cafe_advanced_customers import initialize
         initialize(self, rules)

@@ -200,8 +200,9 @@ class ManualCafeInteractionWindow:
                       (f"＋イベント分 {event['event_cost']:g}" if event.get('event_cost') else '')+'）')
             elif kind=='housing_purchased':
                 text=f"飼育スペースを拡張 · 費用 {event['cost']:g} · 上限 {event['capacity']}匹 · 日次運営費 ＋{event['daily_cost']:g}"
-            elif kind=='waiting_area_purchased':
-                text=(f"待合スペースを強化 · 費用 {event['cost']:g} · 待機上限 {event['queue_capacity']}人 · "
+            elif kind in ('waiting_area_purchased','waiting_area_upgraded'):
+                stage='待合スペースを2段階目へ強化' if kind=='waiting_area_upgraded' else '待合スペースを強化'
+                text=(f"{stage} · 費用 {event['cost']:g} · 待機上限 {event['queue_capacity']}人 · "
                       f"待機猶予 {event['max_wait_ticks']}tick · 日次運営費 ＋{event['daily_cost']:g}")
             elif kind=='store_event_presented':
                 text='本日の店舗イベント：'+event['label']

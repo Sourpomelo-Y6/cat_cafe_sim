@@ -78,8 +78,8 @@ def validate(core,data):
                           seat_cost=selected['per_seat_cost']*count,
                           total=selected['base_cost']+selected['per_seat_cost']*count)
         if core.waiting_area is not None:
-            from .cafe_waiting_area import purchased
-            cost=core.waiting_area['rules']['daily_cost'] if purchased(core) and row['day']>=purchased(core)['day'] else 0
+            from .cafe_waiting_area import daily_cost
+            cost=daily_cost(core,row['day'])
             fields.add('facility_cost');expected_row['facility_cost']=cost;expected_row['total']+=cost
         if core.store_events is not None:
             from .cafe_store_events import extra_cost
