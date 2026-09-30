@@ -477,6 +477,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_growth import resolve_type_mastery
         resolve_type_mastery(self,cat_id,choice)
 
+    def begin_second_group_type_practice(self,cat_id):
+        from .cafe_growth import begin_second_group_type_practice
+        begin_second_group_type_practice(self,cat_id)
+
     def resolve_growth_mastery(self,cat_id,choice):
         from .cafe_growth import resolve_mastery
         resolve_mastery(self,cat_id,choice)

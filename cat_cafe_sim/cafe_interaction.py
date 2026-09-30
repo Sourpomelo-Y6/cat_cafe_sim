@@ -468,6 +468,7 @@ class CafeInteractionSession:
                          mastery_engagement_multiplier=interaction_terms(self.core,cat_id)['multiplier'],
                          type_mastery=interaction_terms(self.core,cat_id)['type'],
                          second_type_mastery=interaction_terms(self.core,cat_id)['second_type'],
+                         second_group_type_mastery=interaction_terms(self.core,cat_id)['second_group_type'],
                          type_mastery_engagement_multiplier=interaction_terms(self.core,cat_id)['type_multiplier'],
                          ticks=min(self.interaction_config.ticks, self.core.config.opening_ticks-self.core.tick))
         interaction = self.store.begin(config, cat_id, customer_id, stamina=self.core.cats[cat_id].stamina)
@@ -477,6 +478,10 @@ class CafeInteractionSession:
             if seat_id not in (None,self.core.seat.id):
                 raise ValueError('不明な席です。')
             self.core.start(interaction)
+        growth=self.core.growth
+        row=(growth or {}).get('cats',{}).get(cat_id,{})
+        if row.get('second_mastery') is not None and 'type_mastery_threshold' in growth['rules'] and 'second_group_type_practice' not in row:
+            self.core.begin_second_group_type_practice(cat_id)
 
     def step(self, action=None, target_type=None):
         self._ready()

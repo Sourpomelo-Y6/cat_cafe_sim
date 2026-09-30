@@ -60,6 +60,11 @@ def cat_details(session, cat_id):
         if 'second_type_mastery_actions' in growth:
             basic += [('2つ目の得意な行動',type_label(growth['second_type_mastery']) if growth['second_type_mastery'] else '未選択')]
             basic += [(f'2つ目の習得対象：{type_label(key)}',f'{count:g}') for key,count in growth['second_type_mastery_actions'].items()]
+        if growth.get('second_mastery') is not None and 'type_mastery_threshold' in core.growth['rules']:
+            from .core.cafe_growth import type_label
+            practice=growth.get('second_group_type_practice',{})
+            basic += [('2つ目の分類の得意な行動',type_label(practice['type_mastery']) if practice.get('type_mastery') else '未選択')]
+            basic += [(f'2つ目の分類の個別習得対象：{type_label(key)}',f"{practice.get('actions',{}).get(key,0):g}") for key in growth['type_actions']]
     if core.recruitment and cat_id in core.recruitment['accepted']:
         basic += [('加入経路', '保護猫の受け入れ'), ('加入日', f"{core.recruitment['accepted'][cat_id]}日目")]
     if core.pet_shop and cat_id in core.pet_shop['accepted']:
