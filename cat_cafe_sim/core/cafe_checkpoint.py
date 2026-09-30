@@ -323,6 +323,9 @@ def restore(data):
     if 'item_uses' in state:
         from .cafe_items import validate_uses
         core.item_uses=validate_uses(core,state['item_uses'])
+    if 'item_sales' in state:
+        from .cafe_item_sales import validate as validate_sales
+        validate_sales(core, state['item_sales'])
     if 'goal' in state:
         from .cafe_goal import validate as validate_goal
         if not core.management:
@@ -449,6 +452,8 @@ def restore(data):
     expected_funds = core.config.initial_funds + sum(row['summary']['revenue'] for row in core.day_results) + sum(v.bill for v in core.visits.values())
     from .cafe_activities import income
     expected_funds += income(core)
+    from .cafe_item_sales import income as sales_income
+    expected_funds += sales_income(core)
     from .cafe_management import money_adjustment
     expected_funds += money_adjustment(core)
     from .cafe_recruitment import expenses

@@ -31,6 +31,14 @@ class CafeItemsWindow:
         self.shop_choice.bind('<<ComboboxSelected>>', lambda event: self.select_shop())
         self.shop_note=tk.StringVar()
         ttk.Label(frame,textvariable=self.shop_note,wraplength=540).pack(anchor='w')
+        from .core.cafe_item_sales import prices
+        self.sale_prices = prices()
+        sale_controls = ttk.Frame(footer)
+        sale_controls.pack(fill='x', pady=(0, 4))
+        self.sale_notice = tk.StringVar()
+        self.sell_button = ttk.Button(sale_controls, text='選んだ用品を1個売却', command=self.sell)
+        self.sell_button.pack(side='left')
+        ttk.Label(sale_controls, textvariable=self.sale_notice, wraplength=340).pack(side='left', padx=8)
         self.buy_button=ttk.Button(footer,text='ケア用品を1個購入',command=self.buy)
         self.buy_button.pack(side='left',padx=(0,8))
         self.use_button = ttk.Button(footer, text='選んだ猫に1個使う', command=self.use)
@@ -44,6 +52,9 @@ class CafeItemsWindow:
         history_page = ttk.Frame(pages)
         pages.add(use_page, text='所持品と対象猫')
         pages.add(history_page, text='使用履歴')
+        sale_page = ttk.Frame(pages)
+        pages.add(sale_page, text='売却履歴')
+        self.sale_history = CafeHistoryWindow.table(sale_page, ('売却日', 'アイテム', '金額'))
         use_page.columnconfigure(0, weight=1)
         for i in (0, 1):
             use_page.rowconfigure(i, weight=1, uniform='tables')
@@ -78,6 +89,11 @@ class CafeItemsWindow:
         self.items.delete(*self.items.get_children())
         self.cats.delete(*self.cats.get_children())
         self.history.delete(*self.history.get_children())
+        self.sale_history.delete(*self.sale_history.get_children())
+        from .core.cafe_items import reward_for_source
+        for row in reversed(core.item_sales):
+            item = reward_for_source(core, row['source'])['item']
+            self.sale_history.insert('', 'end', values=(f"{row['day']}日目", item['name'], f"{row['price']:g}"))
         groups = {}
         for source, item in inventory(core).items():
             key = (item['id'], item['name'], relief(item))
@@ -101,6 +117,11 @@ class CafeItemsWindow:
     def selection_changed(self):
         self.use_button.state(['disabled'])
         sources, cats = self.items.selection(), self.cats.selection()
+        from .core.cafe_item_sales import reason as sale_reason
+        problem = '先に接客結果の保存を再試行してください。' if self.session.pending else sale_reason(self.session.core, sources[0] if sources else '')
+        self.sell_button.state(['disabled'] if problem else ['!disabled'])
+        item = inventory(self.session.core).get(sources[0]) if sources else None
+        self.sale_notice.set(problem if problem else f"1個売却：{self.sale_prices[item['id']]:g}を受け取ります。")
         if not sources:
             self.notice.set('所持品はありません。購入や派遣の帰還報酬で入手できます。')
             return
@@ -149,3 +170,28 @@ class CafeItemsWindow:
             messagebox.showerror('購入できません',str(exc),parent=self.window)
         else:self.result.set(f"{selected['item']['name']}を1個購入しました。")
         self.on_changed();self.refresh()
+
+
+    def sell(self):
+        from tkinter import messagebox
+        from .core.cafe_item_sales import reason
+        sources = self.items.selection()
+        if not sources:
+            return
+        source = sources[0]
+        if self.session.pending or reason(self.session.core, source):
+            self.refresh()
+            return
+        item = inventory(self.session.core)[source]
+        price = self.sale_prices[item['id']]
+        if not messagebox.askyesno('アイテムの売却',
+                f"{item['name']}を1個、{price:g}で売却しますか？\n売却後の所持金：{self.session.core.funds+price:g}", parent=self.window):
+            return
+        try:
+            self.session.sell_item(source, price)
+        except (ValueError, OSError) as exc:
+            messagebox.showerror('売却できません', str(exc), parent=self.window)
+        else:
+            self.result.set(f"{item['name']}を1個売却しました。収入 {price:g}")
+        self.on_changed()
+        self.refresh()

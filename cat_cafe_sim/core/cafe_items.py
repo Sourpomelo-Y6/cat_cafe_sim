@@ -59,7 +59,7 @@ def reward_for_source(core,source):
 
 
 def inventory(core):
-    used = {row['source'] for row in core.item_uses}
+    used = {row['source'] for row in core.item_uses} | {row['source'] for row in core.item_sales}
     return {key:copy.deepcopy(value['item']) for key,value in rewards(core).items() if key not in used}
 
 

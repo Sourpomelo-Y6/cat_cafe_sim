@@ -64,6 +64,7 @@ def apply_operation(core, operation):
         add_candidates(core, operation['candidates'])
     elif kind=='recruit_cat':core.recruit_cat(operation['cat_id'])
     elif kind=='purchase_item':core.purchase_item(operation['rules'])
+    elif kind=='sell_item':core.sell_item(operation['source'],operation['price'])
     elif kind=='use_item':core.use_item(operation['source'],operation['cat_id'])
     elif kind=='dispatch':core.dispatch(operation['cat_id'],operation['rules'],encounter=operation.get('encounter'),item_reward=operation.get('item_reward'),introduction=operation.get('introduction'),trouble=operation.get('trouble'))
     elif kind=='resolve_dispatch_choice':core.resolve_dispatch_choice(operation['event_id'],operation['choice'])

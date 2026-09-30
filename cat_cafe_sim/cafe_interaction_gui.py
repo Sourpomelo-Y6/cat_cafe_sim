@@ -271,6 +271,8 @@ class ManualCafeInteractionWindow:
                     text+=f" · {event['item_reward']['name']} ×1 を入手"
             elif kind=='item_purchased':
                 text=f"{event['name']}を1個購入 · 費用 {event['cost']:g}"
+            elif kind=='item_sold':
+                text=f"{event['name']}を1個売却 · 収入 {event['price']:g}"
             elif kind=='item_used':
                 item_stat='疲労' if event.get('stat')=='fatigue' else 'ストレス'
                 text=f"{event['cat_id']}に{event['name']}を使用 · {item_stat} {event['before']:g} → {event['after']:g}"

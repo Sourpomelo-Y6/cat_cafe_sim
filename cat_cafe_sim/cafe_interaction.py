@@ -111,6 +111,15 @@ class CafeInteractionSession:
         from .core.cafe_item_shop import rules
         self.core.purchase_item(rules(selected))
 
+    def sell_item(self, source, price=None):
+        self._ready()
+        from .core.cafe_items import inventory
+        from .core.cafe_item_sales import prices, reason
+        problem = reason(self.core, source)
+        if problem:
+            raise ValueError(problem)
+        self.core.sell_item(source, prices()[inventory(self.core)[source]["id"]] if price is None else price)
+
     def use_item(self, source, cat_id):
         self._ready()
         self.core.use_item(source, cat_id)

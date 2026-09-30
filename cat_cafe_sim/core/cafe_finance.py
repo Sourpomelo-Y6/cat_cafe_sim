@@ -6,7 +6,7 @@ EXPENSE_KEYS=('dispatch_trouble_expenses','pet_shop_expenses','housing_expenses'
 
 
 def values(summary):
-    income=summary.get('revenue',0)+summary.get('dispatch_income',0)
+    income=summary.get('revenue',0)+summary.get('dispatch_income',0)+summary.get('item_sales_income',0)
     expenses=sum(summary.get(key,0) for key in EXPENSE_KEYS)
     net=income-expenses
     return dict(opening_funds=summary['funds']-net,total_income=income,
