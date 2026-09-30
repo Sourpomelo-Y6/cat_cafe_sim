@@ -107,3 +107,49 @@ class DispatchComparisonGuiTests(unittest.TestCase):
         self.assertTrue(dialog.select_button.instate(['disabled']));self.assertIn('疲労',dialog.details.get('1.0','end'))
         dialog.close();owner.cats.selection_remove(*owner.cats.selection());owner.buttons()
         self.assertTrue(owner.compare_button.instate(['disabled']))
+
+
+    def test_filter_sort_selection_stability_and_no_mutation(self):
+        root,s,owner,dialog=self.open();before=s.core.snapshot();stored=s.store._read()
+        original=dialog.table.get_children()
+        dialog.table.selection_set('cat_photo_studio');dialog.show_detail()
+        dialog.available_button.invoke();root.update()
+        self.assertIn('cat_photo_studio',dialog.table.get_children());self.assertNotIn('quiet_reading_salon',dialog.table.get_children())
+        self.assertEqual(dialog.table.selection(),('cat_photo_studio',))
+        dialog.available_button.invoke();dialog.sort_choice.current(1);dialog.sort_choice.event_generate('<<ComboboxSelected>>');root.update()
+        self.assertEqual(dialog.table.get_children()[0],'mountain_lodge_visit')
+        self.assertEqual(dialog.table.selection(),('cat_photo_studio',))
+        dialog.sort_choice.current(2);dialog.sort_choice.event_generate('<<ComboboxSelected>>');root.update()
+        self.assertEqual(dialog.table.get_children()[0],'neighborhood_visit')
+        twoday=[key for key in original if dialog.rows[key]['destination']['days']==2]
+        self.assertEqual([key for key in dialog.table.get_children() if key in twoday],twoday)
+        dialog.sort_choice.current(0);dialog.sort_choice.event_generate('<<ComboboxSelected>>');root.update()
+        self.assertEqual(dialog.table.get_children(),original)
+        self.assertEqual(s.core.snapshot(),before);self.assertEqual(s.store._read(),stored)
+        dialog.close();owner.compare_button.invoke();dialog=owner.comparison_window
+        self.assertFalse(dialog.available_only.get());self.assertEqual(dialog.sort_order.get(),'標準順')
+
+    def test_filtered_empty_list_reason_restore_and_live_recheck(self):
+        root,s,owner,dialog=self.open();dialog.window.geometry('560x400');root.update()
+        dialog.available_button.invoke()
+        with patch.object(type(s),'pending',new_callable=PropertyMock,return_value={'pending'}):
+            dialog.refresh();root.update()
+            self.assertEqual(dialog.table.get_children(),());self.assertTrue(dialog.select_button.instate(['disabled']))
+            self.assertEqual(dialog.details.get('1.0','end').strip(),'');self.assertIn('絞り込みを解除',dialog.notice.get())
+            dialog.available_button.invoke();root.update()
+            self.assertIn('保存',dialog.details.get('1.0','end'));self.assertTrue(dialog.select_button.instate(['disabled']))
+        dialog.refresh();dialog.table.selection_set('cat_photo_studio');dialog.show_detail();dialog.available_button.invoke()
+        s.core.cats['cat-mike'].fatigue=100
+        with patch('tkinter.messagebox.askyesno',side_effect=AssertionError('must not confirm')):dialog.select()
+        self.assertEqual(dialog.table.get_children(),());self.assertTrue(dialog.select_button.instate(['disabled']))
+        self.assertTrue(dialog.available_button.winfo_ismapped());self.assertTrue(dialog.sort_choice.winfo_ismapped())
+        self.assertLessEqual(dialog.close_button.winfo_rooty()+dialog.close_button.winfo_height(),dialog.window.winfo_rooty()+dialog.window.winfo_height())
+
+    def test_filtered_sorted_destination_uses_existing_confirmation(self):
+        root,s,owner,dialog=self.open();before=s.core.snapshot()
+        dialog.available_button.invoke();dialog.sort_order.set('報酬見込みが高い順');dialog.refresh()
+        self.assertEqual(dialog.table.get_children()[0],'cat_photo_studio')
+        dialog.table.selection_set('cat_photo_studio');dialog.show_detail()
+        with patch('tkinter.messagebox.askyesno',return_value=False) as confirm:dialog.select_button.invoke()
+        self.assertIn('猫の撮影スタジオ',confirm.call_args.args[1]);self.assertEqual(owner.rules['id'],'cat_photo_studio')
+        self.assertEqual(s.core.snapshot(),before)

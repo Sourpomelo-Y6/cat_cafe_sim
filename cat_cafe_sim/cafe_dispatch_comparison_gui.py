@@ -19,6 +19,17 @@ class CafeDispatchComparisonWindow:
         self.close_button=ttk.Button(footer,text='閉じる',command=self.close);self.close_button.pack(side='right')
         self.title=tk.StringVar();ttk.Label(frame,textvariable=self.title).pack(anchor='w')
         ttk.Label(frame,text='報酬は派遣全体の見込みです。出来事の選択と家出トラブルで結果が変わります。',wraplength=520).pack(anchor='w')
+        controls=ttk.Frame(frame);controls.pack(fill='x',pady=4)
+        self.available_only=tk.BooleanVar(value=False)
+        self.available_button=ttk.Checkbutton(controls,text='参加可能な派遣先だけ表示',variable=self.available_only,command=self.refresh)
+        self.available_button.pack(side='left')
+        ttk.Label(controls,text='並び順：').pack(side='left',padx=(10,0))
+        self.sort_order=tk.StringVar(value='標準順')
+        self.sort_choice=ttk.Combobox(controls,state='readonly',textvariable=self.sort_order,
+                                    values=('標準順','報酬見込みが高い順','期間が短い順'),width=20)
+        self.sort_choice.pack(side='left',fill='x',expand=True)
+        self.sort_choice.bind('<<ComboboxSelected>>',lambda event:self.refresh())
+        self.notice=tk.StringVar();ttk.Label(frame,textvariable=self.notice,wraplength=520).pack(anchor='w')
         body=ttk.Panedwindow(frame,orient='vertical');body.pack(fill='both',expand=True)
         table_frame=ttk.Frame(body);detail_frame=ttk.Frame(body)
         body.add(table_frame,weight=1);body.add(detail_frame,weight=1)
@@ -36,11 +47,20 @@ class CafeDispatchComparisonWindow:
         self.rows={row['destination']['id']:row for row in comparison_rows(self.session,self.cat_id)}
         self.title.set(f"{self.session.profiles.get(self.cat_id,{}).get('name',self.cat_id)}の派遣先比較")
         self.table.delete(*self.table.get_children())
-        for key,row in self.rows.items():
+        visible=[row for row in self.rows.values() if not self.available_only.get() or not row['reason']]
+        if self.sort_order.get()=='報酬見込みが高い順':visible.sort(key=lambda row:row['reward'],reverse=True)
+        elif self.sort_order.get()=='期間が短い順':visible.sort(key=lambda row:row['destination']['days'])
+        self.notice.set(f'表示 {len(visible)}/{len(self.rows)}件' if visible else
+                        '参加可能な派遣先はありません。絞り込みを解除すると参加不可の理由を確認できます。')
+        for row in visible:
+            key=row['destination']['id']
             self.table.insert('','end',iid=key,values=(row['destination']['name'],row['reason'] or '参加できます',
                 row['destination']['days'],f"{row['reward']:g}",f"＋{row['return_stress']:g}",' / '.join(row['options']) or 'なし'))
-        key=selected[0] if selected and selected[0] in self.rows else next(iter(self.rows))
-        self.table.selection_set(key);self.show_detail()
+        keys=self.table.get_children()
+        if keys:
+            key=selected[0] if selected and selected[0] in keys else keys[0]
+            self.table.selection_set(key)
+        self.show_detail()
 
     def show_detail(self):
         selected=self.table.selection();row=self.rows.get(selected[0]) if selected else None
