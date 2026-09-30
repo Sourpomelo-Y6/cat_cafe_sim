@@ -55,20 +55,20 @@ class RecruitmentTests(unittest.TestCase):
             s.automatic_step()
 
     def test_catalog_rotation_covers_distinct_combinations_and_keeps_initial_cats(self):
-        rows = [row for batch in range(4) for row in candidates(set(), batch).values()]
-        self.assertEqual(len(rows), 12)
+        rows = [row for batch in range(5) for row in candidates(set(), batch).values()]
+        self.assertEqual(len(rows), 15)
         self.assertEqual([row['name'] for row in rows[:3]], ['ハル', 'リン', 'ユキ'])
         self.assertEqual({row['features'][0] for row in rows},
                          {'white', 'black', 'calico', 'orange_tabby', 'brown_tabby', 'black_white'})
         self.assertEqual({row['features'][1] for row in rows}, {'short_hair', 'long_hair'})
         self.assertEqual(len({digest(row['personality']) for row in rows}), 5)
-        self.assertEqual({row['trait']['id'] for row in rows}, {'hospitality', 'outgoing', 'relaxed', 'hardy'})
+        self.assertEqual({row['trait']['id'] for row in rows}, {'hospitality', 'outgoing', 'relaxed', 'hardy', 'hardworking'})
         self.assertEqual(len({(digest(row['personality']), tuple(row['features']), row['trait']['id'])
-                              for row in rows}), 12)
+                              for row in rows}), 15)
         self.assertEqual({row['cost'] for row in rows}, {200})
-        repeated = list(candidates(set(), batch=4).values())
+        repeated = list(candidates(set(), batch=5).values())
         for original, row in zip(rows[:3], repeated):
-            self.assertEqual(row, dict(original, name=f"{original['name']}（紹介5）"))
+            self.assertEqual(row, dict(original, name=f"{original['name']}（紹介6）"))
         self.assertEqual(candidates({'rescue-1', 'rescue-3'}, batch=1),
                          candidates({'rescue-3', 'rescue-1'}, batch=1))
         self.assertEqual(list(candidates({'rescue-1', 'rescue-3'}, batch=1)),

@@ -118,5 +118,35 @@
       "black_white",
       "short_hair"
     ]
+  },
+  {
+    "name": "ナギ",
+    "preset": "中立",
+    "cost": 200,
+    "trait": "hardworking",
+    "features": [
+      "black",
+      "short_hair"
+    ]
+  },
+  {
+    "name": "ミント",
+    "preset": "遊び好きで繊細な猫",
+    "cost": 200,
+    "trait": "relaxed",
+    "features": [
+      "black_white",
+      "long_hair"
+    ]
+  },
+  {
+    "name": "レオ",
+    "preset": "活発な探検家",
+    "cost": 200,
+    "trait": "hospitality",
+    "features": [
+      "brown_tabby",
+      "short_hair"
+    ]
   }
 ]
