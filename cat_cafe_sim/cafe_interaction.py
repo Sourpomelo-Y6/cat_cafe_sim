@@ -472,6 +472,7 @@ class CafeInteractionSession:
                          mastery_engagement_multiplier=interaction_terms(self.core,cat_id)['multiplier'],
                          type_mastery=interaction_terms(self.core,cat_id)['type'],
                          second_type_mastery=interaction_terms(self.core,cat_id)['second_type'],
+                         second_group_second_type_mastery=interaction_terms(self.core,cat_id)['second_group_second_type'],
                          second_group_type_mastery=interaction_terms(self.core,cat_id)['second_group_type'],
                          type_mastery_engagement_multiplier=interaction_terms(self.core,cat_id)['type_multiplier'],
                          ticks=min(self.interaction_config.ticks, self.core.config.opening_ticks-self.core.tick))
@@ -486,6 +487,9 @@ class CafeInteractionSession:
         row=(growth or {}).get('cats',{}).get(cat_id,{})
         if row.get('second_mastery') is not None and 'type_mastery_threshold' in growth['rules'] and 'second_group_type_practice' not in row:
             self.core.begin_second_group_type_practice(cat_id)
+        practice=row.get('second_group_type_practice',{})
+        if practice.get('type_mastery') and 'second_type_mastery_threshold' in growth['rules'] and 'second' not in practice:
+            self.core.begin_second_group_second_type_practice(cat_id)
 
     def step(self, action=None, target_type=None):
         self._ready()

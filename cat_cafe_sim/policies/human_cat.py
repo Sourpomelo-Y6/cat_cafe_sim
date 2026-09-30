@@ -18,11 +18,11 @@ class AutomaticInteractionPolicy:
         for index,key in enumerate(TYPE_IDS):
             row=rows[key]
             if key!=current and row.group!=exclude_group and (group is None or row.group==group):
-                if getattr(config,'second_type_mastery',''):
-                    learned=key in (config.type_mastery,config.second_type_mastery,getattr(config,'second_group_type_mastery',''))
+                if getattr(config,'second_type_mastery','') or getattr(config,'second_group_second_type_mastery',''):
+                    learned=key in (config.type_mastery,config.second_type_mastery,getattr(config,'second_group_type_mastery',''),getattr(config,'second_group_second_type_mastery',''))
                     multiplier=config.type_mastery_engagement_multiplier if learned else 1
                     second_group_choice=getattr(config,'second_group_type_mastery','')
-                    ranked.append((bool(second_group_choice and group==config.second_mastery_group and key==second_group_choice),row.gain*preferences[index]*multiplier,-index,key))
+                    ranked.append((bool(second_group_choice and group==config.second_mastery_group and key in (second_group_choice,getattr(config,'second_group_second_type_mastery',''))),row.gain*preferences[index]*multiplier,-index,key))
                 else:
                     ranked.append((key in (getattr(config,'type_mastery',''),getattr(config,'second_group_type_mastery','')),row.gain*preferences[index],-index,key))
         return max(ranked)[-1] if ranked else None
@@ -39,7 +39,7 @@ class AutomaticInteractionPolicy:
                    'quiet' if getattr(config, 'quiet_service', False) else getattr(config,'mastery_group',''))
         individual=getattr(config,'type_mastery','')
         if getattr(config,'second_group_type_mastery','') and mastery==config.second_mastery_group:
-            individual=config.second_group_type_mastery
+            individual=(self._best_type(config,mastery,'') if getattr(config,'second_group_second_type_mastery','') else config.second_group_type_mastery)
         if getattr(config,'second_type_mastery','') and not (getattr(config,'second_group_type_mastery','') and mastery==config.second_mastery_group):
             individual=self._best_type(config,mastery,'')
         if ('switch' in valid_actions and individual and current!=individual

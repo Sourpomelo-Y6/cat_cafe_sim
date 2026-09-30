@@ -109,5 +109,9 @@ def cat_events(core, cat_id):
         if practice.get('type_mastery'):
             from .core.cafe_growth import type_label
             add(practice['selected_day'],'2つ目の分類の得意な行動の選択','成長',type_label(practice['type_mastery']))
+        extra=practice.get('second',{})
+        if extra.get('type_mastery'):
+            from .core.cafe_growth import type_label
+            add(extra['selected_day'],'2つ目の分類の追加の得意な行動の選択','成長',type_label(extra['type_mastery']))
     # 同日の種類をまたぐ厳密な時系列は記録されていない。日付だけで安定ソートする。
     return sorted(rows, key=lambda row: row[0])

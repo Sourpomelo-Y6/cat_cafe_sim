@@ -32,6 +32,7 @@ class RelationshipConfig(TypesConfig):
     type_mastery: str = ''
     second_type_mastery: str = ''
     second_group_type_mastery: str = ''
+    second_group_second_type_mastery: str = ''
     type_mastery_engagement_multiplier: float = 1
     affinity_enthusiastic: float = 1
     affinity_favorable: float = .5
@@ -82,6 +83,12 @@ class RelationshipConfig(TypesConfig):
         if self.second_group_type_mastery and (not self.second_mastery_group
                 or next(row.group for row in self.types if row.id==self.second_group_type_mastery)!=self.second_mastery_group):
             raise ValueError('second group individual mastery must belong to second mastered group')
+        if not isinstance(self.second_group_second_type_mastery,str) or self.second_group_second_type_mastery not in ('',*TYPE_IDS):
+            raise ValueError('invalid second group additional individual mastery type')
+        if self.second_group_second_type_mastery and (not self.second_group_type_mastery
+                or self.second_group_second_type_mastery==self.second_group_type_mastery
+                or next(row.group for row in self.types if row.id==self.second_group_second_type_mastery)!=self.second_mastery_group):
+            raise ValueError('additional individual mastery must be distinct and belong to second mastered group')
         if any(not math.isfinite(value * self.equipment_engagement_multiplier) for key,value in vars(self).items() if key.endswith('_gain') and isinstance(value,(int,float))):
             raise ValueError('equipment engagement overflow')
         if not math.isfinite(max(self.tension_enthusiastic, self.tension_favorable, self.tension_neutral) * self.customer_tension_multiplier * self.equipment_tension_multiplier):
@@ -117,6 +124,8 @@ class RelationshipConfig(TypesConfig):
             data['rules'].pop('type_mastery_engagement_multiplier')
         if not self.second_type_mastery:
             data['rules'].pop('second_type_mastery')
+        if not self.second_group_second_type_mastery:
+            data['rules'].pop('second_group_second_type_mastery')
         if not self.second_group_type_mastery:
             data['rules'].pop('second_group_type_mastery')
         return data
@@ -156,7 +165,7 @@ class RelationshipInteraction(TypesInteraction):
             score*=self.config.mastery_engagement_multiplier
             diagnostic=dict(diagnostic,mastery_group=diagnostic['boredom_group'],
                             mastery_multiplier=self.config.mastery_engagement_multiplier,score=score)
-        if action in INTERACTIONS and score>0 and self.state['mode'] in (self.config.type_mastery,self.config.second_type_mastery,self.config.second_group_type_mastery):
+        if action in INTERACTIONS and score>0 and self.state['mode'] in (self.config.type_mastery,self.config.second_type_mastery,self.config.second_group_type_mastery,self.config.second_group_second_type_mastery):
             score*=self.config.type_mastery_engagement_multiplier
             diagnostic=dict(diagnostic,type_mastery=self.state['mode'],
                             type_mastery_multiplier=self.config.type_mastery_engagement_multiplier,score=score)
@@ -171,7 +180,7 @@ class RelationshipInteraction(TypesInteraction):
         if (action=='switch' and c.mastery_group
                 and self.type_map[target_type].group in (c.mastery_group,c.second_mastery_group)):
             record['diagnostic']=dict(record['diagnostic'],mastery_switch=True,mastery_group=self.type_map[target_type].group)
-        if action=='switch' and target_type in (c.type_mastery,c.second_type_mastery,c.second_group_type_mastery):
+        if action=='switch' and target_type in (c.type_mastery,c.second_type_mastery,c.second_group_type_mastery,c.second_group_second_type_mastery):
             record['diagnostic']=dict(record['diagnostic'],type_mastery_switch=True,type_mastery=target_type)
         normal = record['normal_reaction']
         normal_delta = (c.affinity_enthusiastic if normal == 'enthusiastic' else c.affinity_favorable if normal == 'favorable'

@@ -64,6 +64,9 @@ def cat_details(session, cat_id):
             from .core.cafe_growth import type_label
             practice=growth.get('second_group_type_practice',{})
             basic += [('2つ目の分類の得意な行動',type_label(practice['type_mastery']) if practice.get('type_mastery') else '未選択')]
+            extra=practice.get('second',{})
+            basic += [('2つ目の分類の追加の得意な行動',type_label(extra['type_mastery']) if extra.get('type_mastery') else '未選択')]
+            basic += [(f'2つ目の分類の追加習得対象：{type_label(key)}',f"{extra.get('actions',{}).get(key,0):g}") for key in growth['type_actions']]
             basic += [(f'2つ目の分類の個別習得対象：{type_label(key)}',f"{practice.get('actions',{}).get(key,0):g}") for key in growth['type_actions']]
     if core.recruitment and cat_id in core.recruitment['accepted']:
         basic += [('加入経路', '保護猫の受け入れ'), ('加入日', f"{core.recruitment['accepted'][cat_id]}日目")]
