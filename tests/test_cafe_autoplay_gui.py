@@ -93,6 +93,59 @@ class AutoPlayGuiTests(unittest.TestCase):
         app.show_goal()
         app.goal_window.window.destroy()
 
+    def test_decision_table_purchase_forecasts_details_and_small_window(self):
+        app = self.app()
+        dialog = self.dialog(app)
+        dialog.mode.set('クリアを目指す')
+        dialog.start()
+        self.finish(app, dialog)
+        rows = [dialog.decision_table.item(item, 'values') for item in dialog.decision_table.get_children()]
+        self.assertTrue(any(row[1]=='休養スペース' and row[2]=='購入' and '予備資金' in row[3] for row in rows))
+        for key in app.session.core.cats:
+            cats = [row for row in rows if row[0]=='1' and row[1]==key]
+            self.assertEqual(len(cats), 1)
+            self.assertIn('出勤時の予測', cats[0][3])
+        item = dialog.decision_table.get_children()[0]
+        before = app.session.core.snapshot()
+        dialog.decision_table.selection_set(item)
+        dialog.window.geometry('600x480')
+        app.root.update()
+        self.assertIn('予備資金', dialog.decision_detail.get('1.0', 'end'))
+        self.assertGreater(dialog.decision_table.winfo_height(), 50)
+        self.assertGreater(dialog.decision_detail.winfo_height(), 20)
+        dialog.tabs.select(1)
+        app.root.update()
+        self.assertIn('クリアを目指す', dialog.log.get('1.0', 'end'))
+        self.assertEqual(app.session.core.snapshot(), before)
+
+    def test_basic_decisions_remain_after_cancel_and_reset_on_restart(self):
+        app = self.app()
+        dialog = self.dialog(app)
+        dialog.start()
+        dialog.window.after_cancel(dialog.timer)
+        dialog.timer = None
+        dialog.interval_ms = 10000
+        dialog.advance()
+        dialog.stop()
+        rows = [dialog.decision_table.item(item, 'values') for item in dialog.decision_table.get_children()]
+        self.assertTrue(any('現在の疲労' in row[3] for row in rows))
+        self.assertTrue(all(row[4]=='実行済み' for row in rows))
+        dialog.start()
+        self.assertEqual(dialog.decision_table.get_children(), ())
+        dialog.stop()
+
+    def test_failed_purchase_appears_in_decision_table(self):
+        app = self.app()
+        dialog = self.dialog(app)
+        dialog.mode.set('クリアを目指す')
+        dialog.start()
+        with patch.object(app.session, 'purchase_rest_space', side_effect=OSError('disk error')):
+            self.finish(app, dialog)
+        rows = [dialog.decision_table.item(item, 'values') for item in dialog.decision_table.get_children()]
+        self.assertEqual(len(rows), 1)
+        self.assertIn('失敗', rows[0][4])
+        self.assertEqual(dialog.player.result.reason, 'blocked')
+
     def test_cancel_after_purchase_saves_and_reopen_can_resume(self):
         app = self.app()
         dialog = self.dialog(app)

@@ -16,6 +16,7 @@ class CafeAutoPlayWindow:
         self.running = False
         self.before = None
         self.lines = []
+        self.decision_rows = {}
         self.window = tk.Toplevel(app.root)
         self.window.title('10日間おまかせ')
         self.window.geometry('760x620')
@@ -44,8 +45,28 @@ class CafeAutoPlayWindow:
         self.summary = tk.StringVar(value='終了時に現在のセーブへ保存します。' if self.session.checkpoint_path else
                                     '保存先は未設定です。終了後、メイン画面の「保存…」で保存できます。')
         ttk.Label(frame, textvariable=self.summary, wraplength=700).grid(row=3, sticky='w', pady=8)
-        history = ttk.Frame(frame)
-        history.grid(row=4, sticky='nsew')
+        self.tabs = ttk.Notebook(frame)
+        self.tabs.grid(row=4, sticky='nsew')
+        decisions = ttk.Frame(self.tabs)
+        self.tabs.add(decisions, text='判断一覧')
+        decisions.columnconfigure(0, weight=1)
+        decisions.rowconfigure(0, weight=1)
+        self.decision_table = ttk.Treeview(decisions, columns=('day','target','choice','reason','status'),
+                                         show='headings', height=5)
+        for key, title, width in (('day','日',40),('target','対象',130),('choice','判断',65),
+                                  ('reason','理由',250),('status','実行結果',85)):
+            self.decision_table.heading(key, text=title)
+            self.decision_table.column(key, width=width, minwidth=35, stretch=key=='reason')
+        self.decision_table.grid(row=0, column=0, sticky='nsew')
+        scroll = ttk.Scrollbar(decisions, orient='vertical', command=self.decision_table.yview)
+        scroll.grid(row=0, column=1, sticky='ns')
+        self.decision_table.configure(yscrollcommand=scroll.set)
+        self.decision_detail = tk.Text(decisions, height=3, wrap='word', state='disabled')
+        self.decision_detail.grid(row=1, column=0, columnspan=2, sticky='ew', pady=(4,0))
+        self.decision_table.bind('<<TreeviewSelect>>', self.show_decision)
+        self._decision_text('開始後に判断を表示します。行を選ぶと理由の全文を確認できます。')
+        history = ttk.Frame(self.tabs)
+        self.tabs.add(history, text='操作ログ')
         history.columnconfigure(0, weight=1)
         history.rowconfigure(0, weight=1)
         self.log = tk.Text(history, wrap='word', state='disabled')
@@ -77,6 +98,31 @@ class CafeAutoPlayWindow:
         self.log.see('end')
         self.log.configure(state='disabled')
 
+    def _decision_text(self, text):
+        self.decision_detail.configure(state='normal')
+        self.decision_detail.delete('1.0', 'end')
+        self.decision_detail.insert('end', text)
+        self.decision_detail.configure(state='disabled')
+
+    def show_decision(self, event=None):
+        selection = self.decision_table.selection()
+        if selection:
+            day, target, choice, reason, status = self.decision_table.item(selection[0], 'values')
+            self._decision_text(f'{day}日目 · {target}：{choice} · {status}\n{reason}')
+
+    def record_decision(self, row):
+        key = (row['day'], row['subject'])
+        values = tuple(row[k] for k in ('day','target','choice','reason','status'))
+        if key in self.decision_rows:
+            item = self.decision_rows[key]
+            self.decision_table.item(item, values=values)
+        else:
+            item = self.decision_table.insert('', 'end', values=values)
+            self.decision_rows[key] = item
+            self.decision_table.see(item)
+        if item in self.decision_table.selection():
+            self.show_decision()
+
     def _state(self):
         c = self.session.core
         return dict(funds=c.funds, popularity=c.management['popularity'],
@@ -87,8 +133,11 @@ class CafeAutoPlayWindow:
         if self.running or not self._available():
             return
         self.before = self._state()
+        self.decision_table.delete(*self.decision_table.get_children())
+        self.decision_rows.clear()
+        self._decision_text('行を選ぶと、判断理由の全文と実行結果を確認できます。')
         self.player = AutoPlayer(self.session, mode=self.MODES[self.mode.get()], max_days=10,
-                                 emit=self.emit, stop_on_goal=True)
+                                 emit=self.emit, stop_on_goal=True, on_decision=self.record_decision)
         self.running = True
         self.progress.set('進行中：0 / 10日')
         self.summary.set('中止・通常操作へ戻ると、処理中の操作を終えて停止します。')

@@ -30,7 +30,7 @@ class AutoPlayer:
     """step()は最大一つの通常操作。停止要求は次の操作の前に確認する。"""
 
     def __init__(self, session, *, max_days=60, max_operations=10000,
-                 emit=None, detailed=False, mode='basic', stop_on_goal=False):
+                 emit=None, detailed=False, mode='basic', stop_on_goal=False, on_decision=None):
         if type(stop_on_goal) is not bool:
             raise ValueError('目標達成時の停止設定は真偽値で指定してください。')
         if mode not in ('basic', 'clear'):
@@ -44,6 +44,8 @@ class AutoPlayer:
         self.max_days = max_days
         self.max_operations = max_operations
         self.emit = emit or (lambda line: None)
+        self.on_decision = on_decision
+        self.decisions = []
         self.detailed = detailed
         self.start_days = self._days()
         self.operations = 0
@@ -54,6 +56,15 @@ class AutoPlayer:
 
     def _name(self, key):
         return self.names.get(key, key)
+
+    def _decision(self, target, choice, reason, subject=None):
+        self.decisions.append(dict(day=self.session.core.day, target=target, choice=choice, reason=reason,
+                                   subject=subject or target))
+
+    def _publish_decisions(self, status):
+        if self.on_decision:
+            for row in self.decisions:
+                self.on_decision(dict(row, status=status))
 
     def _days(self):
         return len((self.session.core.goal or {}).get('days', []))
@@ -93,7 +104,13 @@ class AutoPlayer:
                                    for key, features in (c.cat_features or {}).items())
                     days_left = cafe_goal.current_start(c.goal)+cafe_goal.current_rules(c.goal)['days']-1-request['visit_day']
                     choice = 'accept' if longhair and days_left>=0 else 'decline'
+                    checks = ['長毛猫が在店（健康または翌日までに回復）' if longhair else '在店・回復予定の長毛猫がいない',
+                              f'来店予定{request["visit_day"]}日目は目標期限内' if days_left>=0 else
+                              f'来店予定{request["visit_day"]}日目が目標期限を超える']
+                    self._decision('特別予約', '受諾' if choice=='accept' else '見送り', '／'.join(checks))
                     return f'特別予約を{"受諾" if choice=="accept" else "見送り"}（長毛猫の在店と目標期限を確認）', lambda: s.resolve_reservation(choice)
+                if pending is cafe_reservation.waiting:
+                    self._decision('特別予約', '見送り', '基礎営業は予約を増やさずに営業を確認する方針')
                 return f'{label}を見送り（加入・予約を増やさず基礎営業を確認）', lambda action=action: action('decline')
         for waiting, action, choice, label in (
             (cafe_dispatch_introduction.waiting, s.resolve_dispatch_introduction, 'decline', '派遣先からの紹介を見送り'),
@@ -166,6 +183,7 @@ class AutoPlayer:
         before_days = self._days()
         before_operations = len(c.operations)
         day = c.day
+        self.decisions = []
         try:
             decision = self._answer()
             if decision is None:
@@ -176,7 +194,7 @@ class AutoPlayer:
                 elif c.can_set_shifts:
                     if self.mode=='clear':
                         from .cafe_autoplay_strategy import prepare
-                        decision = prepare(s, self.emit, self._name)
+                        decision = prepare(s, self.emit, self._name, report=self._decision)
                     if decision is None:
                         decision = self._basic_preparation()
                 else:
@@ -187,7 +205,9 @@ class AutoPlayer:
             progressed = action()
             self.operations += 1
             if progressed is False:
+                self._publish_decisions('進行できず')
                 return self._stop('blocked', '自動接客が進みませんでした。')
+            self._publish_decisions('実行済み')
             if self.detailed:
                 for row in c.operations[before_operations:]:
                     self.emit('  操作・結果: '+json.dumps(dict(operation=row['operation'], events=row['events']), ensure_ascii=False))
@@ -199,6 +219,7 @@ class AutoPlayer:
                     health = dict(healthy='健康', sick='療養中').get(cat.health_status, cat.health_status)
                     self.emit(f'  {self._name(key)}: 疲労 {cat.fatigue:g} / ストレス {c.management["stress"][key]:g} / 状態 {health}')
         except (ValueError, OSError) as error:
+            self._publish_decisions(f'失敗：{error}')
             return self._stop('blocked', str(error))
         return True
 
@@ -207,7 +228,17 @@ class AutoPlayer:
         workers = sorted(key for key, cat in c.cats.items()
                          if c.activity(key)=='cafe' and cat.health_status=='healthy'
                          and cat.fatigue < 60 and c.management['stress'][key] < 60)
+        for key, cat in sorted(c.cats.items()):
+            if c.activity(key)!='cafe':
+                choice, reason = '不在', '在店していないため出勤対象外'
+            elif cat.health_status!='healthy':
+                choice, reason = '療養', '病気のため出勤対象外'
+            else:
+                choice = '出勤' if key in workers else '休養'
+                reason = f'現在の疲労{cat.fatigue:g}・ストレス{c.management["stress"][key]:g}。両方60未満なら出勤'
+            self._decision(self._name(key), choice, reason, key)
         if not workers:
+            self._decision('営業', '休業', '健康・在店かつ疲労・ストレス60未満の猫がいないため負担を回復')
             return ('全員休養のため休業（疲労・ストレス60以上、療養・不在）', s.day_off)
         elif set(workers)!=c.working_cats or not c.shift_rules:
             resting = sorted(set(c.cats)-set(workers))
