@@ -61,10 +61,12 @@ class StaffingTests(unittest.TestCase):
         self.assertEqual(staffing['predictions']['a']['actions'], 27)
         self.assertIn('a', staffing['workers'])
 
-    def test_current_load_replaces_past_work_and_retains_safe_limits(self):
+    def test_current_load_and_past_work_retain_safe_limits(self):
         session = self.session((0,0,0))
         session.core.cats['a'].fatigue = 30
         session.core.day_results = [dict(cats={'a':dict(service_ticks=40)})]
+        self.assertNotIn('a', plan(session)['workers'])
+        session.core.day_results = []
         self.assertIn('a', plan(session)['workers'])
         session.core.cats['a'].fatigue = 41
         self.assertNotIn('a', plan(session)['workers'])

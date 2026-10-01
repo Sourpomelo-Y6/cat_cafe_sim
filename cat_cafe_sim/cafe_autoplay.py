@@ -33,8 +33,8 @@ class AutoPlayer:
                  emit=None, detailed=False, mode='basic', stop_on_goal=False, on_decision=None):
         if type(stop_on_goal) is not bool:
             raise ValueError('目標達成時の停止設定は真偽値で指定してください。')
-        if mode not in ('basic', 'clear'):
-            raise ValueError('自動プレイ方針はbasicかclearを指定してください。')
+        if mode not in ('basic', 'clear', 'fast'):
+            raise ValueError('自動プレイ方針はbasic・clear・fastを指定してください。')
         for value in (max_days, max_operations):
             if type(value) is not int or value < 1:
                 raise ValueError('日数・操作上限は正の整数で指定してください。')
@@ -52,7 +52,7 @@ class AutoPlayer:
         self.cancelled = False
         self.result = None
         self.names = {key: row['name'] for key, row in session.profiles.items()}
-        self.emit(f'自動プレイ方針: {"基礎営業" if mode=="basic" else "クリアを目指す"}')
+        self.emit(f'自動プレイ方針: {"基礎営業" if mode=="basic" else ("安定経営" if mode=="clear" else "積極経営")}')
 
     def _name(self, key):
         return self.names.get(key, key)
@@ -97,7 +97,7 @@ class AutoPlayer:
             (cafe_regular_introduction.pending, s.resolve_regular_introduction, '常連からの紹介'),
             (cafe_reservation.waiting, s.resolve_reservation, '特別予約')):
             if pending(c):
-                if self.mode=='clear' and pending is cafe_reservation.waiting:
+                if self.mode!='basic' and pending is cafe_reservation.waiting:
                     request = cafe_reservation.waiting(c)
                     longhair = any('long_hair' in features and c.activity(key)=='cafe'
                                    and (c.cats[key].health_status=='healthy' or c.cats[key].recovery_days_remaining<=1)
@@ -192,9 +192,9 @@ class AutoPlayer:
                 elif c.closed:
                     decision = ('翌日の営業準備へ進む', s.next_day)
                 elif c.can_set_shifts:
-                    if self.mode=='clear':
+                    if self.mode!='basic':
                         from .cafe_autoplay_strategy import prepare
-                        decision = prepare(s, self.emit, self._name, report=self._decision)
+                        decision = prepare(s, self.emit, self._name, report=self._decision, mode=self.mode)
                     if decision is None:
                         decision = self._basic_preparation()
                 else:
@@ -257,7 +257,7 @@ def main(argv=None):
     parser.add_argument('--directory', default='reports/autoplay', help='新規テストゲームの保存先')
     parser.add_argument('--resume', type=Path, help='再開する営業セーブ（関係データも更新します）')
     parser.add_argument('--days', type=int, default=60)
-    parser.add_argument('--mode', choices=('basic', 'clear'), default='basic', help='basic:基礎営業 / clear:クリアを目指す')
+    parser.add_argument('--mode', choices=('basic', 'clear', 'fast'), default='basic', help='basic:基礎営業 / clear:安定経営 / fast:積極経営')
     parser.add_argument('--max-operations', type=int, default=10000)
     parser.add_argument('--detailed', action='store_true')
     parser.add_argument('--interval', type=float, default=0, help='日次結果後の待機秒（0〜60）')

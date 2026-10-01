@@ -46,11 +46,12 @@ python3 -m unittest discover -s tests
 xvfb-run -a env CAT_CAFE_TEST_GUI=1 python3 -m unittest discover -s tests
 ```
 
-人気目標のテスト用自動プレイは、操作と判断理由を表示し、専用フォルダへセーブとログを保存します。基礎営業（`basic`、既定）と、投資・予測・予約を使うクリア方針（`clear`）を選べます。
+人気目標のテスト用自動プレイは、操作と判断理由を表示し、専用フォルダへセーブとログを保存します。基礎営業（`basic`、既定）、休養を重視する安定経営（`clear`）、早期達成を重視する積極経営（`fast`）を選べます。
 
 ```bash
 python3 -m cat_cafe_sim.cafe_autoplay --mode basic --days 30
-python3 -m cat_cafe_sim.cafe_autoplay --mode clear --days 30
+python3 -m cat_cafe_sim.cafe_autoplay --mode clear --days 60
+python3 -m cat_cafe_sim.cafe_autoplay --mode fast --days 60
 ```
 
 通常ゲームとは別に、1日営業CLIとPhase 2の学習環境があります。

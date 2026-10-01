@@ -4,7 +4,7 @@ from .cafe_autoplay import AutoPlayer, REASONS
 
 class CafeAutoPlayWindow:
     interval_ms = 20
-    MODES = {'基礎営業': 'basic', 'クリアを目指す': 'clear'}
+    MODES = {'基礎営業': 'basic', '安定経営': 'clear', '積極経営': 'fast'}
 
     def __init__(self, app):
         import tkinter as tk
@@ -29,7 +29,7 @@ class CafeAutoPlayWindow:
         frame.columnconfigure(0, weight=1)
         frame.rowconfigure(4, weight=1)
         ttk.Label(frame, text='最大10日進め、各目標の達成・期限切れ・ゲームオーバーで止まります。\n'
-                  '基礎営業は出勤・休養と必要な回答、クリア方針は設備投資・予約も任せます。', wraplength=700).grid(row=0, sticky='w')
+                  '基礎営業は出勤・休養と必要な回答、安定経営は休養を重視、積極経営は早期達成を重視して設備投資・予約も任せます。', wraplength=700).grid(row=0, sticky='w')
         row = ttk.Frame(frame)
         row.grid(row=1, sticky='ew', pady=8)
         self.mode = tk.StringVar(value='基礎営業')

@@ -18,6 +18,7 @@ from .core.cafe_finance import values, EXPENSE_KEYS
 SCENARIOS = {
     'basic': ('basic', ()),
     'clear': ('clear', ()),
+    'fast': ('fast', ()),
     'clear_no_expansion': ('clear', ('cafe_expansion.reason',)),
     'clear_no_rest': ('clear', ('cafe_equipment.reason', 'cafe_equipment.upgrade_reason', 'cafe_equipment.soundproof_reason')),
     'clear_no_seat_equipment': ('clear', ('cafe_seat_equipment.reason',)),
@@ -128,12 +129,12 @@ def evaluate(*, max_days=60, scenarios=None, goal_preset='standard', customer_pr
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='自動プレイ2方針と設備を外した条件を比較します。')
+    parser = argparse.ArgumentParser(description='自動プレイ3方針と設備を外した条件を比較します。')
     parser.add_argument('--days', type=int, default=60)
     parser.add_argument('--goal-preset', choices=GOAL_PRESETS, default='standard',
                         help='評価専用の人気目標と期限。通常ゲームの設定は変更しません。')
     parser.add_argument('--scenarios', nargs='+', choices=SCENARIOS,
-                        help='比較する方針・設備除外条件（省略時は全5条件）')
+                        help='比較する方針・設備除外条件（省略時は全6条件）')
     parser.add_argument('--customer-preset', choices=('standard', 'legacy'), default='standard',
                         help='評価専用の来店設定。legacyは人気達成後の通常客増加を外します。')
     parser.add_argument('--output', type=Path, default=Path('reports/autoplay_balance.json'))

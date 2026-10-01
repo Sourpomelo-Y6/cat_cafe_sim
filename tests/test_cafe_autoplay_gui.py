@@ -80,7 +80,7 @@ class AutoPlayGuiTests(unittest.TestCase):
     def test_clear_mode_stops_at_first_stage_and_uses_result_screen(self):
         app = self.app()
         dialog = self.dialog(app)
-        dialog.mode.set('クリアを目指す')
+        dialog.mode.set('安定経営')
         dialog.start()
         self.finish(app, dialog)
         self.assertEqual(dialog.player.mode, 'clear')
@@ -93,10 +93,21 @@ class AutoPlayGuiTests(unittest.TestCase):
         app.show_goal()
         app.goal_window.window.destroy()
 
+    def test_fast_mode_uses_named_choice_and_stops_at_stage(self):
+        app = self.app()
+        dialog = self.dialog(app)
+        self.assertEqual(tuple(dialog.selector['values']), ('基礎営業', '安定経営', '積極経営'))
+        dialog.mode.set('積極経営')
+        dialog.start()
+        self.finish(app, dialog)
+        self.assertEqual(dialog.player.mode, 'fast')
+        self.assertEqual(dialog.player.result.reason, 'goal_cleared')
+        self.assertIn('積極経営', dialog.log.get('1.0', 'end'))
+
     def test_decision_table_purchase_forecasts_details_and_small_window(self):
         app = self.app()
         dialog = self.dialog(app)
-        dialog.mode.set('クリアを目指す')
+        dialog.mode.set('安定経営')
         dialog.start()
         self.finish(app, dialog)
         rows = [dialog.decision_table.item(item, 'values') for item in dialog.decision_table.get_children()]
@@ -115,7 +126,7 @@ class AutoPlayGuiTests(unittest.TestCase):
         self.assertGreater(dialog.decision_detail.winfo_height(), 20)
         dialog.tabs.select(1)
         app.root.update()
-        self.assertIn('クリアを目指す', dialog.log.get('1.0', 'end'))
+        self.assertIn('安定経営', dialog.log.get('1.0', 'end'))
         self.assertEqual(app.session.core.snapshot(), before)
 
     def test_basic_decisions_remain_after_cancel_and_reset_on_restart(self):
@@ -137,7 +148,7 @@ class AutoPlayGuiTests(unittest.TestCase):
     def test_failed_purchase_appears_in_decision_table(self):
         app = self.app()
         dialog = self.dialog(app)
-        dialog.mode.set('クリアを目指す')
+        dialog.mode.set('安定経営')
         dialog.start()
         with patch.object(app.session, 'purchase_rest_space', side_effect=OSError('disk error')):
             self.finish(app, dialog)
@@ -149,7 +160,7 @@ class AutoPlayGuiTests(unittest.TestCase):
     def test_cancel_after_purchase_saves_and_reopen_can_resume(self):
         app = self.app()
         dialog = self.dialog(app)
-        dialog.mode.set('クリアを目指す')
+        dialog.mode.set('安定経営')
         dialog.start()
         dialog.window.after_cancel(dialog.timer)
         dialog.timer = None
@@ -167,7 +178,7 @@ class AutoPlayGuiTests(unittest.TestCase):
         dialog.close()
         app.replace_game(saved)
         resumed = self.dialog(app)
-        resumed.mode.set('クリアを目指す')
+        resumed.mode.set('安定経営')
         resumed.start()
         self.finish(app, resumed)
         self.assertEqual(resumed.player.result.reason, 'goal_cleared')

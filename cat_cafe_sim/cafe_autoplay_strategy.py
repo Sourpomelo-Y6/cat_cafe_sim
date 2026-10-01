@@ -1,4 +1,4 @@
-"""クリア方針の準備判断。ゲーム状態の変更は返した通常操作に任せる。"""
+"""経営方針の準備判断。ゲーム状態の変更は返した通常操作に任せる。"""
 from .cafe_autoplay_staffing import plan, expansion_reason
 from .core import cafe_equipment, cafe_expansion, cafe_seat_equipment, cafe_goal, cafe_reservation
 
@@ -10,11 +10,12 @@ def reserve(core):
     return max(300, 2*(cost.get('base_cost', 0)+cost.get('per_seat_cost', 0)*(seats+1)))
 
 
-def prepare(session, emit, name, report=None):
+def prepare(session, emit, name, report=None, mode="clear"):
     c = session.core
     remaining = cafe_goal.current_start(c.goal)+cafe_goal.current_rules(c.goal)['days']-c.day
     buffer = reserve(c)
-    staffing = plan(session)
+    staffing = plan(session, mode=mode)
+    limits = "疲労65・ストレス60以下で早期達成を優先" if mode == "fast" else "疲労・ストレスとも60以下で休養を優先"
     if emit:
         emit(f'{c.day}日目の来店予測: {staffing["arrivals"]}人 / 同時接客の見込み{staffing["peak"]}人 / 出勤候補{len(staffing["workers"])}匹')
     for rules, reason, action, label in (
@@ -24,7 +25,7 @@ def prepare(session, emit, name, report=None):
         step = cafe_expansion.next_step(c, rules) if action==session.expand_seats else None
         cost = step['cost'] if step else rules.get('cost', 0)
         if action == session.expand_seats:
-            skipped = expansion_reason(c, staffing)
+            skipped = expansion_reason(c, staffing, mode=mode)
             if skipped:
                 if report:
                     report('席の増設', '見送り', skipped)
@@ -34,6 +35,8 @@ def prepare(session, emit, name, report=None):
         if remaining>1 and not reason(c, rules) and c.funds-cost>=buffer:
             demand = (f'来店予定{staffing["arrivals"]}人、同時接客の見込み{staffing["peak"]}人、出勤候補{len(staffing["workers"])}匹。'
                       if action == session.expand_seats else '')
+            if mode == 'fast' and action == session.expand_seats:
+                demand += f'健康な担当可能猫{staffing["healthy"]}匹で休養交代と待機客・新客への対応を見込む。'
             if report:
                 report(label.removesuffix('を購入').replace('を強化','の強化').replace('席を増設','席の増設'),
                        '購入', demand+f'費用{cost:g}、購入後の資金{c.funds-cost:g}で予備資金{buffer:g}を確保。期限まで残り{remaining}日')
@@ -55,7 +58,7 @@ def prepare(session, emit, name, report=None):
     for key, estimate in staffing['predictions'].items():
         fatigue, stress = estimate['fatigue'], estimate['stress']
         predictions[key] = (f'来店予定{staffing["arrivals"]}人・接客{estimate["actions"]}行動の目安。'
-                            f'出勤時の予測疲労{fatigue:g}・ストレス{stress:g}。両方60以下を優先し、必要人数まで出勤')
+                            f'前日の担当実績・好みの集中も考慮。出勤時の予測疲労{fatigue:g}・ストレス{stress:g}。{limits}し、必要人数まで出勤')
         if emit:
             emit(f'{c.day}日目の出勤予測: {name(key)} / 疲労 {fatigue:g} / ストレス {stress:g} / {"出勤" if key in workers else "休養"}')
     def report_workers(selected, reservation=False):
@@ -87,5 +90,5 @@ def prepare(session, emit, name, report=None):
         return '来店予定または安全な出勤候補がないため休業（負担を回復）', session.day_off
     report_workers(workers)
     if set(workers)!=c.working_cats:
-        return f'予測で出勤を設定: {", ".join(map(name, workers))}（疲労・ストレスとも60以下）', lambda: session.set_shifts(workers)
+        return f'予測で出勤を設定: {", ".join(map(name, workers))}（{limits}）', lambda: session.set_shifts(workers)
     return f'予測で決めた出勤予定で営業開始（目標期限まで残り{remaining}日）', session.automatic_step

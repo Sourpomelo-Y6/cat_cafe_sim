@@ -10,7 +10,7 @@ class AutoPlayDecisionTests(unittest.TestCase):
     session = fixtures.AutoPlayTests.session
 
     def test_observing_decisions_preserves_operations_state_and_logs(self):
-        for mode in ('basic', 'clear'):
+        for mode in ('basic', 'clear', 'fast'):
             a, b = self.session(mode+'-plain'), self.session(mode+'-observed')
             rows, logs_a, logs_b = [], [], []
             plain = AutoPlayer(a, mode=mode, emit=logs_a.append)
