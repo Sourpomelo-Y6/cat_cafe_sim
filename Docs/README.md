@@ -11,7 +11,7 @@
 - [開発引き継ぎ](DevelopmentHandoff.md)
 - [ゲーム全体の流れと実装状況](HumanToCatGameFlowPlan.md)
 - [未着手機能と検討事項](HumanToCatPlannedFeatures.md)
-- [テスト用自動プレイ・ログ表示・将来のGUI連携案](HumanToCatAutoPlayPlan.md)
+- [テスト用自動プレイ・ログ・GUI連携とバランス調整案](HumanToCatAutoPlayPlan.md)
 - [施設発展・来客増加・高難度のお客さん](HumanToCatStoreDevelopmentPlan.md)
 - [猫の加入経路と後続計画](HumanToCatRecruitmentPlan.md)
 
@@ -53,18 +53,19 @@
 - [静かな読書サロンへの派遣](HumanToCatReadingDispatch.md)
 - [猫の撮影スタジオへの派遣](HumanToCatPhotoDispatch.md)
 - [猫用品の体験会への派遣](HumanToCatProductTrialDispatch.md)
+- [小さな美術館への派遣・歓迎条件・用品報酬](HumanToCatMuseumDispatch.md)
 - [派遣中の選択イベント](HumanToCatDispatchEncounters.md)
 - [派遣先からの猫紹介](HumanToCatDispatchIntroduction.md)
 - [常連のお客さんからの猫紹介](HumanToCatRegularIntroduction.md)
 - [店先に通う猫との交流・加入](HumanToCatVisitingCat.md)
 - [山あいの宿への派遣と家出トラブル](HumanToCatDispatchTrouble.md)
-- [ケア用品・栄養おやつ・特製ケアセットの購入・売却、派遣報酬と猫のケア](HumanToCatItems.md)
+- [4種類の用品・3種類の購入、使用・売却と派遣報酬](HumanToCatItems.md)
 
 ## 施設・経営・顧客
 
 - [店の段階的な増設：2席から8席へ](HumanToCatExpansion.md)
 - [席ごとの接客設備](HumanToCatSeatEquipment.md)
-- [休養設備：休養スペースの購入・強化](HumanToCatRestEquipment.md)
+- [休養設備：購入・疲労回復強化・防音改修](HumanToCatRestEquipment.md)
 - [待合スペースの施設強化](HumanToCatWaitingArea.md)
 - [日次の店舗運営費](HumanToCatOperatingCosts.md)
 - [日次収支と期間比較](HumanToCatDailyFinance.md)
@@ -139,5 +140,3 @@
 ## 更新の分担
 
 新機能は機能別仕様へ条件・操作・保存・検証を書き、全体計画の該当行と引き継ぎを更新します。未着手候補は実装予定で管理し、実装後は現行仕様へのリンクへ置き換えます。READMEには入口と概要を置き、同じ日付の変更説明を複数の計画へ積み重ねません。
-
-- [小さな美術館への派遣](HumanToCatMuseumDispatch.md)：人気第２段階で解放するマイペース向け派遣と専用イベント。

@@ -20,3 +20,14 @@
 - [HumanToCatSeatEquipment](2026-09-30/HumanToCatSeatEquipment.md)
 - [HumanToCatCustomerLoyalty](2026-09-30/HumanToCatCustomerLoyalty.md)
 - [HumanToCatCafeActivities](2026-09-30/HumanToCatCafeActivities.md)
+
+
+## 2026-10-01
+
+引き継ぎの重複追記・過去の検証経緯を履歴へ移し、READMEを起動・機能概要・検証の入口へ整理しました。全体計画の追記は現行機能表へ統合し、自動プレイとバランス調整は未実装の検討案として案内しています。
+
+以下は整理直前の本文です。相対リンクは保存先に合わせて変更しています。本文中の作業状態や指示は記録当時のものです。
+
+- [開発引き継ぎ](2026-10-01/DevelopmentHandoff.md)
+- [READMEと従来のCLI実行例](2026-10-01/READMEUpdates.md)
+- [全体計画と追記](2026-10-01/HumanToCatGameFlowPlan.md)
