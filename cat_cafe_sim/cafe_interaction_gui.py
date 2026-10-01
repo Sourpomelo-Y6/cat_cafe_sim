@@ -127,7 +127,7 @@ class ManualCafeInteractionWindow:
             elif kind=='preferences_initialized':
                 text='猫の特徴・お客さんの好みを設定'
             elif kind=='dispatch_destination_unlocked':
-                names={'shopping_street_event':'商店街の交流会','out_of_town_visit':'郊外への出張訪問','cat_exercise_class':'猫の運動教室','quiet_reading_salon':'静かな読書サロン','cat_photo_studio':'猫の撮影スタジオ','cat_product_trial':'猫用品の体験会'}
+                names={'shopping_street_event':'商店街の交流会','out_of_town_visit':'郊外への出張訪問','cat_exercise_class':'猫の運動教室','quiet_reading_salon':'静かな読書サロン','cat_photo_studio':'猫の撮影スタジオ','cat_product_trial':'猫用品の体験会','small_art_museum':'小さな美術館'}
                 text='派遣先を解放：'+names[event['destination_id']]
             elif kind=='dispatch_trouble_initialized':
                 text='山あいの宿への派遣と家出トラブルを設定'

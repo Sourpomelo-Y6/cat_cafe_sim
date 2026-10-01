@@ -26,5 +26,9 @@
   {"id":"product_model_request","destination":"cat_product_trial","title":"用品の撮影モデルをお願いされました","choices":[
     {"id":"accept","label":"撮影モデルを引き受ける","reward":150,"fatigue":15,"stress":15},
     {"id":"decline","label":"撮影を見送って予定どおり終える","reward":0,"fatigue":0,"stress":0}
+  ]},
+  {"id":"museum_visitor_request","destination":"small_art_museum","title":"来館者との交流をお願いされました","choices":[
+    {"id":"accept","label":"来館者との交流を引き受ける","reward":100,"fatigue":10,"stress":10},
+    {"id":"decline","label":"交流を見送って予定どおり終える","reward":0,"fatigue":0,"stress":0}
   ]}
 ]

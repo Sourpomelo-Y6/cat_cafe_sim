@@ -9,14 +9,19 @@ EXERCISE_ID='cat_exercise_class'
 READING_ID='quiet_reading_salon'
 PHOTO_ID='cat_photo_studio'
 TRIAL_ID='cat_product_trial'
-SPECIAL_DESTINATIONS={EXERCISE_ID:('hardy','体力自慢'),READING_ID:('relaxed','のんびり屋'),PHOTO_ID:('hospitality','接客好き'),TRIAL_ID:('hardworking','働き者')}
+MUSEUM_ID='small_art_museum'
+SPECIAL_DESTINATIONS={EXERCISE_ID:('hardy','体力自慢'),READING_ID:('relaxed','のんびり屋'),PHOTO_ID:('hospitality','接客好き'),TRIAL_ID:('hardworking','働き者'),MUSEUM_ID:('easygoing','マイペース')}
 IDS=LEGACY_IDS | set(SPECIAL_DESTINATIONS)
 
 
 def rules(data=None):
     if data is None:data=json.loads((Path(__file__).resolve().parents[2]/'config/cafe_dispatch_unlocks.json').read_text())
     if not isinstance(data,dict) or not LEGACY_IDS<=set(data)<=IDS:raise ValueError('派遣解放設定が不正です。')
-    for row in data.values():
+    for key,row in data.items():
+        if key==MUSEUM_ID:
+            if not isinstance(row,dict) or set(row)!={'stage','destination'} or type(row['stage']) is not int or row['stage']!=2:
+                raise ValueError('美術館の解放条件が不正です。')
+            continue
         if (not isinstance(row,dict) or set(row) not in ({'popularity','returns'}, {'popularity','returns','destination'})
                 or type(row['returns']) is not int or row['returns']<1
                 or type(row['popularity']) not in (int,float) or not math.isfinite(row['popularity']) or row['popularity']<=0):
@@ -62,6 +67,21 @@ def validate_destinations(core):
             raise ValueError('特性に応じた派遣記録と開始時の設定が一致しません。')
 
 
+def museum_destination(core):
+    return saved_destination(core,MUSEUM_ID)
+
+
+def eligible(core,row):
+    if 'stage' in row:
+        from .cafe_expansion import second_popularity_cleared
+        return second_popularity_cleared(core)
+    return core.management['popularity']>=row['popularity'] and count(core)>=row['returns']
+
+
+def second_cleared_day(core):
+    return ([*core.goal.get('history',[]),core.goal])[1]['resolved_day']
+
+
 def count(core):
     from .cafe_dispatch_trouble import interrupted
     return sum(e['status']=='resolved' and not interrupted(e) for e in (core.activities or {}).get('events',{}).values())
@@ -80,7 +100,7 @@ def update(core):
     if data is None or not core.management or core.management['game_over']:return
     popularity=core.management['popularity'];returns=count(core)
     for key,row in data['rules'].items():
-        if key not in data['unlocked'] and popularity>=row['popularity'] and returns>=row['returns']:
+        if key not in data['unlocked'] and eligible(core,row):
             data['unlocked'][key]=dict(day=core.day,popularity=popularity,returns=returns)
             core._emit('dispatch_destination_unlocked',destination_id=key)
 
@@ -89,6 +109,7 @@ def reason(core,destination_id):
     data=core.dispatch_unlocks
     if data is None or destination_id not in data['rules'] or destination_id in data['unlocked']:return ''
     row=data['rules'][destination_id]
+    if 'stage' in row:return '未解放：人気第2段階の達成が必要です。'
     return f"未解放：人気 {core.management['popularity']:g}/{row['popularity']:g}・派遣報酬受取 {count(core)}/{row['returns']}回"
 
 
@@ -108,12 +129,15 @@ def validate(core,data):
     for key,row in data['unlocked'].items():
         if (not isinstance(row,dict) or set(row)!={'day','popularity','returns'}
                 or type(row['day']) is not int or not 1<=row['day']<=core.day
-                or type(row['returns']) is not int or not selected[key]['returns']<=row['returns']<=count(core)
+                or type(row['returns']) is not int or not selected[key].get('returns',0)<=row['returns']<=count(core)
                 or type(row['popularity']) not in (int,float) or not math.isfinite(row['popularity'])
-                or row['popularity']<selected[key]['popularity']):raise ValueError('派遣解放の達成記録が不正です。')
+                or row['popularity']<selected[key].get('popularity',0)):raise ValueError('派遣解放の達成記録が不正です。')
+    for key,row in data['unlocked'].items():
+        if 'stage' in selected[key] and (not eligible(core,selected[key]) or row['day']<second_cleared_day(core)):
+            raise ValueError('人気第2段階の達成前に美術館が解放されています。')
     if not core.management['game_over']:
         for key,row in selected.items():
-            if key not in data['unlocked'] and core.management['popularity']>=row['popularity'] and count(core)>=row['returns']:
+            if key not in data['unlocked'] and eligible(core,row):
                 raise ValueError('達成済みの派遣先解放記録がありません。')
     for e in (core.activities or {}).get('events',{}).values():
         key=e['destination']['id']

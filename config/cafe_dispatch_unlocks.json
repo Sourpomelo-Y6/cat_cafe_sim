@@ -64,5 +64,17 @@
       "required_trait": "hardworking",
       "required_trait_name": "働き者"
     }
+  },
+  "small_art_museum": {
+    "stage": 2,
+    "destination": {
+      "id": "small_art_museum",
+      "name": "小さな美術館",
+      "days": 2,
+      "reward": 350,
+      "max_fatigue": 40,
+      "required_trait": "easygoing",
+      "required_trait_name": "マイペース"
+    }
   }
 }
