@@ -276,6 +276,10 @@ class CafeInteractionSession:
         self._ready()
         self.core.equip_seat(seat_id, item_id)
 
+    def soundproof_rest_space(self, rules=None):
+        self._ready()
+        self.core.soundproof_rest_space(rules)
+
     def upgrade_rest_space(self, rules=None):
         self._ready()
         self.core.upgrade_rest_space(rules)

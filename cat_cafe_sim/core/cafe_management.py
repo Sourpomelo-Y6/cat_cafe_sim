@@ -99,7 +99,8 @@ def close_day(core):
             continue
         service = core.cat_service_ticks[key]
         from .cafe_traits import effect
-        change = (service*rule['stress_per_service_tick']*effect(core,key,'service_stress') if key in core.working_cats else -rule['rest_recovery'])
+        from .cafe_equipment import stress_bonus
+        change = (service*rule['stress_per_service_tick']*effect(core,key,'service_stress') if key in core.working_cats else -(rule['rest_recovery']+stress_bonus(core,key)))
         data['stress'][key] = max(0,min(100,data['stress'][key]+change))
         if service == 0 or data['stress'][key] < rule['runaway_threshold'] or key in reserved:
             continue

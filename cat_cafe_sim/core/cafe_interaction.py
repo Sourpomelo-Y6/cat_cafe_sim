@@ -207,6 +207,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_management import require_running
         require_running(self)
 
+    def soundproof_rest_space(self, rules=None):
+        from .cafe_equipment import soundproof
+        soundproof(self,rules)
+
     def upgrade_rest_space(self, rules=None):
         from .cafe_equipment import upgrade
         upgrade(self, rules)

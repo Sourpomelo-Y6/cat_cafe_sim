@@ -14,7 +14,8 @@ def shift_forecast(core, cat_id):
         result['current_stress']=before
         if getattr(core,'activity',lambda key:'cafe')(cat_id)=='cafe':
             rules=management['rules']
-            result['rest_stress']=max(0,min(100,before-rules['rest_recovery']))
+            from .core.cafe_equipment import stress_bonus
+            result['rest_stress']=max(0,min(100,before-rules['rest_recovery']-stress_bonus(core,cat_id)))
             if not result['sick'] and actions is not None:
                 from .core.cafe_traits import effect
                 result['work_stress']=max(0,min(100,before+actions*rules['stress_per_service_tick']*effect(core,cat_id,'service_stress')))

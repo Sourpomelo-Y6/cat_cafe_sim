@@ -116,6 +116,8 @@ class ManualCafeInteractionWindow:
                 text=f"{name}：{health_result_text(event)}"
             elif kind=='traits_initialized':
                 text='初期猫の特性を設定'
+            elif kind=='rest_space_soundproofed':
+                text=f"休養スペースを防音改修 · 費用 {event['cost']:g} / ストレス回復＋{event['stress_recovery_bonus']:g}"
             elif kind=='rest_space_upgraded':
                 text=f"休養スペースを強化 · 費用 {event['cost']:g} / 疲労回復＋{event['recovery_bonus']:g}"
             elif kind=='rest_space_purchased':
