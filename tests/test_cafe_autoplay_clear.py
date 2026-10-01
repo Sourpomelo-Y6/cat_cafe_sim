@@ -28,10 +28,10 @@ class ClearAutoPlayTests(unittest.TestCase):
                                  'expand_seats', 'purchase_seat_equipment'):
                     self.assertGreaterEqual(s.core.funds, reserve(s.core))
             self.assertEqual(player.result.reason, expected)
-            self.assertEqual(player.result.days, 40 if mode=='clear' else 20)
+            self.assertEqual(player.result.days, 43 if mode=='clear' else 20)
             self.assertGreater(s.core.funds, 0)
             if mode=='clear':
-                self.assertEqual([row['resolved_day'] for row in s.core.goal['history']], [10, 28])
+                self.assertEqual([row['resolved_day'] for row in s.core.goal['history']], [10, 30])
                 self.assertEqual(s.core.management['popularity'], 650)
                 self.assertLessEqual(len(s.core.seats), 8)
                 self.assertIn('upgrade', s.core.rest_space)
@@ -51,7 +51,9 @@ class ClearAutoPlayTests(unittest.TestCase):
         s = self.session(funds=599)
         before = s.core.snapshot()
         label, action = prepare(s, None, lambda key: key)
-        self.assertIn('営業開始', label)
+        self.assertIn('予測で', label)
+        self.assertIsNone(s.core.rest_space)
+        self.assertIsNone(s.core.expansion)
         self.assertEqual(s.core.snapshot(), before)
         player = AutoPlayer(s, mode='clear')
         player.cancel()

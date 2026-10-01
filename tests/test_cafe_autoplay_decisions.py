@@ -42,6 +42,10 @@ class AutoPlayDecisionTests(unittest.TestCase):
         rows = []
         self.assertTrue(AutoPlayer(clear, mode='clear', on_decision=rows.append).step())
         self.assertTrue(all('出勤時の予測' in row['reason'] for row in rows if row['subject'] in clear.core.cats))
+        self.assertTrue(all('来店予定' in row['reason'] for row in rows if row['subject'] in clear.core.cats))
+        skipped = next(row for row in rows if row['target']=='席の増設')
+        self.assertEqual(skipped['choice'], '見送り')
+        self.assertIn('既存2席で足りる', skipped['reason'])
 
     def test_purchase_failure_and_cancel_are_not_reported_as_executed(self):
         session = self.session()
