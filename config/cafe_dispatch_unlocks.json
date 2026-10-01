@@ -74,7 +74,13 @@
       "reward": 350,
       "max_fatigue": 40,
       "required_trait": "easygoing",
-      "required_trait_name": "マイペース"
+      "required_trait_name": "マイペース",
+      "welcome": {
+        "feature": "long_hair",
+        "specialization": "dispatch",
+        "reward_bonus": 20,
+        "satisfaction_bonus": 0
+      }
     }
   }
 }
