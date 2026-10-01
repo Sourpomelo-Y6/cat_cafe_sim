@@ -8,7 +8,7 @@ from pathlib import Path
 def prices():
     data = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_item_sales.json').read_text(encoding='utf-8'))
     legacy={'care_supplies','nutrition_snack'}
-    if not isinstance(data, dict) or set(data) not in (legacy,legacy|{'special_care_set'}):
+    if not isinstance(data, dict) or not legacy<=set(data)<=legacy|{'special_care_set','brushing_set'}:
         raise ValueError('アイテム売却価格の設定が不正です。')
     for value in data.values():
         validate_price(value)

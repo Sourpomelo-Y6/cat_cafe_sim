@@ -88,7 +88,7 @@ class MuseumDispatchTests(unittest.TestCase):
                 with self.subTest(choice=choice,rest=rest):
                     s,key=self.depart();s=self.reload_replay(s);event=s.core.activities['events'][key]
                     self.assertEqual(event['encounter']['rules']['id'],'museum_visitor_request')
-                    for field in ('item_reward','introduction','trouble'):self.assertNotIn(field,event)
+                    for field in ('introduction','trouble'):self.assertNotIn(field,event)
                     if rest:s.day_off()
                     else:self.close(s)
                     self.assertTrue(pending(s.core.activities['events'][key]))

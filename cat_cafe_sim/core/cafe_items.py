@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def definition(data):
-    fields = {'care_supplies': ('stress_relief',), 'nutrition_snack': ('fatigue_relief',),
+    fields = {'care_supplies': ('stress_relief',), 'brushing_set': ('stress_relief',), 'nutrition_snack': ('fatigue_relief',),
               'special_care_set': ('fatigue_relief','stress_relief')}
     item_id = data.get('id') if isinstance(data, dict) else None
     selected = fields.get(item_id) if isinstance(item_id, str) else None

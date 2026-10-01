@@ -64,7 +64,7 @@ class ProductTrialItemTests(unittest.TestCase):
         self.assertNotIn(event_id,inventory(s.core));self.reload_replay(s)
         from cat_cafe_sim.core.cafe_activities import destinations
         s=self.game()
-        self.assertEqual([r['id'] for r in destinations(s.core) if for_destination(r)],['neighborhood_visit','cat_product_trial'])
+        self.assertEqual([r['id'] for r in destinations(s.core) if for_destination(r)],['neighborhood_visit','cat_product_trial','small_art_museum'])
         old=self.game(legacy=True);self.assertNotIn('cat_product_trial',[r['id'] for r in destinations(old.core)])
         self.reload_replay(old)
 

@@ -19,7 +19,7 @@
 | 猫の成長 | 各分類で3行動以上の個別熟練、再選択・複数回成長、体力消費や苦手行動への追加効果 | [成長](HumanToCatCatGrowthPlan.md) |
 | 特徴・特性 | 新しい種類、複数保持・重複効果、後天的な取得や変化 | [特性](HumanToCatTraits.md)、[相性の検討](HumanToCatCustomerPreferencesPlan.md) |
 | 加入経路 | 固定の常連紹介以外のイベント加入、通い猫の複数候補・抽選・交流方法の拡張、一時預かり。野良猫スカウトは低優先度 | [加入計画](HumanToCatRecruitmentPlan.md) |
-| アイテム | 既存3種類以外の種類追加、抽選報酬、所持上限 | [用品](HumanToCatItems.md) |
+| アイテム | 既存4種類以外の種類追加、抽選報酬、所持上限 | [用品](HumanToCatItems.md) |
 | 派遣 | 新しい派遣先・出来事・報酬。宿以外への家出トラブル追加は未採用 | [派遣](HumanToCatCafeActivities.md)、[宿のトラブル](HumanToCatDispatchTrouble.md) |
 | 履歴・イベント編集 | 営業セーブに毎行動の詳細履歴を持つ方法、汎用的なイベント編集・抽選基盤 | [猫の詳細](HumanToCatCatDetailsPlan.md)、[軽量保存](HumanToCatCompactSaves.md)、[店舗イベント](HumanToCatStoreEvents.md) |
 | 目標 | 複数の有力者、新規ゲームへの解放引き継ぎ | [有力者](HumanToCatPatronGoal.md)、[目標選択](HumanToCatObjectiveSelection.md)、[施設計画](HumanToCatStoreDevelopmentPlan.md) |
