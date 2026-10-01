@@ -21,6 +21,7 @@ class AutoPlayResult:
 
 
 REASONS = dict(completed='人気目標達成', expired='人気目標の期限切れ',
+               goal_cleared='目標の段階を達成',
                game_over='ゲームオーバー', day_limit='指定日数に到達',
                operation_limit='操作上限に到達', blocked='進行できません', cancelled='中断')
 
@@ -29,7 +30,9 @@ class AutoPlayer:
     """step()は最大一つの通常操作。停止要求は次の操作の前に確認する。"""
 
     def __init__(self, session, *, max_days=30, max_operations=10000,
-                 emit=None, detailed=False, mode='basic'):
+                 emit=None, detailed=False, mode='basic', stop_on_goal=False):
+        if type(stop_on_goal) is not bool:
+            raise ValueError('目標達成時の停止設定は真偽値で指定してください。')
         if mode not in ('basic', 'clear'):
             raise ValueError('自動プレイ方針はbasicかclearを指定してください。')
         for value in (max_days, max_operations):
@@ -37,6 +40,7 @@ class AutoPlayer:
                 raise ValueError('日数・操作上限は正の整数で指定してください。')
         self.session = session
         self.mode = mode
+        self.stop_on_goal = stop_on_goal
         self.max_days = max_days
         self.max_operations = max_operations
         self.emit = emit or (lambda line: None)
@@ -150,6 +154,11 @@ class AutoPlayer:
             return self._stop('expired')
         if c.goal['status']=='cleared' and cafe_goal.next_rules(c.goal) is None:
             return self._stop('completed')
+        if self.stop_on_goal:
+            from .core.cafe_bond_goal import pending as bond_pending
+            from .core.cafe_patron import pending as patron_pending
+            if c.goal['status']=='cleared' or bond_pending(c) or patron_pending(c):
+                return self._stop('goal_cleared', '結果を確認してから通常操作へ戻れます。')
         if self._days()-self.start_days >= self.max_days:
             return self._stop('day_limit')
         if self.operations >= self.max_operations:

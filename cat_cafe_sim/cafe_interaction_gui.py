@@ -418,6 +418,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.auto_assign = tk.BooleanVar(value=False)
         self.cat_labels = {f"{row['name']}（{row['cat_id']}）":row['cat_id'] for row in session.cat_choices()}
         self._attention = None
+        self.autoplay_window = None
         build(self)
         self.refresh()
 
@@ -569,6 +570,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.compatibility_window = CafePreferencesWindow(self.root, self.session, self.customer.get())
 
     def stop(self):
+        if self.autoplay_window is not None:
+            self.autoplay_window.stop()
         self.running = False
         if self.timer is not None:
             self.root.after_cancel(self.timer)
@@ -707,6 +710,17 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if self.session.core.equipment_store is not None and selected_seat in seats(core):
             self.details.set('選択席 ' + selected_seat + '：' + description(core, selected_seat) + '\n' + self.details.get())
         self.refresh_dashboard()
+        self.autoplay_button.state(['!disabled'] if core.goal and not core.goal.get('tracking_only')
+                                   and core.goal['status']=='active' and not ended and not self.session.pending
+                                   else ['disabled'])
+
+    def show_autoplay(self):
+        from .cafe_autoplay_gui import CafeAutoPlayWindow
+        self.stop()
+        if self.autoplay_window is not None and self.autoplay_window.window.winfo_exists():
+            self.autoplay_window.window.lift()
+            return
+        self.autoplay_window = CafeAutoPlayWindow(self)
 
     def refresh_dashboard(self):
         from .core.cafe_store_events import waiting as store_event_waiting
@@ -976,6 +990,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
 
     def replace_game(self, candidate, auto_assign=False):
         self.stop()
+        if self.autoplay_window is not None:
+            self.autoplay_window.close()
         self.session=candidate
         self.pages.select(self.business_page)
         self.logged=0

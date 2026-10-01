@@ -92,6 +92,8 @@ def build(app):
     app.cat_details_button = ttk.Button(row, text='選んだ猫の詳細・交流…', command=app.show_cat_details)
     app.cat_details_button.pack(side='right')
     app.compatibility_button = ttk.Button(row, text='お客との相性…', command=app.show_compatibility)
+    app.autoplay_button = ttk.Button(row, text='10日間おまかせ…', command=app.show_autoplay)
+    app.autoplay_button.pack(side='right')
     app.compatibility_button.pack(side='right', padx=6)
     roster_frame = ttk.Frame(page)
     roster_frame.grid(row=2, column=0, sticky='nsew')
