@@ -26,12 +26,24 @@ def definition(data):
     return copy.deepcopy(data)
 
 
-def for_destination(destination):
+def for_destination(destination, day=2):
+    """出発日に応じて一件を選ぶ。選択結果は出発記録へ固定する。"""
+    if type(day) is not int or day<1:
+        raise ValueError('派遣の出発日が不正です。')
     rows=json.loads((Path(__file__).resolve().parents[2]/'config/cafe_dispatch_encounters.json').read_text())
     rows=[definition(row) for row in rows]
-    if len({row['destination'] for row in rows})!=len(rows):
-        raise ValueError('派遣イベントの対象が重複しています。')
-    return next((row for row in rows if row['destination']==destination['id'] and destination['days']>=2),None)
+    if len({row['id'] for row in rows})!=len(rows):
+        raise ValueError('派遣イベントのIDが重複しています。')
+    groups={}
+    for row in rows:
+        groups.setdefault(row['destination'],[]).append(row)
+    for key,group in groups.items():
+        if len(group)>1 and (key!='cat_product_trial' or [r['id'] for r in group]!=['extra_product_trial','product_model_request']):
+            raise ValueError('派遣イベントの対象が重複しています。')
+    matches=groups.get(destination['id'],[]) if destination['days']>=2 else []
+    if not matches:
+        return None
+    return matches[day % 2] if len(matches)==2 else matches[0]
 
 
 def pending(event):

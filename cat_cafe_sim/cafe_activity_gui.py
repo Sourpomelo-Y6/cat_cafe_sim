@@ -251,7 +251,7 @@ class CafeActivityWindow:
         if not selected:return
         terms=dispatch_terms(self.session.core,selected[0],self.rules['reward'])
         from .core.cafe_dispatch_encounters import for_destination
-        encounter=for_destination(self.rules)
+        encounter=for_destination(self.rules, self.session.core.day)
         from .core.cafe_dispatch_match import description,terms as welcome_terms
         matched=welcome_terms(self.session.core,selected[0],self.rules)
         welcome_note='\n'+description(self.session.core,selected[0],self.rules)

@@ -146,7 +146,7 @@ class CafeInteractionSession:
         introduction = for_departure(self.core, selected, used)
         from .core.cafe_dispatch_trouble import for_departure as trouble_for_departure
         trouble = trouble_for_departure(self.core, cat_id, selected)
-        self.core.dispatch(cat_id, selected, encounter=for_destination(selected), item_reward=item_reward(selected), introduction=introduction, trouble=trouble)
+        self.core.dispatch(cat_id, selected, encounter=for_destination(selected, self.core.day), item_reward=item_reward(selected), introduction=introduction, trouble=trouble)
 
     def open_recruitment(self):
         from .core.cafe_recruitment import candidates, next_candidate_day, require_preparation, add_candidates

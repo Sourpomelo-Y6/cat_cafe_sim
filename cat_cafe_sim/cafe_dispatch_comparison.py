@@ -22,7 +22,7 @@ def comparison_rows(session,cat_id):
                 unlock_description(core,destination['id']),welcome_description(core,cat_id,destination),
                 f"報酬見込み：{amount:g}（特性・成長・歓迎補正込み、選択イベント前）",
                 f"通常帰還時ストレス：＋{terms['stress']:g}"]
-        encounter=encounter_for(destination)
+        encounter=encounter_for(destination, core.day)
         options=[]
         if encounter:
             detail.append(f"1日目の出来事：{encounter['title']}")
