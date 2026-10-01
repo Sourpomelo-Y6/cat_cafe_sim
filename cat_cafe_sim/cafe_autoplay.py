@@ -92,6 +92,11 @@ class AutoPlayer:
             return '未保存の交流結果を保存', s.persist
         if cafe_player.active(c):
             return '進行中のプレイヤー交流を終了', lambda: s.player_command(finish=True)
+        # 依頼・紹介への回答は店舗イベントの解決が前提。先に対応する。
+        event = cafe_store_events.waiting(c)
+        if event:
+            choice = 'repair' if event['type']=='trouble' else 'decline'
+            return ('設備を修理（席数を維持）' if choice=='repair' else '支援依頼を見送り（追加支出を避ける）'), lambda: s.resolve_store_event(choice)
         for pending, action, label in (
             (cafe_intake_request.pending, s.resolve_intake_request, '保護猫の受け入れ依頼'),
             (cafe_regular_introduction.pending, s.resolve_regular_introduction, '常連からの紹介'),
@@ -133,10 +138,6 @@ class AutoPlayer:
         rows = cafe_management.waiting(c)
         if rows:
             return f'行方不明の猫の帰還を確認: {rows[0]["id"]}', lambda: s.resolve_missing(rows[0]['id'])
-        event = cafe_store_events.waiting(c)
-        if event:
-            choice = 'repair' if event['type']=='trouble' else 'decline'
-            return ('設備を修理（席数を維持）' if choice=='repair' else '支援依頼を見送り（追加支出を避ける）'), lambda: s.resolve_store_event(choice)
         for pending, choices, action, label in (
             (cafe_growth.pending, lambda c, key: ('service',), s.resolve_growth, '接客の得意分野'),
             (cafe_growth.mastery_pending, cafe_growth.mastery_choices, s.resolve_growth_mastery, '接客分類の熟練'),
