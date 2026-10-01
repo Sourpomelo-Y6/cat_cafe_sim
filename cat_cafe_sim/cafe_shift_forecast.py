@@ -6,7 +6,18 @@ def shift_forecast(core, cat_id):
     previous = core.day_results[-1]['cats'].get(cat_id, {}) if core.day_results else {}
     actions = previous.get('service_ticks')
     result = dict(previous_actions=actions, work=None, rest=None,
-                  sick=cat.health_status == 'sick', recovery_after=None)
+                  sick=cat.health_status == 'sick', recovery_after=None,
+                  current_stress=None,work_stress=None,rest_stress=None)
+    management=getattr(core,'management',None)
+    if management is not None:
+        before=management['stress'][cat_id]
+        result['current_stress']=before
+        if getattr(core,'activity',lambda key:'cafe')(cat_id)=='cafe':
+            rules=management['rules']
+            result['rest_stress']=max(0,min(100,before-rules['rest_recovery']))
+            if not result['sick'] and actions is not None:
+                from .core.cafe_traits import effect
+                result['work_stress']=max(0,min(100,before+actions*rules['stress_per_service_tick']*effect(core,cat_id,'service_stress')))
     if core.shift_rules is None:
         return result
     rules = core.shift_rules
@@ -34,6 +45,10 @@ def estimate_text(value):
     return f"{value['fatigue']:g} / {chance}"
 
 
+def stress_estimate_text(value):
+    return '—' if value is None else f'{value:g}'
+
+
 def forecast_note(value):
     if value['sick']:
         remaining = value['recovery_after']
@@ -46,4 +61,4 @@ def forecast_note(value):
     if value['previous_actions'] is None:
         return '前日の接客行動数の記録がないため、出勤時の予測は表示していません。'
     return (f"前日の接客{value['previous_actions']}行動を基準にしています。"
-            '当日の担当回数や交流時間によって、実際の疲労・発症確率は変わります。')
+            '当日の担当回数や交流時間によって、実際の疲労・発症確率・ストレスは変わります。')
