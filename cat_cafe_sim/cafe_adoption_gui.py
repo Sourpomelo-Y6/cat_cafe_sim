@@ -1,6 +1,7 @@
 """譲渡イベントの設定、申し出への回答、確定済み履歴の閲覧。"""
 from .core.cafe_adoption import enabled, waiting
 from .core.cafe_management import is_over
+from .cafe_customers import customer_name
 
 
 class CafeAdoptionWindow:
@@ -62,7 +63,7 @@ class CafeAdoptionWindow:
                 label = '回答待ち' if event['status']=='waiting' else '譲渡成立' if event['choice']=='accept' else '見送り'
                 self.events.insert('', 'end', iid=key, values=(event['day'],
                     self.session.profiles.get(event['cat_id'], {}).get('name', event['cat_id']),
-                    event['customer_id'], f"{event['guest_affinity']:g}", f"{event['player_affinity']:g}", label))
+                    customer_name(event['customer_id']), f"{event['guest_affinity']:g}", f"{event['player_affinity']:g}", label))
         pending = waiting(core)
         if selected and self.events.exists(selected[0]):
             self.events.selection_set(selected[0])
@@ -82,7 +83,7 @@ class CafeAdoptionWindow:
         can_resolve = event and event['status']=='waiting' and not self.session.pending and not is_over(self.session.core)
         for button in (self.accept_button, self.decline_button):
             button.state(['!disabled'] if can_resolve else ['disabled'])
-        self.details.set(f"対象：{event['cat_id']} → {event['customer_id']}。譲渡後も詳細と関係の記録は残ります。" if event else
+        self.details.set(f"対象：{event['cat_id']} → {customer_name(event['customer_id'])}。譲渡後も詳細と関係の記録は残ります。" if event else
                          '申し出はありません。プレイヤー好感度が相手以上なら発生を予防できます。')
 
     def configure(self):
@@ -96,7 +97,7 @@ class CafeAdoptionWindow:
         if choice == 'accept':
             event = self.session.core.adoption['events'][selected[0]]
             name = self.session.profiles.get(event['cat_id'], {}).get('name', event['cat_id'])
-            if not messagebox.askyesno('猫の譲渡', f"{name}を{event['customer_id']}へ譲渡しますか？\nこの営業では店内接客・派遣・プレイヤー交流に戻せません。", parent=self.window):
+            if not messagebox.askyesno('猫の譲渡', f"{name}を{customer_name(event['customer_id'])}へ譲渡しますか？\nこの営業では店内接客・派遣・プレイヤー交流に戻せません。", parent=self.window):
                 return
         self.perform(lambda:self.session.resolve_adoption(selected[0], choice))
 

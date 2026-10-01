@@ -69,7 +69,7 @@ class ManualCafeInteractionWindow:
         self.refresh()
 
     def refresh(self):
-        from .cafe_customers import customer_label
+        from .cafe_customers import customer_name
         core=self.session.core
         self.status.set(f'{core.day}日目 · 営業 {core.tick}/{core.config.opening_ticks} tick · '+('閉店' if core.closed else '営業中')+
                         f' · 資金 {core.funds:g} · 猫 {self.session.cat_name}（{core.cat.id}） · 体力 {core.cat.stamina:g}')
@@ -87,7 +87,7 @@ class ManualCafeInteractionWindow:
             button.state(['!disabled'] if enabled and active and action in active.valid_actions() else ['disabled'])
         if active:
             state=active.summary()
-            self.details.set(greeting_text(active)+f"\nお客 {customer_label(active.customer_id)} · {active.type_map[active.state['mode']].name} · 残り {active.state['remaining_ticks']} 行動 · 関心 {state['engagement']:g} · テンション {state['tension']:g} · 親しみ {state['affinity_before']:g} → {state['affinity_after']:g}（見込み）")
+            self.details.set(greeting_text(active)+f"\nお客 {customer_name(active.customer_id)} · {active.type_map[active.state['mode']].name} · 残り {active.state['remaining_ticks']} 行動 · 関心 {state['engagement']:g} · テンション {state['tension']:g} · 親しみ {state['affinity_before']:g} → {state['affinity_after']:g}（見込み）")
         else:
             self.details.set('交流するお客を選んでください。' if not core.closed else '本日の営業は終了しました。')
         self.notice.set('会計・体力は反映済みです。関係保存が未完了のため、保存を再試行してください。' if pending else
@@ -107,7 +107,7 @@ class ManualCafeInteractionWindow:
                     text+=' / 得意な行動を考慮して切り替え'
             elif kind=='automatic_assignment':
                 name=self.session.profiles.get(event['cat_id'],{}).get('name',event['cat_id'])
-                text=(f"自動割り当て：{customer_label(event['customer_id'])} → {name} / "+
+                text=(f"自動割り当て：{customer_name(event['customer_id'])} → {name} / "+
                       ('好みと特徴が一致' if event['matched'] else '一致する猫なし・体力優先'))
             elif kind=='health_enabled':
                 text='病気・療養ルールを開始'
@@ -282,9 +282,9 @@ class ManualCafeInteractionWindow:
             elif kind=='adoption_configured':
                 text='譲渡イベント：'+('ON' if event['enabled'] else 'OFF')
             elif kind=='adoption_offered':
-                text=f"譲渡の申し出 {event['cat_id']} → {customer_label(event['customer_id'])} · 「結果・記録」の譲渡画面で回答してください"
+                text=f"譲渡の申し出 {event['cat_id']} → {customer_name(event['customer_id'])} · 「結果・記録」の譲渡画面で回答してください"
             elif kind=='adoption_resolved':
-                text=f"譲渡{'成立' if event['choice']=='accept' else '見送り'} {event['cat_id']} → {customer_label(event['customer_id'])}"
+                text=f"譲渡{'成立' if event['choice']=='accept' else '見送り'} {event['cat_id']} → {customer_name(event['customer_id'])}"
             elif kind=='player_started':
                 text=f"プレイヤー交流開始 {event['cat_id']} · 本日あと{event['remaining']}セット"
             elif kind=='player_action':
@@ -321,15 +321,15 @@ class ManualCafeInteractionWindow:
                 text=f"{event['day']}日目の準備 · 在店猫の体力が全回復しました"
             elif kind=='departure':
                 reasons={'interaction_manual':'切り上げ', 'interaction_time_limit':'交流時間終了', 'interaction_exhausted':'体力切れ', 'closing':'閉店', 'queue_full':'待機列満員', 'wait_timeout':'待機時間終了'}
-                text=f"退店 {customer_label(event['customer_id'])} · {reasons.get(event['reason'],event['reason'])} · 会計 {event['bill']:g}（時間 {event['base_charge']:g}＋ボーナス {event['bonus']:g}）"
+                text=f"退店 {customer_name(event['customer_id'])} · {reasons.get(event['reason'],event['reason'])} · 会計 {event['bill']:g}（時間 {event['base_charge']:g}＋ボーナス {event['bonus']:g}）"
             elif kind=='advanced_customer_result':
                 text='こだわり客の満足条件 · '+event['text']
             elif kind=='customer_satisfaction_result':
-                text=(f"接客評価 {customer_label(event['customer_id'])} · {event['label']}"
+                text=(f"接客評価 {customer_name(event['customer_id'])} · {event['label']}"
                       f"（点数{event['score']:g}・{('、'.join(event['reasons']) or '加点要素なし')}）"
                       + (f" · 満足ボーナス ＋{event['bonus']:g}" if event['bonus'] else ''))
             elif kind=='customer_loyalty_gained':
-                text=(f"常連度 {customer_label(event['customer_id'])} · {event['before']:g} → {event['after']:g}"+
+                text=(f"常連度 {customer_name(event['customer_id'])} · {event['before']:g} → {event['after']:g}"+
                       (' · 常連になりました' if event['became_regular'] else ''))
             elif kind=='customer_discontent_changed':
                 reasons={'queue_full':'待機列満員','wait_timeout':'待機時間終了',
@@ -337,18 +337,18 @@ class ManualCafeInteractionWindow:
                          'dissatisfied_service':'接客評価が不満',
                          'advanced_failure+good_service':'高難度条件未達・良い接客',
                          'advanced_failure+dissatisfied_service':'高難度条件未達・接客評価が不満'}
-                text=(f"累積不満 {customer_label(event['customer_id'])} · {event['before']:g} → {event['after']:g}"
+                text=(f"累積不満 {customer_name(event['customer_id'])} · {event['before']:g} → {event['after']:g}"
                       f" · {reasons.get(event['reason'],event['reason'])}"+
                       (f" · {event['suspended_until']}日目まで来店停止" if event['suspended'] else ''))
             elif kind=='customer_trust_warning':
-                text=f"信頼回復の回答待ち {customer_label(event['customer_id'])} · 来店停止{event['suspensions']}回"
+                text=f"信頼回復の回答待ち {customer_name(event['customer_id'])} · 来店停止{event['suspensions']}回"
             elif kind=='customer_trust_recovery_started':
-                text=f"信頼回復に取り組む {customer_label(event['customer_id'])}"
+                text=f"信頼回復に取り組む {customer_name(event['customer_id'])}"
             elif kind=='customer_trust_recovered':
-                text=f"信頼回復 {customer_label(event['customer_id'])} · 累積不満{event['score']:g}"
+                text=f"信頼回復 {customer_name(event['customer_id'])} · 累積不満{event['score']:g}"
             elif kind=='customer_departed':
                 reason='対応しなかった' if event['reason']=='ignored' else '信頼回復中の接客が不満だった'
-                text=f"永久離脱 {customer_label(event['customer_id'])} · {reason} · 人気 {event['popularity_before']:g} → {event['popularity']:g}"
+                text=f"永久離脱 {customer_name(event['customer_id'])} · {reason} · 人気 {event['popularity_before']:g} → {event['popularity']:g}"
             elif kind=='reservation_offered':
                 text=f"特別予約の依頼 · {event['visit_day']}日目の来店"
             elif kind=='reservation_unlocked':
@@ -385,7 +385,7 @@ class ManualCafeInteractionWindow:
                 r=event['result'];text=f"親しみ {r['affinity_before']:g} → {r['affinity_after']:g} · 残り体力 {r['stamina']:g}"
             else:
                 names={'arrival':'来店','assigned':'着席','interaction_started':'交流開始','closed':'閉店'}
-                text=f"{names.get(kind,kind)} {customer_label(event.get('customer_id',''))}"
+                text=f"{names.get(kind,kind)} {customer_name(event.get('customer_id',''))}"
             item=self.history.insert('','end',values=(event['tick'],(event.get('seat_id','')+' '+text).strip()));self.history.see(item)
         self.logged=len(core.events)
 
@@ -616,7 +616,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.schedule()
 
     def refresh(self):
-        from .cafe_customers import customer_label
+        from .cafe_customers import customer_label, customer_name
         super().refresh()
         if not hasattr(self,'run_button'):
             return
@@ -679,7 +679,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                 if active:
                     r=active.summary()
                     name=self.session.profiles.get(active.cat_id,{}).get('name',active.cat_id)
-                    lines.append(f"{seat_id}：{customer_label(active.customer_id)} / {name} · 体力 {r['stamina']:g} · 関心 {r['engagement']:g} · テンション {r['tension']:g} · 親しみ {r['affinity_after']:g} · 資金 {r['bonus_funds']:g}（見込み）")
+                    lines.append(f"{seat_id}：{customer_name(active.customer_id)} / {name} · 体力 {r['stamina']:g} · 関心 {r['engagement']:g} · テンション {r['tension']:g} · 親しみ {r['affinity_after']:g} · 資金 {r['bonus_funds']:g}（見込み）")
                 else:
                     last=next((event for event in reversed(core.events) if event['kind']=='departure' and event.get('seat_id')==seat_id),None)
                     lines.append(f"{seat_id}：空席"+(f" · 直近の会計 {last['bill']:g}" if last else ''))

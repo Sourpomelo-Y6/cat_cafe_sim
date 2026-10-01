@@ -4,7 +4,7 @@ from dataclasses import replace
 
 import test_cafe_patron as fixtures
 from cat_cafe_sim.cafe_interaction import CafeInteractionSession
-from cat_cafe_sim.cafe_customers import directory, cat_rows, preference, customer_name, customer_label
+from cat_cafe_sim.cafe_customers import directory, cat_rows, preference, customer_name, customer_label, customer_description, _SPECIAL_NAMES
 from cat_cafe_sim.core.cafe_preferences import rules, preference_for
 from cat_cafe_sim.core.config import Config
 
@@ -81,8 +81,36 @@ class CustomerDirectoryTests(unittest.TestCase):
         s = self.session()
         self.assertEqual(customer_name('guest-1'), '佐藤さん')
         self.assertIn('guest-1', customer_label('guest-1'))
-        self.assertEqual(customer_name('guest-21'), 'お客さん21')
-        self.assertEqual(customer_name('custom'), 'custom')
+        self.assertEqual(customer_name('guest-21'), '阿部さん')
+        self.assertRegex(customer_name('custom'), r'^[一-龥]+さん$')
         self.assertTrue(all(row['preference_text']=='未設定' for row in directory(s)))
         self.assertTrue(all(row['match_text']=='好み未設定' for row in cat_rows(s,'guest-1')))
         self.assertIsNone(s.core.customer_preferences)
+
+    def test_special_names_and_descriptions_are_separate_and_fixed(self):
+        self.assertEqual(customer_name('advanced-white'), '藤原さん')
+        self.assertEqual(customer_name('reservation-longhair'), '森さん')
+        self.assertEqual(customer_description('advanced-white'), '白猫好きのこだわり客')
+        self.assertEqual(customer_description('expanded-guest'), '増設で来店したお客さん')
+        for key in (*_SPECIAL_NAMES, 'guest-1', 'guest-21', 'guest-999', 'legacy-id'):
+            self.assertRegex(customer_name(key), r'^[一-龥]+さん$')
+            self.assertIn(key, customer_label(key))
+        self.assertEqual(len({customer_name(key) for key in _SPECIAL_NAMES}), len(_SPECIAL_NAMES))
+
+    def test_display_names_preserve_legacy_relationship_files_and_ids(self):
+        s = self.session()
+        cat = next(iter(s.core.cats))
+        interaction = self.store.begin(s.interaction_config, cat, 'advanced-white')
+        interaction.step('direct'); interaction.finish(); self.store.apply(interaction)
+        s = self.session()
+        before = copy.deepcopy(s.core.snapshot())
+        stored = self.store.path.read_bytes()
+        rows = directory(s)
+        named = next(row for row in rows if row['customer_id']=='advanced-white')
+        self.assertEqual(named['name'], '藤原さん')
+        self.assertEqual(named['description'], '白猫好きのこだわり客')
+        self.assertEqual(self.store.path.read_bytes(), stored)
+        self.assertEqual(s.core.snapshot(), before)
+        restored = self.reload(s)
+        self.assertEqual(directory(restored), rows)
+        self.assertEqual(next(row for row in cat_rows(restored,'advanced-white') if row['cat_id']==cat)['affinity'], interaction.result()['affinity_after'])

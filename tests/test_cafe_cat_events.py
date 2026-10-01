@@ -84,6 +84,7 @@ class CatEventsTests(unittest.TestCase):
         before=copy.deepcopy((core.management,core.adoption))
         rows=cat_events(core,key)
         self.assertIn('譲渡成立',str(rows))
+        self.assertIn((5, '譲渡への回答', '佐藤さん', '譲渡成立'), rows)
         self.assertIn('子猫の引き渡し費用 200',str(rows))
         self.assertNotIn('人気',str(rows))
         self.assertEqual(cat_events(core,other),[])

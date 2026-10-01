@@ -10,9 +10,10 @@ class CafeReservationWindow:
         self.accept=ttk.Button(footer,text='予約を受け入れる',command=lambda:self.resolve('accept'));self.accept.pack(side='left')
         self.decline=ttk.Button(footer,text='見送る',command=lambda:self.resolve('decline'));self.decline.pack(side='left',padx=4)
         ttk.Button(footer,text='閉じる',command=self.close).pack(side='right')
-        from .core.cafe_reservation import NAME
+        from .core.cafe_reservation import CUSTOMER_ID
+        from .cafe_customers import customer_name, customer_description
         rules=session.core.reservation['rules'];request=session.core.reservation['request']
-        self.details=tk.StringVar(value=f"{NAME}\n来店日：{request['visit_day']}日目 / 長毛の猫を担当 / 心を開く {rules['open_up_count']}回以上\n条件達成：追加料金＋{rules['bonus']:g}、人気＋{rules['popularity_bonus']:g}\n見送ってもペナルティはありません。受け入れると来店日は休業できません。")
+        self.details=tk.StringVar(value=f"{customer_name(CUSTOMER_ID)}｜{customer_description(CUSTOMER_ID)}\n来店日：{request['visit_day']}日目 / 長毛の猫を担当 / 心を開く {rules['open_up_count']}回以上\n条件達成：追加料金＋{rules['bonus']:g}、人気＋{rules['popularity_bonus']:g}\n見送ってもペナルティはありません。受け入れると来店日は休業できません。")
         ttk.Label(frame,textvariable=self.details,wraplength=570).pack(anchor='w',pady=8)
         self.window.protocol('WM_DELETE_WINDOW',self.close);self.window.bind('<Escape>',lambda e:self.close())
     def resolve(self,choice):

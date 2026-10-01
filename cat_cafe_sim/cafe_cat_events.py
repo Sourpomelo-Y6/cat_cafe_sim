@@ -1,4 +1,5 @@
 """保存済みの出来事を猫別に表示する。新しい履歴や推定時刻は保存しない。"""
+from .cafe_customers import customer_name
 
 
 def cat_events(core, cat_id):
@@ -26,7 +27,6 @@ def cat_events(core, cat_id):
         add(visitor['accepted_day'],'加入','店先に通う猫',f"初期費用 {visitor['rules']['candidate']['cost']:g}")
     regular = core.regular_introduction
     if regular and regular['status']=='accepted' and regular['rules']['cat_id']==cat_id:
-        from .cafe_customers import customer_name
         add(regular['resolved_day'],'加入',customer_name(regular['customer_id'])+'からの紹介',f"初期費用 {regular['rules']['candidate']['cost']:g}")
 
     for event in (core.activities or {}).get('events', {}).values():
@@ -78,9 +78,9 @@ def cat_events(core, cat_id):
     for event in (core.adoption or {}).get('events', {}).values():
         if event['cat_id'] != cat_id:
             continue
-        add(event['day'], '譲渡の申し出', event['customer_id'], '回答待ち' if event['status']=='waiting' else '回答済み')
+        add(event['day'], '譲渡の申し出', customer_name(event['customer_id']), '回答待ち' if event['status']=='waiting' else '回答済み')
         if event['status'] == 'resolved':
-            add(event['resolved_day'], '譲渡への回答', event['customer_id'], '譲渡成立' if event['choice']=='accept' else '見送り')
+            add(event['resolved_day'], '譲渡への回答', customer_name(event['customer_id']), '譲渡成立' if event['choice']=='accept' else '見送り')
 
     for use in core.item_uses:
         if use['cat_id'] != cat_id:

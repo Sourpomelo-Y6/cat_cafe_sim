@@ -1,5 +1,6 @@
 """保存済みの営業記録から作る、読み取り専用の顧客名簿と当日の予定。"""
 import re
+from hashlib import sha256
 from .core.cafe_preferences import FEATURES, preference_for
 from .core.cafe_advanced_customers import CUSTOMER_ID, NAME
 from .core.cafe_expansion import EXTRA_CUSTOMER_ID,FIFTH_CUSTOMER_ID,SIXTH_CUSTOMER_ID,SEVENTH_CUSTOMER_ID,EIGHTH_CUSTOMER_ID,four_seat_purchase,five_seat_purchase,six_seat_purchase,seven_seat_purchase,eight_seat_purchase
@@ -9,12 +10,40 @@ _NAMES = ('佐藤', '鈴木', '高橋', '田中', '伊藤', '渡辺', '山本', 
           '吉田', '山田', '佐々木', '山口', '松本', '井上', '木村', '林', '清水', '斎藤')
 
 
+# 役割・好みは名前に含めず、既存IDへの固定の対応として管理する。
+_SPECIAL_NAMES = {
+    'advanced-white': '藤原',
+    'expanded-guest': '岡田', 'expanded-guest-2': '前田',
+    'expanded-guest-3': '藤田', 'expanded-guest-4': '石田', 'expanded-guest-5': '上田',
+    'reservation-longhair': '森', 'vip-calico': '後藤',
+    'advanced-quiet': '福田', 'advanced-play': '西村',
+    'advanced-contact': '青木', 'advanced-longhair': '坂本',
+}
+_EXTRA_NAMES = ('阿部', '石川', '橋本', '池田', '長谷川', '近藤', '村上', '遠藤', '小川', '山崎',
+                '中島', '小野', '原田', '竹内', '金子', '和田', '中川', '田村', '宮崎', '横山')
+
+
+def customer_name(customer_id):
+    if not customer_id:
+        return ''
+    if customer_id in _SPECIAL_NAMES:
+        return _SPECIAL_NAMES[customer_id]+'さん'
+    index = number(customer_id)
+    if index is not None:
+        surname = _NAMES[index-1] if index<=len(_NAMES) else _EXTRA_NAMES[(index-len(_NAMES)-1)%len(_EXTRA_NAMES)]
+    else:
+        # 独自IDの旧関係記録でも、実行・保存再開をまたいで同じ苗字を使う。
+        index = int.from_bytes(sha256(customer_id.encode('utf-8')).digest(), 'big')
+        surname = _EXTRA_NAMES[index%len(_EXTRA_NAMES)]
+    return surname+'さん'
+
+
 def number(customer_id):
     found = re.fullmatch(r'guest-([1-9][0-9]*)', customer_id)
     return int(found[1]) if found else None
 
 
-def customer_name(customer_id):
+def customer_description(customer_id):
     if customer_id == CUSTOMER_ID:
         return NAME
     if customer_id == EXTRA_CUSTOMER_ID:
@@ -42,13 +71,12 @@ def customer_name(customer_id):
         return CONTACT_NAME
     from .core.cafe_longhair_customer import CUSTOMER_ID as LONGHAIR_ID, NAME as LONGHAIR_NAME
     if customer_id==LONGHAIR_ID:return LONGHAIR_NAME
-    index = number(customer_id)
-    if index is None:
-        return customer_id
-    return f'{_NAMES[index-1]}さん' if index <= len(_NAMES) else f'お客さん{index}'
+    return '通常のお客さん' if number(customer_id) is not None else '記録のあるお客さん'
 
 
 def customer_label(customer_id):
+    if not customer_id:
+        return ''
     name = customer_name(customer_id)
     return f'{name}（{customer_id}）' if name != customer_id else customer_id
 
@@ -192,7 +220,7 @@ def directory(session):
         if core.contact_customer is not None and key == CONTACT_ID:
             weekday_text = '・'.join(DAYS[day] for day in core.contact_customer['weekdays'])
         if key==LONGHAIR_ID and core.longhair_customer is not None:weekday_text=f"毎営業日{core.longhair_customer['probability']*100:g}％"
-        rows.append(dict(customer_id=key, name=customer_name(key), visits=count,
+        rows.append(dict(customer_id=key, name=customer_name(key), description=customer_description(key), visits=count,
                          arrival_tick=planned, tomorrow_tick=tomorrow.get(key),
                          weekdays=weekday_text,
                          status=status, preference=preferred,

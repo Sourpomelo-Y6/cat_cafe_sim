@@ -2,6 +2,7 @@
 from .core.human_cat_types import Personality
 from .cafe_health_text import health_text, health_result_text
 from .relationship_presentation import STAGES, stage_index
+from .cafe_customers import customer_name
 
 MISSING = '記録なし'
 
@@ -91,7 +92,6 @@ def cat_details(session, cat_id):
         basic += [('加入経路','店先に通う猫'),('加入日',f"{visitor['accepted_day']}日目")]
     regular = core.regular_introduction
     if regular and regular['status']=='accepted' and regular['rules']['cat_id']==cat_id:
-        from .cafe_customers import customer_name
         basic += [('加入経路', '常連からの紹介'), ('紹介者',customer_name(regular['customer_id'])), ('加入日',f"{regular['resolved_day']}日目")]
     from .core.cafe_dispatch_introduction import introductions
     for event in introductions(core):
@@ -102,7 +102,7 @@ def cat_details(session, cat_id):
         adopted = next((event for event in core.adoption['events'].values()
                         if event['cat_id']==cat_id and event['choice']=='accept'), None)
         if adopted:
-            basic += [('譲渡先', adopted['customer_id']), ('譲渡成立日', f"{adopted['resolved_day']}日目")]
+            basic += [('譲渡先', customer_name(adopted['customer_id'])), ('譲渡成立日', f"{adopted['resolved_day']}日目")]
     basic += [(f'好み：{kind.name}', number(value)) for kind, value in
               zip(session.interaction_config.types, personality.type_preferences)]
     basic += [(f'強さの好み：{name}', number(value)) for name, value in
@@ -175,7 +175,7 @@ class CafeCatDetailsWindow:
         self.tables = {}
         for key, title, columns, note in (
             ('basic', '状態・個性', ('項目', '値'), '現在の状態と好みです。準備中は下のボタンで一緒に遊べます。'),
-            ('relationships', 'お客との親しみ', ('お客ID','確定済み親しみ','段階','交流経験'),
+            ('relationships', 'お客との親しみ', ('お客さん（ID）','確定済み親しみ','段階','交流経験'),
              '関係データに保存済みの値です。交流中・未保存の変化は含みません。'),
             ('history', '日次実績', ('日目','営業区分','予定','接客件数','接客行動数','体力消耗','疲労変化','体調変化','獲得経験','親しみ増減合計'),
              '閉店済みの日次実績です。個々の行動履歴ではありません。体力消耗は回復を差し引いた値です。'),
@@ -252,6 +252,9 @@ class CafeCatDetailsWindow:
         for key, tree in self.tables.items():
             tree.delete(*tree.get_children())
             for row in data[key]:
+                if key == 'relationships':
+                    from .cafe_customers import customer_label
+                    row = (customer_label(row[0]), *row[1:])
                 tree.insert('', 'end', values=row)
             if not data[key]:
                 tree.insert('', 'end', values=('記録なし',))

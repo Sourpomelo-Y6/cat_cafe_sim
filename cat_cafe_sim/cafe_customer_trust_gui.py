@@ -1,6 +1,6 @@
 """お客さんの信頼回復方針と永久離脱履歴。"""
 from .core.cafe_customer_trust import waiting
-from .cafe_customers import customer_label
+from .cafe_customers import customer_name
 
 
 class CafeCustomerTrustWindow:
@@ -27,8 +27,8 @@ class CafeCustomerTrustWindow:
         labels={'waiting':'回答待ち','recovery':'信頼回復中','recovered':'回復','departed':'永久離脱'}
         for event in core.customer_trust['events'].values():
             result=event['outcome'] or event['status']
-            self.events.insert('','end',iid=event['id'],values=(event['day'],customer_label(event['customer_id']),event['suspensions'],labels[result]))
-        self.notice.set(f"{customer_label(pending[0]['customer_id'])}が離脱を考えています。方針を選んでください。" if pending else '回答待ちの信頼回復イベントはありません。')
+            self.events.insert('','end',iid=event['id'],values=(event['day'],customer_name(event['customer_id']),event['suspensions'],labels[result]))
+        self.notice.set(f"{customer_name(pending[0]['customer_id'])}が離脱を考えています。方針を選んでください。" if pending else '回答待ちの信頼回復イベントはありません。')
         state=['!disabled'] if pending and not self.session.pending else ['disabled']
         self.recover.state(state);self.ignore.state(state)
 
