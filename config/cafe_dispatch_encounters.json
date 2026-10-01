@@ -18,5 +18,9 @@
   {"id":"extra_photo_session","destination":"cat_photo_studio","title":"追加の撮影をお願いされました","choices":[
     {"id":"accept","label":"追加撮影を続ける","reward":100,"fatigue":15,"stress":15},
     {"id":"decline","label":"追加撮影を断って切り上げる","reward":0,"fatigue":5,"stress":5}
+  ]},
+  {"id":"extra_product_trial","destination":"cat_product_trial","title":"追加の用品体験をお願いされました","choices":[
+    {"id":"accept","label":"追加体験に参加する","reward":100,"fatigue":10,"stress":10},
+    {"id":"decline","label":"予定どおり終える","reward":0,"fatigue":0,"stress":0}
   ]}
 ]

@@ -40,7 +40,7 @@ flowchart TD
 | 猫の状態と成長 | 詳細とできごと、出勤・休養・疲労・療養、特性5種類、活動経験・得意分野・最大3分類・最初の分類で最大2行動・2つ目の分類で最大2行動・3つ目の分類で最大2行動の個別熟練 | [詳細](HumanToCatCatDetailsPlan.md)、[出勤](HumanToCatCafeShifts.md)、[健康](HumanToCatCafeHealth.md)、[特性](HumanToCatTraits.md)、[成長](HumanToCatCatGrowthPlan.md) |
 | 加入と飼育 | 定期保護猫候補、4日目の依頼、購入、商店街・撮影スタジオ・常連からの紹介、店先に通う猫との交流と加入、6→9→12匹の飼育枠 | [加入経路](HumanToCatRecruitmentPlan.md)、[飼育枠](HumanToCatHousing.md) |
 | プレイヤーとの関係 | 準備中の交流、プレイヤー好感度、任意ON/OFFの譲渡と予防 | [プレイヤー交流](HumanToCatPlayerInteraction.md)、[譲渡](HumanToCatAdoption.md) |
-| 派遣 | 基本3派遣先、有力者訪問、山あいの宿、体力自慢向けの猫の運動教室、のんびり屋向けの静かな読書サロン、接客好き向けの猫の撮影スタジオ、段階解放、猫ごとの派遣先比較、歓迎条件、資金・アイテム報酬、選択と帰還 | [活動・派遣](HumanToCatCafeActivities.md)、[選択イベント](HumanToCatDispatchEncounters.md)、[宿のトラブル](HumanToCatDispatchTrouble.md) |
+| 派遣 | 基本3派遣先、有力者訪問、山あいの宿、体力自慢向けの猫の運動教室、のんびり屋向けの静かな読書サロン、接客好き向けの猫の撮影スタジオ、働き者向けの猫用品の体験会、段階解放、猫ごとの派遣先比較、歓迎条件、資金・アイテム報酬、選択と帰還 | [活動・派遣](HumanToCatCafeActivities.md)、[選択イベント](HumanToCatDispatchEncounters.md)、[宿のトラブル](HumanToCatDispatchTrouble.md) |
 | 施設と投資 | 2→3→4→5→6→7→8席、休養スペースの購入・1段階強化、待合の購入・2段階目の強化、従来2種＋分類別3種の接客設備 | [施設計画](HumanToCatStoreDevelopmentPlan.md)、[設備](HumanToCatSeatEquipment.md) |
 | 顧客と評価 | 名簿と予定、曜日、好み・相性、満足／普通／不満、常連、累積不満、停止・回復・永久離脱 | [名簿](HumanToCatCustomers.md)、[相性](HumanToCatCustomerPreferences.md)、[評価](HumanToCatCustomerSatisfaction.md)、[常連](HumanToCatCustomerLoyalty.md)、[不満](HumanToCatCustomerDiscontent.md)、[信頼](HumanToCatCustomerTrust.md) |
 | 追加客層 | 第1段階の白猫好き・静かな交流客・遊び客・触れ合い客、第2段階の予約、最終段階のVIP | [白猫好き](HumanToCatAdvancedCustomers.md)、[静かな交流客](HumanToCatQuietCustomer.md)、[遊び客](HumanToCatPlayCustomer.md)、[触れ合い客](HumanToCatContactCustomer.md)、[予約](HumanToCatReservations.md)、[VIP](HumanToCatVipCustomer.md) |

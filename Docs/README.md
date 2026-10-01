@@ -1,6 +1,6 @@
 # ドキュメント索引
 
-更新日：2026-09-30
+更新日：2026-10-01
 
 通常ゲームの概要は[全体計画](HumanToCatGameFlowPlan.md)、開発再開は[引き継ぎ](DevelopmentHandoff.md)、未着手の候補は[実装予定](HumanToCatPlannedFeatures.md)から読みます。起動・実行例は[リポジトリのREADME](../README.md)を参照してください。
 
@@ -51,6 +51,7 @@
 - [猫の運動教室への派遣](HumanToCatExerciseDispatch.md)
 - [静かな読書サロンへの派遣](HumanToCatReadingDispatch.md)
 - [猫の撮影スタジオへの派遣](HumanToCatPhotoDispatch.md)
+- [猫用品の体験会への派遣](HumanToCatProductTrialDispatch.md)
 - [派遣中の選択イベント](HumanToCatDispatchEncounters.md)
 - [派遣先からの猫紹介](HumanToCatDispatchIntroduction.md)
 - [常連のお客さんからの猫紹介](HumanToCatRegularIntroduction.md)

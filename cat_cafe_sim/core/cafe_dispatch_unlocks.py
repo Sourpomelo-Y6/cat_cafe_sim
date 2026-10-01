@@ -8,7 +8,8 @@ LEGACY_IDS={'shopping_street_event','out_of_town_visit'}
 EXERCISE_ID='cat_exercise_class'
 READING_ID='quiet_reading_salon'
 PHOTO_ID='cat_photo_studio'
-SPECIAL_DESTINATIONS={EXERCISE_ID:('hardy','体力自慢'),READING_ID:('relaxed','のんびり屋'),PHOTO_ID:('hospitality','接客好き')}
+TRIAL_ID='cat_product_trial'
+SPECIAL_DESTINATIONS={EXERCISE_ID:('hardy','体力自慢'),READING_ID:('relaxed','のんびり屋'),PHOTO_ID:('hospitality','接客好き'),TRIAL_ID:('hardworking','働き者')}
 IDS=LEGACY_IDS | set(SPECIAL_DESTINATIONS)
 
 
@@ -43,6 +44,10 @@ def reading_destination(core):
 
 def photo_destination(core):
     return saved_destination(core,PHOTO_ID)
+
+
+def trial_destination(core):
+    return saved_destination(core,TRIAL_ID)
 
 
 def saved_destination(core,destination_id):
