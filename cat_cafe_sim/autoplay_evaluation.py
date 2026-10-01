@@ -102,21 +102,23 @@ def collect(core, result):
     return dict(reason=result.reason, message=result.message, metrics=metrics, stages=stages, daily=rows)
 
 
-def evaluate(*, max_days=60, scenarios=None, goal_preset='standard', customer_preset='standard', emit=print):
+def evaluate(*, max_days=60, scenarios=None, goal_preset='standard', customer_preset='standard', seed=0, emit=print):
+    if type(seed) is not int or seed < 0:
+        raise ValueError('シードは0以上の整数を指定してください。')
     selected = list(SCENARIOS) if scenarios is None else list(scenarios)
     if not selected or any(name not in SCENARIOS for name in selected):
         raise ValueError('比較条件を確認してください。')
     conditions = evaluation_conditions(goal_preset, customer_preset)
     encoded = json.dumps(conditions, ensure_ascii=False, sort_keys=True).encode()
-    output = dict(format_version=1, evaluated_at=datetime.now(timezone.utc).isoformat(), seed=0,
+    output = dict(format_version=1, evaluated_at=datetime.now(timezone.utc).isoformat(), seed=seed,
                   goal_preset=goal_preset,
                   customer_preset=customer_preset,
                   max_days=max_days, conditions=conditions, conditions_sha256=hashlib.sha256(encoded).hexdigest(), runs={})
     with tempfile.TemporaryDirectory(prefix='cat-cafe-balance-') as directory:
         for name in selected:
             mode, excluded = SCENARIOS[name]
-            emit(f'比較開始: {name}')
-            session = create_game(Path(directory)/name, copy.deepcopy(conditions))
+            emit(f'比較開始: seed={seed} / {name}')
+            session = create_game(Path(directory)/name, copy.deepcopy(conditions), seed=seed)
             # 比較専用プロセスで購入可否だけを制限。係数・ゲーム状態は変更しない。
             # 休養・割り当て・イベントなどは同じ通常操作を実行する。
             with ExitStack() as stack:
@@ -124,13 +126,94 @@ def evaluate(*, max_days=60, scenarios=None, goal_preset='standard', customer_pr
                     stack.enter_context(patch('cat_cafe_sim.core.'+target, return_value='評価条件により購入を見送り'))
                 result = AutoPlayer(session, mode=mode, max_days=max_days).run()
             output['runs'][name] = dict(mode=mode, excluded_purchase_checks=list(excluded), **collect(session.core, result))
-            emit(f'比較終了: {name} / {result.reason} / {result.days}日 / 人気{session.core.management["popularity"]:g}')
+            emit(f'比較終了: seed={seed} / {name} / {result.reason} / {result.days}日 / 人気{session.core.management["popularity"]:g}')
     return output
+
+
+def distribution(values):
+    """達成なしは0日とせず、空の分布として扱う。"""
+    return dict(count=len(values), mean=mean(values) if values else None,
+                min=min(values) if values else None, max=max(values) if values else None)
+
+
+def summarize(reports):
+    """同じ初期条件のシード別結果を集計。未達成を達成日数に混ぜない。"""
+    names = list(reports[0]['runs'])
+    summary = {}
+    for name in names:
+        runs = [report['runs'][name] for report in reports]
+        completed = [run for run in runs if run['reason'] == 'completed']
+        reasons = {reason: sum(run['reason'] == reason for run in runs)
+                   for reason in sorted({run['reason'] for run in runs})}
+        stages = []
+        for index in range(1, 4):
+            cleared = [stage for run in runs for stage in run['stages']
+                       if stage['stage'] == index and stage['status'] == 'cleared']
+            expired = sum(stage['stage'] == index and stage['status'] == 'expired'
+                          for run in runs for stage in run['stages'])
+            stages.append(dict(stage=index, cleared=len(cleared), expired=expired,
+                               achievement_rate=len(cleared)/len(runs),
+                               resolved_days=distribution([row['resolved_day'] for row in cleared]),
+                               spare_days=distribution([row['spare_days'] for row in cleared])))
+        metric_names = ('days', 'illnesses', 'runaways', 'sick_cat_days', 'wait_timeouts',
+                        'queue_full_departures', 'equipment_cost', 'income', 'expenses',
+                        'final_funds', 'seats', 'mean_fatigue', 'mean_stress')
+        metrics = {key: distribution([run['metrics'][key] for run in runs]) for key in metric_names}
+        arrivals = sum(run['metrics']['arrivals'] for run in runs)
+        cat_days = sum(run['metrics']['cat_days'] for run in runs)
+        summary[name] = dict(trials=len(runs), completed=len(completed),
+                             completion_rate=len(completed)/len(runs), stop_reasons=reasons,
+                             completion_days=distribution([run['metrics']['days'] for run in completed]),
+                             stages=stages, metrics=metrics,
+                             wait_timeout_rate=sum(run['metrics']['wait_timeouts'] for run in runs)/arrivals if arrivals else None,
+                             sick_cat_day_rate=sum(run['metrics']['sick_cat_days'] for run in runs)/cat_days if cat_days else None)
+    paired = None
+    if 'clear' in names and 'fast' in names:
+        both = [report for report in reports
+                if all(report['runs'][name]['reason'] == 'completed' for name in ('clear', 'fast'))]
+        deltas = [r['runs']['fast']['metrics']['days']-r['runs']['clear']['metrics']['days'] for r in both]
+        paired = dict(both_completed=len(both), fast_earlier=sum(d < 0 for d in deltas),
+                      same_day=sum(d == 0 for d in deltas), clear_earlier=sum(d > 0 for d in deltas),
+                      fast_minus_clear_days=distribution(deltas),
+                      only_clear_completed=sum(r['runs']['clear']['reason'] == 'completed' and
+                                               r['runs']['fast']['reason'] != 'completed' for r in reports),
+                      only_fast_completed=sum(r['runs']['fast']['reason'] == 'completed' and
+                                              r['runs']['clear']['reason'] != 'completed' for r in reports))
+    return dict(by_scenario=summary, paired=paired)
+
+
+def combine_reports(reports):
+    """単一シードの詳細結果を、日次データを省いた比較資料にまとめる。"""
+    if not reports or len({r['seed'] for r in reports}) != len(reports):
+        raise ValueError('異なるシードの結果を1件以上指定してください。')
+    first = reports[0]
+    keys = ('conditions_sha256', 'max_days', 'goal_preset', 'customer_preset')
+    if any(any(r[key] != first[key] for key in keys) or
+           list(r['runs']) != list(first['runs']) for r in reports):
+        raise ValueError('同じ初期設定・方針・日数上限の結果を指定してください。')
+    output = {key: copy.deepcopy(first[key]) for key in (*keys, 'conditions')}
+    output.update(format_version=2, evaluated_at=datetime.now(timezone.utc).isoformat(),
+                  seeds=[r['seed'] for r in reports], detail_level='metrics_and_stages',
+                  evaluations=[dict(seed=r['seed'], evaluated_at=r['evaluated_at'],
+                                    runs={name: {key: copy.deepcopy(value) for key, value in run.items() if key != 'daily'}
+                                          for name, run in r['runs'].items()}) for r in reports],
+                  summary=summarize(reports))
+    return output
+
+
+def evaluate_seeds(seeds, **kwargs):
+    seeds = list(seeds)
+    if not seeds or any(type(seed) is not int or seed < 0 for seed in seeds) or len(set(seeds)) != len(seeds):
+        raise ValueError('重複のない0以上の整数シードを1件以上指定してください。')
+    return combine_reports([evaluate(seed=seed, **kwargs) for seed in seeds])
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='自動プレイ3方針と設備を外した条件を比較します。')
     parser.add_argument('--days', type=int, default=60)
+    seeds = parser.add_mutually_exclusive_group()
+    seeds.add_argument('--seed', type=int, default=0, help='単一シードの詳細評価（既定0）')
+    seeds.add_argument('--seeds', type=int, nargs='+', help='複数シードの集計評価。例: --seeds 0 1 2')
     parser.add_argument('--goal-preset', choices=GOAL_PRESETS, default='standard',
                         help='評価専用の人気目標と期限。通常ゲームの設定は変更しません。')
     parser.add_argument('--scenarios', nargs='+', choices=SCENARIOS,
@@ -141,9 +224,12 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.days<1:
         parser.error('日数は1以上で指定してください。')
-    result = evaluate(max_days=args.days, scenarios=args.scenarios, goal_preset=args.goal_preset,
-                      customer_preset=args.customer_preset,
-                      emit=lambda line: print(line, flush=True))
+    if args.seed < 0 or (args.seeds is not None and
+                         (any(seed < 0 for seed in args.seeds) or len(set(args.seeds)) != len(args.seeds))):
+        parser.error('シードは重複のない0以上の整数で指定してください。')
+    options = dict(max_days=args.days, scenarios=args.scenarios, goal_preset=args.goal_preset,
+                   customer_preset=args.customer_preset, emit=lambda line: print(line, flush=True))
+    result = evaluate_seeds(args.seeds, **options) if args.seeds is not None else evaluate(seed=args.seed, **options)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     print(f'集計結果: {args.output}')

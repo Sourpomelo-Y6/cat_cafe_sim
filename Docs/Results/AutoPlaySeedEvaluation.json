@@ -1,0 +1,2631 @@
+{
+  "conditions_sha256": "5fc30bdada6ee99d4fbf13681caebe7ac9ddee2ce29b4105ecbe1baf5ec684eb",
+  "max_days": 60,
+  "goal_preset": "standard",
+  "customer_preset": "standard",
+  "conditions": {
+    "visiting_cat": {
+      "cat_id": "visiting-cat-1",
+      "interactions_required": 3,
+      "candidate": {
+        "name": "ココ",
+        "cost": 200,
+        "personality": {
+          "type_preferences": {
+            "teaser": 1.2,
+            "ball": 1.3,
+            "plush": 0.8,
+            "tunnel": 1.4,
+            "pet": 0.2,
+            "brush": 0,
+            "voice": 1.4,
+            "presence": 1.8
+          },
+          "intensity_preferences": {
+            "gentle": 1.2,
+            "standard": 0.8,
+            "active": 0.5
+          },
+          "boredom_decay": 0.12,
+          "switch_affinity": -0.1
+        },
+        "trait": {
+          "id": "relaxed",
+          "name": "のんびり屋",
+          "service_stress": 1,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1.5,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        },
+        "features": [
+          "brown_tabby",
+          "short_hair"
+        ]
+      }
+    },
+    "regular_introduction": {
+      "cat_id": "regular-rescue-1",
+      "candidate": {
+        "name": "マロン",
+        "cost": 200,
+        "personality": {
+          "type_preferences": {
+            "teaser": 0.8,
+            "ball": 0.6,
+            "plush": 1.2,
+            "tunnel": 0.5,
+            "pet": 1.8,
+            "brush": 1.5,
+            "voice": 1.2,
+            "presence": 1.3
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.4
+          },
+          "boredom_decay": 0.08,
+          "switch_affinity": -0.2
+        },
+        "trait": {
+          "id": "relaxed",
+          "name": "のんびり屋",
+          "service_stress": 1,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1.5,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        },
+        "features": [
+          "orange_tabby",
+          "short_hair"
+        ]
+      }
+    },
+    "dispatch_trouble": {
+      "destination": {
+        "id": "mountain_lodge_visit",
+        "name": "山あいの宿への訪問",
+        "days": 3,
+        "reward": 650,
+        "max_fatigue": 20,
+        "required_trait": "outgoing",
+        "required_trait_name": "外出好き"
+      },
+      "base_probability": 0.15,
+      "stress_probability": 0.35,
+      "missing_days": 2,
+      "search_cost": 100,
+      "return_stress": 30
+    },
+    "pet_shop": {
+      "shop-1": {
+        "name": "チロ",
+        "personality": {
+          "type_preferences": {
+            "teaser": 1,
+            "ball": 1,
+            "plush": 1,
+            "tunnel": 1,
+            "pet": 1,
+            "brush": 1,
+            "voice": 1,
+            "presence": 1
+          },
+          "intensity_preferences": {
+            "gentle": 1,
+            "standard": 1,
+            "active": 1
+          },
+          "boredom_decay": 0.15,
+          "switch_affinity": 0
+        },
+        "cost": 400,
+        "features": [
+          "white",
+          "long_hair"
+        ],
+        "trait": {
+          "id": "relaxed",
+          "name": "のんびり屋",
+          "service_stress": 1,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1.5,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        }
+      },
+      "shop-2": {
+        "name": "レオ",
+        "personality": {
+          "type_preferences": {
+            "teaser": 0.8,
+            "ball": 0.6,
+            "plush": 1.2,
+            "tunnel": 0.5,
+            "pet": 1.8,
+            "brush": 1.5,
+            "voice": 1.2,
+            "presence": 1.3
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.4
+          },
+          "boredom_decay": 0.08,
+          "switch_affinity": -0.2
+        },
+        "cost": 450,
+        "features": [
+          "orange_tabby",
+          "short_hair"
+        ],
+        "trait": {
+          "id": "outgoing",
+          "name": "外出好き",
+          "service_stress": 1,
+          "service_fatigue": 1,
+          "rest_fatigue": 1,
+          "dispatch_reward": 1.25,
+          "return_stress": 10
+        }
+      },
+      "shop-3": {
+        "name": "ナナ",
+        "personality": {
+          "type_preferences": {
+            "teaser": 1.8,
+            "ball": 1.6,
+            "plush": 1.4,
+            "tunnel": 1.2,
+            "pet": 0.9,
+            "brush": 0.8,
+            "voice": 1,
+            "presence": 0.8
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.2
+          },
+          "boredom_decay": 0.15,
+          "switch_affinity": 0
+        },
+        "cost": 500,
+        "features": [
+          "black_white",
+          "short_hair"
+        ],
+        "trait": {
+          "id": "hospitality",
+          "name": "接客好き",
+          "service_stress": 0.5,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        }
+      }
+    },
+    "dispatch_introduction": {
+      "destination": "shopping_street_event",
+      "candidate": {
+        "name": "セナ",
+        "cost": 200,
+        "personality": {
+          "type_preferences": {
+            "teaser": 1.8,
+            "ball": 1.6,
+            "plush": 1.4,
+            "tunnel": 1.2,
+            "pet": 0.9,
+            "brush": 0.8,
+            "voice": 1,
+            "presence": 0.8
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.2
+          },
+          "boredom_decay": 0.15,
+          "switch_affinity": 0
+        },
+        "trait": {
+          "id": "hospitality",
+          "name": "接客好き",
+          "service_stress": 0.5,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        },
+        "features": [
+          "white",
+          "long_hair"
+        ]
+      },
+      "photo_studio": {
+        "destination": "cat_photo_studio",
+        "candidate": {
+          "name": "ルカ",
+          "cost": 250,
+          "personality": {
+            "type_preferences": {
+              "teaser": 0.8,
+              "ball": 0.6,
+              "plush": 1.2,
+              "tunnel": 0.5,
+              "pet": 1.8,
+              "brush": 1.5,
+              "voice": 1.2,
+              "presence": 1.3
+            },
+            "intensity_preferences": {
+              "gentle": 1.3,
+              "standard": 1,
+              "active": 0.4
+            },
+            "boredom_decay": 0.08,
+            "switch_affinity": -0.2
+          },
+          "trait": {
+            "id": "hospitality",
+            "name": "接客好き",
+            "service_stress": 0.5,
+            "service_fatigue": 1.25,
+            "rest_fatigue": 1,
+            "dispatch_reward": 1,
+            "return_stress": 0
+          },
+          "features": [
+            "white",
+            "short_hair"
+          ]
+        }
+      }
+    },
+    "housing": {
+      "initial_capacity": 6,
+      "capacity_bonus": 3,
+      "cost": 500,
+      "daily_cost": 20
+    },
+    "dispatch_unlocks": {
+      "shopping_street_event": {
+        "popularity": 120,
+        "returns": 1
+      },
+      "out_of_town_visit": {
+        "popularity": 150,
+        "returns": 3
+      },
+      "cat_exercise_class": {
+        "popularity": 120,
+        "returns": 1,
+        "destination": {
+          "id": "cat_exercise_class",
+          "name": "猫の運動教室",
+          "days": 2,
+          "reward": 300,
+          "max_fatigue": 40,
+          "required_trait": "hardy",
+          "required_trait_name": "体力自慢"
+        }
+      },
+      "quiet_reading_salon": {
+        "popularity": 120,
+        "returns": 1,
+        "destination": {
+          "id": "quiet_reading_salon",
+          "name": "静かな読書サロン",
+          "days": 2,
+          "reward": 300,
+          "max_fatigue": 40,
+          "required_trait": "relaxed",
+          "required_trait_name": "のんびり屋"
+        }
+      },
+      "cat_photo_studio": {
+        "popularity": 120,
+        "returns": 1,
+        "destination": {
+          "id": "cat_photo_studio",
+          "name": "猫の撮影スタジオ",
+          "days": 2,
+          "reward": 350,
+          "max_fatigue": 40,
+          "required_trait": "hospitality",
+          "required_trait_name": "接客好き",
+          "welcome": {
+            "feature": "white",
+            "specialization": "service",
+            "reward_bonus": 20,
+            "satisfaction_bonus": 0
+          }
+        }
+      },
+      "cat_product_trial": {
+        "popularity": 120,
+        "returns": 1,
+        "destination": {
+          "id": "cat_product_trial",
+          "name": "猫用品の体験会",
+          "days": 2,
+          "reward": 300,
+          "max_fatigue": 40,
+          "required_trait": "hardworking",
+          "required_trait_name": "働き者"
+        }
+      },
+      "small_art_museum": {
+        "stage": 2,
+        "destination": {
+          "id": "small_art_museum",
+          "name": "小さな美術館",
+          "days": 2,
+          "reward": 350,
+          "max_fatigue": 40,
+          "required_trait": "easygoing",
+          "required_trait_name": "マイペース",
+          "welcome": {
+            "feature": "long_hair",
+            "specialization": "dispatch",
+            "reward_bonus": 20,
+            "satisfaction_bonus": 0
+          }
+        }
+      }
+    },
+    "growth": {
+      "threshold": 20,
+      "service_xp": 1,
+      "rest_xp": 1,
+      "dispatch_xp": 1,
+      "service_stamina_refund": 0.1,
+      "rest_recovery_bonus": 5,
+      "dispatch_reward_multiplier": 1.1,
+      "mastery_threshold": 15,
+      "mastery_engagement_multiplier": 1.1,
+      "type_mastery_threshold": 30,
+      "type_mastery_engagement_multiplier": 1.05,
+      "second_type_mastery_threshold": 30,
+      "second_mastery_threshold": 30
+    },
+    "store_events": {
+      "probability": 0.4,
+      "festival_customer_tick": 3,
+      "trouble_cost": 50,
+      "trouble_seat_loss": 1,
+      "support_full_cost": 100,
+      "support_full_popularity": 5,
+      "support_small_cost": 50,
+      "support_small_popularity": 2,
+      "supply": {
+        "id": "care_supplies",
+        "name": "ケア用品",
+        "stress_relief": 20
+      }
+    },
+    "waiting_area": {
+      "cost": 800,
+      "queue_bonus": 1,
+      "wait_bonus": 2,
+      "daily_cost": 10
+    },
+    "operating_cost": {
+      "base_cost": 40,
+      "per_seat_cost": 10
+    },
+    "longhair_customer": {
+      "probability": 0.3,
+      "contact_count": 3,
+      "bonus": 120,
+      "popularity_bonus": 2
+    },
+    "contact_customer": {
+      "equipment": "grooming_brush",
+      "contact_count": 3,
+      "bonus": 160,
+      "popularity_bonus": 3,
+      "weekdays": [
+        6
+      ]
+    },
+    "play_customer": {
+      "equipment": "cat_tower",
+      "play_count": 4,
+      "bonus": 180,
+      "popularity_bonus": 4,
+      "weekdays": [
+        1,
+        3,
+        5
+      ],
+      "quiet_weekdays": [
+        0,
+        2,
+        4
+      ]
+    },
+    "quiet_customer": {
+      "equipment": "quiet_space",
+      "quiet_count": 3,
+      "bonus": 150,
+      "popularity_bonus": 3
+    },
+    "vip_customer": {
+      "feature": "calico",
+      "connect_count": 1,
+      "open_up_count": 1,
+      "simultaneous_count": 1,
+      "bonus": 400,
+      "popularity_bonus": 10
+    },
+    "reservation": {
+      "feature": "long_hair",
+      "open_up_count": 1,
+      "arrival_tick": 0,
+      "bonus": 200,
+      "popularity_bonus": 5
+    },
+    "customer_trust": {
+      "warning_suspensions": 2,
+      "recovery_score": 25,
+      "popularity_loss": 10
+    },
+    "customer_satisfaction": {
+      "satisfied_score": 2,
+      "dissatisfied_score": 0,
+      "gauge_target": 50,
+      "satisfied_bonus": 20,
+      "dissatisfied_discontent_gain": 25
+    },
+    "customer_discontent": {
+      "waiting_gain": 25,
+      "advanced_failure_gain": 10,
+      "good_service_recovery": 25,
+      "threshold": 100,
+      "suspension_days": 7,
+      "return_score": 50
+    },
+    "customer_loyalty": {
+      "gain": 25,
+      "threshold": 100
+    },
+    "advanced_customers": {
+      "feature": "white",
+      "connect_count": 1,
+      "bonus": 100
+    },
+    "objective": "popularity",
+    "patron": {
+      "name": "地域の有力者",
+      "target": 100,
+      "gain": 25,
+      "destination": {
+        "id": "patron_visit",
+        "name": "地域の有力者への訪問",
+        "days": 2,
+        "reward": 200,
+        "max_fatigue": 40,
+        "welcome": {
+          "feature": "white",
+          "specialization": "service",
+          "reward_bonus": 20,
+          "satisfaction_bonus": 5
+        }
+      }
+    },
+    "bond": {
+      "target": 6,
+      "affinity": 80
+    },
+    "intake_request": {
+      "day": 4,
+      "cat_id": "request-cat-1",
+      "candidate": {
+        "name": "ナナ",
+        "cost": 200,
+        "personality": {
+          "type_preferences": {
+            "teaser": 0.8,
+            "ball": 0.6,
+            "plush": 1.2,
+            "tunnel": 0.5,
+            "pet": 1.8,
+            "brush": 1.5,
+            "voice": 1.2,
+            "presence": 1.3
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.4
+          },
+          "boredom_decay": 0.08,
+          "switch_affinity": -0.2
+        },
+        "trait": {
+          "id": "relaxed",
+          "name": "のんびり屋",
+          "service_stress": 1,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1.5,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        },
+        "features": [
+          "black_white",
+          "long_hair"
+        ]
+      }
+    },
+    "weekdays": {
+      "start_weekday": 0,
+      "patterns": [
+        [
+          0,
+          2,
+          4,
+          6
+        ],
+        [
+          1,
+          3,
+          5,
+          6
+        ]
+      ],
+      "popular_customer_count": 4
+    },
+    "seat_count": 2,
+    "profiles": {
+      "format_version": 2,
+      "cats": {
+        "cat-mike": {
+          "name": "ミケ",
+          "personality": {
+            "type_preferences": {
+              "teaser": 0.8,
+              "ball": 0.6,
+              "plush": 1.2,
+              "tunnel": 0.5,
+              "pet": 1.8,
+              "brush": 1.5,
+              "voice": 1.2,
+              "presence": 1.3
+            },
+            "intensity_preferences": {
+              "gentle": 1.3,
+              "standard": 1,
+              "active": 0.4
+            },
+            "boredom_decay": 0.08,
+            "switch_affinity": -0.2
+          }
+        },
+        "cat-tama": {
+          "name": "タマ",
+          "personality": {
+            "type_preferences": {
+              "teaser": 1.5,
+              "ball": 1.7,
+              "plush": 0.8,
+              "tunnel": 1.8,
+              "pet": 0.7,
+              "brush": 0.5,
+              "voice": 0.8,
+              "presence": 0.4
+            },
+            "intensity_preferences": {
+              "gentle": 0.8,
+              "standard": 1,
+              "active": 1.3
+            },
+            "boredom_decay": 0.2,
+            "switch_affinity": 0.2
+          }
+        },
+        "cat-sora": {
+          "name": "ソラ",
+          "personality": {
+            "type_preferences": {
+              "teaser": 1.2,
+              "ball": 1.3,
+              "plush": 0.8,
+              "tunnel": 1.4,
+              "pet": 0.2,
+              "brush": 0,
+              "voice": 1.4,
+              "presence": 1.8
+            },
+            "intensity_preferences": {
+              "gentle": 1.2,
+              "standard": 0.8,
+              "active": 0.5
+            },
+            "boredom_decay": 0.12,
+            "switch_affinity": -0.1
+          }
+        },
+        "cat-kohaku": {
+          "name": "コハク",
+          "personality": {
+            "type_preferences": {
+              "teaser": 1.8,
+              "ball": 1.6,
+              "plush": 1.4,
+              "tunnel": 1.2,
+              "pet": 0.9,
+              "brush": 0.8,
+              "voice": 1,
+              "presence": 0.8
+            },
+            "intensity_preferences": {
+              "gentle": 1.3,
+              "standard": 1,
+              "active": 0.2
+            },
+            "boredom_decay": 0.15,
+            "switch_affinity": 0
+          }
+        },
+        "cat-mugi": {
+          "name": "ムギ",
+          "personality": {
+            "type_preferences": {
+              "teaser": 1,
+              "ball": 1,
+              "plush": 1,
+              "tunnel": 1,
+              "pet": 1,
+              "brush": 1,
+              "voice": 1,
+              "presence": 1
+            },
+            "intensity_preferences": {
+              "gentle": 1,
+              "standard": 1,
+              "active": 1
+            },
+            "boredom_decay": 0.15,
+            "switch_affinity": 0
+          }
+        }
+      },
+      "pairs": [],
+      "applied": {}
+    },
+    "management": {
+      "starting_funds": 1000,
+      "starting_popularity": 100,
+      "stress_per_service_tick": 1,
+      "rest_recovery": 20,
+      "player_relief": 5,
+      "player_stress": 5,
+      "runaway_threshold": 80,
+      "popularity_loss": 20,
+      "missing_days": 2,
+      "return_stress": 20,
+      "kitten_probability": 0.25,
+      "kitten_cost": 250
+    },
+    "goal": {
+      "days": 20,
+      "target": 250,
+      "cap": 650,
+      "gain_per_success": 5,
+      "stages": [
+        {
+          "days": 20,
+          "target": 450
+        },
+        {
+          "days": 25,
+          "target": 650
+        }
+      ]
+    },
+    "traits": {
+      "cat-mike": {
+        "id": "hospitality",
+        "name": "接客好き",
+        "service_stress": 0.5,
+        "service_fatigue": 1.25,
+        "rest_fatigue": 1,
+        "dispatch_reward": 1,
+        "return_stress": 0
+      },
+      "cat-tama": {
+        "id": "outgoing",
+        "name": "外出好き",
+        "service_stress": 1,
+        "service_fatigue": 1,
+        "rest_fatigue": 1,
+        "dispatch_reward": 1.25,
+        "return_stress": 10
+      },
+      "cat-kohaku": {
+        "id": "relaxed",
+        "name": "のんびり屋",
+        "service_stress": 1,
+        "service_fatigue": 1.25,
+        "rest_fatigue": 1.5,
+        "dispatch_reward": 1,
+        "return_stress": 0
+      }
+    },
+    "features": {
+      "cat-mike": [
+        "calico",
+        "short_hair"
+      ],
+      "cat-tama": [
+        "black_white",
+        "short_hair"
+      ],
+      "cat-sora": [
+        "white",
+        "long_hair"
+      ],
+      "cat-kohaku": [
+        "orange_tabby",
+        "long_hair"
+      ],
+      "cat-mugi": [
+        "brown_tabby",
+        "short_hair"
+      ]
+    },
+    "preferences": {
+      "pool": [
+        "white",
+        "black",
+        "calico",
+        "orange_tabby",
+        "brown_tabby",
+        "black_white",
+        "short_hair",
+        "long_hair"
+      ],
+      "tension_multiplier": 1.25
+    }
+  },
+  "format_version": 2,
+  "evaluated_at": "2026-10-01T22:33:11.112864+00:00",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "detail_level": "metrics_and_stages",
+  "evaluations": [
+    {
+      "seed": 0,
+      "evaluated_at": "2026-10-01T22:26:35.227793+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 40,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 54690,
+            "expenses": 6540,
+            "final_funds": 49150,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 107,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 200,
+            "mean_fatigue": 19.54125,
+            "mean_stress": 27.0125,
+            "max_fatigue": 73.75,
+            "max_stress": 72,
+            "equipment_cost": 3600,
+            "seats": 3,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2940,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 900,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 232,
+            "available_seat_ticks": 4320,
+            "occupied_seat_ticks": 2796,
+            "empty_seat_ticks": 1524,
+            "seat_utilization": 0.6472222222222223,
+            "queue_full_departures": 4,
+            "wait_timeouts": 76,
+            "understaffed_days": 21
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 11,
+              "spare_days": 9
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 12,
+              "deadline": 31,
+              "resolved_day": 24,
+              "spare_days": 7
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 25,
+              "deadline": 49,
+              "resolved_day": 40,
+              "spare_days": 9
+            }
+          ]
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 39,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 51270,
+            "expenses": 9530,
+            "final_funds": 42740,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 107,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 195,
+            "mean_fatigue": 18.48205128205128,
+            "mean_stress": 25.46153846153846,
+            "max_fatigue": 73.75,
+            "max_stress": 67,
+            "equipment_cost": 6200,
+            "seats": 5,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3330,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 2500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1500,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 249,
+            "available_seat_ticks": 6280,
+            "occupied_seat_ticks": 2602,
+            "empty_seat_ticks": 3678,
+            "seat_utilization": 0.4143312101910828,
+            "queue_full_departures": 10,
+            "wait_timeouts": 98,
+            "understaffed_days": 30
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 11,
+              "spare_days": 9
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 12,
+              "deadline": 31,
+              "resolved_day": 26,
+              "spare_days": 5
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 27,
+              "deadline": 51,
+              "resolved_day": 39,
+              "spare_days": 12
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "evaluated_at": "2026-10-01T22:26:35.227880+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "reason": "blocked",
+          "message": "店舗イベントへの対応を選んでください。",
+          "metrics": {
+            "days": 3,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 2720,
+            "expenses": 1180,
+            "final_funds": 2540,
+            "final_popularity": 145,
+            "healthy_rest_cat_days": 6,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 15,
+            "mean_fatigue": 13.783333333333333,
+            "mean_stress": 12.033333333333333,
+            "max_fatigue": 35,
+            "max_stress": 35,
+            "equipment_cost": 1000,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 180,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 400,
+              "seat_equipment_expenses": 600,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 9,
+            "available_seat_ticks": 240,
+            "occupied_seat_ticks": 159,
+            "empty_seat_ticks": 81,
+            "seat_utilization": 0.6625,
+            "queue_full_departures": 0,
+            "wait_timeouts": 0,
+            "understaffed_days": 0
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "active",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": null,
+              "spare_days": null
+            }
+          ]
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "reason": "blocked",
+          "message": "店舗イベントへの対応を選んでください。",
+          "metrics": {
+            "days": 3,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 2720,
+            "expenses": 2000,
+            "final_funds": 1720,
+            "final_popularity": 145,
+            "healthy_rest_cat_days": 6,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 15,
+            "mean_fatigue": 13.783333333333333,
+            "mean_stress": 12.033333333333333,
+            "max_fatigue": 35,
+            "max_stress": 35,
+            "equipment_cost": 1800,
+            "seats": 3,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 200,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 500,
+              "equipment_expenses": 400,
+              "seat_equipment_expenses": 900,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 9,
+            "available_seat_ticks": 320,
+            "occupied_seat_ticks": 159,
+            "empty_seat_ticks": 161,
+            "seat_utilization": 0.496875,
+            "queue_full_departures": 0,
+            "wait_timeouts": 0,
+            "understaffed_days": 0
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "active",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": null,
+              "spare_days": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "evaluated_at": "2026-10-01T22:26:35.228103+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 40,
+            "day_offs": 5,
+            "starting_funds": 1000,
+            "income": 54240,
+            "expenses": 8110,
+            "final_funds": 47130,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 107,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 200,
+            "mean_fatigue": 19.06875,
+            "mean_stress": 26.6175,
+            "max_fatigue": 73.75,
+            "max_stress": 77,
+            "equipment_cost": 4900,
+            "seats": 4,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3210,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 1500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1200,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 229,
+            "available_seat_ticks": 4880,
+            "occupied_seat_ticks": 2699,
+            "empty_seat_ticks": 2181,
+            "seat_utilization": 0.5530737704918033,
+            "queue_full_departures": 9,
+            "wait_timeouts": 71,
+            "understaffed_days": 27
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 12,
+              "spare_days": 8
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 13,
+              "deadline": 32,
+              "resolved_day": 27,
+              "spare_days": 5
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 28,
+              "deadline": 52,
+              "resolved_day": 40,
+              "spare_days": 12
+            }
+          ]
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 43,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 56730,
+            "expenses": 9900,
+            "final_funds": 47830,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 113,
+            "sick_cat_days": 2,
+            "illnesses": 1,
+            "runaways": 0,
+            "cat_days": 215,
+            "mean_fatigue": 20.182558139534883,
+            "mean_stress": 26.209302325581394,
+            "max_fatigue": 83.75,
+            "max_stress": 74,
+            "equipment_cost": 6200,
+            "seats": 5,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3700,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 2500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1500,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 260,
+            "available_seat_ticks": 6720,
+            "occupied_seat_ticks": 2919,
+            "empty_seat_ticks": 3801,
+            "seat_utilization": 0.434375,
+            "queue_full_departures": 9,
+            "wait_timeouts": 95,
+            "understaffed_days": 31
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 12,
+              "spare_days": 8
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 13,
+              "deadline": 32,
+              "resolved_day": 29,
+              "spare_days": 3
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 30,
+              "deadline": 54,
+              "resolved_day": 43,
+              "spare_days": 11
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seed": 3,
+      "evaluated_at": "2026-10-01T22:26:35.228727+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 44,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 56890,
+            "expenses": 6670,
+            "final_funds": 51220,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 121,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 220,
+            "mean_fatigue": 18.9125,
+            "mean_stress": 30.89090909090909,
+            "max_fatigue": 66.25,
+            "max_stress": 78,
+            "equipment_cost": 3600,
+            "seats": 3,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3070,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 900,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 243,
+            "available_seat_ticks": 5040,
+            "occupied_seat_ticks": 2945,
+            "empty_seat_ticks": 2095,
+            "seat_utilization": 0.5843253968253969,
+            "queue_full_departures": 1,
+            "wait_timeouts": 85,
+            "understaffed_days": 26
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 12,
+              "spare_days": 8
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 13,
+              "deadline": 32,
+              "resolved_day": 32,
+              "spare_days": 0
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 33,
+              "deadline": 57,
+              "resolved_day": 44,
+              "spare_days": 13
+            }
+          ]
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 42,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 56460,
+            "expenses": 9610,
+            "final_funds": 47850,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 114,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 210,
+            "mean_fatigue": 18.891666666666666,
+            "mean_stress": 27.295238095238094,
+            "max_fatigue": 59,
+            "max_stress": 72,
+            "equipment_cost": 6200,
+            "seats": 5,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3410,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 2500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1500,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 257,
+            "available_seat_ticks": 6360,
+            "occupied_seat_ticks": 2870,
+            "empty_seat_ticks": 3490,
+            "seat_utilization": 0.45125786163522014,
+            "queue_full_departures": 8,
+            "wait_timeouts": 94,
+            "understaffed_days": 32
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 12,
+              "spare_days": 8
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 13,
+              "deadline": 32,
+              "resolved_day": 29,
+              "spare_days": 3
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 30,
+              "deadline": 54,
+              "resolved_day": 42,
+              "spare_days": 12
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seed": 4,
+      "evaluated_at": "2026-10-01T22:26:38.007468+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 41,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 54990,
+            "expenses": 7960,
+            "final_funds": 48030,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 110,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 205,
+            "mean_fatigue": 18.974390243902437,
+            "mean_stress": 27.692682926829267,
+            "max_fatigue": 78.75,
+            "max_stress": 77,
+            "equipment_cost": 4900,
+            "seats": 4,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3060,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 1500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1200,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 238,
+            "available_seat_ticks": 5040,
+            "occupied_seat_ticks": 2741,
+            "empty_seat_ticks": 2299,
+            "seat_utilization": 0.5438492063492063,
+            "queue_full_departures": 7,
+            "wait_timeouts": 83,
+            "understaffed_days": 26
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 11,
+              "spare_days": 9
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 12,
+              "deadline": 31,
+              "resolved_day": 28,
+              "spare_days": 3
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 29,
+              "deadline": 53,
+              "resolved_day": 41,
+              "spare_days": 12
+            }
+          ]
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 39,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 52610,
+            "expenses": 9380,
+            "final_funds": 44230,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 105,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 195,
+            "mean_fatigue": 19.078205128205127,
+            "mean_stress": 26.787179487179486,
+            "max_fatigue": 68.75,
+            "max_stress": 72,
+            "equipment_cost": 6200,
+            "seats": 5,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3180,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 2500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1500,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 242,
+            "available_seat_ticks": 5800,
+            "occupied_seat_ticks": 2659,
+            "empty_seat_ticks": 3141,
+            "seat_utilization": 0.458448275862069,
+            "queue_full_departures": 10,
+            "wait_timeouts": 87,
+            "understaffed_days": 28
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 11,
+              "spare_days": 9
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 12,
+              "deadline": 31,
+              "resolved_day": 26,
+              "spare_days": 5
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 27,
+              "deadline": 51,
+              "resolved_day": 39,
+              "spare_days": 12
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seed": 5,
+      "evaluated_at": "2026-10-01T22:29:35.497967+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "reason": "blocked",
+          "message": "店舗イベントへの対応を選んでください。",
+          "metrics": {
+            "days": 7,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 7960,
+            "expenses": 2230,
+            "final_funds": 6730,
+            "final_popularity": 205,
+            "healthy_rest_cat_days": 13,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 35,
+            "mean_fatigue": 18.17142857142857,
+            "mean_stress": 16.428571428571427,
+            "max_fatigue": 53,
+            "max_stress": 68,
+            "equipment_cost": 1800,
+            "seats": 3,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 430,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 500,
+              "equipment_expenses": 400,
+              "seat_equipment_expenses": 900,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 23,
+            "available_seat_ticks": 600,
+            "occupied_seat_ticks": 404,
+            "empty_seat_ticks": 196,
+            "seat_utilization": 0.6733333333333333,
+            "queue_full_departures": 0,
+            "wait_timeouts": 0,
+            "understaffed_days": 0
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "active",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": null,
+              "spare_days": null
+            }
+          ]
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "reason": "blocked",
+          "message": "店舗イベントへの対応を選んでください。",
+          "metrics": {
+            "days": 7,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 7960,
+            "expenses": 2280,
+            "final_funds": 6680,
+            "final_popularity": 205,
+            "healthy_rest_cat_days": 13,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 35,
+            "mean_fatigue": 18.17142857142857,
+            "mean_stress": 16.428571428571427,
+            "max_fatigue": 53,
+            "max_stress": 68,
+            "equipment_cost": 1800,
+            "seats": 3,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 480,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 500,
+              "equipment_expenses": 400,
+              "seat_equipment_expenses": 900,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 23,
+            "available_seat_ticks": 800,
+            "occupied_seat_ticks": 404,
+            "empty_seat_ticks": 396,
+            "seat_utilization": 0.505,
+            "queue_full_departures": 0,
+            "wait_timeouts": 0,
+            "understaffed_days": 0
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "active",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": null,
+              "spare_days": null
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seed": 6,
+      "evaluated_at": "2026-10-01T22:29:37.981967+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 40,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 52990,
+            "expenses": 6340,
+            "final_funds": 47650,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 104,
+            "sick_cat_days": 2,
+            "illnesses": 1,
+            "runaways": 0,
+            "cat_days": 200,
+            "mean_fatigue": 18.055,
+            "mean_stress": 26.855,
+            "max_fatigue": 76.25,
+            "max_stress": 75,
+            "equipment_cost": 3600,
+            "seats": 3,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2740,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 900,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 223,
+            "available_seat_ticks": 4320,
+            "occupied_seat_ticks": 2650,
+            "empty_seat_ticks": 1670,
+            "seat_utilization": 0.6134259259259259,
+            "queue_full_departures": 5,
+            "wait_timeouts": 73,
+            "understaffed_days": 20
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 12,
+              "spare_days": 8
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 13,
+              "deadline": 32,
+              "resolved_day": 27,
+              "spare_days": 5
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 28,
+              "deadline": 52,
+              "resolved_day": 40,
+              "spare_days": 12
+            }
+          ]
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 40,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 52520,
+            "expenses": 9390,
+            "final_funds": 44130,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 111,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 200,
+            "mean_fatigue": 18.63125,
+            "mean_stress": 25.3475,
+            "max_fatigue": 75.0,
+            "max_stress": 69,
+            "equipment_cost": 6200,
+            "seats": 5,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3190,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 2500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1500,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 248,
+            "available_seat_ticks": 6360,
+            "occupied_seat_ticks": 2726,
+            "empty_seat_ticks": 3634,
+            "seat_utilization": 0.4286163522012579,
+            "queue_full_departures": 9,
+            "wait_timeouts": 92,
+            "understaffed_days": 32
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 12,
+              "spare_days": 8
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 13,
+              "deadline": 32,
+              "resolved_day": 28,
+              "spare_days": 4
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 29,
+              "deadline": 53,
+              "resolved_day": 40,
+              "spare_days": 13
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seed": 7,
+      "evaluated_at": "2026-10-01T22:29:43.102376+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 40,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 54900,
+            "expenses": 8040,
+            "final_funds": 47860,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 110,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 200,
+            "mean_fatigue": 18.42375,
+            "mean_stress": 27.6025,
+            "max_fatigue": 71.25,
+            "max_stress": 75,
+            "equipment_cost": 4900,
+            "seats": 4,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3140,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 1500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1200,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 243,
+            "available_seat_ticks": 4920,
+            "occupied_seat_ticks": 2738,
+            "empty_seat_ticks": 2182,
+            "seat_utilization": 0.5565040650406504,
+            "queue_full_departures": 11,
+            "wait_timeouts": 83,
+            "understaffed_days": 26
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 10,
+              "spare_days": 10
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 11,
+              "deadline": 30,
+              "resolved_day": 27,
+              "spare_days": 3
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 28,
+              "deadline": 52,
+              "resolved_day": 40,
+              "spare_days": 12
+            }
+          ]
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 39,
+            "day_offs": 5,
+            "starting_funds": 1000,
+            "income": 52120,
+            "expenses": 9490,
+            "final_funds": 43630,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 105,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 195,
+            "mean_fatigue": 18.362820512820512,
+            "mean_stress": 27.466666666666665,
+            "max_fatigue": 68,
+            "max_stress": 77,
+            "equipment_cost": 6200,
+            "seats": 5,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3290,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 2500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1500,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 231,
+            "available_seat_ticks": 5520,
+            "occupied_seat_ticks": 2637,
+            "empty_seat_ticks": 2883,
+            "seat_utilization": 0.4777173913043478,
+            "queue_full_departures": 11,
+            "wait_timeouts": 78,
+            "understaffed_days": 28
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 10,
+              "spare_days": 10
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 11,
+              "deadline": 30,
+              "resolved_day": 26,
+              "spare_days": 4
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 27,
+              "deadline": 51,
+              "resolved_day": 39,
+              "spare_days": 12
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seed": 8,
+      "evaluated_at": "2026-10-01T22:29:44.819813+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 39,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 51600,
+            "expenses": 7890,
+            "final_funds": 44710,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 105,
+            "sick_cat_days": 2,
+            "illnesses": 1,
+            "runaways": 0,
+            "cat_days": 195,
+            "mean_fatigue": 18.546153846153846,
+            "mean_stress": 27.97179487179487,
+            "max_fatigue": 72.5,
+            "max_stress": 74,
+            "equipment_cost": 4900,
+            "seats": 4,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2990,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 1500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1200,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 241,
+            "available_seat_ticks": 5040,
+            "occupied_seat_ticks": 2656,
+            "empty_seat_ticks": 2384,
+            "seat_utilization": 0.526984126984127,
+            "queue_full_departures": 10,
+            "wait_timeouts": 86,
+            "understaffed_days": 27
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 11,
+              "spare_days": 9
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 12,
+              "deadline": 31,
+              "resolved_day": 28,
+              "spare_days": 3
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 29,
+              "deadline": 53,
+              "resolved_day": 39,
+              "spare_days": 14
+            }
+          ]
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 38,
+            "day_offs": 4,
+            "starting_funds": 1000,
+            "income": 51140,
+            "expenses": 9340,
+            "final_funds": 42800,
+            "final_popularity": 650,
+            "healthy_rest_cat_days": 100,
+            "sick_cat_days": 2,
+            "illnesses": 1,
+            "runaways": 0,
+            "cat_days": 190,
+            "mean_fatigue": 18.826315789473686,
+            "mean_stress": 25.647368421052633,
+            "max_fatigue": 75.0,
+            "max_stress": 78,
+            "equipment_cost": 6200,
+            "seats": 5,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 3140,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 2500,
+              "equipment_expenses": 2200,
+              "seat_equipment_expenses": 1500,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 236,
+            "available_seat_ticks": 5400,
+            "occupied_seat_ticks": 2600,
+            "empty_seat_ticks": 2800,
+            "seat_utilization": 0.48148148148148145,
+            "queue_full_departures": 12,
+            "wait_timeouts": 81,
+            "understaffed_days": 29
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "cleared",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": 11,
+              "spare_days": 9
+            },
+            {
+              "stage": 2,
+              "target": 450,
+              "status": "cleared",
+              "started_day": 12,
+              "deadline": 31,
+              "resolved_day": 26,
+              "spare_days": 5
+            },
+            {
+              "stage": 3,
+              "target": 650,
+              "status": "cleared",
+              "started_day": 27,
+              "deadline": 51,
+              "resolved_day": 38,
+              "spare_days": 13
+            }
+          ]
+        }
+      }
+    },
+    {
+      "seed": 9,
+      "evaluated_at": "2026-10-01T22:29:59.538096+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "reason": "blocked",
+          "message": "店舗イベントへの対応を選んでください。",
+          "metrics": {
+            "days": 7,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 7510,
+            "expenses": 2280,
+            "final_funds": 6230,
+            "final_popularity": 185,
+            "healthy_rest_cat_days": 13,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 35,
+            "mean_fatigue": 17.178571428571427,
+            "mean_stress": 14.942857142857143,
+            "max_fatigue": 48.75,
+            "max_stress": 40,
+            "equipment_cost": 1800,
+            "seats": 3,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 480,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 500,
+              "equipment_expenses": 400,
+              "seat_equipment_expenses": 900,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 24,
+            "available_seat_ticks": 600,
+            "occupied_seat_ticks": 402,
+            "empty_seat_ticks": 198,
+            "seat_utilization": 0.67,
+            "queue_full_departures": 0,
+            "wait_timeouts": 1,
+            "understaffed_days": 0
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "active",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": null,
+              "spare_days": null
+            }
+          ]
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "reason": "blocked",
+          "message": "店舗イベントへの対応を選んでください。",
+          "metrics": {
+            "days": 7,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 7510,
+            "expenses": 2330,
+            "final_funds": 6180,
+            "final_popularity": 185,
+            "healthy_rest_cat_days": 13,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 35,
+            "mean_fatigue": 17.178571428571427,
+            "mean_stress": 14.942857142857143,
+            "max_fatigue": 48.75,
+            "max_stress": 40,
+            "equipment_cost": 1800,
+            "seats": 3,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 530,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 500,
+              "equipment_expenses": 400,
+              "seat_equipment_expenses": 900,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 24,
+            "available_seat_ticks": 800,
+            "occupied_seat_ticks": 402,
+            "empty_seat_ticks": 398,
+            "seat_utilization": 0.5025,
+            "queue_full_departures": 0,
+            "wait_timeouts": 1,
+            "understaffed_days": 1
+          },
+          "stages": [
+            {
+              "stage": 1,
+              "target": 250,
+              "status": "active",
+              "started_day": 1,
+              "deadline": 20,
+              "resolved_day": null,
+              "spare_days": null
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "summary": {
+    "by_scenario": {
+      "clear": {
+        "trials": 10,
+        "completed": 7,
+        "completion_rate": 0.7,
+        "stop_reasons": {
+          "blocked": 3,
+          "completed": 7
+        },
+        "completion_days": {
+          "count": 7,
+          "mean": 40.57142857142857,
+          "min": 39,
+          "max": 44
+        },
+        "stages": [
+          {
+            "stage": 1,
+            "cleared": 7,
+            "expired": 0,
+            "achievement_rate": 0.7,
+            "resolved_days": {
+              "count": 7,
+              "mean": 11.285714285714286,
+              "min": 10,
+              "max": 12
+            },
+            "spare_days": {
+              "count": 7,
+              "mean": 8.714285714285714,
+              "min": 8,
+              "max": 10
+            }
+          },
+          {
+            "stage": 2,
+            "cleared": 7,
+            "expired": 0,
+            "achievement_rate": 0.7,
+            "resolved_days": {
+              "count": 7,
+              "mean": 27.571428571428573,
+              "min": 24,
+              "max": 32
+            },
+            "spare_days": {
+              "count": 7,
+              "mean": 3.7142857142857144,
+              "min": 0,
+              "max": 7
+            }
+          },
+          {
+            "stage": 3,
+            "cleared": 7,
+            "expired": 0,
+            "achievement_rate": 0.7,
+            "resolved_days": {
+              "count": 7,
+              "mean": 40.57142857142857,
+              "min": 39,
+              "max": 44
+            },
+            "spare_days": {
+              "count": 7,
+              "mean": 12,
+              "min": 9,
+              "max": 14
+            }
+          }
+        ],
+        "metrics": {
+          "days": {
+            "count": 10,
+            "mean": 30.1,
+            "min": 3,
+            "max": 44
+          },
+          "illnesses": {
+            "count": 10,
+            "mean": 0.2,
+            "min": 0,
+            "max": 1
+          },
+          "runaways": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sick_cat_days": {
+            "count": 10,
+            "mean": 0.4,
+            "min": 0,
+            "max": 2
+          },
+          "wait_timeouts": {
+            "count": 10,
+            "mean": 55.8,
+            "min": 0,
+            "max": 86
+          },
+          "queue_full_departures": {
+            "count": 10,
+            "mean": 4.7,
+            "min": 0,
+            "max": 11
+          },
+          "equipment_cost": {
+            "count": 10,
+            "mean": 3500,
+            "min": 1000,
+            "max": 4900
+          },
+          "income": {
+            "count": 10,
+            "mean": 39849,
+            "min": 2720,
+            "max": 56890
+          },
+          "expenses": {
+            "count": 10,
+            "mean": 5724,
+            "min": 1180,
+            "max": 8110
+          },
+          "final_funds": {
+            "count": 10,
+            "mean": 35125,
+            "min": 2540,
+            "max": 51220
+          },
+          "seats": {
+            "count": 10,
+            "mean": 3.3,
+            "min": 2,
+            "max": 4
+          },
+          "mean_fatigue": {
+            "count": 10,
+            "mean": 18.06551274233896,
+            "min": 13.783333333333333,
+            "max": 19.54125
+          },
+          "mean_stress": {
+            "count": 10,
+            "mean": 23.804764879429513,
+            "min": 12.033333333333333,
+            "max": 30.89090909090909
+          }
+        },
+        "wait_timeout_rate": 0.32727272727272727,
+        "sick_cat_day_rate": 0.0026578073089701
+      },
+      "fast": {
+        "trials": 10,
+        "completed": 7,
+        "completion_rate": 0.7,
+        "stop_reasons": {
+          "blocked": 3,
+          "completed": 7
+        },
+        "completion_days": {
+          "count": 7,
+          "mean": 40,
+          "min": 38,
+          "max": 43
+        },
+        "stages": [
+          {
+            "stage": 1,
+            "cleared": 7,
+            "expired": 0,
+            "achievement_rate": 0.7,
+            "resolved_days": {
+              "count": 7,
+              "mean": 11.285714285714286,
+              "min": 10,
+              "max": 12
+            },
+            "spare_days": {
+              "count": 7,
+              "mean": 8.714285714285714,
+              "min": 8,
+              "max": 10
+            }
+          },
+          {
+            "stage": 2,
+            "cleared": 7,
+            "expired": 0,
+            "achievement_rate": 0.7,
+            "resolved_days": {
+              "count": 7,
+              "mean": 27.142857142857142,
+              "min": 26,
+              "max": 29
+            },
+            "spare_days": {
+              "count": 7,
+              "mean": 4.142857142857143,
+              "min": 3,
+              "max": 5
+            }
+          },
+          {
+            "stage": 3,
+            "cleared": 7,
+            "expired": 0,
+            "achievement_rate": 0.7,
+            "resolved_days": {
+              "count": 7,
+              "mean": 40,
+              "min": 38,
+              "max": 43
+            },
+            "spare_days": {
+              "count": 7,
+              "mean": 12.142857142857142,
+              "min": 11,
+              "max": 13
+            }
+          }
+        ],
+        "metrics": {
+          "days": {
+            "count": 10,
+            "mean": 29.7,
+            "min": 3,
+            "max": 43
+          },
+          "illnesses": {
+            "count": 10,
+            "mean": 0.2,
+            "min": 0,
+            "max": 1
+          },
+          "runaways": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sick_cat_days": {
+            "count": 10,
+            "mean": 0.4,
+            "min": 0,
+            "max": 2
+          },
+          "wait_timeouts": {
+            "count": 10,
+            "mean": 62.6,
+            "min": 0,
+            "max": 98
+          },
+          "queue_full_departures": {
+            "count": 10,
+            "mean": 6.9,
+            "min": 0,
+            "max": 12
+          },
+          "equipment_cost": {
+            "count": 10,
+            "mean": 4880,
+            "min": 1800,
+            "max": 6200
+          },
+          "income": {
+            "count": 10,
+            "mean": 39104,
+            "min": 2720,
+            "max": 56730
+          },
+          "expenses": {
+            "count": 10,
+            "mean": 7325,
+            "min": 2000,
+            "max": 9900
+          },
+          "final_funds": {
+            "count": 10,
+            "mean": 32779,
+            "min": 1720,
+            "max": 47850
+          },
+          "seats": {
+            "count": 10,
+            "mean": 4.4,
+            "min": 3,
+            "max": 5
+          },
+          "mean_fatigue": {
+            "count": 10,
+            "mean": 18.15882008520855,
+            "min": 13.783333333333333,
+            "max": 20.182558139534883
+          },
+          "mean_stress": {
+            "count": 10,
+            "mean": 22.761955536201864,
+            "min": 12.033333333333333,
+            "max": 27.466666666666665
+          }
+        },
+        "wait_timeout_rate": 0.3518830803822372,
+        "sick_cat_day_rate": 0.0026936026936026937
+      }
+    },
+    "paired": {
+      "both_completed": 7,
+      "fast_earlier": 5,
+      "same_day": 1,
+      "clear_earlier": 1,
+      "fast_minus_clear_days": {
+        "count": 7,
+        "mean": -0.5714285714285714,
+        "min": -2,
+        "max": 3
+      },
+      "only_clear_completed": 0,
+      "only_fast_completed": 0
+    }
+  },
+  "baseline_commit": "bd9ed1f"
+}

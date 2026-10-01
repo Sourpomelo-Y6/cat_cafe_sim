@@ -10,10 +10,10 @@ from .storage.relationships import RelationshipStore
 
 
 class CafeInteractionSession:
-    def __init__(self, core=None, store=None, interaction_config=None, *, cat_ids=None, cafe_config=None, seat_count=None):
+    def __init__(self, core=None, store=None, interaction_config=None, *, cat_ids=None, cafe_config=None, seat_count=None, seed=None):
         self.store = store or RelationshipStore('saves/cafe_relationships.json')
-        if core is not None and (cat_ids is not None or cafe_config is not None or seat_count is not None):
-            raise ValueError('coreと営業設定・参加猫は同時に指定できません。')
+        if core is not None and (cat_ids is not None or cafe_config is not None or seat_count is not None or seed is not None):
+            raise ValueError('coreと営業設定・参加猫・シードは同時に指定できません。')
         profiles = {row['cat_id']:row for row in self.store.list_cats()}
         if core is None:
             ids = list(cat_ids) if cat_ids is not None else list(profiles) or ['cat-1']
@@ -22,7 +22,7 @@ class CafeInteractionSession:
             if seat_count not in (None,1,2):
                 raise ValueError('席数は1または2を指定してください。')
             core_type = CafeInteractionCore if seat_count == 1 else MultiSeatCafeCore
-            core = core_type(cafe_config, cat_ids=ids, compact=True)
+            core = core_type(cafe_config, cat_ids=ids, compact=True, seed=0 if seed is None else seed)
             from .core.cafe_health import HealthRules
             core.set_shifts(ids)
             core.enable_health(asdict(HealthRules.load()))

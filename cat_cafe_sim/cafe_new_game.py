@@ -67,8 +67,10 @@ def starting_conditions(mode="popularity"):
     return dict(visiting_cat=visiting_rules(),regular_introduction=regular_rules(),dispatch_trouble=trouble_rules(),pet_shop=shop_candidates(used),dispatch_introduction=introduction_rules(),housing=housing_rules(),dispatch_unlocks=dispatch_unlock_rules(),growth=growth_rules(), store_events=store_event_rules(), waiting_area=waiting_area_rules(), operating_cost=operating_cost_rules(), longhair_customer=longhair_rules(), contact_customer=contact_rules(), play_customer=play_rules(), quiet_customer=quiet_rules(), vip_customer=vip_rules(), reservation=reservation_rules(), customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekdays, seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
 
 
-def create_game(directory='saves/games', conditions=None):
+def create_game(directory='saves/games', conditions=None, *, seed=0):
     """新しい専用ディレクトリに初期セーブまで作成する。既存ゲームを変更しない。"""
+    if type(seed) is not int or seed < 0:
+        raise ValueError('シードは0以上の整数を指定してください。')
     from .cafe_interaction import CafeInteractionSession
     selected = starting_conditions() if conditions is None else conditions
     directory = Path(directory).resolve()
@@ -86,7 +88,7 @@ def create_game(directory='saves/games', conditions=None):
         store = RelationshipStore(location / 'relationships.json')
         store._write(selected['profiles'])
         session = CafeInteractionSession(store=store, seat_count=selected['seat_count'],
-            cafe_config=replace(Config.load(), initial_funds=0))
+            cafe_config=replace(Config.load(), initial_funds=0), seed=seed)
         if 'weekdays' in selected:
             session.core.initialize_weekdays(selected['weekdays'])
         session.core.initialize_traits(selected.get('traits', {}))
