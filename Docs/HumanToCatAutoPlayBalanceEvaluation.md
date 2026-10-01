@@ -1,13 +1,13 @@
 # 自動プレイを使ったバランス予備評価
 
-評価日：2026-10-01。ゲームの数値・通常の自動プレイ方針は変更していない。まず増設の判断を見直す候補を優先し、期限や料金の変更は追加検証後に検討する。
+評価日：2026-10-01。この予備評価は調整前の旧設定の記録。評価当時はゲームの数値・通常の自動プレイ方針を変更していない。採用した長めの設定は[後続の評価](HumanToCatPopularityDurationEvaluation.md)を参照。まず増設の判断を見直す候補を優先し、期限や料金の変更は追加検証後に検討する。
 
 ## 比較条件と再実行
 
 通常の新規人気ゲーム（猫5匹、2席、資金1,000、人気100、目標150→225→300を各10日）、シード0、最大30日を共通にした。各試行は独立した一時ディレクトリで実行し、プレイヤーの既存セーブを使用しない。元の初期条件、設定のSHA-256、各試行の段階結果・日次結果・集計は[集計JSON](Results/AutoPlayBalanceEvaluation.json)に保存した。
 
 ```bash
-python3 -m cat_cafe_sim.autoplay_evaluation --output reports/autoplay_balance.json
+python3 -m cat_cafe_sim.autoplay_evaluation --goal-preset legacy --days 30 --output reports/autoplay_balance.json
 python3 -m unittest discover -s tests -p test_autoplay_evaluation.py
 ```
 
@@ -79,7 +79,7 @@ python3 -m unittest discover -s tests -p test_autoplay_evaluation.py
 
 ## 調整候補と優先順位
 
-後続の相談では、短いクリア時間を延ばすために必要人気と期限を一緒に増やす比較を行った。[人気目標・期限の評価](HumanToCatPopularityDurationEvaluation.md)を参照。下記の10→8日は当時の難易度調整候補で、プレイ期間を延ばす現在の推奨案ではない。後続の相談で長めの案を採用決定したが、通常設定への反映は未実装。
+後続の相談では、短いクリア時間を延ばすために必要人気と期限を一緒に増やす比較を行った。[人気目標・期限の評価](HumanToCatPopularityDurationEvaluation.md)を参照。下記の10→8日は当時の難易度調整候補で、プレイ期間を延ばす現在の推奨案ではない。後続の相談で長めの案を採用し、新規ゲームへの反映まで実装した。
 
 以下はまだ実装・採用していない案。ゲームの係数を変える前に、同じ設定で判断方針を比較する。
 

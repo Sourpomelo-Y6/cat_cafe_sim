@@ -6,7 +6,7 @@
 
 ## 開発方針
 
-ゲーム全体の流れを先に固め、細かな調整は従来後回しでしたが、現在は自動プレイを使ったバランス調整の希望を[計画](HumanToCatAutoPlayPlan.md)に記録しています。[人気目標と期限を増やす比較](HumanToCatPopularityDurationEvaluation.md)も行いました。ユーザーは長めの案（人気250→450→650、期限20→20→25日、上限650）の採用を決定しました。通常設定への反映は未実装です。通常営業でプレイヤーが選ぶのは猫・席・活動・投資で、交流コマンドは自動です。準備中のプレイヤー交流は別の操作です。
+ゲーム全体の流れを先に固め、細かな調整は従来後回しでしたが、現在は自動プレイを使ったバランス調整の希望を[計画](HumanToCatAutoPlayPlan.md)に記録しています。[人気目標と期限を増やす比較](HumanToCatPopularityDurationEvaluation.md)も行いました。ユーザーは長めの案（人気250→450→650、期限20→20→25日、上限650）の採用を決定しました。通常の新規ゲームへ反映済みで、既存セーブの目標・期限・上限は維持します。通常営業でプレイヤーが選ぶのは猫・席・活動・投資で、交流コマンドは自動です。準備中のプレイヤー交流は別の操作です。
 
 関心・テンション、猫から客への親しみ、猫からプレイヤーへの好感度、客から店への常連度・不満、店の人気、有力者満足度を区別します。子猫は所属猫として管理せず、外部への引き渡し費用だけを処理します。スカウトは低優先度、お詫び費用は採用しません。
 
@@ -45,7 +45,7 @@ flowchart TD
 | 顧客と評価 | 名簿と予定、曜日、好み・相性、満足／普通／不満、常連、累積不満、停止・回復・永久離脱 | [名簿](HumanToCatCustomers.md)、[相性](HumanToCatCustomerPreferences.md)、[評価](HumanToCatCustomerSatisfaction.md)、[常連](HumanToCatCustomerLoyalty.md)、[不満](HumanToCatCustomerDiscontent.md)、[信頼](HumanToCatCustomerTrust.md) |
 | 追加客層 | 第1段階の白猫好き・静かな交流客・遊び客・触れ合い客、第2段階の予約・確率来店の長毛好き客、最終段階のVIP | [白猫好き](HumanToCatAdvancedCustomers.md)、[静かな交流客](HumanToCatQuietCustomer.md)、[遊び客](HumanToCatPlayCustomer.md)、[触れ合い客](HumanToCatContactCustomer.md)、[予約](HumanToCatReservations.md)、[長毛好き客](HumanToCatLonghairCustomer.md)、[VIP](HumanToCatVipCustomer.md) |
 | 経営とイベント | 運営費、日次・期間収支、ケア用品・栄養おやつ・特製ケアセットの購入・使用・売却、美術館のブラッシングセット報酬・使用・売却、店舗イベント、在店猫の家出と帰還 | [経営](HumanToCatManagement.md)、[運営費](HumanToCatOperatingCosts.md)、[収支](HumanToCatDailyFinance.md)、[用品](HumanToCatItems.md)、[店舗イベント](HumanToCatStoreEvents.md) |
-| 目標と終了 | 人気150→225→300を各10日（自由営業・好感度・有力者モードから任意開始も可能）、有力者満足度100、プレイヤー好感度80以上の在籍猫6匹、自由営業、共通結果 | [人気](HumanToCatPopularityGoal.md)、[有力者](HumanToCatPatronGoal.md)、[好感度](HumanToCatBondGoal.md)、[結果](HumanToCatClearResults.md) |
+| 目標と終了 | 新規ゲームは人気250→450→650を20・20・25日（自由営業・好感度・有力者モードから任意開始も可能）、有力者満足度100、プレイヤー好感度80以上の在籍猫6匹、自由営業、共通結果 | [人気](HumanToCatPopularityGoal.md)、[有力者](HumanToCatPatronGoal.md)、[好感度](HumanToCatBondGoal.md)、[結果](HumanToCatClearResults.md) |
 | 保存・再現 | 営業セーブ形式2、旧形式の読込、詳細ログとリプレイ、日次比較 | [営業セーブ](HumanToCatCafeSaves.md)、[軽量化](HumanToCatCompactSaves.md)、[日程](HumanToCatCafeDays.md) |
 
 ## 終了と互換性
@@ -58,4 +58,4 @@ flowchart TD
 
 未着手の候補は[実装予定](HumanToCatPlannedFeatures.md)に集約します。新しい実装順はユーザーの依頼で決めます。
 
-既存の100日評価は疲労・収支・保存容量などの比較です。人気目標を連続して進めるテスト用自動プレイCLIと日本語ログを実装しました。基礎営業とクリアを目指す方針を選べます。通常の自動接客を利用し、出勤・休養・回答待ちと段階移行、追加方針では投資・予約も判断します。GUIでも方針を選び最大10日進め、各段階の達成・期限切れ・ゲームオーバーで停止します。通常設定・シード0の5条件を比較した[バランス予備評価](HumanToCatAutoPlayBalanceEvaluation.md)まで完了しました。ゲーム数値は変更しておらず、対象拡張・数値調整は[自動プレイ計画](HumanToCatAutoPlayPlan.md)の後続事項です。100日をゲームの終了期限にしたり、低体力からの特別行動を必須クリア条件に戻したりはしません。
+既存の100日評価は疲労・収支・保存容量などの比較です。人気目標を連続して進めるテスト用自動プレイCLIと日本語ログを実装しました。基礎営業とクリアを目指す方針を選べます。通常の自動接客を利用し、出勤・休養・回答待ちと段階移行、追加方針では投資・予約も判断します。GUIでも方針を選び最大10日進め、各段階の達成・期限切れ・ゲームオーバーで停止します。通常設定・シード0の5条件を比較した[バランス予備評価](HumanToCatAutoPlayBalanceEvaluation.md)まで完了しました。人気目標・期限・上限を長めの案へ変更し、既存セーブは維持しています。対象拡張・その他の数値調整は[自動プレイ計画](HumanToCatAutoPlayPlan.md)の後続事項です。100日をゲームの終了期限にしたり、低体力からの特別行動を必須クリア条件に戻したりはしません。

@@ -64,4 +64,4 @@ python3 -m cat_cafe_sim replay reports/day.json
 
 ## 今後の作業
 
-テスト用自動プレイの2つの判断方針と日本語ログを実装しました。GUI「10日間おまかせ」も実装済みで、通常設定・シード0の5条件を比較した[バランス予備評価](Docs/HumanToCatAutoPlayBalanceEvaluation.md)も追加しました。再実行は `python3 -m cat_cafe_sim.autoplay_evaluation`。ゲームの数値調整と対象拡張は後続です。[自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)に希望と提案を整理しています。
+テスト用自動プレイの2つの判断方針と日本語ログを実装しました。GUI「10日間おまかせ」も実装済みで、通常設定・シード0の5条件を比較した[バランス予備評価](Docs/HumanToCatAutoPlayBalanceEvaluation.md)も追加しました。再実行は `python3 -m cat_cafe_sim.autoplay_evaluation`。採用した長めの案（人気250→450→650、期限20・20・25日、上限650）を新規ゲームへ反映しました。旧セーブの目標・期限・上限は維持します。その他の数値調整と対象拡張は後続です。[自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)に希望と提案を整理しています。

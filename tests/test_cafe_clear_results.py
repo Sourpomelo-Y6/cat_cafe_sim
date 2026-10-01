@@ -19,7 +19,7 @@ class ClearResultsTests(unittest.TestCase):
         conditions=starting_conditions(mode);conditions.pop('intake_request')
         conditions['store_events']['probability']=0
         if mode=='popularity':
-            conditions['goal'].update(target=105,stages=[dict(target=110,days=10),dict(target=115,days=10)])
+            conditions['goal'].update(target=105,days=10,stages=[dict(target=110,days=10),dict(target=115,days=10)])
         elif mode=='patron':conditions['patron']['target']=conditions['patron']['gain']
         elif mode=='bond':conditions['bond']=dict(target=1,affinity=.5)
         return create_game(self.directory,conditions)
@@ -85,7 +85,7 @@ class ClearResultsTests(unittest.TestCase):
 
     def test_no_clear_on_failure_or_game_over_and_corrupt_records(self):
         s=self.create('popularity')
-        for _ in range(10):s.day_off()
+        for _ in range(s.core.goal['rules']['days']):s.day_off()
         self.assertEqual(s.core.goal['status'],'expired')
         self.assertEqual(s.core.clear_results,{})
         self.reload(s)

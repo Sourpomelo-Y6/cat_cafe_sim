@@ -41,6 +41,7 @@ class AutoPlayEvaluationTests(unittest.TestCase):
     def test_goal_presets_do_not_change_normal_starting_conditions(self):
         baseline = starting_conditions()
         expected = {
+            'legacy': [(150, 10), (225, 10), (300, 10)],
             'medium': [(200, 15), (350, 15), (500, 20)],
             'long': [(250, 20), (450, 20), (650, 25)],
         }
@@ -53,6 +54,7 @@ class AutoPlayEvaluationTests(unittest.TestCase):
             conditions['goal'] = baseline['goal']
             self.assertEqual(conditions, baseline)
         self.assertEqual(evaluation_conditions('standard'), baseline)
+        self.assertEqual(evaluation_conditions('standard'), evaluation_conditions('long'))
         self.assertEqual(starting_conditions(), baseline)
         with self.assertRaises(ValueError):
             evaluation_conditions('unknown')

@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from cat_cafe_sim.cafe_new_game import create_game
+from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
 from cat_cafe_sim.cafe_interaction import CafeInteractionSession
 from cat_cafe_sim.core.cafe_interaction import verify_cafe_interaction
 from cat_cafe_sim.storage.relationships import RelationshipStore
@@ -73,6 +73,66 @@ class NewGameTests(unittest.TestCase):
         self.assertEqual(restored.core.funds, 940)
         self.assertEqual(restored.core.day_results[-1]['summary']['operating_cost'],60)
         self.assertEqual(restored.core.day, 2)
+
+    def test_adopted_goal_rules_apply_to_new_games_and_later_challenges(self):
+        expected = dict(days=20, target=250, cap=650, gain_per_success=5,
+                        stages=[dict(days=20, target=450), dict(days=25, target=650)])
+        for mode in ('popularity', 'free', 'bond', 'patron'):
+            with self.subTest(mode=mode):
+                session = create_game(self.directory/mode, starting_conditions(mode))
+                session, _ = load_game(session.checkpoint_path)
+                if mode != 'popularity':
+                    session.day_off()
+                    session.start_popularity_challenge()
+                    self.assertEqual(session.core.goal['challenge_started_day'], 2)
+                self.assertEqual(session.core.goal['rules'], expected)
+                save_game(session, session.checkpoint_path)
+                self.assertEqual(load_game(session.checkpoint_path)[0].core.snapshot(), session.core.snapshot())
+
+    def test_legacy_goal_survives_load_stage_transition_and_replay(self):
+        from cat_cafe_sim.cafe_autoplay import AutoPlayer
+        selected = starting_conditions()
+        expected = dict(days=10, target=150, cap=300, gain_per_success=5,
+                        stages=[dict(days=10, target=225), dict(days=10, target=300)])
+        selected['goal'] = expected
+        session = create_game(self.directory, selected)
+        before = session.checkpoint_path.read_bytes()
+        session, _ = load_game(session.checkpoint_path)
+        self.assertEqual(session.checkpoint_path.read_bytes(), before)
+        self.assertEqual(session.core.goal['rules'], expected)
+        result = AutoPlayer(session, mode='clear', stop_on_goal=True).run()
+        self.assertEqual((result.reason, result.days), ('goal_cleared', 4))
+        session.advance_goal()
+        session.next_day()
+        save_game(session, session.checkpoint_path)
+        restored, _ = load_game(session.checkpoint_path)
+        self.assertEqual(restored.core.goal['rules'], expected)
+        self.assertEqual(restored.core.goal['stage_started_day'], 5)
+        self.assertEqual(verify_cafe_interaction(restored.core.log()).snapshot(), restored.core.snapshot())
+
+    def test_legacy_tracking_saves_start_old_challenge_in_all_other_modes(self):
+        expected = dict(days=10, target=150, cap=300, gain_per_success=5,
+                        stages=[dict(days=10, target=225), dict(days=10, target=300)])
+        for mode in ('free', 'bond', 'patron'):
+            with self.subTest(mode=mode):
+                selected = starting_conditions(mode)
+                selected['goal'] = expected
+                session = create_game(self.directory/mode, selected)
+                session.day_off()
+                save_game(session, session.checkpoint_path)
+                session, _ = load_game(session.checkpoint_path)
+                before = session.core.snapshot()
+                session.start_popularity_challenge()
+                self.assertEqual(session.core.goal['rules'], expected)
+                self.assertEqual(session.core.goal['challenge_started_day'], 2)
+                self.assertEqual(session.core.goal['days'], before['goal']['days'])
+                for key in before:
+                    if key != 'goal':
+                        self.assertEqual(session.core.snapshot()[key], before[key])
+                save_game(session, session.checkpoint_path)
+                loaded, _ = load_game(session.checkpoint_path)
+                self.assertEqual(loaded.core.snapshot(), session.core.snapshot())
+                self.assertEqual(verify_cafe_interaction(loaded.core.log()).snapshot(), loaded.core.snapshot())
 
     def test_new_game_does_not_inherit_or_change_previous_game(self):
         first = create_game(self.directory)

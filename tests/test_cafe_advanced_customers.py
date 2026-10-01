@@ -23,6 +23,8 @@ class AdvancedCustomerTests(unittest.TestCase):
         selected.pop('intake_request')
         selected['seat_count'] = seats
         selected['goal']['target'] = 105
+        # 客層の解放・未達を調べる短期ゲーム。標準期限には依存しない。
+        selected['goal']['days'] = 10
         if legacy:
             selected.pop('advanced_customers')
         return create_game(Path(self.temp.name) / 'games', selected)
@@ -155,7 +157,7 @@ class AdvancedCustomerTests(unittest.TestCase):
         self.assertNotIn('advanced_customers', self.reload(s).core.snapshot())
         self.assertNotIn(CUSTOMER_ID, schedule(s.core, 2))
         s = self.create()
-        for _ in range(10):
+        for _ in range(s.core.goal['rules']['days']):
             s.day_off()
         self.assertEqual(s.core.goal['status'], 'expired')
         self.assertIsNone(unlocked_day(s.core))

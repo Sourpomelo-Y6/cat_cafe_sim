@@ -29,7 +29,7 @@ REASONS = dict(completed='人気目標達成', expired='人気目標の期限切
 class AutoPlayer:
     """step()は最大一つの通常操作。停止要求は次の操作の前に確認する。"""
 
-    def __init__(self, session, *, max_days=30, max_operations=10000,
+    def __init__(self, session, *, max_days=60, max_operations=10000,
                  emit=None, detailed=False, mode='basic', stop_on_goal=False):
         if type(stop_on_goal) is not bool:
             raise ValueError('目標達成時の停止設定は真偽値で指定してください。')
@@ -225,7 +225,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description='人気目標を通常操作で自動プレイし、日本語ログを出力します。')
     parser.add_argument('--directory', default='reports/autoplay', help='新規テストゲームの保存先')
     parser.add_argument('--resume', type=Path, help='再開する営業セーブ（関係データも更新します）')
-    parser.add_argument('--days', type=int, default=30)
+    parser.add_argument('--days', type=int, default=60)
     parser.add_argument('--mode', choices=('basic', 'clear'), default='basic', help='basic:基礎営業 / clear:クリアを目指す')
     parser.add_argument('--max-operations', type=int, default=10000)
     parser.add_argument('--detailed', action='store_true')

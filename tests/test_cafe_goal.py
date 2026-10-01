@@ -50,7 +50,7 @@ class CafeGoalTests(unittest.TestCase):
         for seats in (1,2):
             with self.subTest(seats=seats):
                 s=self.session(seats,stress_per_service_tick=0)
-                s.enable_goal(dict(rules(),gain_per_success=55,cap=160))
+                s.enable_goal(dict(rules(),target=150,gain_per_success=55,cap=160))
                 self.close(s)
                 self.assertEqual(s.core.management['popularity'],155)
                 self.assertEqual(s.core.goal['status'],'cleared')

@@ -26,6 +26,7 @@ SCENARIOS = {
 # 評価専用。通常の新規開始設定や既存セーブには適用しない。
 GOAL_PRESETS = {
     'standard': None,
+    'legacy': ((150, 10), (225, 10), (300, 10)),
     'medium': ((200, 15), (350, 15), (500, 20)),
     'long': ((250, 20), (450, 20), (650, 25)),
 }
@@ -87,7 +88,7 @@ def collect(core, result):
     return dict(reason=result.reason, message=result.message, metrics=metrics, stages=stages, daily=rows)
 
 
-def evaluate(*, max_days=30, scenarios=None, goal_preset='standard', emit=print):
+def evaluate(*, max_days=60, scenarios=None, goal_preset='standard', emit=print):
     selected = list(SCENARIOS) if scenarios is None else list(scenarios)
     if not selected or any(name not in SCENARIOS for name in selected):
         raise ValueError('比較条件を確認してください。')
@@ -114,7 +115,7 @@ def evaluate(*, max_days=30, scenarios=None, goal_preset='standard', emit=print)
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description='自動プレイ2方針と設備を外した条件を比較します。')
-    parser.add_argument('--days', type=int, default=30)
+    parser.add_argument('--days', type=int, default=60)
     parser.add_argument('--goal-preset', choices=GOAL_PRESETS, default='standard',
                         help='評価専用の人気目標と期限。通常ゲームの設定は変更しません。')
     parser.add_argument('--scenarios', nargs='+', choices=SCENARIOS,

@@ -11,6 +11,11 @@ def rules(core, selected=None):
                                   cafe_play_customer,cafe_contact_customer,cafe_vip_customer)))
     if selected is None:
         goal=cafe_goal.progression_rules()
+        if core.goal['rules']['cap']==300 and goal['stages'][-1]['target']>300:
+            # 旧ゲームの人気上限300を引き上げず、従来の挑戦を開始できるようにする。
+            # 集計のみの旧セーブには後続段階がないため、当時の固定値を補う。
+            goal=copy.deepcopy(core.goal['rules'])
+            goal['stages']=[dict(days=10,target=225),dict(days=10,target=300)]
         for key in ('cap','gain_per_success'):goal[key]=core.goal['rules'][key]
         selected=dict(goal=goal,**{key:module.rules() for key,module in providers.items()})
     if not isinstance(selected,dict) or set(selected)!={'goal',*CUSTOMERS}:

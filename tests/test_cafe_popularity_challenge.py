@@ -38,7 +38,7 @@ class PopularityChallengeTests(unittest.TestCase):
         self.assertEqual(loaded.core.snapshot(),s.core.snapshot()); return loaded
 
     def easy(self,s):
-        selected=rules(s.core); selected['goal'].update(target=105,stages=[dict(days=10,target=110),dict(days=10,target=115)])
+        selected=rules(s.core); selected['goal'].update(target=105,days=10,stages=[dict(days=10,target=110),dict(days=10,target=115)])
         return selected
 
     def rejected(self,s,action):
@@ -68,11 +68,11 @@ class PopularityChallengeTests(unittest.TestCase):
         s=self.game()
         for _ in range(11):s.day_off()
         self.assertEqual(s.core.day,12); s.start_popularity_challenge()
-        self.assertIn('21日目まで',progress(s.core))
-        for _ in range(9):s.day_off(); self.assertEqual(s.core.goal['status'],'active')
+        self.assertIn('31日目まで',progress(s.core))
+        for _ in range(19):s.day_off(); self.assertEqual(s.core.goal['status'],'active')
         s.day_off(); self.assertEqual(s.core.goal['status'],'expired')
-        self.assertEqual(s.core.goal['resolved_day'],21); self.assertTrue(pending(s.core))
-        self.assertEqual(len(s.core.goal['days']),21)
+        self.assertEqual(s.core.goal['resolved_day'],31); self.assertTrue(pending(s.core))
+        self.assertEqual(len(s.core.goal['days']),31)
         self.reload(s); self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(),s.core.snapshot())
         s.continue_goal(); self.rejected(s,s.start_popularity_challenge)
 
