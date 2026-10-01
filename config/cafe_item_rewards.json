@@ -1,3 +1,4 @@
 {
-  "neighborhood_visit": {"id": "care_supplies", "name": "ケア用品", "stress_relief": 10}
+  "neighborhood_visit": {"id": "care_supplies", "name": "ケア用品", "stress_relief": 10},
+  "cat_product_trial": {"id": "special_care_set", "name": "特製ケアセット", "fatigue_relief": 10, "stress_relief": 10}
 }

@@ -112,7 +112,7 @@ class ProductTrialDispatchTests(unittest.TestCase):
         for choice in ('accept','decline'):
             for rest in (False,True):
                 s,event_id=self.depart();s=self.reload_replay(s)
-                for field in ('trouble','introduction','item_reward'):
+                for field in ('trouble','introduction'):
                     self.assertNotIn(field,s.core.activities['events'][event_id])
                 self.rejected(s,lambda:s.dispatch('cat-mugi',trial_destination(s.core)))
                 if rest:s.day_off()
