@@ -29,11 +29,14 @@ class AutoPlayer:
     """step()は最大一つの通常操作。停止要求は次の操作の前に確認する。"""
 
     def __init__(self, session, *, max_days=30, max_operations=10000,
-                 emit=None, detailed=False):
+                 emit=None, detailed=False, mode='basic'):
+        if mode not in ('basic', 'clear'):
+            raise ValueError('自動プレイ方針はbasicかclearを指定してください。')
         for value in (max_days, max_operations):
             if type(value) is not int or value < 1:
                 raise ValueError('日数・操作上限は正の整数で指定してください。')
         self.session = session
+        self.mode = mode
         self.max_days = max_days
         self.max_operations = max_operations
         self.emit = emit or (lambda line: None)
@@ -43,6 +46,7 @@ class AutoPlayer:
         self.cancelled = False
         self.result = None
         self.names = {key: row['name'] for key, row in session.profiles.items()}
+        self.emit(f'自動プレイ方針: {"基礎営業" if mode=="basic" else "クリアを目指す"}')
 
     def _name(self, key):
         return self.names.get(key, key)
@@ -61,6 +65,7 @@ class AutoPlayer:
             self.emit(f'最終状況: 人気第{len(goal.get("history", []))+1}段階'
                       f' / 人気 {self.session.core.management["popularity"]:g}'
                       f' / 目標 {cafe_goal.current_rules(goal)["target"]:g}'
+                      f' / 不足人気 {max(0, cafe_goal.current_rules(goal)["target"]-self.session.core.management["popularity"]):g}'
                       f' / 資金 {self.session.core.funds:g}')
         self.emit(f'終了: {REASONS[reason]} / {self.result.days}日 / {self.operations}操作'
                   + (f' / {message}' if message else ''))
@@ -77,6 +82,14 @@ class AutoPlayer:
             (cafe_regular_introduction.pending, s.resolve_regular_introduction, '常連からの紹介'),
             (cafe_reservation.waiting, s.resolve_reservation, '特別予約')):
             if pending(c):
+                if self.mode=='clear' and pending is cafe_reservation.waiting:
+                    request = cafe_reservation.waiting(c)
+                    longhair = any('long_hair' in features and c.activity(key)=='cafe'
+                                   and (c.cats[key].health_status=='healthy' or c.cats[key].recovery_days_remaining<=1)
+                                   for key, features in (c.cat_features or {}).items())
+                    days_left = cafe_goal.current_start(c.goal)+cafe_goal.current_rules(c.goal)['days']-1-request['visit_day']
+                    choice = 'accept' if longhair and days_left>=0 else 'decline'
+                    return f'特別予約を{"受諾" if choice=="accept" else "見送り"}（長毛猫の在店と目標期限を確認）', lambda: s.resolve_reservation(choice)
                 return f'{label}を見送り（加入・予約を増やさず基礎営業を確認）', lambda action=action: action('decline')
         for waiting, action, choice, label in (
             (cafe_dispatch_introduction.waiting, s.resolve_dispatch_introduction, 'decline', '派遣先からの紹介を見送り'),
@@ -152,16 +165,11 @@ class AutoPlayer:
                 elif c.closed:
                     decision = ('翌日の営業準備へ進む', s.next_day)
                 elif c.can_set_shifts:
-                    workers = sorted(key for key, cat in c.cats.items()
-                                     if c.activity(key)=='cafe' and cat.health_status=='healthy'
-                                     and cat.fatigue < 60 and c.management['stress'][key] < 60)
-                    if not workers:
-                        decision = ('全員休養のため休業（疲労・ストレス60以上、療養・不在）', s.day_off)
-                    elif set(workers)!=c.working_cats or not c.shift_rules:
-                        resting = sorted(set(c.cats)-set(workers))
-                        decision = (f'出勤: {", ".join(map(self._name, workers))} / 休養・不在: {", ".join(map(self._name, resting)) or "なし"}（健康・在店かつ疲労・ストレス60未満）', lambda: s.set_shifts(workers))
-                    else:
-                        decision = ('出勤予定で営業開始（健康・在店かつ疲労・ストレス60未満）', s.automatic_step)
+                    if self.mode=='clear':
+                        from .cafe_autoplay_strategy import prepare
+                        decision = prepare(s, self.emit, self._name)
+                    if decision is None:
+                        decision = self._basic_preparation()
                 else:
                     decision = ('自動接客を1刻み進める', s.automatic_step)
             label, action = decision
@@ -185,6 +193,19 @@ class AutoPlayer:
             return self._stop('blocked', str(error))
         return True
 
+    def _basic_preparation(self):
+        s, c = self.session, self.session.core
+        workers = sorted(key for key, cat in c.cats.items()
+                         if c.activity(key)=='cafe' and cat.health_status=='healthy'
+                         and cat.fatigue < 60 and c.management['stress'][key] < 60)
+        if not workers:
+            return ('全員休養のため休業（疲労・ストレス60以上、療養・不在）', s.day_off)
+        elif set(workers)!=c.working_cats or not c.shift_rules:
+            resting = sorted(set(c.cats)-set(workers))
+            return (f'出勤: {", ".join(map(self._name, workers))} / 休養・不在: {", ".join(map(self._name, resting)) or "なし"}（健康・在店かつ疲労・ストレス60未満）', lambda: s.set_shifts(workers))
+        else:
+            return ('出勤予定で営業開始（健康・在店かつ疲労・ストレス60未満）', s.automatic_step)
+
     def run(self):
         while self.step():
             pass
@@ -196,6 +217,7 @@ def main(argv=None):
     parser.add_argument('--directory', default='reports/autoplay', help='新規テストゲームの保存先')
     parser.add_argument('--resume', type=Path, help='再開する営業セーブ（関係データも更新します）')
     parser.add_argument('--days', type=int, default=30)
+    parser.add_argument('--mode', choices=('basic', 'clear'), default='basic', help='basic:基礎営業 / clear:クリアを目指す')
     parser.add_argument('--max-operations', type=int, default=10000)
     parser.add_argument('--detailed', action='store_true')
     parser.add_argument('--interval', type=float, default=0, help='日次結果後の待機秒（0〜60）')
@@ -212,7 +234,7 @@ def main(argv=None):
             print(line, flush=True)
             log.write(line+'\n'); log.flush()
         player = AutoPlayer(session, max_days=args.days, max_operations=args.max_operations,
-                            emit=emit, detailed=args.detailed)
+                            emit=emit, detailed=args.detailed, mode=args.mode)
         previous = signal.signal(signal.SIGINT, lambda *_: player.cancel())
         try:
             while player.result is None:

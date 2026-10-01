@@ -18,7 +18,7 @@ python3 -m cat_cafe_sim.cafe_interaction gui
 | 現在遊べる機能と一日の流れ | [全体計画](Docs/HumanToCatGameFlowPlan.md)、[画面構成](Docs/HumanToCatUIFlow.md) |
 | 開発を引き継ぐ | [引き継ぎ資料](Docs/DevelopmentHandoff.md) |
 | 今後の機能候補 | [実装予定](Docs/HumanToCatPlannedFeatures.md) |
-| 自動プレイ・ログ・GUI連携とバランス調整の相談 | [自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)（CLI初版実装済み） |
+| 自動プレイ・ログ・GUI連携とバランス調整の相談 | [自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)（CLI2モード実装済み） |
 | 保存形式と旧セーブの扱い | [営業セーブ](Docs/HumanToCatCafeSaves.md)、[軽量形式](Docs/HumanToCatCompactSaves.md) |
 | 追加機能の経緯 | [整理前の資料](Docs/History/README.md) |
 
@@ -44,10 +44,11 @@ python3 -m unittest discover -s tests
 xvfb-run -a env CAT_CAFE_TEST_GUI=1 python3 -m unittest discover -s tests
 ```
 
-人気目標のテスト用自動プレイは、操作と判断理由を表示し、専用フォルダへセーブとログを保存します。
+人気目標のテスト用自動プレイは、操作と判断理由を表示し、専用フォルダへセーブとログを保存します。基礎営業（`basic`、既定）と、投資・予測・予約を使うクリア方針（`clear`）を選べます。
 
 ```bash
-python3 -m cat_cafe_sim.cafe_autoplay --days 30
+python3 -m cat_cafe_sim.cafe_autoplay --mode basic --days 30
+python3 -m cat_cafe_sim.cafe_autoplay --mode clear --days 30
 ```
 
 通常ゲームとは別に、1日営業CLIとPhase 2の学習環境があります。
@@ -61,4 +62,4 @@ python3 -m cat_cafe_sim replay reports/day.json
 
 ## 今後の作業
 
-テスト用自動プレイと日本語ログのCLI初版を実装しました。将来のGUI「10日間おまかせ」と実行結果を使ったバランス調整は後続です。[自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)に希望と提案を整理しています。
+テスト用自動プレイの2つの判断方針と日本語ログを実装しました。将来のGUI「10日間おまかせ」と実行結果を使ったバランス調整は後続です。[自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)に希望と提案を整理しています。

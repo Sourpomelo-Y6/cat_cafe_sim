@@ -88,11 +88,14 @@ class AutoPlayTests(unittest.TestCase):
         self.assertEqual(other.core.snapshot(), before)
 
     def test_save_reload_after_every_operation_matches_decisions(self):
+        self.compare_reloads('basic')
+
+    def compare_reloads(self, mode):
         direct = self.session('direct')
         resumed = self.session('resumed')
         logs_a, logs_b = [], []
-        a = AutoPlayer(direct, emit=logs_a.append, detailed=True)
-        b = AutoPlayer(resumed, emit=logs_b.append, detailed=True)
+        a = AutoPlayer(direct, emit=logs_a.append, detailed=True, mode=mode)
+        b = AutoPlayer(resumed, emit=logs_b.append, detailed=True, mode=mode)
         while True:
             # 交流IDのUUIDだけ固定し、判断・会計・交流結果の一致を比較する。
             ids = [f'interaction-{a.operations}-{i}' for i in range(10)]
