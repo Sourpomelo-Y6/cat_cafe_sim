@@ -114,7 +114,7 @@ class AdoptionTests(unittest.TestCase):
                 self.assertNotIn('a', [c.id for c in s.available_cats()])
                 view = dict(cat_details(s, 'a')['basic'])
                 self.assertEqual(view['活動'], '譲渡済み')
-                self.assertEqual(view['譲渡先'], 'guest-1')
+                self.assertEqual(view['譲渡先'], '佐藤さん')
                 self.close(s)
                 self.assertEqual(s.core.day_result()['cats']['a']['activity'], 'adopted')
                 stamina = s.core.cats['a'].stamina

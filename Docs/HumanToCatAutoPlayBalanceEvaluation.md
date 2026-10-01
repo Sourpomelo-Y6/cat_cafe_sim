@@ -7,7 +7,7 @@
 通常の新規人気ゲーム（猫5匹、2席、資金1,000、人気100、目標150→225→300を各10日）、シード0、最大30日を共通にした。各試行は独立した一時ディレクトリで実行し、プレイヤーの既存セーブを使用しない。元の初期条件、設定のSHA-256、各試行の段階結果・日次結果・集計は[集計JSON](Results/AutoPlayBalanceEvaluation.json)に保存した。
 
 ```bash
-python3 -m cat_cafe_sim.autoplay_evaluation --goal-preset legacy --days 30 --output reports/autoplay_balance.json
+python3 -m cat_cafe_sim.autoplay_evaluation --goal-preset legacy --customer-preset legacy --days 30 --output reports/autoplay_balance.json
 python3 -m unittest discover -s tests -p test_autoplay_evaluation.py
 ```
 

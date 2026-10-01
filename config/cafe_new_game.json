@@ -1,5 +1,6 @@
 {
   "seat_count": 2,
+  "popular_customer_count": 4,
   "cats": [
     {
       "cat_id": "cat-mike",

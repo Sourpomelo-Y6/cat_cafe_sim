@@ -22,6 +22,8 @@ class SixSeatExpansionTests(unittest.TestCase):
     def setUp(self):
         self.temp=tempfile.TemporaryDirectory(); self.addCleanup(self.temp.cleanup)
         selected=starting_conditions(); selected.pop('intake_request')
+        # 3日で解放する増設テストは旧来店設定で、猫の状態と同時接客条件を固定する。
+        selected['weekdays'].pop('popular_customer_count')
         selected['store_events']['probability']=0
         selected['goal'].update(target=105,stages=[dict(days=10,target=110),dict(days=10,target=115)])
         self.session=create_game(Path(self.temp.name)/'games',selected)
@@ -69,7 +71,7 @@ class SixSeatExpansionTests(unittest.TestCase):
         self.assertEqual(s.core.summary()['expansion_expenses'],1500)
         self.assertEqual(six_seat_purchase(s.core),dict(day=4,cost=1500,seats=6))
         row=next(row for row in directory(s) if row['customer_id']==SIXTH_CUSTOMER_ID)
-        self.assertIn('6席目',row['name']); self.assertIsNone(row['arrival_tick']); self.assertEqual(row['tomorrow_tick'],12)
+        self.assertEqual(row['name'], '藤田さん'); self.assertIn('6席目',row['description']); self.assertIsNone(row['arrival_tick']); self.assertEqual(row['tomorrow_tick'],12)
         self.assertIsNotNone(row['preference'])
         self.assertNotIn(SIXTH_CUSTOMER_ID,extra_schedule(s.core,4))
         self.assertEqual(extra_schedule(s.core,5),{EXTRA_CUSTOMER_ID:0,FIFTH_CUSTOMER_ID:6,SIXTH_CUSTOMER_ID:12})

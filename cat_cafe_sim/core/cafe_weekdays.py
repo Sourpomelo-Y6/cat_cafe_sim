@@ -9,8 +9,12 @@ DAYS = ('月', '火', '水', '木', '金', '土', '日')
 def rules(data=None):
     if data is None:
         data = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_weekdays.json').read_text())
-    if not isinstance(data, dict) or set(data) != {'start_weekday', 'patterns'}:
+    base = {'start_weekday', 'patterns'}
+    if not isinstance(data, dict) or set(data) not in (base, base | {'popular_customer_count'}):
         raise ValueError('来店曜日の設定が不正です。')
+    if 'popular_customer_count' in data and (type(data['popular_customer_count']) is not int
+                                           or not 1 <= data['popular_customer_count'] <= 8):
+        raise ValueError('人気達成後の追加通常客は1〜8人にしてください。')
     if type(data['start_weekday']) is not int or not 0 <= data['start_weekday'] < 7:
         raise ValueError('開始曜日が不正です。')
     patterns = data['patterns']
@@ -31,10 +35,32 @@ def day_label(core, day=None):
 
 
 def customer_days(core, index):
+    if f'guest-{index+1}' in popular_customers(core):
+        return tuple(range(7))
     if core.weekdays is None:
         return tuple(range(7))
     patterns = core.weekdays['patterns']
     return patterns[index % len(patterns)]
+
+
+def popular_customers(core):
+    """解放前も同じID・来店時点を予告し、短い営業時間にも合わせる。"""
+    count = (core.weekdays or {}).get('popular_customer_count', 0)
+    start = len(core.config.arrival_ticks)
+    return {f'guest-{start+i+1}': (2*i+1)*core.config.opening_ticks//(2*(count+1))
+            for i in range(count)}
+
+
+def popular_unlocked_day(core):
+    if not core.goal or core.goal.get('tracking_only'):
+        return None
+    first = (core.goal.get('history') or [core.goal])[0]
+    return first['resolved_day'] if first['status'] == 'cleared' else None
+
+
+def popular_schedule(core, day):
+    unlocked = popular_unlocked_day(core)
+    return popular_customers(core) if unlocked is not None and day > unlocked else {}
 
 
 def schedule(core, day=None):
@@ -51,7 +77,7 @@ def schedule(core, day=None):
     from .cafe_longhair_customer import schedule as longhair_schedule
     planned = {**{f'guest-{i+1}': tick for i, tick in enumerate(core.config.arrival_ticks)
                if weekday is None or weekday in customer_days(core, i)}, **advanced_schedule(core, day),
-            **extra_schedule(core, day), **loyalty_schedule(core, day), **reservation_schedule(core,day), **vip_schedule(core,day), **quiet_schedule(core, day), **play_schedule(core, day), **contact_schedule(core, day),**longhair_schedule(core,day)}
+            **extra_schedule(core, day), **loyalty_schedule(core, day), **popular_schedule(core, day), **reservation_schedule(core,day), **vip_schedule(core,day), **quiet_schedule(core, day), **play_schedule(core, day), **contact_schedule(core, day),**longhair_schedule(core,day)}
     from .cafe_store_events import modify_schedule
     planned=modify_schedule(core,planned,day)
     from .cafe_customer_discontent import filter_schedule

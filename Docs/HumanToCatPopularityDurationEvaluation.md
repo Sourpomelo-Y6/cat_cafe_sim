@@ -17,11 +17,11 @@
 旧設定の結果は[前回の評価JSON](Results/AutoPlayBalanceEvaluation.json)を基準とする。今回の中間案と長めの案は最大60日で新たに実行し、[中間案のJSON](Results/AutoPlayPopularityMedium.json)と[長めの案のJSON](Results/AutoPlayPopularityLong.json)に開始条件・設定ハッシュ・段階結果・日次結果・集計を保存した。
 
 ```bash
-python3 -m cat_cafe_sim.autoplay_evaluation --goal-preset medium --days 60 --scenarios basic clear clear_no_expansion --output reports/popularity_medium.json
-python3 -m cat_cafe_sim.autoplay_evaluation --goal-preset long --days 60 --scenarios basic clear clear_no_expansion --output reports/popularity_long.json
+python3 -m cat_cafe_sim.autoplay_evaluation --goal-preset medium --customer-preset legacy --days 60 --scenarios basic clear clear_no_expansion --output reports/popularity_medium.json
+python3 -m cat_cafe_sim.autoplay_evaluation --goal-preset long --customer-preset legacy --days 60 --scenarios basic clear clear_no_expansion --output reports/popularity_long.json
 ```
 
-現在は `standard` と `long` が採用設定、`legacy` が旧設定、`medium` が中間案。`--scenarios` の省略時は従来の5条件、`--days` の既定は60日。旧JSONの再現は `--goal-preset legacy --days 30` を指定する。評価CLI自体は設定ファイルを書き換えず、評価用の初期条件だけを選ぶ。
+現在は `standard` と `long` が採用設定、`legacy` が旧設定、`medium` が中間案。`--scenarios` の省略時は従来の5条件、`--days` の既定は60日。旧JSONの再現は `--goal-preset legacy --customer-preset legacy --days 30` を指定する。評価CLI自体は設定ファイルを書き換えず、評価用の初期条件だけを選ぶ。
 
 ## 達成日と期限の余裕
 

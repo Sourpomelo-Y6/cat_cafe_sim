@@ -35,6 +35,9 @@ def starting_conditions(mode="popularity"):
         if row.get('trait') is not None:
             initial_traits[row['cat_id']] = traits[row['trait']]
     from .core.cafe_weekdays import rules as weekday_rules
+    weekdays = weekday_rules()
+    if 'popular_customer_count' in data:
+        weekdays = weekday_rules(dict(weekdays, popular_customer_count=data['popular_customer_count']))
     from .core.cafe_intake_request import rules as intake_rules
     from .core.cafe_dispatch_introduction import rules as introduction_rules
     from .core.cafe_regular_introduction import rules as regular_rules
@@ -61,7 +64,7 @@ def starting_conditions(mode="popularity"):
     from .core.cafe_dispatch_trouble import rules as trouble_rules
     from .core.cafe_pet_shop import candidates as shop_candidates
     used = set(profiles['cats']) | {intake_rules()['cat_id']}
-    return dict(visiting_cat=visiting_rules(),regular_introduction=regular_rules(),dispatch_trouble=trouble_rules(),pet_shop=shop_candidates(used),dispatch_introduction=introduction_rules(),housing=housing_rules(),dispatch_unlocks=dispatch_unlock_rules(),growth=growth_rules(), store_events=store_event_rules(), waiting_area=waiting_area_rules(), operating_cost=operating_cost_rules(), longhair_customer=longhair_rules(), contact_customer=contact_rules(), play_customer=play_rules(), quiet_customer=quiet_rules(), vip_customer=vip_rules(), reservation=reservation_rules(), customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekday_rules(), seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
+    return dict(visiting_cat=visiting_rules(),regular_introduction=regular_rules(),dispatch_trouble=trouble_rules(),pet_shop=shop_candidates(used),dispatch_introduction=introduction_rules(),housing=housing_rules(),dispatch_unlocks=dispatch_unlock_rules(),growth=growth_rules(), store_events=store_event_rules(), waiting_area=waiting_area_rules(), operating_cost=operating_cost_rules(), longhair_customer=longhair_rules(), contact_customer=contact_rules(), play_customer=play_rules(), quiet_customer=quiet_rules(), vip_customer=vip_rules(), reservation=reservation_rules(), customer_trust=trust_rules(), customer_satisfaction=satisfaction_rules(), customer_discontent=discontent_rules(), customer_loyalty=loyalty_rules(), advanced_customers=advanced_rules(), objective=mode, patron=patron_rules(), bond=bond_rules(), intake_request=intake_rules(), weekdays=weekdays, seat_count=data['seat_count'], profiles=profiles, management=rules(), goal=goal_rules(), traits=initial_traits, features=initial_features, preferences=preference_rules())
 
 
 def create_game(directory='saves/games', conditions=None):

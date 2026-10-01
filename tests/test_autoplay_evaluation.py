@@ -2,7 +2,7 @@ import unittest
 import tempfile
 from pathlib import Path
 
-from cat_cafe_sim.autoplay_evaluation import evaluate, evaluation_conditions
+from cat_cafe_sim.autoplay_evaluation import evaluate, evaluation_conditions, service_metrics
 from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
 from cat_cafe_sim.cafe_autoplay import AutoPlayer
 from cat_cafe_sim.storage.cafe_saves import save_game, load_game
@@ -23,6 +23,36 @@ class AutoPlayEvaluationTests(unittest.TestCase):
         self.assertEqual(m['starting_funds']+m['income']-m['expenses'], m['final_funds'])
         self.assertEqual(m['expenses'], sum(m['expense_breakdown'].values()))
         self.assertEqual(m['cat_days'], 10)
+        self.assertEqual(m['arrivals'], sum(row['summary']['arrivals'] for row in run['daily']))
+        self.assertEqual(m['occupied_seat_ticks']+m['empty_seat_ticks'], m['available_seat_ticks'])
+        self.assertGreater(m['seat_utilization'], 0)
+        self.assertLessEqual(m['seat_utilization'], 1)
+
+    def test_customer_presets_are_isolated_and_retain_goal_rules(self):
+        standard = evaluation_conditions('standard')
+        legacy = evaluation_conditions('standard', 'legacy')
+        self.assertEqual(standard['weekdays']['popular_customer_count'], 4)
+        self.assertNotIn('popular_customer_count', legacy['weekdays'])
+        legacy['weekdays']['popular_customer_count'] = 4
+        self.assertEqual(standard, legacy)
+        self.assertEqual(starting_conditions(), standard)
+        with self.assertRaises(ValueError):
+            evaluation_conditions('standard', 'unknown')
+
+    def test_seat_capacity_excludes_days_off_and_counts_unserved_customers(self):
+        rows = [dict(summary=dict(seat_count=2, arrivals=3, service_ticks=6),
+                     cats={'cat': dict(shift='work')},
+                     customer_outcomes=[dict(reason='wait_timeout'), dict(reason='queue_full')]),
+                dict(day_type='day_off', summary=dict(seat_count=2, arrivals=0, service_ticks=0),
+                     cats={'cat': dict(shift='rest')})]
+        metrics = service_metrics(rows, 10)
+        self.assertEqual(metrics['available_seat_ticks'], 20)
+        self.assertEqual(metrics['empty_seat_ticks'], 14)
+        self.assertEqual(metrics['seat_utilization'], .3)
+        self.assertEqual(metrics['arrivals'], 3)
+        self.assertEqual(metrics['wait_timeouts'], 1)
+        self.assertEqual(metrics['queue_full_departures'], 1)
+        self.assertEqual(service_metrics([], 10)['seat_utilization'], 0)
 
     def test_purchase_exclusion_is_local_and_baseline_rules_unchanged(self):
         original = cafe_equipment.reason

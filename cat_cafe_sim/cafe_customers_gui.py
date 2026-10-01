@@ -1,7 +1,7 @@
 """お客さんの名簿・本日の来店予定と猫別の親しみ。"""
 from .cafe_customers import directory, cat_rows
 from .core.cafe_activities import ACTIVITY_LABELS
-from .core.cafe_weekdays import day_label
+from .core.cafe_weekdays import day_label, popular_customers
 
 
 class CafeCustomersWindow:
@@ -20,7 +20,11 @@ class CafeCustomersWindow:
         frame.pack(fill='both', expand=True)
         ttk.Button(frame, text='閉じる', command=self.window.destroy).pack(side='bottom', anchor='e', pady=(6,0))
         core = session.core
-        ttk.Label(frame, text=f'{day_label(core)}のお客さんの名簿', font=('',12,'bold')).pack(anchor='w')
+        popular = popular_customers(core)
+        title = f'{day_label(core)}のお客さんの名簿'
+        if popular:
+            title += f'（人気第1段階後＋{len(popular)}人）'
+        ttk.Label(frame, text=title, font=('',12,'bold')).pack(anchor='w')
         ttk.Label(frame, text='予定は営業した場合の進行時点（0＝開店時）です。休業すると来店しません。\n来店回数はこの営業セーブの記録内で集計し、接客できなかった来店も含みます。', wraplength=620).pack(anchor='w', pady=5)
         self.view_day = tk.StringVar(value='今日：' + day_label(core))
         self.day_choices = ('今日：' + day_label(core), '翌日：' + day_label(core, core.day + 1))

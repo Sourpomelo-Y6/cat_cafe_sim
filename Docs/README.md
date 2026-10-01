@@ -1,6 +1,6 @@
 # ドキュメント索引
 
-更新日：2026-10-01
+更新日：2026-10-02
 
 通常ゲームの概要は[全体計画](HumanToCatGameFlowPlan.md)、開発再開は[引き継ぎ](DevelopmentHandoff.md)、未着手の候補は[実装予定](HumanToCatPlannedFeatures.md)から読みます。起動・実行例は[リポジトリのREADME](../README.md)を参照してください。
 
@@ -25,6 +25,7 @@
 - [通常営業UIの構成](HumanToCatUIFlow.md)
 - [営業の割り当てと自動交流](HumanToCatAutomaticCafe.md)
 - [お客さんの名簿と当日の来店予定](HumanToCatCustomers.md)
+- [人気第1段階後の通常客増加と自動プレイ比較](HumanToCatPopularCustomerGrowth.md)
 - [閉店結果と翌日の営業](HumanToCatCafeDays.md)
 - [店舗の休業日と翌日へのスキップ](HumanToCatCafeDayOffPlan.md)
 

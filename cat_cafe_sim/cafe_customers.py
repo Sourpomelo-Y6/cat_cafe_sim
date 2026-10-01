@@ -116,14 +116,15 @@ def preference(core, customer_id):
     from .core.cafe_longhair_customer import applies as longhair_applies
     if longhair_applies(core,customer_id):return 'long_hair'
     index = number(customer_id)
-    if index is not None and index <= len(core.config.arrival_ticks):
+    from .core.cafe_weekdays import popular_customers
+    if index is not None and (index <= len(core.config.arrival_ticks) or customer_id in popular_customers(core)):
         return preference_for(core.seed, customer_id, data['rules']['pool'])
     return None
 
 
 def directory(session):
     core = session.core
-    from .core.cafe_weekdays import schedule as arrival_schedule, customer_days, DAYS
+    from .core.cafe_weekdays import schedule as arrival_schedule, customer_days, DAYS, popular_customers, popular_unlocked_day
     from .core.cafe_customer_loyalty import row as loyalty_row, extra_weekday
     from .core.cafe_customer_discontent import row as discontent_row
     from .core.cafe_customer_satisfaction import latest as latest_satisfaction
@@ -131,6 +132,8 @@ def directory(session):
     schedule = arrival_schedule(core)
     tomorrow = arrival_schedule(core, core.day + 1)
     all_customers = {f'guest-{i+1}' for i in range(len(core.config.arrival_ticks))}
+    popular = popular_customers(core)
+    all_customers |= set(popular)
     known = all_customers | set(core.visits) | core.returning_customers | {guest for _, guest in session.affinities}
     known |= set((core.customer_trust or {}).get('customers',{}))
     if core.advanced_customers is not None:
@@ -182,6 +185,8 @@ def directory(session):
             status = '来店なし（休業・終了）' if core.closed else '来店予定'
         else:
             status = '本日の予定なし'
+        if key in popular and popular_unlocked_day(core) is None:
+            status = '未解放（人気第1段階）'
         if key == CUSTOMER_ID and core.advanced_customers is not None:
             from .core.cafe_advanced_customers import unlocked_day
             if unlocked_day(core) is None:
@@ -212,7 +217,7 @@ def directory(session):
         if trust and trust['status']=='departed':status=f"永久離脱（{trust['departed_day']}日目）"
         tomorrow_discontent = discontent_row(core, key, core.day+1)
         weekday_text = '・'.join(DAYS[d] for d in customer_days(core, index-1)) if key in all_customers and core.weekdays else '毎日' if key in all_customers else '—'
-        if loyalty and loyalty['regular_day'] is not None and weekday_text != '毎日':
+        if loyalty and loyalty['regular_day'] is not None and key not in popular and weekday_text != '毎日':
             weekday_text += f"＋常連:{DAYS[extra_weekday(core,key)]}"
         if core.play_customer is not None and key in (PLAY_ID, QUIET_ID):
             days = core.play_customer['weekdays' if key == PLAY_ID else 'quiet_weekdays']
@@ -220,7 +225,7 @@ def directory(session):
         if core.contact_customer is not None and key == CONTACT_ID:
             weekday_text = '・'.join(DAYS[day] for day in core.contact_customer['weekdays'])
         if key==LONGHAIR_ID and core.longhair_customer is not None:weekday_text=f"毎営業日{core.longhair_customer['probability']*100:g}％"
-        rows.append(dict(customer_id=key, name=customer_name(key), description=customer_description(key), visits=count,
+        rows.append(dict(customer_id=key, name=customer_name(key), description='人気第1段階で増える通常客' if key in popular else customer_description(key), visits=count,
                          arrival_tick=planned, tomorrow_tick=tomorrow.get(key),
                          weekdays=weekday_text,
                          status=status, preference=preferred,
