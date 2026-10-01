@@ -18,6 +18,7 @@ python3 -m cat_cafe_sim.cafe_interaction gui
 | 現在遊べる機能と一日の流れ | [全体計画](Docs/HumanToCatGameFlowPlan.md)、[画面構成](Docs/HumanToCatUIFlow.md) |
 | 開発を引き継ぐ | [引き継ぎ資料](Docs/DevelopmentHandoff.md) |
 | 今後の機能候補 | [実装予定](Docs/HumanToCatPlannedFeatures.md) |
+| 自動プレイ5条件の比較結果・調整候補 | [バランス予備評価](Docs/HumanToCatAutoPlayBalanceEvaluation.md) |
 | 自動プレイ・ログ・GUI連携とバランス調整の相談 | [自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)（CLI2モード実装済み） |
 | 保存形式と旧セーブの扱い | [営業セーブ](Docs/HumanToCatCafeSaves.md)、[軽量形式](Docs/HumanToCatCompactSaves.md) |
 | 追加機能の経緯 | [整理前の資料](Docs/History/README.md) |
@@ -62,4 +63,4 @@ python3 -m cat_cafe_sim replay reports/day.json
 
 ## 今後の作業
 
-テスト用自動プレイの2つの判断方針と日本語ログを実装しました。GUI「10日間おまかせ」も実装済みで、実行結果を使ったバランス調整と対象拡張は後続です。[自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)に希望と提案を整理しています。
+テスト用自動プレイの2つの判断方針と日本語ログを実装しました。GUI「10日間おまかせ」も実装済みで、通常設定・シード0の5条件を比較した[バランス予備評価](Docs/HumanToCatAutoPlayBalanceEvaluation.md)も追加しました。再実行は `python3 -m cat_cafe_sim.autoplay_evaluation`。ゲームの数値調整と対象拡張は後続です。[自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)に希望と提案を整理しています。
