@@ -23,6 +23,25 @@ SCENARIOS = {
     'clear_no_seat_equipment': ('clear', ('cafe_seat_equipment.reason',)),
 }
 
+# 評価専用。通常の新規開始設定や既存セーブには適用しない。
+GOAL_PRESETS = {
+    'standard': None,
+    'medium': ((200, 15), (350, 15), (500, 20)),
+    'long': ((250, 20), (450, 20), (650, 25)),
+}
+
+
+def evaluation_conditions(goal_preset):
+    if goal_preset not in GOAL_PRESETS:
+        raise ValueError('人気目標の評価条件を確認してください。')
+    conditions = starting_conditions()
+    stages = GOAL_PRESETS[goal_preset]
+    if stages is not None:
+        goal = conditions['goal']
+        goal.update(target=stages[0][0], days=stages[0][1], cap=stages[-1][0],
+                    stages=[dict(target=target, days=days) for target, days in stages[1:]])
+    return conditions
+
 
 def service_metrics(rows):
     return dict(wait_timeouts=sum(customer['reason']=='wait_timeout' for row in rows
@@ -68,13 +87,14 @@ def collect(core, result):
     return dict(reason=result.reason, message=result.message, metrics=metrics, stages=stages, daily=rows)
 
 
-def evaluate(*, max_days=30, scenarios=None, emit=print):
+def evaluate(*, max_days=30, scenarios=None, goal_preset='standard', emit=print):
     selected = list(SCENARIOS) if scenarios is None else list(scenarios)
     if not selected or any(name not in SCENARIOS for name in selected):
         raise ValueError('比較条件を確認してください。')
-    conditions = starting_conditions()
+    conditions = evaluation_conditions(goal_preset)
     encoded = json.dumps(conditions, ensure_ascii=False, sort_keys=True).encode()
     output = dict(format_version=1, evaluated_at=datetime.now(timezone.utc).isoformat(), seed=0,
+                  goal_preset=goal_preset,
                   max_days=max_days, conditions=conditions, conditions_sha256=hashlib.sha256(encoded).hexdigest(), runs={})
     with tempfile.TemporaryDirectory(prefix='cat-cafe-balance-') as directory:
         for name in selected:
@@ -95,11 +115,16 @@ def evaluate(*, max_days=30, scenarios=None, emit=print):
 def main(argv=None):
     parser = argparse.ArgumentParser(description='自動プレイ2方針と設備を外した条件を比較します。')
     parser.add_argument('--days', type=int, default=30)
+    parser.add_argument('--goal-preset', choices=GOAL_PRESETS, default='standard',
+                        help='評価専用の人気目標と期限。通常ゲームの設定は変更しません。')
+    parser.add_argument('--scenarios', nargs='+', choices=SCENARIOS,
+                        help='比較する方針・設備除外条件（省略時は全5条件）')
     parser.add_argument('--output', type=Path, default=Path('reports/autoplay_balance.json'))
     args = parser.parse_args(argv)
     if args.days<1:
         parser.error('日数は1以上で指定してください。')
-    result = evaluate(max_days=args.days, emit=lambda line: print(line, flush=True))
+    result = evaluate(max_days=args.days, scenarios=args.scenarios, goal_preset=args.goal_preset,
+                      emit=lambda line: print(line, flush=True))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     print(f'集計結果: {args.output}')

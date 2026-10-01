@@ -1,6 +1,11 @@
 import unittest
+import tempfile
+from pathlib import Path
 
-from cat_cafe_sim.autoplay_evaluation import evaluate
+from cat_cafe_sim.autoplay_evaluation import evaluate, evaluation_conditions
+from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
+from cat_cafe_sim.cafe_autoplay import AutoPlayer
+from cat_cafe_sim.storage.cafe_saves import save_game, load_game
 from cat_cafe_sim.core import cafe_equipment
 
 
@@ -32,3 +37,35 @@ class AutoPlayEvaluationTests(unittest.TestCase):
         for scenarios in ((), ('unknown',)):
             with self.assertRaises(ValueError):
                 evaluate(scenarios=scenarios)
+
+    def test_goal_presets_do_not_change_normal_starting_conditions(self):
+        baseline = starting_conditions()
+        expected = {
+            'medium': [(200, 15), (350, 15), (500, 20)],
+            'long': [(250, 20), (450, 20), (650, 25)],
+        }
+        for name, stages in expected.items():
+            conditions = evaluation_conditions(name)
+            goal = conditions['goal']
+            self.assertEqual([(r['target'], r['days']) for r in [goal]+goal['stages']], stages)
+            self.assertEqual(goal['cap'], stages[-1][0])
+            self.assertEqual(goal['gain_per_success'], baseline['goal']['gain_per_success'])
+            conditions['goal'] = baseline['goal']
+            self.assertEqual(conditions, baseline)
+        self.assertEqual(evaluation_conditions('standard'), baseline)
+        self.assertEqual(starting_conditions(), baseline)
+        with self.assertRaises(ValueError):
+            evaluation_conditions('unknown')
+
+    def test_custom_goal_save_reload_and_report_use_selected_rules(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = create_game(Path(directory), evaluation_conditions('long'))
+            AutoPlayer(session, mode='clear', max_days=1).run()
+            save_game(session, session.checkpoint_path)
+            loaded = load_game(session.checkpoint_path)[0]
+            self.assertEqual(loaded.core.snapshot(), session.core.snapshot())
+            self.assertEqual(loaded.core.goal['rules']['cap'], 650)
+        report = evaluate(max_days=1, scenarios=('basic',), goal_preset='medium', emit=lambda _: None)
+        self.assertEqual(report['goal_preset'], 'medium')
+        stage = report['runs']['basic']['stages'][0]
+        self.assertEqual((stage['target'], stage['deadline']), (200, 15))

@@ -18,6 +18,7 @@ python3 -m cat_cafe_sim.cafe_interaction gui
 | 現在遊べる機能と一日の流れ | [全体計画](Docs/HumanToCatGameFlowPlan.md)、[画面構成](Docs/HumanToCatUIFlow.md) |
 | 開発を引き継ぐ | [引き継ぎ資料](Docs/DevelopmentHandoff.md) |
 | 今後の機能候補 | [実装予定](Docs/HumanToCatPlannedFeatures.md) |
+| 人気目標と期限を増やした場合の比較 | [人気目標・期限の評価](Docs/HumanToCatPopularityDurationEvaluation.md) |
 | 自動プレイ5条件の比較結果・調整候補 | [バランス予備評価](Docs/HumanToCatAutoPlayBalanceEvaluation.md) |
 | 自動プレイ・ログ・GUI連携とバランス調整の相談 | [自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)（CLI2モード実装済み） |
 | 保存形式と旧セーブの扱い | [営業セーブ](Docs/HumanToCatCafeSaves.md)、[軽量形式](Docs/HumanToCatCompactSaves.md) |
