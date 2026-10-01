@@ -11,6 +11,7 @@
 - [開発引き継ぎ](DevelopmentHandoff.md)
 - [ゲーム全体の流れと実装状況](HumanToCatGameFlowPlan.md)
 - [未着手機能と検討事項](HumanToCatPlannedFeatures.md)
+- [テスト用自動プレイ・ログ表示・将来のGUI連携案](HumanToCatAutoPlayPlan.md)
 - [施設発展・来客増加・高難度のお客さん](HumanToCatStoreDevelopmentPlan.md)
 - [猫の加入経路と後続計画](HumanToCatRecruitmentPlan.md)
 
