@@ -40,6 +40,8 @@ def customer_name(customer_id):
     from .core.cafe_contact_customer import CUSTOMER_ID as CONTACT_ID, NAME as CONTACT_NAME
     if customer_id == CONTACT_ID:
         return CONTACT_NAME
+    from .core.cafe_longhair_customer import CUSTOMER_ID as LONGHAIR_ID, NAME as LONGHAIR_NAME
+    if customer_id==LONGHAIR_ID:return LONGHAIR_NAME
     index = number(customer_id)
     if index is None:
         return customer_id
@@ -83,6 +85,8 @@ def preference(core, customer_id):
     from .core.cafe_contact_customer import CUSTOMER_ID as CONTACT_ID
     if customer_id == CONTACT_ID and core.contact_customer is not None:
         return preference_for(core.seed, customer_id, data['rules']['pool'])
+    from .core.cafe_longhair_customer import applies as longhair_applies
+    if longhair_applies(core,customer_id):return 'long_hair'
     index = number(customer_id)
     if index is not None and index <= len(core.config.arrival_ticks):
         return preference_for(core.seed, customer_id, data['rules']['pool'])
@@ -128,6 +132,8 @@ def directory(session):
     from .core.cafe_contact_customer import CUSTOMER_ID as CONTACT_ID, unlocked_day as contact_unlocked_day
     if core.contact_customer is not None:
         known.add(CONTACT_ID)
+    from .core.cafe_longhair_customer import CUSTOMER_ID as LONGHAIR_ID, unlocked_day as longhair_unlocked_day
+    if core.longhair_customer is not None:known.add(LONGHAIR_ID)
     rows = []
     for key in sorted(known, key=lambda key: (number(key) is None, number(key) or 0, key)):
         index = number(key)
@@ -169,6 +175,8 @@ def directory(session):
             status = '未解放（人気第1段階）'
         if key == CONTACT_ID and core.contact_customer is not None and contact_unlocked_day(core) is None:
             status = '未解放（人気第1段階）'
+        if key==LONGHAIR_ID and core.longhair_customer is not None and longhair_unlocked_day(core) is None:
+            status='未解放（人気第2段階）'
         if discontent and discontent['suspended_until'] is not None:
             status = f"来店停止（{discontent['suspended_until']}日目まで）"
         if trust and trust['status']=='recovery':status='信頼回復中'
@@ -183,6 +191,7 @@ def directory(session):
             weekday_text = '・'.join(DAYS[day] for day in days)
         if core.contact_customer is not None and key == CONTACT_ID:
             weekday_text = '・'.join(DAYS[day] for day in core.contact_customer['weekdays'])
+        if key==LONGHAIR_ID and core.longhair_customer is not None:weekday_text=f"毎営業日{core.longhair_customer['probability']*100:g}％"
         rows.append(dict(customer_id=key, name=customer_name(key), visits=count,
                          arrival_tick=planned, tomorrow_tick=tomorrow.get(key),
                          weekdays=weekday_text,

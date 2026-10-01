@@ -81,6 +81,11 @@ def evaluate(core, result, advanced=None):
     if contact is not None:
         score += 1 if contact['success'] else -1
         reasons.append('触れ合い条件達成' if contact['success'] else '触れ合い条件未達')
+    from .cafe_longhair_customer import evaluate as longhair_evaluate
+    longhair=longhair_evaluate(core,result)
+    if longhair is not None:
+        score+=1 if longhair['success'] else -1
+        reasons.append('長毛触れ合い条件達成' if longhair['success'] else '長毛触れ合い条件未達')
     if result['end_reason'] == 'exhausted':
         score -= 2
         reasons.append('体力切れ')
@@ -146,8 +151,10 @@ def validate(core, data):
             from .cafe_play_customer import evaluate as play_evaluate
             play = play_evaluate(core, outcome)
             from .cafe_contact_customer import evaluate as contact_evaluate
+            from .cafe_longhair_customer import evaluate as longhair_evaluate
+            longhair=longhair_evaluate(core,outcome)
             contact = contact_evaluate(core, outcome)
-            bonus += outcome['bonus_funds'] + (advanced['bonus'] if advanced else 0) + (reservation['bonus'] if reservation else 0) + (vip['bonus'] if vip else 0) + (quiet['bonus'] if quiet else 0) + (play['bonus'] if play else 0) + (contact['bonus'] if contact else 0) + evaluate(core, outcome, advanced)['bonus']
+            bonus += outcome['bonus_funds'] + (advanced['bonus'] if advanced else 0) + (reservation['bonus'] if reservation else 0) + (vip['bonus'] if vip else 0) + (quiet['bonus'] if quiet else 0) + (play['bonus'] if play else 0) + (contact['bonus'] if contact else 0) + (longhair['bonus'] if longhair else 0) + evaluate(core, outcome, advanced)['bonus']
         if day['summary']['interaction_bonus'] != bonus:
             raise ValueError('接客評価の追加料金と接客記録が一致しません。')
         if index < len(core.day_results):

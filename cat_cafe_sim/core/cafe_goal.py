@@ -120,10 +120,11 @@ def earn(core):
     count = sum(qualified(core, outcome_result(row)) for row in rows)
     from .cafe_reservation import popularity_bonus
     from .cafe_vip_customer import popularity_bonus as vip_popularity_bonus
+    from .cafe_longhair_customer import popularity_bonus as longhair_popularity_bonus
     from .cafe_contact_customer import popularity_bonus as contact_popularity_bonus
     from .cafe_play_customer import popularity_bonus as play_popularity_bonus
     from .cafe_quiet_customer import popularity_bonus as quiet_popularity_bonus
-    extra=sum(popularity_bonus(core,outcome_result(row))+vip_popularity_bonus(core,outcome_result(row))+quiet_popularity_bonus(core,outcome_result(row))+play_popularity_bonus(core,outcome_result(row))+contact_popularity_bonus(core,outcome_result(row)) for row in rows)
+    extra=sum(popularity_bonus(core,outcome_result(row))+vip_popularity_bonus(core,outcome_result(row))+quiet_popularity_bonus(core,outcome_result(row))+play_popularity_bonus(core,outcome_result(row))+contact_popularity_bonus(core,outcome_result(row))+longhair_popularity_bonus(core,outcome_result(row)) for row in rows)
     before = core.management['popularity']
     from .cafe_store_events import popularity_bonus as store_event_bonus
     extra+=store_event_bonus(core,core.day)
@@ -150,6 +151,8 @@ def settle(core):
         capture(core, 'popularity')
         if status == 'cleared' and core.advanced_customers is not None and not data.get('history'):
             core._emit('advanced_customer_unlocked', first_day=core.day+1)
+        if status=='cleared' and core.longhair_customer is not None and len(data.get('history',[]))==1:
+            core._emit('longhair_customer_unlocked',first_day=core.day+1)
         if status == 'cleared' and core.contact_customer is not None and not data.get('history'):
             core._emit('contact_customer_unlocked', first_day=core.day+1)
         if status == 'cleared' and core.play_customer is not None and not data.get('history'):
@@ -237,10 +240,11 @@ def validate(core, data, management):
         count=sum(qualified(core, outcome_result(value)) for value in offsets[day])
         from .cafe_reservation import popularity_bonus
         from .cafe_vip_customer import popularity_bonus as vip_popularity_bonus
+        from .cafe_longhair_customer import popularity_bonus as longhair_popularity_bonus
         from .cafe_contact_customer import popularity_bonus as contact_popularity_bonus
         from .cafe_play_customer import popularity_bonus as play_popularity_bonus
         from .cafe_quiet_customer import popularity_bonus as quiet_popularity_bonus
-        extra=sum(popularity_bonus(core,outcome_result(value))+vip_popularity_bonus(core,outcome_result(value))+quiet_popularity_bonus(core,outcome_result(value))+play_popularity_bonus(core,outcome_result(value))+contact_popularity_bonus(core,outcome_result(value)) for value in offsets[day])
+        extra=sum(popularity_bonus(core,outcome_result(value))+vip_popularity_bonus(core,outcome_result(value))+quiet_popularity_bonus(core,outcome_result(value))+play_popularity_bonus(core,outcome_result(value))+contact_popularity_bonus(core,outcome_result(value))+longhair_popularity_bonus(core,outcome_result(value)) for value in offsets[day])
         from .cafe_store_events import popularity_bonus as store_event_bonus
         extra+=store_event_bonus(core,day)
         after=min(rule['cap'],popularity+count*rule['gain_per_success']+extra)

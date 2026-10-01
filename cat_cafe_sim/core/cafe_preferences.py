@@ -74,6 +74,8 @@ def arrive(core):
 
 
 def customer_preference(core, key, selected):
+    from .cafe_longhair_customer import applies as longhair_applies
+    if longhair_applies(core,key):return 'long_hair'
     from .cafe_advanced_customers import CUSTOMER_ID
     from .cafe_expansion import EXTRA_CUSTOMER_ID,FIFTH_CUSTOMER_ID,four_seat_purchase,five_seat_purchase
     from .cafe_reservation import CUSTOMER_ID as RESERVATION_ID

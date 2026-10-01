@@ -40,6 +40,7 @@ class CafeInteractionCore(SimulationCore):
         self.quiet_customer = None
         self.play_customer = None
         self.contact_customer = None
+        self.longhair_customer = None
         self.player_bond = None
         self.management = None
         self.operating_cost = None
@@ -102,6 +103,7 @@ class CafeInteractionCore(SimulationCore):
                 **({'quiet_customer': copy.deepcopy(self.quiet_customer)} if self.quiet_customer is not None else {}),
                 **({'play_customer': copy.deepcopy(self.play_customer)} if self.play_customer is not None else {}),
                 **({'contact_customer': copy.deepcopy(self.contact_customer)} if self.contact_customer is not None else {}),
+                **({'longhair_customer':copy.deepcopy(self.longhair_customer)} if self.longhair_customer is not None else {}),
                 **({'equipment_store': copy.deepcopy(self.equipment_store)} if self.equipment_store is not None else {}),
                 **({'shifts': self.shift_state()} if self.shift_rules else {}),
                 **({'health': dict(rules=asdict(self.health_rules), initial=copy.deepcopy(self.initial_health),
@@ -549,6 +551,10 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_reservation import initialize
         initialize(self,rules)
 
+    def initialize_longhair_customer(self, rules=None):
+        from .cafe_longhair_customer import initialize
+        initialize(self,rules)
+
     def initialize_contact_customer(self, rules=None):
         from .cafe_contact_customer import initialize
         initialize(self, rules)
@@ -799,6 +805,9 @@ class CafeInteractionCore(SimulationCore):
         from .cafe_quiet_customer import evaluate as evaluate_quiet, result_text as quiet_result_text
         from .cafe_play_customer import evaluate as evaluate_play, result_text as play_result_text
         from .cafe_contact_customer import evaluate as evaluate_contact, result_text as contact_result_text
+        from .cafe_longhair_customer import evaluate as evaluate_longhair, result_text as longhair_text
+        longhair=evaluate_longhair(self,result)
+        if longhair is not None:bonus+=longhair['bonus']
         contact = evaluate_contact(self, result)
         if contact is not None:
             bonus += contact['bonus']
@@ -822,6 +831,7 @@ class CafeInteractionCore(SimulationCore):
             from .cafe_reservation import apply_result
             apply_result(self,result,reservation)
         if vip is not None:self._emit('vip_customer_result',customer_id=visit.id,text=vip_result_text(self,result))
+        if longhair is not None:self._emit('longhair_customer_result',customer_id=visit.id,text=longhair_text(self,result))
         if contact is not None:
             self._emit('contact_customer_result', customer_id=visit.id, text=contact_result_text(self, result))
         if play is not None:

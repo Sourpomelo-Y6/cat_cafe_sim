@@ -122,6 +122,9 @@ class CafeCustomersWindow:
             self.details.set(play_description(self.session.core) + "\n" +
                              ("直近の接客：" + play_result_text(self.session.core, latest) if latest else "接客結果はまだありません。") +
                              "\n" + self.details.get())
+        from .core.cafe_longhair_customer import CUSTOMER_ID as LONGHAIR_ID, description as longhair_description, result_text as longhair_result_text
+        if key==LONGHAIR_ID and self.session.core.longhair_customer is not None:
+            self.details.set(longhair_description(self.session.core)+'\n'+(longhair_result_text(self.session.core,latest) if latest else '接客結果はまだありません。')+'\n'+self.details.get())
         from .core.cafe_contact_customer import CUSTOMER_ID as CONTACT_ID, description as contact_description, result_text as contact_result_text
         if key == CONTACT_ID and self.session.core.contact_customer is not None:
             from .core.cafe_checkpoint import outcome_result

@@ -470,7 +470,8 @@ class CafeInteractionSession:
         from .core.cafe_play_customer import applies as play_applies
         from .core.cafe_contact_customer import applies as contact_applies
         actual_seat = seat_id or next(iter(self.free_seats), self.core.seat.id)
-        config = replace(self.interaction_config, contact_service=contact_applies(self.core, customer_id), play_service=play_applies(self.core, customer_id), quiet_service=applies(self.core, customer_id), **effects(self.core, actual_seat), customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
+        from .core.cafe_longhair_customer import applies as longhair_applies
+        config = replace(self.interaction_config, contact_service=contact_applies(self.core, customer_id) or longhair_applies(self.core,customer_id), play_service=play_applies(self.core, customer_id), quiet_service=applies(self.core, customer_id), **effects(self.core, actual_seat), customer_tension_multiplier=match(self.core, cat_id, customer_id)['multiplier'],
                          mastery_group=interaction_terms(self.core,cat_id)['group'],
                          third_group_type_mastery=interaction_terms(self.core,cat_id)['third_group_type'],
                          third_group_second_type_mastery=interaction_terms(self.core,cat_id)['third_group_second_type'],

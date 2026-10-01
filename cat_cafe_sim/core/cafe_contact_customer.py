@@ -62,7 +62,8 @@ def preferred_seat(core, customer_id, free_seats):
 
 
 def check_interaction(core, interaction):
-    if interaction.config.contact_service != applies(core, interaction.customer_id):
+    from .cafe_longhair_customer import applies as longhair_applies
+    if interaction.config.contact_service != (applies(core, interaction.customer_id) or longhair_applies(core,interaction.customer_id)):
         raise ValueError('触れ合い客の接客設定が一致しません。')
 
 
@@ -107,6 +108,7 @@ def validate(core, data):
     if (core.weekdays is None or not core.goal or core.goal.get('tracking_only')
             or 'stages' not in core.goal['rules'] or core.goal['started_day'] != 1):
         raise ValueError('触れ合い客の来店・人気目標設定がありません。')
+    from .cafe_longhair_customer import applies as longhair_applies
     from .cafe_checkpoint import outcome_result
     rows = [outcome_result(value) for value in core.outcomes.values()]
     offset = 0
@@ -117,7 +119,7 @@ def validate(core, data):
                 if CUSTOMER_ID not in schedule(core, day['day']):
                     raise ValueError('解放前の触れ合い客の接客記録があります。')
                 evaluate(core, result)
-            elif 'contact_equipment' in result:
+            elif 'contact_equipment' in result and not longhair_applies(core,result['customer_id']):
                 raise ValueError('触れ合い客以外に設備判定の記録があります。')
         offset += count
     return core.contact_customer

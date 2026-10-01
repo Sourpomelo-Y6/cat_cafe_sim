@@ -35,6 +35,7 @@ def apply_operation(core, operation):
     elif kind=='purchase_housing':core.purchase_housing()
     elif kind=='purchase_waiting_area':core.purchase_waiting_area()
     elif kind=='upgrade_waiting_area':core.upgrade_waiting_area(operation['rules'])
+    elif kind=='initialize_longhair_customer':core.initialize_longhair_customer(operation['rules'])
     elif kind=='initialize_contact_customer':core.initialize_contact_customer(operation['rules'])
     elif kind=='initialize_play_customer':core.initialize_play_customer(operation['rules'])
     elif kind=='initialize_quiet_customer':core.initialize_quiet_customer(operation['rules'])

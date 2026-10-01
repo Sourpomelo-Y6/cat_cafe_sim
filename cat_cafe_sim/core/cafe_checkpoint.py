@@ -253,6 +253,9 @@ def restore(data):
         if 'store_events' in state:
             from .cafe_store_events import validate as validate_store_events
             core.store_events=validate_store_events(core,state['store_events'])
+        if 'longhair_customer' in state:
+            from .cafe_longhair_customer import rules as longhair_rules
+            core.longhair_customer=longhair_rules(state['longhair_customer'])
         if 'contact_customer' in state:
             from .cafe_contact_customer import rules as contact_rules
             core.contact_customer = contact_rules(state['contact_customer'])
@@ -349,6 +352,9 @@ def restore(data):
     if 'reservation' in state:
         from .cafe_reservation import validate as validate_reservation
         core.reservation=validate_reservation(core,state['reservation'])
+    if 'longhair_customer' in state:
+        from .cafe_longhair_customer import validate as validate_longhair
+        core.longhair_customer=validate_longhair(core,state['longhair_customer'])
     if 'contact_customer' in state:
         from .cafe_contact_customer import validate as validate_contact
         core.contact_customer = validate_contact(core, state['contact_customer'])

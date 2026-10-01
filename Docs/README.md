@@ -77,6 +77,7 @@
 - [静かに過ごしたいお客さん](HumanToCatQuietCustomer.md)
 - [遊び好きのお客さん](HumanToCatPlayCustomer.md)
 - [触れ合い好きのお客さん](HumanToCatContactCustomer.md)
+- [気まぐれな長毛好きのお客さん](HumanToCatLonghairCustomer.md)
 - [人気第2段階で解放する特別予約](HumanToCatReservations.md)
 - [人気最終段階で解放するVIP客](HumanToCatVipCustomer.md)
 
