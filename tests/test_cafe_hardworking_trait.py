@@ -38,12 +38,12 @@ class HardworkingTraitTests(unittest.TestCase):
         return s,key
 
     def test_catalog_new_batch_and_original_assignments(self):
-        rows=catalog();self.assertEqual(len(rows),15)
-        self.assertEqual([r['name'] for r in rows[-3:]],['ナギ','ミント','レオ'])
-        self.assertEqual([r['trait']['id'] for r in rows[-3:]],['hardworking','relaxed','hospitality'])
+        rows=catalog();self.assertEqual(len(rows),18)
+        self.assertEqual([r['name'] for r in rows[12:15]],['ナギ','ミント','レオ'])
+        self.assertEqual([r['trait']['id'] for r in rows[12:15]],['hardworking','relaxed','hospitality'])
         self.assertEqual([r['trait']['id'] for r in rows[:3]],['hospitality','outgoing','relaxed'])
         self.assertEqual([r['name'] for r in rows if r['trait']['id']=='hardy'],['ソラ','フク'])
-        self.assertEqual(rows[-3]['features'],['black','short_hair']);self.assertEqual(rows[-3]['cost'],200)
+        self.assertEqual(rows[12]['features'],['black','short_hair']);self.assertEqual(rows[12]['cost'],200)
         self.assertEqual(dict(description(definitions()['hardworking'])),{'特性':'働き者','接客ストレス':'通常の1.25倍','接客疲労':'通常の0.75倍'})
 
     def test_fractional_effects_rest_forecast_equipment_and_replay(self):
