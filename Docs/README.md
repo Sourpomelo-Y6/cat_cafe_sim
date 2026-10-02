@@ -1,6 +1,6 @@
 # ドキュメント索引
 
-更新日：2026-10-02
+更新日：2026-10-03
 
 通常ゲームの概要は[全体計画](HumanToCatGameFlowPlan.md)、開発再開は[引き継ぎ](DevelopmentHandoff.md)、未着手の候補は[実装予定](HumanToCatPlannedFeatures.md)から読みます。起動・実行例は[リポジトリのREADME](../README.md)を参照してください。
 
@@ -14,6 +14,7 @@
 - [テスト用自動プレイCLI・GUIのおまかせ操作とバランス調整案](HumanToCatAutoPlayPlan.md)
 - [自動プレイの経営3方針・比較結果](HumanToCatAutoPlayPolicies.md)
 - [安定経営・積極経営の10シード比較と評価CLI](HumanToCatAutoPlaySeedEvaluation.md)
+- [第2段階後の通常客2人追加・10シード比較](HumanToCatSecondPopularCustomerEvaluation.md)
 - [安定経営の集中負担予測・発症6件の監査と改善比較](HumanToCatAutoPlaySafeLoad.md)
 - [自動プレイ5条件のバランス予備評価・集計と調整候補](HumanToCatAutoPlayBalanceEvaluation.md)
 - [人気目標と期限を増やした場合の達成日数・投資・負担の比較](HumanToCatPopularityDurationEvaluation.md)
