@@ -70,7 +70,7 @@ class PolicyTests(unittest.TestCase):
         s = create_game(Path(self.temp.name)/'normal-fast')
         player = AutoPlayer(s, mode='fast')
         result = player.run()
-        self.assertEqual((result.reason, result.days), ('completed', 39))
+        self.assertEqual((result.reason, result.days), ('completed', 37))
         self.assertEqual([r['resolved_day'] for r in s.core.goal['history']], [11, 26])
         self.assertEqual(s.core.management['popularity'], 650)
         self.assertEqual(len(s.core.seats), 5)

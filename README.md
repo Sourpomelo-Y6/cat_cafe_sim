@@ -46,7 +46,7 @@ python3 -m unittest discover -s tests
 xvfb-run -a env CAT_CAFE_TEST_GUI=1 python3 -m unittest discover -s tests
 ```
 
-人気目標のテスト用自動プレイは、操作と判断理由を表示し、専用フォルダへセーブとログを保存します。基礎営業（`basic`、既定）、休養を重視する安定経営（`clear`）、早期達成を重視する積極経営（`fast`）を選べます。
+目標のテスト用自動プレイは、操作と判断理由を表示し、専用フォルダへセーブとログを保存します。基礎営業（`basic`、既定）、休養を重視する安定経営（`clear`）、早期達成を重視する積極経営（`fast`）を選べます。
 
 ```bash
 python3 -m cat_cafe_sim.cafe_autoplay --mode basic --days 30
@@ -65,7 +65,7 @@ python3 -m cat_cafe_sim replay reports/day.json
 
 ## 今後の作業
 
-テスト用自動プレイの3つの判断方針と日本語ログを実装しました。GUI「10日間おまかせ」も実装済みで、通常設定・シード0の5条件を比較した[バランス予備評価](Docs/HumanToCatAutoPlayBalanceEvaluation.md)も追加しました。再実行は `python3 -m cat_cafe_sim.autoplay_evaluation`。採用した長めの案（人気250→450→650、期限20・20・25日、上限650）を新規ゲームへ反映しました。旧セーブの目標・期限・上限は維持します。その他の数値調整と対象拡張は後続です。[自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)に希望と提案を整理しています。
+テスト用自動プレイの3つの判断方針と日本語ログを実装しました。GUI「10日間おまかせ」も実装済みで、通常設定・シード0の5条件を比較した[バランス予備評価](Docs/HumanToCatAutoPlayBalanceEvaluation.md)も追加しました。再実行は `python3 -m cat_cafe_sim.autoplay_evaluation`。採用した長めの案（人気250→450→650、期限20・20・25日、上限650）を新規ゲームへ反映しました。旧セーブの目標・期限・上限は維持します。CLIは `--objective bond|patron` で好感度・有力者も検証できます。[対象別の操作と検証](Docs/HumanToCatAutoPlayObjectives.md)を参照。その他の数値調整とGUIの対象拡張は後続です。[自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)に希望と提案を整理しています。
 
 新規ゲームでは人気第1段階達成後、通常客4人が毎営業日に時間を分けて来店します。旧セーブの予定は維持します。[通常客増加と自動プレイ比較](Docs/HumanToCatPopularCustomerGrowth.md)を参照してください。
 

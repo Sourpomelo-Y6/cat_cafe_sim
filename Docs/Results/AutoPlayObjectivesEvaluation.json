@@ -1,0 +1,1677 @@
+{
+  "format_version": 1,
+  "evaluated_at": "2026-10-02T22:54:53.172786+00:00",
+  "baseline_commit": "76b042f",
+  "seed": 0,
+  "mode": "clear",
+  "max_days": 90,
+  "runs": {
+    "bond": {
+      "reason": "completed",
+      "completed_days": 28,
+      "resolved_day": 29,
+      "operations": 2143,
+      "final_funds": 29140,
+      "cats": 6,
+      "seats": 3,
+      "goal": {
+        "rules": {
+          "target": 6,
+          "affinity": 80
+        },
+        "started_day": 1,
+        "status": "cleared",
+        "resolved_day": 29,
+        "continued": false,
+        "achieved_cats": [
+          "cat-kohaku",
+          "cat-mike",
+          "cat-mugi",
+          "cat-sora",
+          "cat-tama",
+          "rescue-1"
+        ]
+      },
+      "conditions": {
+        "visiting_cat": {
+          "cat_id": "visiting-cat-1",
+          "interactions_required": 3,
+          "candidate": {
+            "name": "ココ",
+            "cost": 200,
+            "personality": {
+              "type_preferences": {
+                "teaser": 1.2,
+                "ball": 1.3,
+                "plush": 0.8,
+                "tunnel": 1.4,
+                "pet": 0.2,
+                "brush": 0,
+                "voice": 1.4,
+                "presence": 1.8
+              },
+              "intensity_preferences": {
+                "gentle": 1.2,
+                "standard": 0.8,
+                "active": 0.5
+              },
+              "boredom_decay": 0.12,
+              "switch_affinity": -0.1
+            },
+            "trait": {
+              "id": "relaxed",
+              "name": "のんびり屋",
+              "service_stress": 1,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1.5,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            },
+            "features": [
+              "brown_tabby",
+              "short_hair"
+            ]
+          }
+        },
+        "regular_introduction": {
+          "cat_id": "regular-rescue-1",
+          "candidate": {
+            "name": "マロン",
+            "cost": 200,
+            "personality": {
+              "type_preferences": {
+                "teaser": 0.8,
+                "ball": 0.6,
+                "plush": 1.2,
+                "tunnel": 0.5,
+                "pet": 1.8,
+                "brush": 1.5,
+                "voice": 1.2,
+                "presence": 1.3
+              },
+              "intensity_preferences": {
+                "gentle": 1.3,
+                "standard": 1,
+                "active": 0.4
+              },
+              "boredom_decay": 0.08,
+              "switch_affinity": -0.2
+            },
+            "trait": {
+              "id": "relaxed",
+              "name": "のんびり屋",
+              "service_stress": 1,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1.5,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            },
+            "features": [
+              "orange_tabby",
+              "short_hair"
+            ]
+          }
+        },
+        "dispatch_trouble": {
+          "destination": {
+            "id": "mountain_lodge_visit",
+            "name": "山あいの宿への訪問",
+            "days": 3,
+            "reward": 650,
+            "max_fatigue": 20,
+            "required_trait": "outgoing",
+            "required_trait_name": "外出好き"
+          },
+          "base_probability": 0.15,
+          "stress_probability": 0.35,
+          "missing_days": 2,
+          "search_cost": 100,
+          "return_stress": 30
+        },
+        "pet_shop": {
+          "shop-1": {
+            "name": "チロ",
+            "personality": {
+              "type_preferences": {
+                "teaser": 1,
+                "ball": 1,
+                "plush": 1,
+                "tunnel": 1,
+                "pet": 1,
+                "brush": 1,
+                "voice": 1,
+                "presence": 1
+              },
+              "intensity_preferences": {
+                "gentle": 1,
+                "standard": 1,
+                "active": 1
+              },
+              "boredom_decay": 0.15,
+              "switch_affinity": 0
+            },
+            "cost": 400,
+            "features": [
+              "white",
+              "long_hair"
+            ],
+            "trait": {
+              "id": "relaxed",
+              "name": "のんびり屋",
+              "service_stress": 1,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1.5,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            }
+          },
+          "shop-2": {
+            "name": "レオ",
+            "personality": {
+              "type_preferences": {
+                "teaser": 0.8,
+                "ball": 0.6,
+                "plush": 1.2,
+                "tunnel": 0.5,
+                "pet": 1.8,
+                "brush": 1.5,
+                "voice": 1.2,
+                "presence": 1.3
+              },
+              "intensity_preferences": {
+                "gentle": 1.3,
+                "standard": 1,
+                "active": 0.4
+              },
+              "boredom_decay": 0.08,
+              "switch_affinity": -0.2
+            },
+            "cost": 450,
+            "features": [
+              "orange_tabby",
+              "short_hair"
+            ],
+            "trait": {
+              "id": "outgoing",
+              "name": "外出好き",
+              "service_stress": 1,
+              "service_fatigue": 1,
+              "rest_fatigue": 1,
+              "dispatch_reward": 1.25,
+              "return_stress": 10
+            }
+          },
+          "shop-3": {
+            "name": "ナナ",
+            "personality": {
+              "type_preferences": {
+                "teaser": 1.8,
+                "ball": 1.6,
+                "plush": 1.4,
+                "tunnel": 1.2,
+                "pet": 0.9,
+                "brush": 0.8,
+                "voice": 1,
+                "presence": 0.8
+              },
+              "intensity_preferences": {
+                "gentle": 1.3,
+                "standard": 1,
+                "active": 0.2
+              },
+              "boredom_decay": 0.15,
+              "switch_affinity": 0
+            },
+            "cost": 500,
+            "features": [
+              "black_white",
+              "short_hair"
+            ],
+            "trait": {
+              "id": "hospitality",
+              "name": "接客好き",
+              "service_stress": 0.5,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            }
+          }
+        },
+        "dispatch_introduction": {
+          "destination": "shopping_street_event",
+          "candidate": {
+            "name": "セナ",
+            "cost": 200,
+            "personality": {
+              "type_preferences": {
+                "teaser": 1.8,
+                "ball": 1.6,
+                "plush": 1.4,
+                "tunnel": 1.2,
+                "pet": 0.9,
+                "brush": 0.8,
+                "voice": 1,
+                "presence": 0.8
+              },
+              "intensity_preferences": {
+                "gentle": 1.3,
+                "standard": 1,
+                "active": 0.2
+              },
+              "boredom_decay": 0.15,
+              "switch_affinity": 0
+            },
+            "trait": {
+              "id": "hospitality",
+              "name": "接客好き",
+              "service_stress": 0.5,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            },
+            "features": [
+              "white",
+              "long_hair"
+            ]
+          },
+          "photo_studio": {
+            "destination": "cat_photo_studio",
+            "candidate": {
+              "name": "ルカ",
+              "cost": 250,
+              "personality": {
+                "type_preferences": {
+                  "teaser": 0.8,
+                  "ball": 0.6,
+                  "plush": 1.2,
+                  "tunnel": 0.5,
+                  "pet": 1.8,
+                  "brush": 1.5,
+                  "voice": 1.2,
+                  "presence": 1.3
+                },
+                "intensity_preferences": {
+                  "gentle": 1.3,
+                  "standard": 1,
+                  "active": 0.4
+                },
+                "boredom_decay": 0.08,
+                "switch_affinity": -0.2
+              },
+              "trait": {
+                "id": "hospitality",
+                "name": "接客好き",
+                "service_stress": 0.5,
+                "service_fatigue": 1.25,
+                "rest_fatigue": 1,
+                "dispatch_reward": 1,
+                "return_stress": 0
+              },
+              "features": [
+                "white",
+                "short_hair"
+              ]
+            }
+          }
+        },
+        "housing": {
+          "initial_capacity": 6,
+          "capacity_bonus": 3,
+          "cost": 500,
+          "daily_cost": 20
+        },
+        "dispatch_unlocks": {
+          "shopping_street_event": {
+            "popularity": 120,
+            "returns": 1
+          },
+          "out_of_town_visit": {
+            "popularity": 150,
+            "returns": 3
+          },
+          "cat_exercise_class": {
+            "popularity": 120,
+            "returns": 1,
+            "destination": {
+              "id": "cat_exercise_class",
+              "name": "猫の運動教室",
+              "days": 2,
+              "reward": 300,
+              "max_fatigue": 40,
+              "required_trait": "hardy",
+              "required_trait_name": "体力自慢"
+            }
+          },
+          "quiet_reading_salon": {
+            "popularity": 120,
+            "returns": 1,
+            "destination": {
+              "id": "quiet_reading_salon",
+              "name": "静かな読書サロン",
+              "days": 2,
+              "reward": 300,
+              "max_fatigue": 40,
+              "required_trait": "relaxed",
+              "required_trait_name": "のんびり屋"
+            }
+          },
+          "cat_photo_studio": {
+            "popularity": 120,
+            "returns": 1,
+            "destination": {
+              "id": "cat_photo_studio",
+              "name": "猫の撮影スタジオ",
+              "days": 2,
+              "reward": 350,
+              "max_fatigue": 40,
+              "required_trait": "hospitality",
+              "required_trait_name": "接客好き",
+              "welcome": {
+                "feature": "white",
+                "specialization": "service",
+                "reward_bonus": 20,
+                "satisfaction_bonus": 0
+              }
+            }
+          },
+          "cat_product_trial": {
+            "popularity": 120,
+            "returns": 1,
+            "destination": {
+              "id": "cat_product_trial",
+              "name": "猫用品の体験会",
+              "days": 2,
+              "reward": 300,
+              "max_fatigue": 40,
+              "required_trait": "hardworking",
+              "required_trait_name": "働き者"
+            }
+          },
+          "small_art_museum": {
+            "stage": 2,
+            "destination": {
+              "id": "small_art_museum",
+              "name": "小さな美術館",
+              "days": 2,
+              "reward": 350,
+              "max_fatigue": 40,
+              "required_trait": "easygoing",
+              "required_trait_name": "マイペース",
+              "welcome": {
+                "feature": "long_hair",
+                "specialization": "dispatch",
+                "reward_bonus": 20,
+                "satisfaction_bonus": 0
+              }
+            }
+          }
+        },
+        "growth": {
+          "threshold": 20,
+          "service_xp": 1,
+          "rest_xp": 1,
+          "dispatch_xp": 1,
+          "service_stamina_refund": 0.1,
+          "rest_recovery_bonus": 5,
+          "dispatch_reward_multiplier": 1.1,
+          "mastery_threshold": 15,
+          "mastery_engagement_multiplier": 1.1,
+          "type_mastery_threshold": 30,
+          "type_mastery_engagement_multiplier": 1.05,
+          "second_type_mastery_threshold": 30,
+          "second_mastery_threshold": 30
+        },
+        "store_events": {
+          "probability": 0.4,
+          "festival_customer_tick": 3,
+          "trouble_cost": 50,
+          "trouble_seat_loss": 1,
+          "support_full_cost": 100,
+          "support_full_popularity": 5,
+          "support_small_cost": 50,
+          "support_small_popularity": 2,
+          "supply": {
+            "id": "care_supplies",
+            "name": "ケア用品",
+            "stress_relief": 20
+          }
+        },
+        "waiting_area": {
+          "cost": 800,
+          "queue_bonus": 1,
+          "wait_bonus": 2,
+          "daily_cost": 10
+        },
+        "operating_cost": {
+          "base_cost": 40,
+          "per_seat_cost": 10
+        },
+        "longhair_customer": {
+          "probability": 0.3,
+          "contact_count": 3,
+          "bonus": 120,
+          "popularity_bonus": 2
+        },
+        "contact_customer": {
+          "equipment": "grooming_brush",
+          "contact_count": 3,
+          "bonus": 160,
+          "popularity_bonus": 3,
+          "weekdays": [
+            6
+          ]
+        },
+        "play_customer": {
+          "equipment": "cat_tower",
+          "play_count": 4,
+          "bonus": 180,
+          "popularity_bonus": 4,
+          "weekdays": [
+            1,
+            3,
+            5
+          ],
+          "quiet_weekdays": [
+            0,
+            2,
+            4
+          ]
+        },
+        "quiet_customer": {
+          "equipment": "quiet_space",
+          "quiet_count": 3,
+          "bonus": 150,
+          "popularity_bonus": 3
+        },
+        "vip_customer": {
+          "feature": "calico",
+          "connect_count": 1,
+          "open_up_count": 1,
+          "simultaneous_count": 1,
+          "bonus": 400,
+          "popularity_bonus": 10
+        },
+        "reservation": {
+          "feature": "long_hair",
+          "open_up_count": 1,
+          "arrival_tick": 0,
+          "bonus": 200,
+          "popularity_bonus": 5
+        },
+        "customer_trust": {
+          "warning_suspensions": 2,
+          "recovery_score": 25,
+          "popularity_loss": 10
+        },
+        "customer_satisfaction": {
+          "satisfied_score": 2,
+          "dissatisfied_score": 0,
+          "gauge_target": 50,
+          "satisfied_bonus": 20,
+          "dissatisfied_discontent_gain": 25
+        },
+        "customer_discontent": {
+          "waiting_gain": 25,
+          "advanced_failure_gain": 10,
+          "good_service_recovery": 25,
+          "threshold": 100,
+          "suspension_days": 7,
+          "return_score": 50
+        },
+        "customer_loyalty": {
+          "gain": 25,
+          "threshold": 100
+        },
+        "advanced_customers": {
+          "feature": "white",
+          "connect_count": 1,
+          "bonus": 100
+        },
+        "objective": "bond",
+        "patron": {
+          "name": "地域の有力者",
+          "target": 100,
+          "gain": 25,
+          "destination": {
+            "id": "patron_visit",
+            "name": "地域の有力者への訪問",
+            "days": 2,
+            "reward": 200,
+            "max_fatigue": 40,
+            "welcome": {
+              "feature": "white",
+              "specialization": "service",
+              "reward_bonus": 20,
+              "satisfaction_bonus": 5
+            }
+          }
+        },
+        "bond": {
+          "target": 6,
+          "affinity": 80
+        },
+        "intake_request": {
+          "day": 4,
+          "cat_id": "request-cat-1",
+          "candidate": {
+            "name": "ナナ",
+            "cost": 200,
+            "personality": {
+              "type_preferences": {
+                "teaser": 0.8,
+                "ball": 0.6,
+                "plush": 1.2,
+                "tunnel": 0.5,
+                "pet": 1.8,
+                "brush": 1.5,
+                "voice": 1.2,
+                "presence": 1.3
+              },
+              "intensity_preferences": {
+                "gentle": 1.3,
+                "standard": 1,
+                "active": 0.4
+              },
+              "boredom_decay": 0.08,
+              "switch_affinity": -0.2
+            },
+            "trait": {
+              "id": "relaxed",
+              "name": "のんびり屋",
+              "service_stress": 1,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1.5,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            },
+            "features": [
+              "black_white",
+              "long_hair"
+            ]
+          }
+        },
+        "weekdays": {
+          "start_weekday": 0,
+          "patterns": [
+            [
+              0,
+              2,
+              4,
+              6
+            ],
+            [
+              1,
+              3,
+              5,
+              6
+            ]
+          ],
+          "popular_customer_count": 4,
+          "second_popular_customer_count": 2
+        },
+        "seat_count": 2,
+        "profiles": {
+          "format_version": 2,
+          "cats": {
+            "cat-mike": {
+              "name": "ミケ",
+              "personality": {
+                "type_preferences": {
+                  "teaser": 0.8,
+                  "ball": 0.6,
+                  "plush": 1.2,
+                  "tunnel": 0.5,
+                  "pet": 1.8,
+                  "brush": 1.5,
+                  "voice": 1.2,
+                  "presence": 1.3
+                },
+                "intensity_preferences": {
+                  "gentle": 1.3,
+                  "standard": 1,
+                  "active": 0.4
+                },
+                "boredom_decay": 0.08,
+                "switch_affinity": -0.2
+              }
+            },
+            "cat-tama": {
+              "name": "タマ",
+              "personality": {
+                "type_preferences": {
+                  "teaser": 1.5,
+                  "ball": 1.7,
+                  "plush": 0.8,
+                  "tunnel": 1.8,
+                  "pet": 0.7,
+                  "brush": 0.5,
+                  "voice": 0.8,
+                  "presence": 0.4
+                },
+                "intensity_preferences": {
+                  "gentle": 0.8,
+                  "standard": 1,
+                  "active": 1.3
+                },
+                "boredom_decay": 0.2,
+                "switch_affinity": 0.2
+              }
+            },
+            "cat-sora": {
+              "name": "ソラ",
+              "personality": {
+                "type_preferences": {
+                  "teaser": 1.2,
+                  "ball": 1.3,
+                  "plush": 0.8,
+                  "tunnel": 1.4,
+                  "pet": 0.2,
+                  "brush": 0,
+                  "voice": 1.4,
+                  "presence": 1.8
+                },
+                "intensity_preferences": {
+                  "gentle": 1.2,
+                  "standard": 0.8,
+                  "active": 0.5
+                },
+                "boredom_decay": 0.12,
+                "switch_affinity": -0.1
+              }
+            },
+            "cat-kohaku": {
+              "name": "コハク",
+              "personality": {
+                "type_preferences": {
+                  "teaser": 1.8,
+                  "ball": 1.6,
+                  "plush": 1.4,
+                  "tunnel": 1.2,
+                  "pet": 0.9,
+                  "brush": 0.8,
+                  "voice": 1,
+                  "presence": 0.8
+                },
+                "intensity_preferences": {
+                  "gentle": 1.3,
+                  "standard": 1,
+                  "active": 0.2
+                },
+                "boredom_decay": 0.15,
+                "switch_affinity": 0
+              }
+            },
+            "cat-mugi": {
+              "name": "ムギ",
+              "personality": {
+                "type_preferences": {
+                  "teaser": 1,
+                  "ball": 1,
+                  "plush": 1,
+                  "tunnel": 1,
+                  "pet": 1,
+                  "brush": 1,
+                  "voice": 1,
+                  "presence": 1
+                },
+                "intensity_preferences": {
+                  "gentle": 1,
+                  "standard": 1,
+                  "active": 1
+                },
+                "boredom_decay": 0.15,
+                "switch_affinity": 0
+              }
+            }
+          },
+          "pairs": [],
+          "applied": {}
+        },
+        "management": {
+          "starting_funds": 1000,
+          "starting_popularity": 100,
+          "stress_per_service_tick": 1,
+          "rest_recovery": 20,
+          "player_relief": 5,
+          "player_stress": 5,
+          "runaway_threshold": 80,
+          "popularity_loss": 20,
+          "missing_days": 2,
+          "return_stress": 20,
+          "kitten_probability": 0.25,
+          "kitten_cost": 250
+        },
+        "goal": {
+          "days": 20,
+          "target": 250,
+          "cap": 650,
+          "gain_per_success": 5,
+          "stages": [
+            {
+              "days": 20,
+              "target": 450
+            },
+            {
+              "days": 25,
+              "target": 650
+            }
+          ]
+        },
+        "traits": {
+          "cat-mike": {
+            "id": "hospitality",
+            "name": "接客好き",
+            "service_stress": 0.5,
+            "service_fatigue": 1.25,
+            "rest_fatigue": 1,
+            "dispatch_reward": 1,
+            "return_stress": 0
+          },
+          "cat-tama": {
+            "id": "outgoing",
+            "name": "外出好き",
+            "service_stress": 1,
+            "service_fatigue": 1,
+            "rest_fatigue": 1,
+            "dispatch_reward": 1.25,
+            "return_stress": 10
+          },
+          "cat-kohaku": {
+            "id": "relaxed",
+            "name": "のんびり屋",
+            "service_stress": 1,
+            "service_fatigue": 1.25,
+            "rest_fatigue": 1.5,
+            "dispatch_reward": 1,
+            "return_stress": 0
+          }
+        },
+        "features": {
+          "cat-mike": [
+            "calico",
+            "short_hair"
+          ],
+          "cat-tama": [
+            "black_white",
+            "short_hair"
+          ],
+          "cat-sora": [
+            "white",
+            "long_hair"
+          ],
+          "cat-kohaku": [
+            "orange_tabby",
+            "long_hair"
+          ],
+          "cat-mugi": [
+            "brown_tabby",
+            "short_hair"
+          ]
+        },
+        "preferences": {
+          "pool": [
+            "white",
+            "black",
+            "calico",
+            "orange_tabby",
+            "brown_tabby",
+            "black_white",
+            "short_hair",
+            "long_hair"
+          ],
+          "tension_multiplier": 1.25
+        }
+      },
+      "conditions_sha256": "db111d8855de007087c12d938f7c313b126543666e718b68cabc80a6e5955309",
+      "save_resume_snapshot_verified": true,
+      "detailed_replay_snapshot_verified": true,
+      "player_affinities": {
+        "cat-kohaku": 81.0,
+        "cat-mike": 81.0,
+        "cat-mugi": 80.0,
+        "cat-sora": 80.0,
+        "cat-tama": 88,
+        "rescue-1": 81.0
+      },
+      "player_sets": {
+        "cat-kohaku": 9,
+        "cat-mike": 9,
+        "cat-mugi": 10,
+        "cat-sora": 40,
+        "cat-tama": 8,
+        "rescue-1": 9
+      }
+    },
+    "patron": {
+      "reason": "completed",
+      "completed_days": 8,
+      "resolved_day": 8,
+      "operations": 302,
+      "final_funds": 6510,
+      "cats": 5,
+      "seats": 2,
+      "goal": {
+        "rules": {
+          "name": "地域の有力者",
+          "target": 100,
+          "gain": 25,
+          "destination": {
+            "id": "patron_visit",
+            "name": "地域の有力者への訪問",
+            "days": 2,
+            "reward": 200,
+            "max_fatigue": 40,
+            "welcome": {
+              "feature": "white",
+              "specialization": "service",
+              "reward_bonus": 20,
+              "satisfaction_bonus": 5
+            }
+          }
+        },
+        "started_day": 1,
+        "satisfaction": 100,
+        "status": "cleared",
+        "resolved_day": 8,
+        "continued": false
+      },
+      "conditions": {
+        "visiting_cat": {
+          "cat_id": "visiting-cat-1",
+          "interactions_required": 3,
+          "candidate": {
+            "name": "ココ",
+            "cost": 200,
+            "personality": {
+              "type_preferences": {
+                "teaser": 1.2,
+                "ball": 1.3,
+                "plush": 0.8,
+                "tunnel": 1.4,
+                "pet": 0.2,
+                "brush": 0,
+                "voice": 1.4,
+                "presence": 1.8
+              },
+              "intensity_preferences": {
+                "gentle": 1.2,
+                "standard": 0.8,
+                "active": 0.5
+              },
+              "boredom_decay": 0.12,
+              "switch_affinity": -0.1
+            },
+            "trait": {
+              "id": "relaxed",
+              "name": "のんびり屋",
+              "service_stress": 1,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1.5,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            },
+            "features": [
+              "brown_tabby",
+              "short_hair"
+            ]
+          }
+        },
+        "regular_introduction": {
+          "cat_id": "regular-rescue-1",
+          "candidate": {
+            "name": "マロン",
+            "cost": 200,
+            "personality": {
+              "type_preferences": {
+                "teaser": 0.8,
+                "ball": 0.6,
+                "plush": 1.2,
+                "tunnel": 0.5,
+                "pet": 1.8,
+                "brush": 1.5,
+                "voice": 1.2,
+                "presence": 1.3
+              },
+              "intensity_preferences": {
+                "gentle": 1.3,
+                "standard": 1,
+                "active": 0.4
+              },
+              "boredom_decay": 0.08,
+              "switch_affinity": -0.2
+            },
+            "trait": {
+              "id": "relaxed",
+              "name": "のんびり屋",
+              "service_stress": 1,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1.5,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            },
+            "features": [
+              "orange_tabby",
+              "short_hair"
+            ]
+          }
+        },
+        "dispatch_trouble": {
+          "destination": {
+            "id": "mountain_lodge_visit",
+            "name": "山あいの宿への訪問",
+            "days": 3,
+            "reward": 650,
+            "max_fatigue": 20,
+            "required_trait": "outgoing",
+            "required_trait_name": "外出好き"
+          },
+          "base_probability": 0.15,
+          "stress_probability": 0.35,
+          "missing_days": 2,
+          "search_cost": 100,
+          "return_stress": 30
+        },
+        "pet_shop": {
+          "shop-1": {
+            "name": "チロ",
+            "personality": {
+              "type_preferences": {
+                "teaser": 1,
+                "ball": 1,
+                "plush": 1,
+                "tunnel": 1,
+                "pet": 1,
+                "brush": 1,
+                "voice": 1,
+                "presence": 1
+              },
+              "intensity_preferences": {
+                "gentle": 1,
+                "standard": 1,
+                "active": 1
+              },
+              "boredom_decay": 0.15,
+              "switch_affinity": 0
+            },
+            "cost": 400,
+            "features": [
+              "white",
+              "long_hair"
+            ],
+            "trait": {
+              "id": "relaxed",
+              "name": "のんびり屋",
+              "service_stress": 1,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1.5,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            }
+          },
+          "shop-2": {
+            "name": "レオ",
+            "personality": {
+              "type_preferences": {
+                "teaser": 0.8,
+                "ball": 0.6,
+                "plush": 1.2,
+                "tunnel": 0.5,
+                "pet": 1.8,
+                "brush": 1.5,
+                "voice": 1.2,
+                "presence": 1.3
+              },
+              "intensity_preferences": {
+                "gentle": 1.3,
+                "standard": 1,
+                "active": 0.4
+              },
+              "boredom_decay": 0.08,
+              "switch_affinity": -0.2
+            },
+            "cost": 450,
+            "features": [
+              "orange_tabby",
+              "short_hair"
+            ],
+            "trait": {
+              "id": "outgoing",
+              "name": "外出好き",
+              "service_stress": 1,
+              "service_fatigue": 1,
+              "rest_fatigue": 1,
+              "dispatch_reward": 1.25,
+              "return_stress": 10
+            }
+          },
+          "shop-3": {
+            "name": "ナナ",
+            "personality": {
+              "type_preferences": {
+                "teaser": 1.8,
+                "ball": 1.6,
+                "plush": 1.4,
+                "tunnel": 1.2,
+                "pet": 0.9,
+                "brush": 0.8,
+                "voice": 1,
+                "presence": 0.8
+              },
+              "intensity_preferences": {
+                "gentle": 1.3,
+                "standard": 1,
+                "active": 0.2
+              },
+              "boredom_decay": 0.15,
+              "switch_affinity": 0
+            },
+            "cost": 500,
+            "features": [
+              "black_white",
+              "short_hair"
+            ],
+            "trait": {
+              "id": "hospitality",
+              "name": "接客好き",
+              "service_stress": 0.5,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            }
+          }
+        },
+        "dispatch_introduction": {
+          "destination": "shopping_street_event",
+          "candidate": {
+            "name": "セナ",
+            "cost": 200,
+            "personality": {
+              "type_preferences": {
+                "teaser": 1.8,
+                "ball": 1.6,
+                "plush": 1.4,
+                "tunnel": 1.2,
+                "pet": 0.9,
+                "brush": 0.8,
+                "voice": 1,
+                "presence": 0.8
+              },
+              "intensity_preferences": {
+                "gentle": 1.3,
+                "standard": 1,
+                "active": 0.2
+              },
+              "boredom_decay": 0.15,
+              "switch_affinity": 0
+            },
+            "trait": {
+              "id": "hospitality",
+              "name": "接客好き",
+              "service_stress": 0.5,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            },
+            "features": [
+              "white",
+              "long_hair"
+            ]
+          },
+          "photo_studio": {
+            "destination": "cat_photo_studio",
+            "candidate": {
+              "name": "ルカ",
+              "cost": 250,
+              "personality": {
+                "type_preferences": {
+                  "teaser": 0.8,
+                  "ball": 0.6,
+                  "plush": 1.2,
+                  "tunnel": 0.5,
+                  "pet": 1.8,
+                  "brush": 1.5,
+                  "voice": 1.2,
+                  "presence": 1.3
+                },
+                "intensity_preferences": {
+                  "gentle": 1.3,
+                  "standard": 1,
+                  "active": 0.4
+                },
+                "boredom_decay": 0.08,
+                "switch_affinity": -0.2
+              },
+              "trait": {
+                "id": "hospitality",
+                "name": "接客好き",
+                "service_stress": 0.5,
+                "service_fatigue": 1.25,
+                "rest_fatigue": 1,
+                "dispatch_reward": 1,
+                "return_stress": 0
+              },
+              "features": [
+                "white",
+                "short_hair"
+              ]
+            }
+          }
+        },
+        "housing": {
+          "initial_capacity": 6,
+          "capacity_bonus": 3,
+          "cost": 500,
+          "daily_cost": 20
+        },
+        "dispatch_unlocks": {
+          "shopping_street_event": {
+            "popularity": 120,
+            "returns": 1
+          },
+          "out_of_town_visit": {
+            "popularity": 150,
+            "returns": 3
+          },
+          "cat_exercise_class": {
+            "popularity": 120,
+            "returns": 1,
+            "destination": {
+              "id": "cat_exercise_class",
+              "name": "猫の運動教室",
+              "days": 2,
+              "reward": 300,
+              "max_fatigue": 40,
+              "required_trait": "hardy",
+              "required_trait_name": "体力自慢"
+            }
+          },
+          "quiet_reading_salon": {
+            "popularity": 120,
+            "returns": 1,
+            "destination": {
+              "id": "quiet_reading_salon",
+              "name": "静かな読書サロン",
+              "days": 2,
+              "reward": 300,
+              "max_fatigue": 40,
+              "required_trait": "relaxed",
+              "required_trait_name": "のんびり屋"
+            }
+          },
+          "cat_photo_studio": {
+            "popularity": 120,
+            "returns": 1,
+            "destination": {
+              "id": "cat_photo_studio",
+              "name": "猫の撮影スタジオ",
+              "days": 2,
+              "reward": 350,
+              "max_fatigue": 40,
+              "required_trait": "hospitality",
+              "required_trait_name": "接客好き",
+              "welcome": {
+                "feature": "white",
+                "specialization": "service",
+                "reward_bonus": 20,
+                "satisfaction_bonus": 0
+              }
+            }
+          },
+          "cat_product_trial": {
+            "popularity": 120,
+            "returns": 1,
+            "destination": {
+              "id": "cat_product_trial",
+              "name": "猫用品の体験会",
+              "days": 2,
+              "reward": 300,
+              "max_fatigue": 40,
+              "required_trait": "hardworking",
+              "required_trait_name": "働き者"
+            }
+          },
+          "small_art_museum": {
+            "stage": 2,
+            "destination": {
+              "id": "small_art_museum",
+              "name": "小さな美術館",
+              "days": 2,
+              "reward": 350,
+              "max_fatigue": 40,
+              "required_trait": "easygoing",
+              "required_trait_name": "マイペース",
+              "welcome": {
+                "feature": "long_hair",
+                "specialization": "dispatch",
+                "reward_bonus": 20,
+                "satisfaction_bonus": 0
+              }
+            }
+          }
+        },
+        "growth": {
+          "threshold": 20,
+          "service_xp": 1,
+          "rest_xp": 1,
+          "dispatch_xp": 1,
+          "service_stamina_refund": 0.1,
+          "rest_recovery_bonus": 5,
+          "dispatch_reward_multiplier": 1.1,
+          "mastery_threshold": 15,
+          "mastery_engagement_multiplier": 1.1,
+          "type_mastery_threshold": 30,
+          "type_mastery_engagement_multiplier": 1.05,
+          "second_type_mastery_threshold": 30,
+          "second_mastery_threshold": 30
+        },
+        "store_events": {
+          "probability": 0.4,
+          "festival_customer_tick": 3,
+          "trouble_cost": 50,
+          "trouble_seat_loss": 1,
+          "support_full_cost": 100,
+          "support_full_popularity": 5,
+          "support_small_cost": 50,
+          "support_small_popularity": 2,
+          "supply": {
+            "id": "care_supplies",
+            "name": "ケア用品",
+            "stress_relief": 20
+          }
+        },
+        "waiting_area": {
+          "cost": 800,
+          "queue_bonus": 1,
+          "wait_bonus": 2,
+          "daily_cost": 10
+        },
+        "operating_cost": {
+          "base_cost": 40,
+          "per_seat_cost": 10
+        },
+        "longhair_customer": {
+          "probability": 0.3,
+          "contact_count": 3,
+          "bonus": 120,
+          "popularity_bonus": 2
+        },
+        "contact_customer": {
+          "equipment": "grooming_brush",
+          "contact_count": 3,
+          "bonus": 160,
+          "popularity_bonus": 3,
+          "weekdays": [
+            6
+          ]
+        },
+        "play_customer": {
+          "equipment": "cat_tower",
+          "play_count": 4,
+          "bonus": 180,
+          "popularity_bonus": 4,
+          "weekdays": [
+            1,
+            3,
+            5
+          ],
+          "quiet_weekdays": [
+            0,
+            2,
+            4
+          ]
+        },
+        "quiet_customer": {
+          "equipment": "quiet_space",
+          "quiet_count": 3,
+          "bonus": 150,
+          "popularity_bonus": 3
+        },
+        "vip_customer": {
+          "feature": "calico",
+          "connect_count": 1,
+          "open_up_count": 1,
+          "simultaneous_count": 1,
+          "bonus": 400,
+          "popularity_bonus": 10
+        },
+        "reservation": {
+          "feature": "long_hair",
+          "open_up_count": 1,
+          "arrival_tick": 0,
+          "bonus": 200,
+          "popularity_bonus": 5
+        },
+        "customer_trust": {
+          "warning_suspensions": 2,
+          "recovery_score": 25,
+          "popularity_loss": 10
+        },
+        "customer_satisfaction": {
+          "satisfied_score": 2,
+          "dissatisfied_score": 0,
+          "gauge_target": 50,
+          "satisfied_bonus": 20,
+          "dissatisfied_discontent_gain": 25
+        },
+        "customer_discontent": {
+          "waiting_gain": 25,
+          "advanced_failure_gain": 10,
+          "good_service_recovery": 25,
+          "threshold": 100,
+          "suspension_days": 7,
+          "return_score": 50
+        },
+        "customer_loyalty": {
+          "gain": 25,
+          "threshold": 100
+        },
+        "advanced_customers": {
+          "feature": "white",
+          "connect_count": 1,
+          "bonus": 100
+        },
+        "objective": "patron",
+        "patron": {
+          "name": "地域の有力者",
+          "target": 100,
+          "gain": 25,
+          "destination": {
+            "id": "patron_visit",
+            "name": "地域の有力者への訪問",
+            "days": 2,
+            "reward": 200,
+            "max_fatigue": 40,
+            "welcome": {
+              "feature": "white",
+              "specialization": "service",
+              "reward_bonus": 20,
+              "satisfaction_bonus": 5
+            }
+          }
+        },
+        "bond": {
+          "target": 6,
+          "affinity": 80
+        },
+        "intake_request": {
+          "day": 4,
+          "cat_id": "request-cat-1",
+          "candidate": {
+            "name": "ナナ",
+            "cost": 200,
+            "personality": {
+              "type_preferences": {
+                "teaser": 0.8,
+                "ball": 0.6,
+                "plush": 1.2,
+                "tunnel": 0.5,
+                "pet": 1.8,
+                "brush": 1.5,
+                "voice": 1.2,
+                "presence": 1.3
+              },
+              "intensity_preferences": {
+                "gentle": 1.3,
+                "standard": 1,
+                "active": 0.4
+              },
+              "boredom_decay": 0.08,
+              "switch_affinity": -0.2
+            },
+            "trait": {
+              "id": "relaxed",
+              "name": "のんびり屋",
+              "service_stress": 1,
+              "service_fatigue": 1.25,
+              "rest_fatigue": 1.5,
+              "dispatch_reward": 1,
+              "return_stress": 0
+            },
+            "features": [
+              "black_white",
+              "long_hair"
+            ]
+          }
+        },
+        "weekdays": {
+          "start_weekday": 0,
+          "patterns": [
+            [
+              0,
+              2,
+              4,
+              6
+            ],
+            [
+              1,
+              3,
+              5,
+              6
+            ]
+          ],
+          "popular_customer_count": 4,
+          "second_popular_customer_count": 2
+        },
+        "seat_count": 2,
+        "profiles": {
+          "format_version": 2,
+          "cats": {
+            "cat-mike": {
+              "name": "ミケ",
+              "personality": {
+                "type_preferences": {
+                  "teaser": 0.8,
+                  "ball": 0.6,
+                  "plush": 1.2,
+                  "tunnel": 0.5,
+                  "pet": 1.8,
+                  "brush": 1.5,
+                  "voice": 1.2,
+                  "presence": 1.3
+                },
+                "intensity_preferences": {
+                  "gentle": 1.3,
+                  "standard": 1,
+                  "active": 0.4
+                },
+                "boredom_decay": 0.08,
+                "switch_affinity": -0.2
+              }
+            },
+            "cat-tama": {
+              "name": "タマ",
+              "personality": {
+                "type_preferences": {
+                  "teaser": 1.5,
+                  "ball": 1.7,
+                  "plush": 0.8,
+                  "tunnel": 1.8,
+                  "pet": 0.7,
+                  "brush": 0.5,
+                  "voice": 0.8,
+                  "presence": 0.4
+                },
+                "intensity_preferences": {
+                  "gentle": 0.8,
+                  "standard": 1,
+                  "active": 1.3
+                },
+                "boredom_decay": 0.2,
+                "switch_affinity": 0.2
+              }
+            },
+            "cat-sora": {
+              "name": "ソラ",
+              "personality": {
+                "type_preferences": {
+                  "teaser": 1.2,
+                  "ball": 1.3,
+                  "plush": 0.8,
+                  "tunnel": 1.4,
+                  "pet": 0.2,
+                  "brush": 0,
+                  "voice": 1.4,
+                  "presence": 1.8
+                },
+                "intensity_preferences": {
+                  "gentle": 1.2,
+                  "standard": 0.8,
+                  "active": 0.5
+                },
+                "boredom_decay": 0.12,
+                "switch_affinity": -0.1
+              }
+            },
+            "cat-kohaku": {
+              "name": "コハク",
+              "personality": {
+                "type_preferences": {
+                  "teaser": 1.8,
+                  "ball": 1.6,
+                  "plush": 1.4,
+                  "tunnel": 1.2,
+                  "pet": 0.9,
+                  "brush": 0.8,
+                  "voice": 1,
+                  "presence": 0.8
+                },
+                "intensity_preferences": {
+                  "gentle": 1.3,
+                  "standard": 1,
+                  "active": 0.2
+                },
+                "boredom_decay": 0.15,
+                "switch_affinity": 0
+              }
+            },
+            "cat-mugi": {
+              "name": "ムギ",
+              "personality": {
+                "type_preferences": {
+                  "teaser": 1,
+                  "ball": 1,
+                  "plush": 1,
+                  "tunnel": 1,
+                  "pet": 1,
+                  "brush": 1,
+                  "voice": 1,
+                  "presence": 1
+                },
+                "intensity_preferences": {
+                  "gentle": 1,
+                  "standard": 1,
+                  "active": 1
+                },
+                "boredom_decay": 0.15,
+                "switch_affinity": 0
+              }
+            }
+          },
+          "pairs": [],
+          "applied": {}
+        },
+        "management": {
+          "starting_funds": 1000,
+          "starting_popularity": 100,
+          "stress_per_service_tick": 1,
+          "rest_recovery": 20,
+          "player_relief": 5,
+          "player_stress": 5,
+          "runaway_threshold": 80,
+          "popularity_loss": 20,
+          "missing_days": 2,
+          "return_stress": 20,
+          "kitten_probability": 0.25,
+          "kitten_cost": 250
+        },
+        "goal": {
+          "days": 20,
+          "target": 250,
+          "cap": 650,
+          "gain_per_success": 5,
+          "stages": [
+            {
+              "days": 20,
+              "target": 450
+            },
+            {
+              "days": 25,
+              "target": 650
+            }
+          ]
+        },
+        "traits": {
+          "cat-mike": {
+            "id": "hospitality",
+            "name": "接客好き",
+            "service_stress": 0.5,
+            "service_fatigue": 1.25,
+            "rest_fatigue": 1,
+            "dispatch_reward": 1,
+            "return_stress": 0
+          },
+          "cat-tama": {
+            "id": "outgoing",
+            "name": "外出好き",
+            "service_stress": 1,
+            "service_fatigue": 1,
+            "rest_fatigue": 1,
+            "dispatch_reward": 1.25,
+            "return_stress": 10
+          },
+          "cat-kohaku": {
+            "id": "relaxed",
+            "name": "のんびり屋",
+            "service_stress": 1,
+            "service_fatigue": 1.25,
+            "rest_fatigue": 1.5,
+            "dispatch_reward": 1,
+            "return_stress": 0
+          }
+        },
+        "features": {
+          "cat-mike": [
+            "calico",
+            "short_hair"
+          ],
+          "cat-tama": [
+            "black_white",
+            "short_hair"
+          ],
+          "cat-sora": [
+            "white",
+            "long_hair"
+          ],
+          "cat-kohaku": [
+            "orange_tabby",
+            "long_hair"
+          ],
+          "cat-mugi": [
+            "brown_tabby",
+            "short_hair"
+          ]
+        },
+        "preferences": {
+          "pool": [
+            "white",
+            "black",
+            "calico",
+            "orange_tabby",
+            "brown_tabby",
+            "black_white",
+            "short_hair",
+            "long_hair"
+          ],
+          "tension_multiplier": 1.25
+        }
+      },
+      "conditions_sha256": "4b0c58a476a8f94a55f85c012c2e489707b6e8173feb1d00e32f7248fad0152e",
+      "save_resume_snapshot_verified": true,
+      "detailed_replay_snapshot_verified": true
+    }
+  }
+}

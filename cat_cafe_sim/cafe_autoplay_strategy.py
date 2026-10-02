@@ -12,7 +12,9 @@ def reserve(core):
 
 def prepare(session, emit, name, report=None, mode="clear"):
     c = session.core
-    remaining = cafe_goal.current_start(c.goal)+cafe_goal.current_rules(c.goal)['days']-c.day
+    remaining = (cafe_goal.current_start(c.goal)+cafe_goal.current_rules(c.goal)['days']-c.day
+                 if not c.goal.get('tracking_only') else float('inf'))
+    duration = f'期限まで残り{remaining}日' if remaining != float('inf') else '目標期限なし'
     buffer = reserve(c)
     staffing = plan(session, mode=mode)
     limits = "疲労65・ストレス60以下で早期達成を優先" if mode == "fast" else "疲労・ストレスとも60以下で休養を優先"
@@ -39,14 +41,14 @@ def prepare(session, emit, name, report=None, mode="clear"):
                 demand += f'健康な担当可能猫{staffing["healthy"]}匹で休養交代と待機客・新客への対応を見込む。'
             if report:
                 report(label.removesuffix('を購入').replace('を強化','の強化').replace('席を増設','席の増設'),
-                       '購入', demand+f'費用{cost:g}、購入後の資金{c.funds-cost:g}で予備資金{buffer:g}を確保。期限まで残り{remaining}日')
+                       '購入', demand+f'費用{cost:g}、購入後の資金{c.funds-cost:g}で予備資金{buffer:g}を確保。{duration}')
             return f'{label}（{demand}費用{cost:g}、運営予備資金{buffer:g}を確保）', lambda action=action, rules=rules: action(rules)
     toy = next(row for row in cafe_seat_equipment.catalog() if row['id']=='toys')
     for key, seat in sorted(cafe_seat_equipment.seats(c).items()):
         if seat.equipment is None and c.funds-toy['cost']>=buffer and not cafe_seat_equipment.reason(c):
             if report:
                 report(f'{key}のおもちゃセット', '購入', f'接客の関心を高める。費用{toy["cost"]:g}、購入後の資金{c.funds-toy["cost"]:g}で予備資金{buffer:g}を確保')
-            return f'{key}に{toy["name"]}を購入（接客の関心を高め、残り{remaining}日、予備資金{buffer:g}を確保）', lambda key=key: session.purchase_seat_equipment(key, toy)
+            return f'{key}に{toy["name"]}を購入（接客の関心を高め、{duration}、予備資金{buffer:g}を確保）', lambda key=key: session.purchase_seat_equipment(key, toy)
     selected = cafe_equipment.soundproof_rules()
     if remaining>1 and not cafe_equipment.soundproof_reason(c, selected) and c.funds-selected['cost']>=buffer:
         if report:
@@ -92,4 +94,4 @@ def prepare(session, emit, name, report=None, mode="clear"):
     report_workers(workers)
     if set(workers)!=c.working_cats:
         return f'予測で出勤を設定: {", ".join(map(name, workers))}（{limits}）', lambda: session.set_shifts(workers)
-    return f'予測で決めた出勤予定で営業開始（目標期限まで残り{remaining}日）', session.automatic_step
+    return f'予測で決めた出勤予定で営業開始（{duration}）', session.automatic_step

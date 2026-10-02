@@ -20,7 +20,7 @@ class AutoPlayResult:
     message: str
 
 
-REASONS = dict(completed='人気目標達成', expired='人気目標の期限切れ',
+REASONS = dict(completed='目標達成', expired='人気目標の期限切れ',
                goal_cleared='目標の段階を達成',
                game_over='ゲームオーバー', day_limit='指定日数に到達',
                operation_limit='操作上限に到達', blocked='進行できません', cancelled='中断')
@@ -30,7 +30,10 @@ class AutoPlayer:
     """step()は最大一つの通常操作。停止要求は次の操作の前に確認する。"""
 
     def __init__(self, session, *, max_days=60, max_operations=10000,
-                 emit=None, detailed=False, mode='basic', stop_on_goal=False, on_decision=None):
+                 emit=None, detailed=False, mode='basic', stop_on_goal=False, on_decision=None, objective='popularity'):
+        if objective not in ('popularity', 'bond', 'patron'):
+            raise ValueError('検証対象はpopularity・bond・patronを指定してください。')
+        self.objective = objective
         if type(stop_on_goal) is not bool:
             raise ValueError('目標達成時の停止設定は真偽値で指定してください。')
         if mode not in ('basic', 'clear', 'fast'):
@@ -55,7 +58,7 @@ class AutoPlayer:
         self.emit(f'自動プレイ方針: {"基礎営業" if mode=="basic" else ("安定経営" if mode=="clear" else "積極経営")}')
 
     def _name(self, key):
-        return self.names.get(key, key)
+        return self.session.profiles.get(key, {}).get('name', self.names.get(key, key))
 
     def _decision(self, target, choice, reason, subject=None):
         self.decisions.append(dict(day=self.session.core.day, target=target, choice=choice, reason=reason,
@@ -76,7 +79,13 @@ class AutoPlayer:
         self.result = AutoPlayResult(reason, self._days()-self.start_days,
                                      self.operations, message)
         goal = self.session.core.goal
-        if goal:
+        if self.objective != 'popularity':
+            from .core.cafe_bond_goal import progress as bond_progress
+            from .core.cafe_patron import progress as patron_progress
+            self.emit('最終状況: '+(bond_progress(self.session.core) if self.objective == 'bond' else patron_progress(self.session.core)))
+        if goal and goal.get('tracking_only'):
+            self.emit(f'最終状況: 人気集計 {self.session.core.management["popularity"]:g} / 資金 {self.session.core.funds:g}')
+        elif goal:
             self.emit(f'最終状況: 人気第{len(goal.get("history", []))+1}段階'
                       f' / 人気 {self.session.core.management["popularity"]:g}'
                       f' / 目標 {cafe_goal.current_rules(goal)["target"]:g}'
@@ -90,6 +99,11 @@ class AutoPlayer:
         s, c = self.session, self.session.core
         if s.pending:
             return '未保存の交流結果を保存', s.persist
+        if cafe_player.active(c) and self.objective=='bond' and self.mode!='basic':
+            from .cafe_autoplay_objectives import player_action
+            interaction = cafe_player.current(c)
+            action, target = player_action(interaction)
+            return f'プレイヤー交流: {action}'+(f' / {target}' if target else ''), lambda: s.player_command(action, target)
         if cafe_player.active(c):
             return '進行中のプレイヤー交流を終了', lambda: s.player_command(finish=True)
         # 依頼・紹介への回答は店舗イベントの解決が前提。先に対応する。
@@ -166,11 +180,12 @@ class AutoPlayer:
             return self._stop('cancelled')
         if cafe_management.is_over(c):
             return self._stop('game_over', str(c.management['game_over']))
-        if not c.goal or c.goal.get('tracking_only'):
-            return self._stop('blocked', '人気目標が有効なゲームを指定してください。')
-        if c.goal['status']=='expired':
+        target = c.goal if self.objective=='popularity' else c.bond_goal if self.objective=='bond' else c.patron
+        if not c.goal or not target or (self.objective=='popularity' and c.goal.get('tracking_only')):
+            return self._stop('blocked', '検証対象の目標が有効なゲームを指定してください。')
+        if c.goal['status']=='expired' and (self.objective=='popularity' or not c.goal['continued']):
             return self._stop('expired')
-        if c.goal['status']=='cleared' and cafe_goal.next_rules(c.goal) is None:
+        if (self.objective!='popularity' and target['status']=='cleared') or (self.objective=='popularity' and c.goal['status']=='cleared' and cafe_goal.next_rules(c.goal) is None):
             return self._stop('completed')
         if self.stop_on_goal:
             from .core.cafe_bond_goal import pending as bond_pending
@@ -188,12 +203,16 @@ class AutoPlayer:
         try:
             decision = self._answer()
             if decision is None:
-                if c.goal['status']=='cleared':
-                    decision = ('次の人気段階に挑戦（3段階まで進行）', s.advance_goal)
+                if c.goal['status']=='cleared' and (cafe_goal.next_rules(c.goal) is not None or not c.goal['continued']):
+                    decision = (('次の人気段階に挑戦（3段階まで進行）', s.advance_goal)
+                                if cafe_goal.next_rules(c.goal) is not None else ('人気目標の結果を確認して継続', s.continue_goal))
                 elif c.closed:
                     decision = ('翌日の営業準備へ進む', s.next_day)
                 elif c.can_set_shifts:
-                    if self.mode!='basic':
+                    if self.objective!='popularity':
+                        from .cafe_autoplay_objectives import prepare as prepare_objective
+                        decision = prepare_objective(self)
+                    if decision is None and self.mode!='basic' and self.objective!='patron':
                         from .cafe_autoplay_strategy import prepare
                         decision = prepare(s, self.emit, self._name, report=self._decision, mode=self.mode)
                     if decision is None:
@@ -215,7 +234,11 @@ class AutoPlayer:
             if self._days() > before_days:
                 self.emit(f'{day}日目の結果: 資金 {c.funds:g} / 人気 {c.management["popularity"]:g}'
                           f' / 人気獲得 {c.goal["days"][-1]["gain"]:g}'
-                          f' / 目標 {dict(active="挑戦中", cleared="達成", expired="期限切れ")[c.goal["status"]]}')
+                          f' / 人気目標 {"集計のみ" if c.goal.get("tracking_only") else dict(active="挑戦中", cleared="達成", expired="期限切れ")[c.goal["status"]]}')
+                if self.objective != 'popularity':
+                    from .core.cafe_bond_goal import progress as bond_progress
+                    from .core.cafe_patron import progress as patron_progress
+                    self.emit('  '+(bond_progress(c) if self.objective=='bond' else patron_progress(c)))
                 for key, cat in sorted(c.cats.items()):
                     health = dict(healthy='健康', sick='療養中').get(cat.health_status, cat.health_status)
                     self.emit(f'  {self._name(key)}: 疲労 {cat.fatigue:g} / ストレス {c.management["stress"][key]:g} / 状態 {health}')
@@ -254,7 +277,8 @@ class AutoPlayer:
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='人気目標を通常操作で自動プレイし、日本語ログを出力します。')
+    parser = argparse.ArgumentParser(description='目標を通常操作で自動プレイし、日本語ログを出力します。')
+    parser.add_argument('--objective', choices=('popularity', 'bond', 'patron'), default='popularity', help='検証対象の目標（再開時も指定）')
     parser.add_argument('--directory', default='reports/autoplay', help='新規テストゲームの保存先')
     parser.add_argument('--resume', type=Path, help='再開する営業セーブ（関係データも更新します）')
     parser.add_argument('--days', type=int, default=60)
@@ -265,9 +289,9 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.days < 1 or args.max_operations < 1 or not 0 <= args.interval <= 60:
         parser.error('日数・操作数は1以上、待機は0〜60秒で指定してください。')
-    from .cafe_new_game import create_game
+    from .cafe_new_game import create_game, starting_conditions
     from .storage.cafe_saves import load_game, save_game
-    session = load_game(args.resume)[0] if args.resume else create_game(args.directory)
+    session = load_game(args.resume)[0] if args.resume else create_game(args.directory, starting_conditions(args.objective))
     log_path = session.checkpoint_path.parent/'autoplay.log'
     print(f'営業セーブ: {session.checkpoint_path}\n操作ログ: {log_path}', flush=True)
     with log_path.open('a', encoding='utf-8') as log:
@@ -275,7 +299,7 @@ def main(argv=None):
             print(line, flush=True)
             log.write(line+'\n'); log.flush()
         player = AutoPlayer(session, max_days=args.days, max_operations=args.max_operations,
-                            emit=emit, detailed=args.detailed, mode=args.mode)
+                            emit=emit, detailed=args.detailed, mode=args.mode, objective=args.objective)
         previous = signal.signal(signal.SIGINT, lambda *_: player.cancel())
         try:
             while player.result is None:
