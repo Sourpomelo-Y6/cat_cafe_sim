@@ -56,6 +56,10 @@ def result_rows(core,event):
                 if e['id']==event['id']:
                     rows.append(('満足度の実増加',f'{total-before:g}（{before:g} → {total:g} / 上限{rules["target"]:g}）'));break
         else:rows.append(('満足度の増加見込み',f'{gain:g}（目標上限まで）'))
+    if 'patron_match' in event:
+        from .core.cafe_patron_members import condition_text
+        match = event['patron_match']
+        rows.extend([('出発時の有力者希望', condition_text(match['condition'])), ('条件判定', '一致' if match['matched'] else '不一致'), ('条件による満足度', f"＋{match['gain']:g}（目標上限まで）")])
     return rows
 
 

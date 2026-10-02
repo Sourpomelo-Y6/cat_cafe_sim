@@ -10,7 +10,9 @@ def comparison_rows(session,cat_id):
     core=session.core
     if cat_id not in core.cats:raise ValueError('比較する猫を選んでください。')
     choices=destinations(core)
-    if core.patron:choices.append(core.patron['rules']['destination'])
+    if core.patron:
+        from .core.cafe_patron import destinations as patron_destinations
+        choices.extend(patron_destinations(core))
     rows=[]
     for destination in choices:
         terms=dispatch_terms(core,cat_id,destination['reward'])
@@ -46,6 +48,9 @@ def comparison_rows(session,cat_id):
         if introduction:detail.append(f"帰還受取後の猫紹介：{introduction['candidate']['name']} / 受け入れ費用 {introduction['candidate']['cost']:g}")
         if core.patron and destination['id']==core.patron['rules']['destination']['id']:
             detail.append(f"有力者満足度：＋{core.patron['rules']['gain']+welcome.get('satisfaction_bonus',0):g}（上限 {core.patron['rules']['target']:g}）")
+        from .core.cafe_patron_members import description as patron_description
+        patron_note = patron_description(core, cat_id, destination['id'])
+        if patron_note:detail.append(patron_note)
         from .core.cafe_dispatch_trouble import DESTINATION_ID, probability
         if destination['id']==DESTINATION_ID and core.dispatch_trouble:
             trouble=core.dispatch_trouble

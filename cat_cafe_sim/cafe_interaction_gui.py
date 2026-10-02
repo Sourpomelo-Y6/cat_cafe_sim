@@ -154,7 +154,7 @@ class ManualCafeInteractionWindow:
             elif kind=='patron_enabled':
                 text='有力者の満足度目標を開始'
             elif kind=='patron_satisfaction':
-                text=f"有力者の満足度 ＋{event['gain']:g}（合計{event['satisfaction']:g}）"
+                text=f"{event.get('name', '有力者')}の満足度 ＋{event['gain']:g}（合計{event['satisfaction']:g}）"
             elif kind=='patron_cleared':
                 text='有力者の満足度目標クリア'
             elif kind=='patron_continued':

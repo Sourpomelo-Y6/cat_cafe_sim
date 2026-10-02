@@ -376,7 +376,7 @@ def restore(data):
     from .cafe_patron import validate as validate_patron, pending as patron_pending, DESTINATION_ID
     if 'patron' in state:
         core.patron = validate_patron(core, state['patron'])
-    elif any(e['destination']['id'] == DESTINATION_ID for e in (core.activities or {}).get('events', {}).values()):
+    elif any(e['destination']['id'] in (DESTINATION_ID, 'patron_moody_visit', 'patron_strict_visit') for e in (core.activities or {}).get('events', {}).values()):
         raise ValueError('有力者派遣の目標設定がありません。')
     from .cafe_bond_goal import validate as validate_bond, pending as bond_pending
     if 'bond_goal' in state:

@@ -1,5 +1,5 @@
 """有力者の満足度目標の開始・進捗・クリア確認。"""
-from .core.cafe_patron import rules, pending, progress
+from .core.cafe_patron import starting_rules, pending, progress
 from .core.cafe_management import is_over
 
 
@@ -10,8 +10,8 @@ class CafePatronWindow:
         self.session, self.on_changed = session, on_changed
         self.window = tk.Toplevel(parent)
         self.window.title('有力者目標・結果')
-        self.window.geometry('580x360')
-        self.window.minsize(500, 320)
+        self.window.geometry('680x520')
+        self.window.minsize(560, 440)
         self.window.transient(parent)
         self.window.grab_set()
         frame = ttk.Frame(self.window, padding=12)
@@ -26,7 +26,7 @@ class CafePatronWindow:
         self.close_button.pack(side='right')
         self.status, self.details, self.notice = tk.StringVar(), tk.StringVar(), tk.StringVar()
         for var in (self.status, self.details, self.notice):
-            ttk.Label(frame, textvariable=var, wraplength=460).pack(anchor='w', pady=8)
+            ttk.Label(frame, textvariable=var, wraplength=520).pack(anchor='w', pady=8)
         self.window.bind('<Escape>', lambda event: self.window.destroy())
         self.refresh()
 
@@ -34,10 +34,18 @@ class CafePatronWindow:
         from .core.cafe_activities import waiting_events
         core = self.session.core
         data = core.patron
-        selected = data['rules'] if data else rules()
+        selected = data['rules'] if data else starting_rules(core)
         trip = selected['destination']
         self.status.set(progress(core))
         self.details.set(f"{selected['name']}への派遣帰還を受け取ると満足度＋{selected['gain']:g}。{selected['target']:g}でクリアです。期限はありません。\n派遣は{trip['days']}日・基本報酬{trip['reward']:g}・疲労{trip['max_fatigue']:g}以下。通常の健康・余剰猫条件も適用します。\n人気目標とは独立して達成でき、クリア後も営業を続けられます。")
+        if selected.get('members'):
+            from .core.cafe_preferences import FEATURES
+            from .core.cafe_growth import LABELS
+            extra = []
+            for row in selected['members']:
+                conditions = ['・'.join(([FEATURES[c['feature']][0]] if 'feature' in c else [])+([LABELS[c['specialization']]] if 'specialization' in c else [])) for c in row['conditions']]
+                extra.append(f"{row['name']}：希望 {' → '.join(conditions)}。一致＋{row['gain']:g} / 不一致＋{row['unmatched_gain']:g}、目標{row['target']:g}。")
+            self.details.set(self.details.get().replace(f"{selected['target']:g}でクリアです。", f"{selected['target']:g}でこの相手の目標達成です。")+'\n'+'\n'.join(extra)+'\n全員の達成が必要です。気分型の希望は帰還確認後に次へ進み、訪問中は固定します。現在の希望と加点見込みは派遣画面で確認できます。')
         reason = ''
         try:
             core.require_events_resolved()
@@ -63,8 +71,9 @@ class CafePatronWindow:
 
     def enable(self):
         from tkinter import messagebox
-        selected = rules()
-        if messagebox.askyesno('有力者目標を開始', f"{selected['name']}の満足度{selected['target']:g}を目指します。期限なし・開始後の取消はできません。開始しますか？", parent=self.window):
+        selected = starting_rules(self.session.core)
+        target_text = f"{selected['name']}の満足度{selected['target']:g}"+('と追加有力者全員の達成' if selected.get('members') else '')
+        if messagebox.askyesno('有力者目標を開始', f"{target_text}を目指します。期限なし・開始後の取消はできません。開始しますか？", parent=self.window):
             self.perform(lambda: self.session.enable_patron(selected))
 
     def resume(self):

@@ -23,7 +23,8 @@ def metric(core, mode):
         from .cafe_goal import current_rules
         return current_rules(data)['target'], core.management['popularity']
     if mode=='patron':
-        return data['rules']['target'], data['satisfaction']
+        return (data['rules']['target']+sum(r['target'] for r in data['rules'].get('members', [])),
+                data['satisfaction']+sum(data.get('members', {}).values()))
     return data['rules']['target'], len(data['achieved_cats'])
 
 

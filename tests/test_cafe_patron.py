@@ -84,11 +84,11 @@ class PatronTests(unittest.TestCase):
         self.assertIsNone(s.core.patron)
         self.assertNotIn('patron', checkpoint(s.core, set())['state'])
         with self.assertRaises(ValueError):
-            s.enable_patron()
+            s.enable_patron(rules())
         s.enable_management()
         with self.assertRaises(ValueError):
             s.dispatch(next(iter(s.core.cats)), rules()['destination'])
-        s.enable_patron()
+        s.enable_patron(rules())
         self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(), s.core.snapshot())
         key = next(iter(s.core.cats))
         s.dispatch(key)
@@ -97,7 +97,7 @@ class PatronTests(unittest.TestCase):
         self.assertEqual(s.core.patron['satisfaction'], 0)
         before = s.core.snapshot()
         with self.assertRaises(ValueError):
-            s.enable_patron()
+            s.enable_patron(rules())
         self.assertEqual(s.core.snapshot(), before)
         self.reload(s)
 
@@ -148,7 +148,7 @@ class PatronTests(unittest.TestCase):
     def test_frozen_destination_and_invalid_state_rejected(self):
         s = self.session()
         s.enable_management()
-        s.enable_patron()
+        s.enable_patron(rules())
         key = next(iter(s.core.cats))
         altered = dict(rules()['destination'], reward=999)
         with self.assertRaises(ValueError):

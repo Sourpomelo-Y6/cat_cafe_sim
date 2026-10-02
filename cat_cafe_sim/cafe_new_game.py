@@ -44,7 +44,7 @@ def starting_conditions(mode="popularity"):
     from .core.cafe_dispatch_introduction import rules as introduction_rules
     from .core.cafe_regular_introduction import rules as regular_rules
     from .core.cafe_visiting_cat import rules as visiting_rules
-    from .core.cafe_patron import rules as patron_rules
+    from .core.cafe_patron import progression_rules as patron_rules
     from .core.cafe_bond_goal import rules as bond_rules
     from .core.cafe_advanced_customers import rules as advanced_rules
     from .core.cafe_customer_loyalty import rules as loyalty_rules

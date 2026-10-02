@@ -27,16 +27,32 @@ def prepare(player):
             player._decision(s.profiles[key]['name'], '交流', f"好感度{affinity[key]:g}、目標{goal['rules']['affinity']:g}。未達の猫から交流", key)
             return f'{s.profiles[key]["name"]}とプレイヤー交流を開始', lambda: s.play_with_player(key)
     elif player.objective == 'patron':
-        from .core.cafe_patron import DESTINATION_ID
+        from .core.cafe_patron import destinations
+        from .core.cafe_patron_members import terms
+        choices = destinations(c)
+        ids = {row['id'] for row in choices}
         events = (c.activities or {}).get('events', {}).values()
-        if any(e['destination']['id'] == DESTINATION_ID and e['status'] != 'resolved' for e in events):
+        if any(e['destination']['id'] in ids and e['status'] != 'resolved' for e in events):
             return None
-        destination = c.patron['rules']['destination']
-        eligible = [key for key in c.cats if not cafe_activities.dispatch_reason(c, key, destination)]
-        if eligible:
-            key = min(eligible, key=lambda key: (c.cats[key].fatigue, key))
-            player._decision(s.profiles[key]['name'], '派遣', '有力者の満足度を増やす。健康・疲労・店内の担当可能猫数の条件を確認', key)
-            return f'{s.profiles[key]["name"]}を有力者へ派遣', lambda: s.dispatch(key, destination)
+        for destination in choices:
+            key = destination['id']
+            if key == c.patron['rules']['destination']['id']:
+                satisfied = c.patron['satisfaction'] >= c.patron['rules']['target']
+            else:
+                member = next(r for r in c.patron['rules']['members'] if r['id']==key)
+                satisfied = c.patron['members'][key] >= member['target']
+            if satisfied:
+                continue
+            eligible = [cat for cat in c.cats if not cafe_activities.dispatch_reason(c, cat, destination)]
+            eligible = [cat for cat in eligible if terms(c, cat, key) is None or terms(c, cat, key)['gain'] > 0]
+            if eligible:
+                cat = min(eligible, key=lambda cat: (-(terms(c, cat, key) or {}).get('gain', 0), c.cats[cat].fatigue, cat))
+                note = '健康・疲労・余剰猫条件を確認'
+                if terms(c, cat, key):
+                    from .core.cafe_patron_members import description
+                    note += ' / '+description(c, cat, key)
+                player._decision(s.profiles[cat]['name'], '派遣', destination['name']+'。'+note, cat)
+                return f'{s.profiles[cat]["name"]}を{destination["name"]}へ派遣', lambda cat=cat, destination=destination: s.dispatch(cat, destination)
     return None
 
 

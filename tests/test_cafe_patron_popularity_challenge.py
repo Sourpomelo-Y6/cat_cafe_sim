@@ -25,7 +25,7 @@ class PatronPopularityChallengeTests(unittest.TestCase):
 
     def game(self, *, easy_patron=False):
         self.sequence+=1
-        selected=starting_conditions('patron'); selected.pop('intake_request')
+        selected=starting_conditions('patron'); selected['patron'].pop('members', None); selected.pop('intake_request')
         selected['management']['starting_funds']=10000
         selected['store_events']['probability']=0
         selected['growth']['threshold']=1000

@@ -55,6 +55,7 @@ class ObjectiveTests(unittest.TestCase):
 
     def test_patron_and_bond_clear_and_continue(self):
         selected=starting_conditions('patron')
+        selected['patron'].pop('members', None)
         selected['patron']['target']=selected['patron']['gain']
         s=create_game(self.directory,selected)
         key=next(iter(s.core.cats));s.dispatch(key,s.core.patron['rules']['destination'])

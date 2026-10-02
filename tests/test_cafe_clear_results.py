@@ -20,7 +20,9 @@ class ClearResultsTests(unittest.TestCase):
         conditions['store_events']['probability']=0
         if mode=='popularity':
             conditions['goal'].update(target=105,days=10,stages=[dict(target=110,days=10),dict(target=115,days=10)])
-        elif mode=='patron':conditions['patron']['target']=conditions['patron']['gain']
+        elif mode=='patron':
+            conditions['patron'].pop('members', None)
+            conditions['patron']['target']=conditions['patron']['gain']
         elif mode=='bond':conditions['bond']=dict(target=1,affinity=.5)
         return create_game(self.directory,conditions)
 

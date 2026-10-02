@@ -51,9 +51,12 @@ def dispatch_reason(core, cat_id, rules):
         return '出勤・病気ルールが有効な営業準備中に出発できます。'
     if cat_id not in core.cats:
         return '参加している猫を選んでください。'
-    from .cafe_patron import DESTINATION_ID
-    if rules['id'] == DESTINATION_ID and (not core.patron or rules != core.patron['rules']['destination']):
+    from .cafe_patron import DESTINATION_ID, destinations as patron_destinations
+    from .cafe_patron_members import IDS
+    if rules['id'] in (DESTINATION_ID, *IDS) and rules not in patron_destinations(core):
         return '先に有力者目標を開始してください。派遣条件は開始時の設定を使います。'
+    if rules['id'] in IDS and any(e['destination']['id']==rules['id'] and (e['status']!='resolved' or e['started_day']==core.day) for e in (core.activities or {}).get('events', {}).values()):
+        return '同じ有力者への訪問は同時1件・同日出発1件までです。帰還確認後に準備してください。'
     from .cafe_dispatch_unlocks import SPECIAL_DESTINATIONS, saved_destination
     if rules['id'] in SPECIAL_DESTINATIONS and rules != saved_destination(core,rules['id']):
         return 'この営業には対応する派遣設定がありません。開始時の設定を使ってください。'
@@ -135,6 +138,9 @@ def dispatch(core, cat_id, rules=None, *, encounter=None, item_reward=None, intr
     from .cafe_dispatch_match import terms as welcome_terms
     matched=welcome_terms(core,cat_id,rules)
     if matched is not None:event["welcome_match"]=matched
+    from .cafe_patron_members import terms as patron_terms
+    patron_match = patron_terms(core, cat_id, rules["id"])
+    if patron_match is not None:event["patron_match"] = patron_match
     from .cafe_dispatch_encounters import attach
     attach(event, encounter)
     if item_reward is not None:
@@ -219,8 +225,10 @@ def validate(core, data):
             raise ValueError('猫の活動状態が不正です。')
     busy=set()
     for key,e in data['events'].items():
-        if set(e)-{'encounter','item_reward','growth_multiplier','welcome_match','introduction','trouble'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
+        if set(e)-{'encounter','item_reward','growth_multiplier','welcome_match','introduction','trouble','patron_match'}!={'id','kind','cat_id','destination','started_day','remaining','status','occurred_day','resolved_day','choice'}:
             raise ValueError('イベントの記録が不正です。')
+        if 'patron_match' in e and e.get('destination', {}).get('id') not in ('patron_moody_visit', 'patron_strict_visit'):
+            raise ValueError('有力者条件の派遣先が不正です。')
         if 'item_reward' in e:
             from .cafe_items import definition
             definition(e['item_reward'])

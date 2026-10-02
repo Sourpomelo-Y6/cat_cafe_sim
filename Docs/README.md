@@ -14,6 +14,7 @@
 - [テスト用自動プレイCLI・GUIのおまかせ操作とバランス調整案](HumanToCatAutoPlayPlan.md)
 - [自動プレイの経営3方針・比較結果](HumanToCatAutoPlayPolicies.md)
 - [安定経営・積極経営の10シード比較と評価CLI](HumanToCatAutoPlaySeedEvaluation.md)
+- [3人の有力者・気分型と厳格型の条件、旧セーブ互換](HumanToCatPatronMembers.md)
 - [好感度・有力者の自動プレイ検証とCLI操作](HumanToCatAutoPlayObjectives.md)
 - [第2段階後の通常客2人追加・10シード比較](HumanToCatSecondPopularCustomerEvaluation.md)
 - [安定経営の集中負担予測・発症6件の監査と改善比較](HumanToCatAutoPlaySafeLoad.md)

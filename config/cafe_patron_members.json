@@ -1,0 +1,18 @@
+[
+  {
+    "id": "patron_moody_visit",
+    "name": "気分が変わる有力者",
+    "target": 100,
+    "gain": 20,
+    "unmatched_gain": 2,
+    "conditions": [{"feature": "white"}, {"feature": "black"}, {"feature": "long_hair"}]
+  },
+  {
+    "id": "patron_strict_visit",
+    "name": "条件に厳格な有力者",
+    "target": 100,
+    "gain": 25,
+    "unmatched_gain": 0,
+    "conditions": [{"feature": "white", "specialization": "service"}]
+  }
+]

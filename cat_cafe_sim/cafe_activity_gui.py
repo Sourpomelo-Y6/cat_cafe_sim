@@ -158,14 +158,20 @@ class CafeActivityWindow:
         selected_id = self.rules['id']
         self.destinations = list(self.base_destinations)
         if core.patron:
-            self.destinations.append(core.patron['rules']['destination'])
+            from .core.cafe_patron import destinations as patron_destinations
+            self.destinations.extend(patron_destinations(core))
         self.destination_choice.configure(values=[row['name'] for row in self.destinations])
         index = next((i for i, row in enumerate(self.destinations) if row['id'] == selected_id), 0)
         self.destination_choice.current(index)
         self.rules = self.destinations[index]
-        self.patron_button.configure(text=(f"有力者 {core.patron['satisfaction']:g}/{core.patron['rules']['target']:g}・結果…" if core.patron else '有力者目標・結果…'))
+        if core.patron and core.patron['rules'].get('members'):
+            count = int(core.patron['satisfaction'] >= core.patron['rules']['target']) + sum(core.patron['members'][r['id']]>=r['target'] for r in core.patron['rules']['members'])
+            self.patron_button.configure(text=f'有力者 {count}/3人達成・結果…')
+        else:
+            self.patron_button.configure(text=(f"有力者 {core.patron['satisfaction']:g}/{core.patron['rules']['target']:g}・結果…" if core.patron else '有力者目標・結果…'))
         required = self.rules.get('required_trait_name', '指定なし')
         from .core.cafe_dispatch_match import description as welcome_description
+        from .core.cafe_patron_members import description as patron_description
         self.destination_info.set(f"{self.rules['days']}日 / 基本報酬 {self.rules['reward']:g} / 疲労{self.rules['max_fatigue']:g}以下 / 必要特性：{required}")
         from .core.cafe_dispatch_unlocks import description as unlock_description
         self.destination_info.set(self.destination_info.get()+'\n'+unlock_description(core,self.rules['id']))
@@ -180,7 +186,7 @@ class CafeActivityWindow:
         self.cats.delete(*self.cats.get_children());self.events.delete(*self.events.get_children())
         from .core.cafe_growth import summary as growth_summary
         for key,cat in core.cats.items():
-            self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),ACTIVITY_LABELS[core.activity(key)],health_text(cat.health_status,cat.recovery_days_remaining),f'{cat.fatigue:g}',(trait(core,key) or {}).get('name','なし'),growth_summary(core,key),(dispatch_reason(core,key,self.rules) or '参加できます')+' / '+welcome_description(core,key,self.rules)))
+            self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),ACTIVITY_LABELS[core.activity(key)],health_text(cat.health_status,cat.recovery_days_remaining),f'{cat.fatigue:g}',(trait(core,key) or {}).get('name','なし'),growth_summary(core,key),(dispatch_reason(core,key,self.rules) or '参加できます')+' / '+welcome_description(core,key,self.rules)+' / '+patron_description(core,key,self.rules['id'])))
         if selected:self.cats.selection_set(selected[0])
         elif core.cats:self.cats.selection_set(next(iter(core.cats)))
         labels={'missing':'派遣中断・行方不明','travelling':'派遣中','waiting':'帰還・確認待ち','resolved':'受取済み'}
@@ -254,7 +260,8 @@ class CafeActivityWindow:
         encounter=for_destination(self.rules, self.session.core.day)
         from .core.cafe_dispatch_match import description,terms as welcome_terms
         matched=welcome_terms(self.session.core,selected[0],self.rules)
-        welcome_note='\n'+description(self.session.core,selected[0],self.rules)
+        from .core.cafe_patron_members import description as patron_description
+        welcome_note='\n'+description(self.session.core,selected[0],self.rules)+'\n'+patron_description(self.session.core,selected[0],self.rules['id'])
         if matched:
             welcome_note+=f'\n報酬見込み {terms["reward"]+matched["reward_bonus"]:g}（歓迎ボーナス込み）'
         note=f"\n1日目終了時に選択イベント：{encounter['title']}" if encounter else ''

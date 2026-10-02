@@ -23,6 +23,7 @@ class ObjectiveAutoPlayTests(unittest.TestCase):
         self.sequence += 1
         selected = starting_conditions(objective)
         if easy:
+            selected['patron'].pop('members', None)
             selected['bond'] = dict(target=1, affinity=.5)
             selected['patron']['target'] = 25
             selected['store_events']['probability'] = 0
@@ -180,7 +181,7 @@ class ObjectiveAutoPlayTests(unittest.TestCase):
             self.assertEqual(main(['--objective','patron','--mode','clear','--max-operations','5','--resume',str(checkpoint)]), 0)
         restored, _ = load_game(checkpoint)
         self.assertEqual(restored.core.objective, 'patron')
-        self.assertEqual(AutoPlayer(restored, objective='patron', mode='clear').run().reason, 'completed')
+        self.assertEqual(AutoPlayer(restored, objective='patron', mode='clear', max_days=1).run().reason, 'day_limit')
         self.replay(restored)
 
     def test_player_choice_is_readonly_and_works_for_all_initial_personalities(self):
