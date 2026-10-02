@@ -19,6 +19,7 @@ class PopularCustomerTests(unittest.TestCase):
 
     def game(self, mode='popularity', legacy=False, seats=2):
         conditions = starting_conditions(mode)
+        conditions['weekdays'].pop('second_popular_customer_count', None)
         conditions.pop('store_events')
         conditions.pop('intake_request')
         conditions['seat_count'] = seats

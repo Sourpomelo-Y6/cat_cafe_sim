@@ -24,6 +24,7 @@ class SixSeatExpansionTests(unittest.TestCase):
         selected=starting_conditions(); selected.pop('intake_request')
         # 3日で解放する増設テストは旧来店設定で、猫の状態と同時接客条件を固定する。
         selected['weekdays'].pop('popular_customer_count')
+        selected['weekdays'].pop('second_popular_customer_count', None)
         selected['store_events']['probability']=0
         selected['goal'].update(target=105,stages=[dict(days=10,target=110),dict(days=10,target=115)])
         self.session=create_game(Path(self.temp.name)/'games',selected)

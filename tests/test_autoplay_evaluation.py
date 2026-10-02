@@ -33,7 +33,10 @@ class AutoPlayEvaluationTests(unittest.TestCase):
         legacy = evaluation_conditions('standard', 'legacy')
         self.assertEqual(standard['weekdays']['popular_customer_count'], 4)
         self.assertNotIn('popular_customer_count', legacy['weekdays'])
+        self.assertEqual(standard['weekdays']['second_popular_customer_count'], 2)
+        self.assertNotIn('second_popular_customer_count', legacy['weekdays'])
         legacy['weekdays']['popular_customer_count'] = 4
+        legacy['weekdays']['second_popular_customer_count'] = 2
         self.assertEqual(standard, legacy)
         self.assertEqual(starting_conditions(), standard)
         with self.assertRaises(ValueError):

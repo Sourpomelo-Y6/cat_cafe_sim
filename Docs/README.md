@@ -28,7 +28,7 @@
 - [通常営業UIの構成](HumanToCatUIFlow.md)
 - [営業の割り当てと自動交流](HumanToCatAutomaticCafe.md)
 - [お客さんの名簿と当日の来店予定](HumanToCatCustomers.md)
-- [人気第1段階後の通常客増加と自動プレイ比較](HumanToCatPopularCustomerGrowth.md)
+- [人気第1・第2段階後の通常客増加と自動プレイ比較](HumanToCatPopularCustomerGrowth.md)
 - [クリア方針の来店予定・出勤・増設判断と比較](HumanToCatAutoPlayStaffing.md)
 - [閉店結果と翌日の営業](HumanToCatCafeDays.md)
 - [店舗の休業日と翌日へのスキップ](HumanToCatCafeDayOffPlan.md)

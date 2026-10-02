@@ -41,6 +41,7 @@ def evaluation_conditions(goal_preset, customer_preset='standard'):
         raise ValueError('来店人数の評価条件を確認してください。')
     if customer_preset == 'legacy':
         conditions['weekdays'].pop('popular_customer_count', None)
+        conditions['weekdays'].pop('second_popular_customer_count', None)
     stages = GOAL_PRESETS[goal_preset]
     if stages is not None:
         goal = conditions['goal']

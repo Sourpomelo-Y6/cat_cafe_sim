@@ -23,7 +23,9 @@ class CafeCustomersWindow:
         popular = popular_customers(core)
         title = f'{day_label(core)}のお客さんの名簿'
         if popular:
-            title += f'（人気第1段階後＋{len(popular)}人）'
+            title += f"（第1段階＋{core.weekdays['popular_customer_count']}人"
+            second = core.weekdays.get('second_popular_customer_count', 0)
+            title += (f'・第2段階＋{second}人）' if second else '）')
         ttk.Label(frame, text=title, font=('',12,'bold')).pack(anchor='w')
         ttk.Label(frame, text='予定は営業した場合の進行時点（0＝開店時）です。休業すると来店しません。\n来店回数はこの営業セーブの記録内で集計し、接客できなかった来店も含みます。', wraplength=620).pack(anchor='w', pady=5)
         self.view_day = tk.StringVar(value='今日：' + day_label(core))

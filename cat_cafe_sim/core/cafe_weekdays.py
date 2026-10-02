@@ -10,11 +10,14 @@ def rules(data=None):
     if data is None:
         data = json.loads((Path(__file__).resolve().parents[2] / 'config/cafe_weekdays.json').read_text())
     base = {'start_weekday', 'patterns'}
-    if not isinstance(data, dict) or set(data) not in (base, base | {'popular_customer_count'}):
+    if not isinstance(data, dict) or set(data) not in (base, base | {'popular_customer_count'}, base | {'popular_customer_count', 'second_popular_customer_count'}):
         raise ValueError('来店曜日の設定が不正です。')
     if 'popular_customer_count' in data and (type(data['popular_customer_count']) is not int
                                            or not 1 <= data['popular_customer_count'] <= 8):
         raise ValueError('人気達成後の追加通常客は1〜8人にしてください。')
+    if 'second_popular_customer_count' in data and (type(data['second_popular_customer_count']) is not int
+            or not 1 <= data['second_popular_customer_count'] <= 8):
+        raise ValueError('人気第2段階の追加通常客は1〜8人にしてください。')
     if type(data['start_weekday']) is not int or not 0 <= data['start_weekday'] < 7:
         raise ValueError('開始曜日が不正です。')
     patterns = data['patterns']
@@ -43,24 +46,39 @@ def customer_days(core, index):
     return patterns[index % len(patterns)]
 
 
+def popular_customer_stage(core, customer_id):
+    first_count = (core.weekdays or {}).get("popular_customer_count", 0)
+    return 1 if int(customer_id.split("-")[1]) <= len(core.config.arrival_ticks)+first_count else 2
+
+
 def popular_customers(core):
     """解放前も同じID・来店時点を予告し、短い営業時間にも合わせる。"""
     count = (core.weekdays or {}).get('popular_customer_count', 0)
     start = len(core.config.arrival_ticks)
+    second = (core.weekdays or {}).get('second_popular_customer_count', 0)
     return {f'guest-{start+i+1}': (2*i+1)*core.config.opening_ticks//(2*(count+1))
-            for i in range(count)}
+            for i in range(count)} | {
+                f'guest-{start+count+i+1}': (2*i+1)*core.config.opening_ticks//(2*second)
+                for i in range(second)}
 
 
-def popular_unlocked_day(core):
+def popular_unlocked_day(core, stage=1):
     if not core.goal or core.goal.get('tracking_only'):
         return None
-    first = (core.goal.get('history') or [core.goal])[0]
-    return first['resolved_day'] if first['status'] == 'cleared' else None
+    attempts = core.goal.get('history', []) + [core.goal]
+    if len(attempts) < stage:
+        return None
+    selected = attempts[stage-1]
+    return selected['resolved_day'] if selected['status'] == 'cleared' else None
 
 
 def popular_schedule(core, day):
-    unlocked = popular_unlocked_day(core)
-    return popular_customers(core) if unlocked is not None and day > unlocked else {}
+    planned = {}
+    for key, tick in popular_customers(core).items():
+        unlocked = popular_unlocked_day(core, popular_customer_stage(core, key))
+        if unlocked is not None and day > unlocked:
+            planned[key] = tick
+    return planned
 
 
 def schedule(core, day=None):

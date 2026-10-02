@@ -124,7 +124,7 @@ def preference(core, customer_id):
 
 def directory(session):
     core = session.core
-    from .core.cafe_weekdays import schedule as arrival_schedule, customer_days, DAYS, popular_customers, popular_unlocked_day
+    from .core.cafe_weekdays import schedule as arrival_schedule, customer_days, DAYS, popular_customers, popular_unlocked_day, popular_customer_stage
     from .core.cafe_customer_loyalty import row as loyalty_row, extra_weekday
     from .core.cafe_customer_discontent import row as discontent_row
     from .core.cafe_customer_satisfaction import latest as latest_satisfaction
@@ -185,8 +185,8 @@ def directory(session):
             status = '来店なし（休業・終了）' if core.closed else '来店予定'
         else:
             status = '本日の予定なし'
-        if key in popular and popular_unlocked_day(core) is None:
-            status = '未解放（人気第1段階）'
+        if key in popular and popular_unlocked_day(core, popular_customer_stage(core, key)) is None:
+            status = f'未解放（人気第{popular_customer_stage(core, key)}段階）'
         if key == CUSTOMER_ID and core.advanced_customers is not None:
             from .core.cafe_advanced_customers import unlocked_day
             if unlocked_day(core) is None:
@@ -225,7 +225,7 @@ def directory(session):
         if core.contact_customer is not None and key == CONTACT_ID:
             weekday_text = '・'.join(DAYS[day] for day in core.contact_customer['weekdays'])
         if key==LONGHAIR_ID and core.longhair_customer is not None:weekday_text=f"毎営業日{core.longhair_customer['probability']*100:g}％"
-        rows.append(dict(customer_id=key, name=customer_name(key), description='人気第1段階で増える通常客' if key in popular else customer_description(key), visits=count,
+        rows.append(dict(customer_id=key, name=customer_name(key), description=f'人気第{popular_customer_stage(core, key)}段階で増える通常客' if key in popular else customer_description(key), visits=count,
                          arrival_tick=planned, tomorrow_tick=tomorrow.get(key),
                          weekdays=weekday_text,
                          status=status, preference=preferred,

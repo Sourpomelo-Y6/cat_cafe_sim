@@ -38,6 +38,8 @@ def starting_conditions(mode="popularity"):
     weekdays = weekday_rules()
     if 'popular_customer_count' in data:
         weekdays = weekday_rules(dict(weekdays, popular_customer_count=data['popular_customer_count']))
+    if 'second_popular_customer_count' in data:
+        weekdays = weekday_rules(dict(weekdays, second_popular_customer_count=data['second_popular_customer_count']))
     from .core.cafe_intake_request import rules as intake_rules
     from .core.cafe_dispatch_introduction import rules as introduction_rules
     from .core.cafe_regular_introduction import rules as regular_rules
