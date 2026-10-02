@@ -21,7 +21,7 @@ def plan(session, mode="clear"):
     from .core.cafe_seat_equipment import seats
     capacity = len(seats(core))*core.config.opening_ticks
     actions = max(20, ceil(min(workload, capacity)/max(1, desired)))
-    # 両経営方針は前日の担当実績と好みの集中も見積もる。
+    # 積極経営は前日の担当実績と好みの集中も見積もる。
     # 好みは公開済みの固定設定から求め、来店記録を作らない。
     from .core.cafe_preferences import customer_preference
     preferences = core.customer_preferences
@@ -33,13 +33,17 @@ def plan(session, mode="clear"):
     for key in healthy:
         cat = core.cats[key]
         individual = actions
-        if mode in ('clear', 'fast'):
+        if mode == 'fast':
             features = (core.cat_features or {}).get(key, [])
             matched_work = sum(min(duration, core.config.opening_ticks-tick)
                                for customer, tick in arrivals.items()
                                if predicted_preferences.get(customer) in features)
             individual = max(actions, min(core.config.opening_ticks, matched_work),
                              min(core.config.opening_ticks, previous.get(key, {}).get('service_ticks', 0)))
+        if mode == 'clear':
+            # 休養候補や相性不一致の客の担当も1匹へ集中し得る。
+            # 均等分担せず、全来店客の接客量と営業時間から上限を取る。
+            individual = max(20, min(core.config.opening_ticks, workload))
         fatigue_limit, stress_limit = (65, 60) if mode == 'fast' else (60, 60)
         fatigue = min(core.shift_rules.max_fatigue,
                       cat.fatigue+individual*core.shift_rules.fatigue_per_service_tick*effect(core,key,'service_fatigue'))

@@ -16,9 +16,10 @@ class PolicyTests(unittest.TestCase):
     session = fixtures.AutoPlayTests.session
     compare_reloads = fixtures.AutoPlayTests.compare_reloads
 
-    def test_previous_concentrated_work_changes_safe_shift_only(self):
+    def test_concentrated_work_uses_distinct_policy_limits(self):
         s = self.session(funds=1)
-        s.core.config = replace(s.core.config, opening_ticks=40)
+        s.core.config = replace(s.core.config, opening_ticks=40, arrival_ticks=(0, 20))
+        s.interaction_config = replace(s.interaction_config, ticks=20)
         s.core.cats['a'].fatigue = 25
         s.core.cats['b'].fatigue = s.core.cats['c'].fatigue = 30
         s.core.day_results = [dict(day=1, cats={'a': dict(service_ticks=40)})]

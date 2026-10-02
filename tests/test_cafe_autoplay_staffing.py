@@ -53,22 +53,27 @@ class StaffingTests(unittest.TestCase):
         session.core.cats['c'].stamina = 0
         self.assertEqual(plan(session)['workers'], [])
 
-    def test_queue_pressure_is_capped_by_actual_seat_capacity(self):
+    def test_fast_queue_pressure_is_capped_and_safe_checks_concentration(self):
         session = self.session((0,)*8)
         session.core.cats['a'].fatigue = 30
-        staffing = plan(session)
+        staffing = plan(session, mode='fast')
         self.assertEqual(staffing['workload'], 160)
         self.assertEqual(staffing['predictions']['a']['actions'], 27)
         self.assertIn('a', staffing['workers'])
+        safe = plan(session)
+        self.assertEqual(safe['predictions']['a']['actions'], 40)
+        self.assertNotIn('a', safe['workers'])
 
-    def test_current_load_and_past_work_retain_safe_limits(self):
+    def test_current_concentration_retains_safe_limits(self):
         session = self.session((0,0,0))
         session.core.cats['a'].fatigue = 30
         session.core.day_results = [dict(cats={'a':dict(service_ticks=40)})]
         self.assertNotIn('a', plan(session)['workers'])
         session.core.day_results = []
+        self.assertNotIn('a', plan(session)['workers'])
+        session.core.cats['a'].fatigue = 20
         self.assertIn('a', plan(session)['workers'])
-        session.core.cats['a'].fatigue = 41
+        session.core.cats['a'].fatigue = 21
         self.assertNotIn('a', plan(session)['workers'])
         session.core.management['stress']['b'] = 61
         self.assertNotIn('b', plan(session)['workers'])

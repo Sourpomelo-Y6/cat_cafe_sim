@@ -54,11 +54,12 @@ def prepare(session, emit, name, report=None, mode="clear"):
         return f'休養スペースを防音改修（ストレス回復を強め、予備資金{buffer:g}を確保）', lambda: session.soundproof_rest_space(selected)
 
     workers = staffing['workers']
+    basis = '前日の担当実績・好みの集中も考慮' if mode == 'fast' else '全来店客の接客量から1匹への集中上限を見積もる'
     predictions = {}
     for key, estimate in staffing['predictions'].items():
         fatigue, stress = estimate['fatigue'], estimate['stress']
         predictions[key] = (f'来店予定{staffing["arrivals"]}人・接客{estimate["actions"]}行動の目安。'
-                            f'前日の担当実績・好みの集中も考慮。出勤時の予測疲労{fatigue:g}・ストレス{stress:g}。{limits}し、必要人数まで出勤')
+                            f'{basis}。出勤時の予測疲労{fatigue:g}・ストレス{stress:g}。{limits}し、必要人数まで出勤')
         if emit:
             emit(f'{c.day}日目の出勤予測: {name(key)} / 疲労 {fatigue:g} / ストレス {stress:g} / {"出勤" if key in workers else "休養"}')
     def report_workers(selected, reservation=False):
