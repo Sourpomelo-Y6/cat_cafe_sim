@@ -8,6 +8,9 @@
 
 ## 入口・現行計画
 
+- [ローカル画像生成AI・LLMの導入とUnity移行計画](LocalAIAndUnityRoadmap.md)
+- [コンテンツ制作GUI・交流行動画像・各部屋の自動表示の相談記録](ContentToolAndRoomPresentationDiscussion.md)
+- [背景込みの猫画像を4場面で切り替えるプレビュー](CatActionPreview.md)
 - [開発引き継ぎ](DevelopmentHandoff.md)
 - [ゲーム全体の流れと実装状況](HumanToCatGameFlowPlan.md)
 - [未着手機能と検討事項](HumanToCatPlannedFeatures.md)

@@ -50,6 +50,7 @@ def build(app):
     for attr, text, command in (
         ('save_button','保存…',app.save_game), ('open_button','開く…',app.open_game),
         ('history_button','営業履歴…',app.show_history), ('new_game_button','新規ゲーム…',app.new_game),
+        ('action_preview_button','猫の画像…',app.show_action_preview),
     ):
         button = ttk.Button(app.file_controls, text=text, command=command)
         button.pack(side='left', padx=3)

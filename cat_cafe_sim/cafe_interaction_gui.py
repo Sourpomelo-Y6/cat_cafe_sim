@@ -427,6 +427,14 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
             self.stop()
             self.refresh()
 
+    def show_action_preview(self):
+        from .cafe_action_preview_gui import CatActionPreviewWindow
+        existing = getattr(self, 'action_preview_window', None)
+        if existing is not None and existing.window.winfo_exists():
+            existing.window.lift()
+            return
+        self.action_preview_window = CatActionPreviewWindow(self.root)
+
     def open_attention(self):
         if self._attention:
             self._attention()
