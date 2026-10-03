@@ -138,6 +138,31 @@ class ObjectiveAutoPlayGuiTests(ObjectiveGuiFixtures, unittest.TestCase):
         self.assertEqual(window.player.result,expected)
         self.assertEqual(app.session.core.snapshot(),reference.core.snapshot())
 
+    def test_fast_patron_recruitment_decision_and_cancel_resume(self):
+        app = self.app('patron', easy=False)
+        window = self.dialog(app, '積極経営')
+        window.start()
+        self.one_step(window)
+        self.one_step(window)
+        self.assertEqual(len(app.session.core.cats), 6)
+        self.assertTrue(any('black' in values for values in app.session.core.cat_features.values()))
+        rows = [window.decision_table.item(i, 'values') for i in window.decision_table.get_children()]
+        self.assertTrue(any(row[2]=='受け入れ' and '予備資金' in row[3] for row in rows))
+        self.assertIn('リン', window.log.get('1.0', 'end'))
+        window.stop()
+        resumed = load_game(app.session.checkpoint_path)[0]
+        self.assertEqual(resumed.core.snapshot(), app.session.core.snapshot())
+        window.close()
+        app.replace_game(resumed)
+        window = self.dialog(app, '積極経営')
+        window.start()
+        self.finish(app, window)
+        self.assertEqual(window.player.result.reason, 'day_limit')
+        self.assertEqual(window.player.result.days, 10)
+        self.assertIn('訪問結果：', window.log.get('1.0', 'end'))
+        self.assertEqual(len(app.session.core.cats), 6)
+        self.assertEqual(load_game(app.session.checkpoint_path)[0].core.snapshot(), app.session.core.snapshot())
+
     def test_patron_dispatch_cancel_resume_return_log_and_result(self):
         app=self.app('patron')
         window=self.dialog(app)

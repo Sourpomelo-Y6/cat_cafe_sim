@@ -1,0 +1,4330 @@
+{
+  "conditions_sha256": "e73d2eeaf23eb794c21e137625c11692a7c74e89981572331db4af931dab8caf",
+  "max_days": 90,
+  "goal_preset": "standard",
+  "customer_preset": "standard",
+  "conditions": {
+    "visiting_cat": {
+      "cat_id": "visiting-cat-1",
+      "interactions_required": 3,
+      "candidate": {
+        "name": "ココ",
+        "cost": 200,
+        "personality": {
+          "type_preferences": {
+            "teaser": 1.2,
+            "ball": 1.3,
+            "plush": 0.8,
+            "tunnel": 1.4,
+            "pet": 0.2,
+            "brush": 0,
+            "voice": 1.4,
+            "presence": 1.8
+          },
+          "intensity_preferences": {
+            "gentle": 1.2,
+            "standard": 0.8,
+            "active": 0.5
+          },
+          "boredom_decay": 0.12,
+          "switch_affinity": -0.1
+        },
+        "trait": {
+          "id": "relaxed",
+          "name": "のんびり屋",
+          "service_stress": 1,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1.5,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        },
+        "features": [
+          "brown_tabby",
+          "short_hair"
+        ]
+      }
+    },
+    "regular_introduction": {
+      "cat_id": "regular-rescue-1",
+      "candidate": {
+        "name": "マロン",
+        "cost": 200,
+        "personality": {
+          "type_preferences": {
+            "teaser": 0.8,
+            "ball": 0.6,
+            "plush": 1.2,
+            "tunnel": 0.5,
+            "pet": 1.8,
+            "brush": 1.5,
+            "voice": 1.2,
+            "presence": 1.3
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.4
+          },
+          "boredom_decay": 0.08,
+          "switch_affinity": -0.2
+        },
+        "trait": {
+          "id": "relaxed",
+          "name": "のんびり屋",
+          "service_stress": 1,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1.5,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        },
+        "features": [
+          "orange_tabby",
+          "short_hair"
+        ]
+      }
+    },
+    "dispatch_trouble": {
+      "destination": {
+        "id": "mountain_lodge_visit",
+        "name": "山あいの宿への訪問",
+        "days": 3,
+        "reward": 650,
+        "max_fatigue": 20,
+        "required_trait": "outgoing",
+        "required_trait_name": "外出好き"
+      },
+      "base_probability": 0.15,
+      "stress_probability": 0.35,
+      "missing_days": 2,
+      "search_cost": 100,
+      "return_stress": 30
+    },
+    "pet_shop": {
+      "shop-1": {
+        "name": "チロ",
+        "personality": {
+          "type_preferences": {
+            "teaser": 1,
+            "ball": 1,
+            "plush": 1,
+            "tunnel": 1,
+            "pet": 1,
+            "brush": 1,
+            "voice": 1,
+            "presence": 1
+          },
+          "intensity_preferences": {
+            "gentle": 1,
+            "standard": 1,
+            "active": 1
+          },
+          "boredom_decay": 0.15,
+          "switch_affinity": 0
+        },
+        "cost": 400,
+        "features": [
+          "white",
+          "long_hair"
+        ],
+        "trait": {
+          "id": "relaxed",
+          "name": "のんびり屋",
+          "service_stress": 1,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1.5,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        }
+      },
+      "shop-2": {
+        "name": "レオ",
+        "personality": {
+          "type_preferences": {
+            "teaser": 0.8,
+            "ball": 0.6,
+            "plush": 1.2,
+            "tunnel": 0.5,
+            "pet": 1.8,
+            "brush": 1.5,
+            "voice": 1.2,
+            "presence": 1.3
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.4
+          },
+          "boredom_decay": 0.08,
+          "switch_affinity": -0.2
+        },
+        "cost": 450,
+        "features": [
+          "orange_tabby",
+          "short_hair"
+        ],
+        "trait": {
+          "id": "outgoing",
+          "name": "外出好き",
+          "service_stress": 1,
+          "service_fatigue": 1,
+          "rest_fatigue": 1,
+          "dispatch_reward": 1.25,
+          "return_stress": 10
+        }
+      },
+      "shop-3": {
+        "name": "ナナ",
+        "personality": {
+          "type_preferences": {
+            "teaser": 1.8,
+            "ball": 1.6,
+            "plush": 1.4,
+            "tunnel": 1.2,
+            "pet": 0.9,
+            "brush": 0.8,
+            "voice": 1,
+            "presence": 0.8
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.2
+          },
+          "boredom_decay": 0.15,
+          "switch_affinity": 0
+        },
+        "cost": 500,
+        "features": [
+          "black_white",
+          "short_hair"
+        ],
+        "trait": {
+          "id": "hospitality",
+          "name": "接客好き",
+          "service_stress": 0.5,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        }
+      }
+    },
+    "dispatch_introduction": {
+      "destination": "shopping_street_event",
+      "candidate": {
+        "name": "セナ",
+        "cost": 200,
+        "personality": {
+          "type_preferences": {
+            "teaser": 1.8,
+            "ball": 1.6,
+            "plush": 1.4,
+            "tunnel": 1.2,
+            "pet": 0.9,
+            "brush": 0.8,
+            "voice": 1,
+            "presence": 0.8
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.2
+          },
+          "boredom_decay": 0.15,
+          "switch_affinity": 0
+        },
+        "trait": {
+          "id": "hospitality",
+          "name": "接客好き",
+          "service_stress": 0.5,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        },
+        "features": [
+          "white",
+          "long_hair"
+        ]
+      },
+      "photo_studio": {
+        "destination": "cat_photo_studio",
+        "candidate": {
+          "name": "ルカ",
+          "cost": 250,
+          "personality": {
+            "type_preferences": {
+              "teaser": 0.8,
+              "ball": 0.6,
+              "plush": 1.2,
+              "tunnel": 0.5,
+              "pet": 1.8,
+              "brush": 1.5,
+              "voice": 1.2,
+              "presence": 1.3
+            },
+            "intensity_preferences": {
+              "gentle": 1.3,
+              "standard": 1,
+              "active": 0.4
+            },
+            "boredom_decay": 0.08,
+            "switch_affinity": -0.2
+          },
+          "trait": {
+            "id": "hospitality",
+            "name": "接客好き",
+            "service_stress": 0.5,
+            "service_fatigue": 1.25,
+            "rest_fatigue": 1,
+            "dispatch_reward": 1,
+            "return_stress": 0
+          },
+          "features": [
+            "white",
+            "short_hair"
+          ]
+        }
+      }
+    },
+    "housing": {
+      "initial_capacity": 6,
+      "capacity_bonus": 3,
+      "cost": 500,
+      "daily_cost": 20
+    },
+    "dispatch_unlocks": {
+      "shopping_street_event": {
+        "popularity": 120,
+        "returns": 1
+      },
+      "out_of_town_visit": {
+        "popularity": 150,
+        "returns": 3
+      },
+      "cat_exercise_class": {
+        "popularity": 120,
+        "returns": 1,
+        "destination": {
+          "id": "cat_exercise_class",
+          "name": "猫の運動教室",
+          "days": 2,
+          "reward": 300,
+          "max_fatigue": 40,
+          "required_trait": "hardy",
+          "required_trait_name": "体力自慢"
+        }
+      },
+      "quiet_reading_salon": {
+        "popularity": 120,
+        "returns": 1,
+        "destination": {
+          "id": "quiet_reading_salon",
+          "name": "静かな読書サロン",
+          "days": 2,
+          "reward": 300,
+          "max_fatigue": 40,
+          "required_trait": "relaxed",
+          "required_trait_name": "のんびり屋"
+        }
+      },
+      "cat_photo_studio": {
+        "popularity": 120,
+        "returns": 1,
+        "destination": {
+          "id": "cat_photo_studio",
+          "name": "猫の撮影スタジオ",
+          "days": 2,
+          "reward": 350,
+          "max_fatigue": 40,
+          "required_trait": "hospitality",
+          "required_trait_name": "接客好き",
+          "welcome": {
+            "feature": "white",
+            "specialization": "service",
+            "reward_bonus": 20,
+            "satisfaction_bonus": 0
+          }
+        }
+      },
+      "cat_product_trial": {
+        "popularity": 120,
+        "returns": 1,
+        "destination": {
+          "id": "cat_product_trial",
+          "name": "猫用品の体験会",
+          "days": 2,
+          "reward": 300,
+          "max_fatigue": 40,
+          "required_trait": "hardworking",
+          "required_trait_name": "働き者"
+        }
+      },
+      "small_art_museum": {
+        "stage": 2,
+        "destination": {
+          "id": "small_art_museum",
+          "name": "小さな美術館",
+          "days": 2,
+          "reward": 350,
+          "max_fatigue": 40,
+          "required_trait": "easygoing",
+          "required_trait_name": "マイペース",
+          "welcome": {
+            "feature": "long_hair",
+            "specialization": "dispatch",
+            "reward_bonus": 20,
+            "satisfaction_bonus": 0
+          }
+        }
+      }
+    },
+    "growth": {
+      "threshold": 20,
+      "service_xp": 1,
+      "rest_xp": 1,
+      "dispatch_xp": 1,
+      "service_stamina_refund": 0.1,
+      "rest_recovery_bonus": 5,
+      "dispatch_reward_multiplier": 1.1,
+      "mastery_threshold": 15,
+      "mastery_engagement_multiplier": 1.1,
+      "type_mastery_threshold": 30,
+      "type_mastery_engagement_multiplier": 1.05,
+      "second_type_mastery_threshold": 30,
+      "second_mastery_threshold": 30
+    },
+    "store_events": {
+      "probability": 0.4,
+      "festival_customer_tick": 3,
+      "trouble_cost": 50,
+      "trouble_seat_loss": 1,
+      "support_full_cost": 100,
+      "support_full_popularity": 5,
+      "support_small_cost": 50,
+      "support_small_popularity": 2,
+      "supply": {
+        "id": "care_supplies",
+        "name": "ケア用品",
+        "stress_relief": 20
+      }
+    },
+    "waiting_area": {
+      "cost": 800,
+      "queue_bonus": 1,
+      "wait_bonus": 2,
+      "daily_cost": 10
+    },
+    "operating_cost": {
+      "base_cost": 40,
+      "per_seat_cost": 10
+    },
+    "longhair_customer": {
+      "probability": 0.3,
+      "contact_count": 3,
+      "bonus": 120,
+      "popularity_bonus": 2
+    },
+    "contact_customer": {
+      "equipment": "grooming_brush",
+      "contact_count": 3,
+      "bonus": 160,
+      "popularity_bonus": 3,
+      "weekdays": [
+        6
+      ]
+    },
+    "play_customer": {
+      "equipment": "cat_tower",
+      "play_count": 4,
+      "bonus": 180,
+      "popularity_bonus": 4,
+      "weekdays": [
+        1,
+        3,
+        5
+      ],
+      "quiet_weekdays": [
+        0,
+        2,
+        4
+      ]
+    },
+    "quiet_customer": {
+      "equipment": "quiet_space",
+      "quiet_count": 3,
+      "bonus": 150,
+      "popularity_bonus": 3
+    },
+    "vip_customer": {
+      "feature": "calico",
+      "connect_count": 1,
+      "open_up_count": 1,
+      "simultaneous_count": 1,
+      "bonus": 400,
+      "popularity_bonus": 10
+    },
+    "reservation": {
+      "feature": "long_hair",
+      "open_up_count": 1,
+      "arrival_tick": 0,
+      "bonus": 200,
+      "popularity_bonus": 5
+    },
+    "customer_trust": {
+      "warning_suspensions": 2,
+      "recovery_score": 25,
+      "popularity_loss": 10
+    },
+    "customer_satisfaction": {
+      "satisfied_score": 2,
+      "dissatisfied_score": 0,
+      "gauge_target": 50,
+      "satisfied_bonus": 20,
+      "dissatisfied_discontent_gain": 25
+    },
+    "customer_discontent": {
+      "waiting_gain": 25,
+      "advanced_failure_gain": 10,
+      "good_service_recovery": 25,
+      "threshold": 100,
+      "suspension_days": 7,
+      "return_score": 50
+    },
+    "customer_loyalty": {
+      "gain": 25,
+      "threshold": 100
+    },
+    "advanced_customers": {
+      "feature": "white",
+      "connect_count": 1,
+      "bonus": 100
+    },
+    "objective": "patron",
+    "patron": {
+      "name": "地域の有力者",
+      "target": 100,
+      "gain": 25,
+      "destination": {
+        "id": "patron_visit",
+        "name": "地域の有力者への訪問",
+        "days": 2,
+        "reward": 200,
+        "max_fatigue": 40,
+        "welcome": {
+          "feature": "white",
+          "specialization": "service",
+          "reward_bonus": 20,
+          "satisfaction_bonus": 5
+        }
+      },
+      "members": [
+        {
+          "id": "patron_moody_visit",
+          "name": "気分が変わる有力者",
+          "target": 100,
+          "gain": 20,
+          "unmatched_gain": 2,
+          "conditions": [
+            {
+              "feature": "white"
+            },
+            {
+              "feature": "black"
+            },
+            {
+              "feature": "long_hair"
+            }
+          ]
+        },
+        {
+          "id": "patron_strict_visit",
+          "name": "条件に厳格な有力者",
+          "target": 100,
+          "gain": 25,
+          "unmatched_gain": 0,
+          "conditions": [
+            {
+              "feature": "white",
+              "specialization": "service"
+            }
+          ]
+        }
+      ]
+    },
+    "bond": {
+      "target": 6,
+      "affinity": 80
+    },
+    "intake_request": {
+      "day": 4,
+      "cat_id": "request-cat-1",
+      "candidate": {
+        "name": "ナナ",
+        "cost": 200,
+        "personality": {
+          "type_preferences": {
+            "teaser": 0.8,
+            "ball": 0.6,
+            "plush": 1.2,
+            "tunnel": 0.5,
+            "pet": 1.8,
+            "brush": 1.5,
+            "voice": 1.2,
+            "presence": 1.3
+          },
+          "intensity_preferences": {
+            "gentle": 1.3,
+            "standard": 1,
+            "active": 0.4
+          },
+          "boredom_decay": 0.08,
+          "switch_affinity": -0.2
+        },
+        "trait": {
+          "id": "relaxed",
+          "name": "のんびり屋",
+          "service_stress": 1,
+          "service_fatigue": 1.25,
+          "rest_fatigue": 1.5,
+          "dispatch_reward": 1,
+          "return_stress": 0
+        },
+        "features": [
+          "black_white",
+          "long_hair"
+        ]
+      }
+    },
+    "weekdays": {
+      "start_weekday": 0,
+      "patterns": [
+        [
+          0,
+          2,
+          4,
+          6
+        ],
+        [
+          1,
+          3,
+          5,
+          6
+        ]
+      ],
+      "popular_customer_count": 4,
+      "second_popular_customer_count": 2
+    },
+    "seat_count": 2,
+    "profiles": {
+      "format_version": 2,
+      "cats": {
+        "cat-mike": {
+          "name": "ミケ",
+          "personality": {
+            "type_preferences": {
+              "teaser": 0.8,
+              "ball": 0.6,
+              "plush": 1.2,
+              "tunnel": 0.5,
+              "pet": 1.8,
+              "brush": 1.5,
+              "voice": 1.2,
+              "presence": 1.3
+            },
+            "intensity_preferences": {
+              "gentle": 1.3,
+              "standard": 1,
+              "active": 0.4
+            },
+            "boredom_decay": 0.08,
+            "switch_affinity": -0.2
+          }
+        },
+        "cat-tama": {
+          "name": "タマ",
+          "personality": {
+            "type_preferences": {
+              "teaser": 1.5,
+              "ball": 1.7,
+              "plush": 0.8,
+              "tunnel": 1.8,
+              "pet": 0.7,
+              "brush": 0.5,
+              "voice": 0.8,
+              "presence": 0.4
+            },
+            "intensity_preferences": {
+              "gentle": 0.8,
+              "standard": 1,
+              "active": 1.3
+            },
+            "boredom_decay": 0.2,
+            "switch_affinity": 0.2
+          }
+        },
+        "cat-sora": {
+          "name": "ソラ",
+          "personality": {
+            "type_preferences": {
+              "teaser": 1.2,
+              "ball": 1.3,
+              "plush": 0.8,
+              "tunnel": 1.4,
+              "pet": 0.2,
+              "brush": 0,
+              "voice": 1.4,
+              "presence": 1.8
+            },
+            "intensity_preferences": {
+              "gentle": 1.2,
+              "standard": 0.8,
+              "active": 0.5
+            },
+            "boredom_decay": 0.12,
+            "switch_affinity": -0.1
+          }
+        },
+        "cat-kohaku": {
+          "name": "コハク",
+          "personality": {
+            "type_preferences": {
+              "teaser": 1.8,
+              "ball": 1.6,
+              "plush": 1.4,
+              "tunnel": 1.2,
+              "pet": 0.9,
+              "brush": 0.8,
+              "voice": 1,
+              "presence": 0.8
+            },
+            "intensity_preferences": {
+              "gentle": 1.3,
+              "standard": 1,
+              "active": 0.2
+            },
+            "boredom_decay": 0.15,
+            "switch_affinity": 0
+          }
+        },
+        "cat-mugi": {
+          "name": "ムギ",
+          "personality": {
+            "type_preferences": {
+              "teaser": 1,
+              "ball": 1,
+              "plush": 1,
+              "tunnel": 1,
+              "pet": 1,
+              "brush": 1,
+              "voice": 1,
+              "presence": 1
+            },
+            "intensity_preferences": {
+              "gentle": 1,
+              "standard": 1,
+              "active": 1
+            },
+            "boredom_decay": 0.15,
+            "switch_affinity": 0
+          }
+        }
+      },
+      "pairs": [],
+      "applied": {}
+    },
+    "management": {
+      "starting_funds": 1000,
+      "starting_popularity": 100,
+      "stress_per_service_tick": 1,
+      "rest_recovery": 20,
+      "player_relief": 5,
+      "player_stress": 5,
+      "runaway_threshold": 80,
+      "popularity_loss": 20,
+      "missing_days": 2,
+      "return_stress": 20,
+      "kitten_probability": 0.25,
+      "kitten_cost": 250
+    },
+    "goal": {
+      "days": 20,
+      "target": 250,
+      "cap": 650,
+      "gain_per_success": 5,
+      "stages": [
+        {
+          "days": 20,
+          "target": 450
+        },
+        {
+          "days": 25,
+          "target": 650
+        }
+      ]
+    },
+    "traits": {
+      "cat-mike": {
+        "id": "hospitality",
+        "name": "接客好き",
+        "service_stress": 0.5,
+        "service_fatigue": 1.25,
+        "rest_fatigue": 1,
+        "dispatch_reward": 1,
+        "return_stress": 0
+      },
+      "cat-tama": {
+        "id": "outgoing",
+        "name": "外出好き",
+        "service_stress": 1,
+        "service_fatigue": 1,
+        "rest_fatigue": 1,
+        "dispatch_reward": 1.25,
+        "return_stress": 10
+      },
+      "cat-kohaku": {
+        "id": "relaxed",
+        "name": "のんびり屋",
+        "service_stress": 1,
+        "service_fatigue": 1.25,
+        "rest_fatigue": 1.5,
+        "dispatch_reward": 1,
+        "return_stress": 0
+      }
+    },
+    "features": {
+      "cat-mike": [
+        "calico",
+        "short_hair"
+      ],
+      "cat-tama": [
+        "black_white",
+        "short_hair"
+      ],
+      "cat-sora": [
+        "white",
+        "long_hair"
+      ],
+      "cat-kohaku": [
+        "orange_tabby",
+        "long_hair"
+      ],
+      "cat-mugi": [
+        "brown_tabby",
+        "short_hair"
+      ]
+    },
+    "preferences": {
+      "pool": [
+        "white",
+        "black",
+        "calico",
+        "orange_tabby",
+        "brown_tabby",
+        "black_white",
+        "short_hair",
+        "long_hair"
+      ],
+      "tension_multiplier": 1.25
+    }
+  },
+  "format_version": 2,
+  "objective": "patron",
+  "evaluated_at": "2026-10-03T05:09:19.210198+00:00",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "detail_level": "metrics_and_stages",
+  "evaluations": [
+    {
+      "seed": 0,
+      "evaluated_at": "2026-10-03T04:53:58.739530+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 36,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 33390,
+            "expenses": 2310,
+            "final_funds": 32080,
+            "final_popularity": 465,
+            "healthy_rest_cat_days": 85,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 17.979166666666668,
+            "mean_stress": 14.630555555555556,
+            "max_fatigue": 53.75,
+            "max_stress": 53,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2310,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 122,
+            "available_seat_ticks": 2720,
+            "occupied_seat_ticks": 1589,
+            "empty_seat_ticks": 1131,
+            "seat_utilization": 0.5841911764705883,
+            "queue_full_departures": 0,
+            "wait_timeouts": 31,
+            "understaffed_days": 14
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 36,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 10,
+                "received": 10,
+                "pending": 0,
+                "conditional_visits": 10,
+                "matched": 5,
+                "unmatched": 5,
+                "match_rate": 0.5
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 18,
+            "received": 18
+          },
+          "operations": 1489,
+          "current_day": 36,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 26890,
+            "expenses": 1900,
+            "final_funds": 25990,
+            "final_popularity": 395,
+            "healthy_rest_cat_days": 72,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 150,
+            "mean_fatigue": 18.363333333333333,
+            "mean_stress": 15.04,
+            "max_fatigue": 53.75,
+            "max_stress": 53,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1900,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 103,
+            "available_seat_ticks": 2240,
+            "occupied_seat_ticks": 1342,
+            "empty_seat_ticks": 898,
+            "seat_utilization": 0.5991071428571428,
+            "queue_full_departures": 0,
+            "wait_timeouts": 26,
+            "understaffed_days": 12
+          }
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 30360.0,
+            "expenses": 2100,
+            "final_funds": 29260.0,
+            "final_popularity": 440,
+            "healthy_rest_cat_days": 81,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 17.280555555555555,
+            "mean_stress": 15.85,
+            "max_fatigue": 59,
+            "max_stress": 59,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1900,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 107,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1490,
+            "empty_seat_ticks": 910,
+            "seat_utilization": 0.6208333333333333,
+            "queue_full_departures": 0,
+            "wait_timeouts": 24,
+            "understaffed_days": 5
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 30,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 7,
+                "received": 7,
+                "pending": 0,
+                "conditional_visits": 7,
+                "matched": 5,
+                "unmatched": 2,
+                "match_rate": 0.7142857142857143
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 15,
+            "received": 15
+          },
+          "operations": 1312,
+          "current_day": 30,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 30360.0,
+            "expenses": 2100,
+            "final_funds": 29260.0,
+            "final_popularity": 440,
+            "healthy_rest_cat_days": 81,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 17.280555555555555,
+            "mean_stress": 15.85,
+            "max_fatigue": 59,
+            "max_stress": 59,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1900,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 107,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1490,
+            "empty_seat_ticks": 910,
+            "seat_utilization": 0.6208333333333333,
+            "queue_full_departures": 0,
+            "wait_timeouts": 24,
+            "understaffed_days": 5
+          }
+        }
+      }
+    },
+    {
+      "seed": 1,
+      "evaluated_at": "2026-10-03T04:55:34.752913+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 36,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 33480,
+            "expenses": 2160,
+            "final_funds": 32320,
+            "final_popularity": 455,
+            "healthy_rest_cat_days": 81,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 19.71527777777778,
+            "mean_stress": 15.852777777777778,
+            "max_fatigue": 56,
+            "max_stress": 56,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2160,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 115,
+            "available_seat_ticks": 2720,
+            "occupied_seat_ticks": 1591,
+            "empty_seat_ticks": 1129,
+            "seat_utilization": 0.5849264705882353,
+            "queue_full_departures": 0,
+            "wait_timeouts": 26,
+            "understaffed_days": 11
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 36,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 10,
+                "received": 10,
+                "pending": 0,
+                "conditional_visits": 10,
+                "matched": 5,
+                "unmatched": 5,
+                "match_rate": 0.5
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 18,
+            "received": 18
+          },
+          "operations": 1486,
+          "current_day": 36,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 25940,
+            "expenses": 1800,
+            "final_funds": 25140,
+            "final_popularity": 375,
+            "healthy_rest_cat_days": 69,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 150,
+            "mean_fatigue": 19.453333333333333,
+            "mean_stress": 15.703333333333333,
+            "max_fatigue": 56,
+            "max_stress": 56,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1800,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 96,
+            "available_seat_ticks": 2240,
+            "occupied_seat_ticks": 1294,
+            "empty_seat_ticks": 946,
+            "seat_utilization": 0.5776785714285714,
+            "queue_full_departures": 0,
+            "wait_timeouts": 23,
+            "understaffed_days": 10
+          }
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 30,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 30040.0,
+            "expenses": 2000,
+            "final_funds": 29040.0,
+            "final_popularity": 440,
+            "healthy_rest_cat_days": 80,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.458333333333332,
+            "mean_stress": 14.23611111111111,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1800,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 108,
+            "available_seat_ticks": 2320,
+            "occupied_seat_ticks": 1458,
+            "empty_seat_ticks": 862,
+            "seat_utilization": 0.628448275862069,
+            "queue_full_departures": 0,
+            "wait_timeouts": 26,
+            "understaffed_days": 7
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 30,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 7,
+                "received": 7,
+                "pending": 0,
+                "conditional_visits": 7,
+                "matched": 5,
+                "unmatched": 2,
+                "match_rate": 0.7142857142857143
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 15,
+            "received": 15
+          },
+          "operations": 1272,
+          "current_day": 30,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 30040.0,
+            "expenses": 2000,
+            "final_funds": 29040.0,
+            "final_popularity": 440,
+            "healthy_rest_cat_days": 80,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.458333333333332,
+            "mean_stress": 14.23611111111111,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1800,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 108,
+            "available_seat_ticks": 2320,
+            "occupied_seat_ticks": 1458,
+            "empty_seat_ticks": 862,
+            "seat_utilization": 0.628448275862069,
+            "queue_full_departures": 0,
+            "wait_timeouts": 26,
+            "understaffed_days": 7
+          }
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "evaluated_at": "2026-10-03T04:57:05.091349+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 40,
+            "day_offs": 4,
+            "starting_funds": 1000,
+            "income": 33760,
+            "expenses": 2600,
+            "final_funds": 32160,
+            "final_popularity": 470,
+            "healthy_rest_cat_days": 93,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 200,
+            "mean_fatigue": 16.925,
+            "mean_stress": 13.66,
+            "max_fatigue": 58.75,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2600,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 118,
+            "available_seat_ticks": 2880,
+            "occupied_seat_ticks": 1608,
+            "empty_seat_ticks": 1272,
+            "seat_utilization": 0.5583333333333333,
+            "queue_full_departures": 0,
+            "wait_timeouts": 25,
+            "understaffed_days": 18
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 40,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 12,
+                "received": 12,
+                "pending": 0,
+                "conditional_visits": 12,
+                "matched": 5,
+                "unmatched": 7,
+                "match_rate": 0.4166666666666667
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 20,
+            "received": 20
+          },
+          "operations": 1582,
+          "current_day": 40,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 23510,
+            "expenses": 2000,
+            "final_funds": 22510,
+            "final_popularity": 355,
+            "healthy_rest_cat_days": 67,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 150,
+            "mean_fatigue": 17.47,
+            "mean_stress": 14.136666666666667,
+            "max_fatigue": 58.75,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2000,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 84,
+            "available_seat_ticks": 2160,
+            "occupied_seat_ticks": 1204,
+            "empty_seat_ticks": 956,
+            "seat_utilization": 0.5574074074074075,
+            "queue_full_departures": 0,
+            "wait_timeouts": 14,
+            "understaffed_days": 12
+          }
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 30,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 29380.0,
+            "expenses": 2200,
+            "final_funds": 28180.0,
+            "final_popularity": 440,
+            "healthy_rest_cat_days": 74,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.4375,
+            "mean_stress": 14.447222222222223,
+            "max_fatigue": 58.75,
+            "max_stress": 53,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2000,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 98,
+            "available_seat_ticks": 2160,
+            "occupied_seat_ticks": 1432,
+            "empty_seat_ticks": 728,
+            "seat_utilization": 0.662962962962963,
+            "queue_full_departures": 0,
+            "wait_timeouts": 16,
+            "understaffed_days": 6
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 30,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 7,
+                "received": 7,
+                "pending": 0,
+                "conditional_visits": 7,
+                "matched": 5,
+                "unmatched": 2,
+                "match_rate": 0.7142857142857143
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 15,
+            "received": 15
+          },
+          "operations": 1192,
+          "current_day": 30,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 29380.0,
+            "expenses": 2200,
+            "final_funds": 28180.0,
+            "final_popularity": 440,
+            "healthy_rest_cat_days": 74,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.4375,
+            "mean_stress": 14.447222222222223,
+            "max_fatigue": 58.75,
+            "max_stress": 53,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2000,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 98,
+            "available_seat_ticks": 2160,
+            "occupied_seat_ticks": 1432,
+            "empty_seat_ticks": 728,
+            "seat_utilization": 0.662962962962963,
+            "queue_full_departures": 0,
+            "wait_timeouts": 16,
+            "understaffed_days": 6
+          }
+        }
+      }
+    },
+    {
+      "seed": 3,
+      "evaluated_at": "2026-10-03T04:58:41.088808+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 36,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 31720,
+            "expenses": 2210,
+            "final_funds": 30510,
+            "final_popularity": 405,
+            "healthy_rest_cat_days": 79,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.620833333333334,
+            "mean_stress": 13.188888888888888,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2210,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 111,
+            "available_seat_ticks": 2720,
+            "occupied_seat_ticks": 1487,
+            "empty_seat_ticks": 1233,
+            "seat_utilization": 0.5466911764705882,
+            "queue_full_departures": 0,
+            "wait_timeouts": 29,
+            "understaffed_days": 15
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 36,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 10,
+                "received": 10,
+                "pending": 0,
+                "conditional_visits": 10,
+                "matched": 5,
+                "unmatched": 5,
+                "match_rate": 0.5
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 18,
+            "received": 18
+          },
+          "operations": 1487,
+          "current_day": 36,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 25390,
+            "expenses": 1800,
+            "final_funds": 24590,
+            "final_popularity": 340,
+            "healthy_rest_cat_days": 66,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 150,
+            "mean_fatigue": 17.223333333333333,
+            "mean_stress": 13.606666666666667,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1800,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 95,
+            "available_seat_ticks": 2240,
+            "occupied_seat_ticks": 1250,
+            "empty_seat_ticks": 990,
+            "seat_utilization": 0.5580357142857143,
+            "queue_full_departures": 0,
+            "wait_timeouts": 26,
+            "understaffed_days": 13
+          }
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 30890.0,
+            "expenses": 2000,
+            "final_funds": 29890.0,
+            "final_popularity": 440,
+            "healthy_rest_cat_days": 81,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.48611111111111,
+            "mean_stress": 14.966666666666667,
+            "max_fatigue": 54,
+            "max_stress": 58,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1800,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 109,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1514,
+            "empty_seat_ticks": 886,
+            "seat_utilization": 0.6308333333333334,
+            "queue_full_departures": 0,
+            "wait_timeouts": 24,
+            "understaffed_days": 6
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 30,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 7,
+                "received": 7,
+                "pending": 0,
+                "conditional_visits": 7,
+                "matched": 5,
+                "unmatched": 2,
+                "match_rate": 0.7142857142857143
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 15,
+            "received": 15
+          },
+          "operations": 1311,
+          "current_day": 30,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 30890.0,
+            "expenses": 2000,
+            "final_funds": 29890.0,
+            "final_popularity": 440,
+            "healthy_rest_cat_days": 81,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.48611111111111,
+            "mean_stress": 14.966666666666667,
+            "max_fatigue": 54,
+            "max_stress": 58,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1800,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 109,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1514,
+            "empty_seat_ticks": 886,
+            "seat_utilization": 0.6308333333333334,
+            "queue_full_departures": 0,
+            "wait_timeouts": 24,
+            "understaffed_days": 6
+          }
+        }
+      }
+    },
+    {
+      "seed": 4,
+      "evaluated_at": "2026-10-03T05:00:15.145186+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 36,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 31810,
+            "expenses": 2210,
+            "final_funds": 30600,
+            "final_popularity": 420,
+            "healthy_rest_cat_days": 83,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 18.133333333333333,
+            "mean_stress": 14.847222222222221,
+            "max_fatigue": 59,
+            "max_stress": 59,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2210,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 116,
+            "available_seat_ticks": 2640,
+            "occupied_seat_ticks": 1535,
+            "empty_seat_ticks": 1105,
+            "seat_utilization": 0.5814393939393939,
+            "queue_full_departures": 0,
+            "wait_timeouts": 31,
+            "understaffed_days": 16,
+            "uncompleted_day_finance": {
+              "ticks": 0,
+              "closed": false,
+              "arrivals": 0,
+              "completed_interactions": 0,
+              "departures": {},
+              "revenue": 0,
+              "funds": 30600,
+              "popularity_gain": 0,
+              "operating_cost": 0,
+              "waiting_area_expenses": 0,
+              "housing_expenses": 0,
+              "store_event_expenses": 0,
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "recruitment_expenses": 0,
+              "popularity": 420,
+              "game_over": null,
+              "kitten_expenses": 0,
+              "interaction_bonus": 0,
+              "customer_satisfaction": {
+                "satisfied": 0,
+                "normal": 0,
+                "dissatisfied": 0
+              },
+              "dispatch_income": 200,
+              "service_ticks": 0,
+              "cat_stamina": {
+                "cat-kohaku": 100,
+                "cat-mike": 100,
+                "cat-mugi": 100,
+                "cat-sora": 100,
+                "cat-tama": 100
+              },
+              "store_event": "イベントなし",
+              "opening_funds": 30400,
+              "total_income": 200,
+              "total_expenses": 0,
+              "net_cash_flow": 200,
+              "closing_funds": 30600,
+              "seat_count": 2
+            }
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 37,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 10,
+                "received": 10,
+                "pending": 0,
+                "conditional_visits": 10,
+                "matched": 5,
+                "unmatched": 5,
+                "match_rate": 0.5
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 18,
+            "received": 18
+          },
+          "operations": 1451,
+          "current_day": 37,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 26200,
+            "expenses": 1850,
+            "final_funds": 25350,
+            "final_popularity": 380,
+            "healthy_rest_cat_days": 69,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 150,
+            "mean_fatigue": 18.581666666666667,
+            "mean_stress": 15.03,
+            "max_fatigue": 59,
+            "max_stress": 59,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1850,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 102,
+            "available_seat_ticks": 2240,
+            "occupied_seat_ticks": 1313,
+            "empty_seat_ticks": 927,
+            "seat_utilization": 0.5861607142857143,
+            "queue_full_departures": 0,
+            "wait_timeouts": 29,
+            "understaffed_days": 14
+          }
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 31680.0,
+            "expenses": 2050,
+            "final_funds": 30630.0,
+            "final_popularity": 460,
+            "healthy_rest_cat_days": 83,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 17.059722222222224,
+            "mean_stress": 14.841666666666667,
+            "max_fatigue": 59,
+            "max_stress": 59,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1850,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 116,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1544,
+            "empty_seat_ticks": 856,
+            "seat_utilization": 0.6433333333333333,
+            "queue_full_departures": 0,
+            "wait_timeouts": 27,
+            "understaffed_days": 8
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 30,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 7,
+                "received": 7,
+                "pending": 0,
+                "conditional_visits": 7,
+                "matched": 5,
+                "unmatched": 2,
+                "match_rate": 0.7142857142857143
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 15,
+            "received": 15
+          },
+          "operations": 1316,
+          "current_day": 30,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 31680.0,
+            "expenses": 2050,
+            "final_funds": 30630.0,
+            "final_popularity": 460,
+            "healthy_rest_cat_days": 83,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 17.059722222222224,
+            "mean_stress": 14.841666666666667,
+            "max_fatigue": 59,
+            "max_stress": 59,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1850,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 116,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1544,
+            "empty_seat_ticks": 856,
+            "seat_utilization": 0.6433333333333333,
+            "queue_full_departures": 0,
+            "wait_timeouts": 27,
+            "understaffed_days": 8
+          }
+        }
+      }
+    },
+    {
+      "seed": 5,
+      "evaluated_at": "2026-10-03T05:01:44.976242+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 36,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 32640,
+            "expenses": 2310,
+            "final_funds": 31330,
+            "final_popularity": 460,
+            "healthy_rest_cat_days": 79,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 17.33888888888889,
+            "mean_stress": 13.808333333333334,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2310,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 111,
+            "available_seat_ticks": 2640,
+            "occupied_seat_ticks": 1526,
+            "empty_seat_ticks": 1114,
+            "seat_utilization": 0.578030303030303,
+            "queue_full_departures": 0,
+            "wait_timeouts": 24,
+            "understaffed_days": 13
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 36,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 10,
+                "received": 10,
+                "pending": 0,
+                "conditional_visits": 10,
+                "matched": 5,
+                "unmatched": 5,
+                "match_rate": 0.5
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 18,
+            "received": 18
+          },
+          "operations": 1447,
+          "current_day": 36,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 2,
+            "starting_funds": 1000,
+            "income": 26210,
+            "expenses": 1950,
+            "final_funds": 25260,
+            "final_popularity": 390,
+            "healthy_rest_cat_days": 65,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 150,
+            "mean_fatigue": 17.678333333333335,
+            "mean_stress": 13.973333333333333,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1950,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 93,
+            "available_seat_ticks": 2240,
+            "occupied_seat_ticks": 1286,
+            "empty_seat_ticks": 954,
+            "seat_utilization": 0.5741071428571428,
+            "queue_full_departures": 0,
+            "wait_timeouts": 20,
+            "understaffed_days": 10
+          }
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 30,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 30970.0,
+            "expenses": 2150,
+            "final_funds": 29820.0,
+            "final_popularity": 455,
+            "healthy_rest_cat_days": 79,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 15.943055555555556,
+            "mean_stress": 15.286111111111111,
+            "max_fatigue": 52,
+            "max_stress": 54,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1950,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 105,
+            "available_seat_ticks": 2320,
+            "occupied_seat_ticks": 1506,
+            "empty_seat_ticks": 814,
+            "seat_utilization": 0.6491379310344828,
+            "queue_full_departures": 0,
+            "wait_timeouts": 19,
+            "understaffed_days": 4
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 30,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 7,
+                "received": 7,
+                "pending": 0,
+                "conditional_visits": 7,
+                "matched": 5,
+                "unmatched": 2,
+                "match_rate": 0.7142857142857143
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 15,
+            "received": 15
+          },
+          "operations": 1272,
+          "current_day": 30,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 30970.0,
+            "expenses": 2150,
+            "final_funds": 29820.0,
+            "final_popularity": 455,
+            "healthy_rest_cat_days": 79,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 15.943055555555556,
+            "mean_stress": 15.286111111111111,
+            "max_fatigue": 52,
+            "max_stress": 54,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1950,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 105,
+            "available_seat_ticks": 2320,
+            "occupied_seat_ticks": 1506,
+            "empty_seat_ticks": 814,
+            "seat_utilization": 0.6491379310344828,
+            "queue_full_departures": 0,
+            "wait_timeouts": 19,
+            "understaffed_days": 4
+          }
+        }
+      }
+    },
+    {
+      "seed": 6,
+      "evaluated_at": "2026-10-03T05:03:13.870146+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 36,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 32760,
+            "expenses": 2160,
+            "final_funds": 31600,
+            "final_popularity": 465,
+            "healthy_rest_cat_days": 83,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 17.71527777777778,
+            "mean_stress": 14.291666666666666,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2160,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 120,
+            "available_seat_ticks": 2800,
+            "occupied_seat_ticks": 1551,
+            "empty_seat_ticks": 1249,
+            "seat_utilization": 0.5539285714285714,
+            "queue_full_departures": 0,
+            "wait_timeouts": 31,
+            "understaffed_days": 13
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 36,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 10,
+                "received": 10,
+                "pending": 0,
+                "conditional_visits": 10,
+                "matched": 5,
+                "unmatched": 5,
+                "match_rate": 0.5
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 18,
+            "received": 18
+          },
+          "operations": 1526,
+          "current_day": 36,
+          "common_window_metrics": {
+            "days": 32,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 28200,
+            "expenses": 1920,
+            "final_funds": 27280,
+            "final_popularity": 415,
+            "healthy_rest_cat_days": 73,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 160,
+            "mean_fatigue": 17.709375,
+            "mean_stress": 14.328125,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1920,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 106,
+            "available_seat_ticks": 2480,
+            "occupied_seat_ticks": 1380,
+            "empty_seat_ticks": 1100,
+            "seat_utilization": 0.5564516129032258,
+            "queue_full_departures": 0,
+            "wait_timeouts": 27,
+            "understaffed_days": 11
+          }
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 32,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 31350.0,
+            "expenses": 2120,
+            "final_funds": 30230.0,
+            "final_popularity": 450,
+            "healthy_rest_cat_days": 84,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 192,
+            "mean_fatigue": 16.024739583333332,
+            "mean_stress": 14.411458333333334,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1920,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 113,
+            "available_seat_ticks": 2480,
+            "occupied_seat_ticks": 1516,
+            "empty_seat_ticks": 964,
+            "seat_utilization": 0.6112903225806452,
+            "queue_full_departures": 0,
+            "wait_timeouts": 28,
+            "understaffed_days": 8
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 32,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 8,
+                "received": 8,
+                "pending": 0,
+                "conditional_visits": 8,
+                "matched": 5,
+                "unmatched": 3,
+                "match_rate": 0.625
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 16,
+            "received": 16
+          },
+          "operations": 1358,
+          "current_day": 32,
+          "common_window_metrics": {
+            "days": 32,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 31350.0,
+            "expenses": 2120,
+            "final_funds": 30230.0,
+            "final_popularity": 450,
+            "healthy_rest_cat_days": 84,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 192,
+            "mean_fatigue": 16.024739583333332,
+            "mean_stress": 14.411458333333334,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1920,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 113,
+            "available_seat_ticks": 2480,
+            "occupied_seat_ticks": 1516,
+            "empty_seat_ticks": 964,
+            "seat_utilization": 0.6112903225806452,
+            "queue_full_departures": 0,
+            "wait_timeouts": 28,
+            "understaffed_days": 8
+          }
+        }
+      }
+    },
+    {
+      "seed": 7,
+      "evaluated_at": "2026-10-03T05:04:44.472522+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 36,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 33220,
+            "expenses": 2310,
+            "final_funds": 31910,
+            "final_popularity": 450,
+            "healthy_rest_cat_days": 83,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 19.370833333333334,
+            "mean_stress": 15.241666666666667,
+            "max_fatigue": 57.5,
+            "max_stress": 56,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2310,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 116,
+            "available_seat_ticks": 2640,
+            "occupied_seat_ticks": 1582,
+            "empty_seat_ticks": 1058,
+            "seat_utilization": 0.5992424242424242,
+            "queue_full_departures": 0,
+            "wait_timeouts": 25,
+            "understaffed_days": 12
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 36,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 10,
+                "received": 10,
+                "pending": 0,
+                "conditional_visits": 10,
+                "matched": 5,
+                "unmatched": 5,
+                "match_rate": 0.5
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 18,
+            "received": 18
+          },
+          "operations": 1448,
+          "current_day": 36,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 25080,
+            "expenses": 1900,
+            "final_funds": 24180,
+            "final_popularity": 365,
+            "healthy_rest_cat_days": 70,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 150,
+            "mean_fatigue": 19.368333333333332,
+            "mean_stress": 15.156666666666666,
+            "max_fatigue": 57.5,
+            "max_stress": 56,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1900,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 93,
+            "available_seat_ticks": 2160,
+            "occupied_seat_ticks": 1282,
+            "empty_seat_ticks": 878,
+            "seat_utilization": 0.5935185185185186,
+            "queue_full_departures": 0,
+            "wait_timeouts": 19,
+            "understaffed_days": 11
+          }
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 32530.0,
+            "expenses": 2100,
+            "final_funds": 31430.0,
+            "final_popularity": 455,
+            "healthy_rest_cat_days": 83,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 18.705555555555556,
+            "mean_stress": 16.802777777777777,
+            "max_fatigue": 59,
+            "max_stress": 59,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1900,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 108,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1561,
+            "empty_seat_ticks": 839,
+            "seat_utilization": 0.6504166666666666,
+            "queue_full_departures": 0,
+            "wait_timeouts": 20,
+            "understaffed_days": 4
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 30,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 7,
+                "received": 7,
+                "pending": 0,
+                "conditional_visits": 7,
+                "matched": 5,
+                "unmatched": 2,
+                "match_rate": 0.7142857142857143
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 15,
+            "received": 15
+          },
+          "operations": 1314,
+          "current_day": 30,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 32530.0,
+            "expenses": 2100,
+            "final_funds": 31430.0,
+            "final_popularity": 455,
+            "healthy_rest_cat_days": 83,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 18.705555555555556,
+            "mean_stress": 16.802777777777777,
+            "max_fatigue": 59,
+            "max_stress": 59,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1900,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 108,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1561,
+            "empty_seat_ticks": 839,
+            "seat_utilization": 0.6504166666666666,
+            "queue_full_departures": 0,
+            "wait_timeouts": 20,
+            "understaffed_days": 4
+          }
+        }
+      }
+    },
+    {
+      "seed": 8,
+      "evaluated_at": "2026-10-03T05:06:18.460460+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 36,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 33620,
+            "expenses": 2260,
+            "final_funds": 32360,
+            "final_popularity": 470,
+            "healthy_rest_cat_days": 86,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 18.240277777777777,
+            "mean_stress": 14.925,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2260,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 131,
+            "available_seat_ticks": 2800,
+            "occupied_seat_ticks": 1574,
+            "empty_seat_ticks": 1226,
+            "seat_utilization": 0.5621428571428572,
+            "queue_full_departures": 0,
+            "wait_timeouts": 40,
+            "understaffed_days": 16
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 36,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 10,
+                "received": 10,
+                "pending": 0,
+                "conditional_visits": 10,
+                "matched": 5,
+                "unmatched": 5,
+                "match_rate": 0.5
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 18,
+            "received": 18
+          },
+          "operations": 1529,
+          "current_day": 36,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 1,
+            "starting_funds": 1000,
+            "income": 26420,
+            "expenses": 1850,
+            "final_funds": 25570,
+            "final_popularity": 395,
+            "healthy_rest_cat_days": 70,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 150,
+            "mean_fatigue": 18.435,
+            "mean_stress": 15.213333333333333,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1850,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 107,
+            "available_seat_ticks": 2320,
+            "occupied_seat_ticks": 1319,
+            "empty_seat_ticks": 1001,
+            "seat_utilization": 0.5685344827586207,
+            "queue_full_departures": 0,
+            "wait_timeouts": 31,
+            "understaffed_days": 12
+          }
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 32520.0,
+            "expenses": 2050,
+            "final_funds": 31470.0,
+            "final_popularity": 445,
+            "healthy_rest_cat_days": 77,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.619444444444444,
+            "mean_stress": 15.222222222222221,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1850,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 104,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1490,
+            "empty_seat_ticks": 910,
+            "seat_utilization": 0.6208333333333333,
+            "queue_full_departures": 0,
+            "wait_timeouts": 21,
+            "understaffed_days": 5
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 30,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 7,
+                "received": 7,
+                "pending": 0,
+                "conditional_visits": 7,
+                "matched": 5,
+                "unmatched": 2,
+                "match_rate": 0.7142857142857143
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 15,
+            "received": 15
+          },
+          "operations": 1313,
+          "current_day": 30,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 32520.0,
+            "expenses": 2050,
+            "final_funds": 31470.0,
+            "final_popularity": 445,
+            "healthy_rest_cat_days": 77,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.619444444444444,
+            "mean_stress": 15.222222222222221,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 1850,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 104,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1490,
+            "empty_seat_ticks": 910,
+            "seat_utilization": 0.6208333333333333,
+            "queue_full_departures": 0,
+            "wait_timeouts": 21,
+            "understaffed_days": 5
+          }
+        }
+      }
+    },
+    {
+      "seed": 9,
+      "evaluated_at": "2026-10-03T05:07:51.510404+00:00",
+      "runs": {
+        "clear": {
+          "mode": "clear",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 36,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 30840,
+            "expenses": 2360,
+            "final_funds": 29480,
+            "final_popularity": 435,
+            "healthy_rest_cat_days": 82,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 17.525,
+            "mean_stress": 14.633333333333333,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2360,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 122,
+            "available_seat_ticks": 2640,
+            "occupied_seat_ticks": 1485,
+            "empty_seat_ticks": 1155,
+            "seat_utilization": 0.5625,
+            "queue_full_departures": 0,
+            "wait_timeouts": 38,
+            "understaffed_days": 15
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 36,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 10,
+                "received": 10,
+                "pending": 0,
+                "conditional_visits": 10,
+                "matched": 5,
+                "unmatched": 5,
+                "match_rate": 0.5
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 18,
+            "received": 18
+          },
+          "operations": 1449,
+          "current_day": 36,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 3,
+            "starting_funds": 1000,
+            "income": 23870,
+            "expenses": 2000,
+            "final_funds": 22870,
+            "final_popularity": 360,
+            "healthy_rest_cat_days": 67,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 150,
+            "mean_fatigue": 17.338333333333335,
+            "mean_stress": 14.65,
+            "max_fatigue": 55,
+            "max_stress": 55,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2000,
+              "recruitment_expenses": 0,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 99,
+            "available_seat_ticks": 2160,
+            "occupied_seat_ticks": 1223,
+            "empty_seat_ticks": 937,
+            "seat_utilization": 0.5662037037037037,
+            "queue_full_departures": 0,
+            "wait_timeouts": 30,
+            "understaffed_days": 12
+          }
+        },
+        "fast": {
+          "mode": "fast",
+          "excluded_purchase_checks": [],
+          "save_resume_verified": true,
+          "reason": "completed",
+          "message": "",
+          "metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 31890.0,
+            "expenses": 2200,
+            "final_funds": 30690.0,
+            "final_popularity": 425,
+            "healthy_rest_cat_days": 81,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.194444444444443,
+            "mean_stress": 14.2,
+            "max_fatigue": 58.75,
+            "max_stress": 49,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2000,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 107,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1550,
+            "empty_seat_ticks": 850,
+            "seat_utilization": 0.6458333333333334,
+            "queue_full_departures": 0,
+            "wait_timeouts": 19,
+            "understaffed_days": 3
+          },
+          "stages": [],
+          "objective_result": {
+            "objective": "patron",
+            "status": "cleared",
+            "resolved_day": 30,
+            "members": {
+              "patron_visit": {
+                "name": "地域の有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 0,
+                "matched": 0,
+                "unmatched": 0,
+                "match_rate": null
+              },
+              "patron_moody_visit": {
+                "name": "気分が変わる有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 7,
+                "received": 7,
+                "pending": 0,
+                "conditional_visits": 7,
+                "matched": 5,
+                "unmatched": 2,
+                "match_rate": 0.7142857142857143
+              },
+              "patron_strict_visit": {
+                "name": "条件に厳格な有力者",
+                "target": 100,
+                "satisfaction": 100,
+                "dispatched": 4,
+                "received": 4,
+                "pending": 0,
+                "conditional_visits": 4,
+                "matched": 4,
+                "unmatched": 0,
+                "match_rate": 1.0
+              }
+            },
+            "dispatched": 15,
+            "received": 15
+          },
+          "operations": 1316,
+          "current_day": 30,
+          "common_window_metrics": {
+            "days": 30,
+            "day_offs": 0,
+            "starting_funds": 1000,
+            "income": 31890.0,
+            "expenses": 2200,
+            "final_funds": 30690.0,
+            "final_popularity": 425,
+            "healthy_rest_cat_days": 81,
+            "sick_cat_days": 0,
+            "illnesses": 0,
+            "runaways": 0,
+            "cat_days": 180,
+            "mean_fatigue": 16.194444444444443,
+            "mean_stress": 14.2,
+            "max_fatigue": 58.75,
+            "max_stress": 49,
+            "equipment_cost": 0,
+            "seats": 2,
+            "expense_breakdown": {
+              "dispatch_trouble_expenses": 0,
+              "pet_shop_expenses": 0,
+              "housing_expenses": 0,
+              "item_expenses": 0,
+              "operating_cost": 2000,
+              "recruitment_expenses": 200,
+              "expansion_expenses": 0,
+              "equipment_expenses": 0,
+              "seat_equipment_expenses": 0,
+              "waiting_area_expenses": 0,
+              "store_event_expenses": 0,
+              "kitten_expenses": 0
+            },
+            "arrivals": 107,
+            "available_seat_ticks": 2400,
+            "occupied_seat_ticks": 1550,
+            "empty_seat_ticks": 850,
+            "seat_utilization": 0.6458333333333334,
+            "queue_full_departures": 0,
+            "wait_timeouts": 19,
+            "understaffed_days": 3
+          }
+        }
+      }
+    }
+  ],
+  "summary": {
+    "by_scenario": {
+      "clear": {
+        "trials": 10,
+        "completed": 10,
+        "completion_rate": 1.0,
+        "stop_reasons": {
+          "completed": 10
+        },
+        "completion_days": {
+          "count": 10,
+          "mean": 36.4,
+          "min": 36,
+          "max": 40
+        },
+        "completion_calendar_days": {
+          "count": 10,
+          "mean": 36.5,
+          "min": 36,
+          "max": 40
+        },
+        "stages": [],
+        "metrics": {
+          "days": {
+            "count": 10,
+            "mean": 36.4,
+            "min": 36,
+            "max": 40
+          },
+          "illnesses": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "runaways": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sick_cat_days": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "wait_timeouts": {
+            "count": 10,
+            "mean": 30,
+            "min": 24,
+            "max": 40
+          },
+          "queue_full_departures": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "equipment_cost": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "income": {
+            "count": 10,
+            "mean": 32724,
+            "min": 30840,
+            "max": 33760
+          },
+          "expenses": {
+            "count": 10,
+            "mean": 2289,
+            "min": 2160,
+            "max": 2600
+          },
+          "final_funds": {
+            "count": 10,
+            "mean": 31435,
+            "min": 29480,
+            "max": 32360
+          },
+          "seats": {
+            "count": 10,
+            "mean": 2,
+            "min": 2,
+            "max": 2
+          },
+          "mean_fatigue": {
+            "count": 10,
+            "mean": 17.95638888888889,
+            "min": 16.620833333333334,
+            "max": 19.71527777777778
+          },
+          "mean_stress": {
+            "count": 10,
+            "mean": 14.507944444444444,
+            "min": 13.188888888888888,
+            "max": 15.852777777777778
+          },
+          "seat_utilization": {
+            "count": 10,
+            "mean": 0.5711425706646295,
+            "min": 0.5466911764705882,
+            "max": 0.5992424242424242
+          }
+        },
+        "wait_timeout_rate": 0.25380710659898476,
+        "sick_cat_day_rate": 0.0,
+        "objective_metrics": {
+          "dispatched": {
+            "count": 10,
+            "mean": 18.2,
+            "min": 18,
+            "max": 20
+          },
+          "received": {
+            "count": 10,
+            "mean": 18.2,
+            "min": 18,
+            "max": 20
+          },
+          "by_member": {
+            "patron_moody_visit": {
+              "name": "気分が変わる有力者",
+              "metrics": {
+                "satisfaction": {
+                  "count": 10,
+                  "mean": 100,
+                  "min": 100,
+                  "max": 100
+                },
+                "dispatched": {
+                  "count": 10,
+                  "mean": 10.2,
+                  "min": 10,
+                  "max": 12
+                },
+                "received": {
+                  "count": 10,
+                  "mean": 10.2,
+                  "min": 10,
+                  "max": 12
+                },
+                "pending": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "matched": {
+                  "count": 10,
+                  "mean": 5,
+                  "min": 5,
+                  "max": 5
+                },
+                "unmatched": {
+                  "count": 10,
+                  "mean": 5.2,
+                  "min": 5,
+                  "max": 7
+                }
+              },
+              "conditional_visits": 102,
+              "matched": 50,
+              "match_rate": 0.49019607843137253
+            },
+            "patron_strict_visit": {
+              "name": "条件に厳格な有力者",
+              "metrics": {
+                "satisfaction": {
+                  "count": 10,
+                  "mean": 100,
+                  "min": 100,
+                  "max": 100
+                },
+                "dispatched": {
+                  "count": 10,
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "received": {
+                  "count": 10,
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "pending": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "matched": {
+                  "count": 10,
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "unmatched": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                }
+              },
+              "conditional_visits": 40,
+              "matched": 40,
+              "match_rate": 1.0
+            },
+            "patron_visit": {
+              "name": "地域の有力者",
+              "metrics": {
+                "satisfaction": {
+                  "count": 10,
+                  "mean": 100,
+                  "min": 100,
+                  "max": 100
+                },
+                "dispatched": {
+                  "count": 10,
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "received": {
+                  "count": 10,
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "pending": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "matched": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "unmatched": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                }
+              },
+              "conditional_visits": 0,
+              "matched": 0,
+              "match_rate": null
+            }
+          }
+        },
+        "seat_utilization": 0.5708823529411765
+      },
+      "fast": {
+        "trials": 10,
+        "completed": 10,
+        "completion_rate": 1.0,
+        "stop_reasons": {
+          "completed": 10
+        },
+        "completion_days": {
+          "count": 10,
+          "mean": 30.2,
+          "min": 30,
+          "max": 32
+        },
+        "completion_calendar_days": {
+          "count": 10,
+          "mean": 30.2,
+          "min": 30,
+          "max": 32
+        },
+        "stages": [],
+        "metrics": {
+          "days": {
+            "count": 10,
+            "mean": 30.2,
+            "min": 30,
+            "max": 32
+          },
+          "illnesses": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "runaways": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "sick_cat_days": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "wait_timeouts": {
+            "count": 10,
+            "mean": 22.4,
+            "min": 16,
+            "max": 28
+          },
+          "queue_full_departures": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "equipment_cost": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "income": {
+            "count": 10,
+            "mean": 31161.0,
+            "min": 29380.0,
+            "max": 32530.0
+          },
+          "expenses": {
+            "count": 10,
+            "mean": 2097,
+            "min": 2000,
+            "max": 2200
+          },
+          "final_funds": {
+            "count": 10,
+            "mean": 30064.0,
+            "min": 28180.0,
+            "max": 31470.0
+          },
+          "seats": {
+            "count": 10,
+            "mean": 2,
+            "min": 2,
+            "max": 2
+          },
+          "mean_fatigue": {
+            "count": 10,
+            "mean": 16.720946180555554,
+            "min": 15.943055555555556,
+            "max": 18.705555555555556
+          },
+          "mean_stress": {
+            "count": 10,
+            "mean": 15.026423611111111,
+            "min": 14.2,
+            "max": 16.802777777777777
+          },
+          "seat_utilization": {
+            "count": 10,
+            "mean": 0.6363922825773494,
+            "min": 0.6112903225806452,
+            "max": 0.662962962962963
+          }
+        },
+        "wait_timeout_rate": 0.20837209302325582,
+        "sick_cat_day_rate": 0.0,
+        "objective_metrics": {
+          "dispatched": {
+            "count": 10,
+            "mean": 15.1,
+            "min": 15,
+            "max": 16
+          },
+          "received": {
+            "count": 10,
+            "mean": 15.1,
+            "min": 15,
+            "max": 16
+          },
+          "by_member": {
+            "patron_moody_visit": {
+              "name": "気分が変わる有力者",
+              "metrics": {
+                "satisfaction": {
+                  "count": 10,
+                  "mean": 100,
+                  "min": 100,
+                  "max": 100
+                },
+                "dispatched": {
+                  "count": 10,
+                  "mean": 7.1,
+                  "min": 7,
+                  "max": 8
+                },
+                "received": {
+                  "count": 10,
+                  "mean": 7.1,
+                  "min": 7,
+                  "max": 8
+                },
+                "pending": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "matched": {
+                  "count": 10,
+                  "mean": 5,
+                  "min": 5,
+                  "max": 5
+                },
+                "unmatched": {
+                  "count": 10,
+                  "mean": 2.1,
+                  "min": 2,
+                  "max": 3
+                }
+              },
+              "conditional_visits": 71,
+              "matched": 50,
+              "match_rate": 0.704225352112676
+            },
+            "patron_strict_visit": {
+              "name": "条件に厳格な有力者",
+              "metrics": {
+                "satisfaction": {
+                  "count": 10,
+                  "mean": 100,
+                  "min": 100,
+                  "max": 100
+                },
+                "dispatched": {
+                  "count": 10,
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "received": {
+                  "count": 10,
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "pending": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "matched": {
+                  "count": 10,
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "unmatched": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                }
+              },
+              "conditional_visits": 40,
+              "matched": 40,
+              "match_rate": 1.0
+            },
+            "patron_visit": {
+              "name": "地域の有力者",
+              "metrics": {
+                "satisfaction": {
+                  "count": 10,
+                  "mean": 100,
+                  "min": 100,
+                  "max": 100
+                },
+                "dispatched": {
+                  "count": 10,
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "received": {
+                  "count": 10,
+                  "mean": 4,
+                  "min": 4,
+                  "max": 4
+                },
+                "pending": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "matched": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                },
+                "unmatched": {
+                  "count": 10,
+                  "mean": 0,
+                  "min": 0,
+                  "max": 0
+                }
+              },
+              "conditional_visits": 0,
+              "matched": 0,
+              "match_rate": null
+            }
+          }
+        },
+        "seat_utilization": 0.6360219594594595
+      }
+    },
+    "paired": {
+      "both_completed": 10,
+      "fast_earlier": 10,
+      "same_day": 0,
+      "clear_earlier": 0,
+      "fast_minus_clear_days": {
+        "count": 10,
+        "mean": -6.2,
+        "min": -10,
+        "max": -4
+      },
+      "only_clear_completed": 0,
+      "only_fast_completed": 0,
+      "common_window": {
+        "trials": 10,
+        "days": {
+          "count": 10,
+          "mean": 30.2,
+          "min": 30,
+          "max": 32
+        },
+        "fast_minus_clear": {
+          "income": {
+            "count": 10,
+            "mean": 5390.0,
+            "min": 3150.0,
+            "max": 8020.0
+          },
+          "final_funds": {
+            "count": 10,
+            "mean": 5190.0,
+            "min": 2950.0,
+            "max": 7820.0
+          },
+          "illnesses": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "runaways": {
+            "count": 10,
+            "mean": 0,
+            "min": 0,
+            "max": 0
+          },
+          "mean_fatigue": {
+            "count": 10,
+            "mean": -1.4411579861111115,
+            "min": -2.995000000000001,
+            "max": -0.6627777777777766
+          },
+          "mean_stress": {
+            "count": 10,
+            "mean": 0.3426111111111112,
+            "min": -1.4672222222222224,
+            "max": 1.6461111111111109
+          },
+          "seat_utilization": {
+            "count": 10,
+            "mean": 0.06267178147677316,
+            "min": 0.02172619047619051,
+            "max": 0.10555555555555551
+          },
+          "wait_timeouts": {
+            "count": 10,
+            "mean": -2.1,
+            "min": -11,
+            "max": 3
+          }
+        }
+      },
+      "fast_minus_clear_calendar_days": {
+        "count": 10,
+        "mean": -6.3,
+        "min": -10,
+        "max": -4
+      }
+    }
+  }
+}

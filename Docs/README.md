@@ -18,6 +18,7 @@
 - [3人の有力者・気分型と厳格型の条件、旧セーブ互換](HumanToCatPatronMembers.md)
 - [3人の有力者の10シード評価・育成と派遣・健康上の課題](HumanToCatPatronMembersSeedEvaluation.md)
 - [有力者向けの負担予測・白猫の育成と休養・10シード改善比較](HumanToCatAutoPlayPatronSafeLoad.md)
+- [有力者向け積極経営・希望に合う猫の確保と派遣待ち](HumanToCatAutoPlayPatronFast.md)
 - [好感度・有力者の自動プレイ検証とCLI操作](HumanToCatAutoPlayObjectives.md)
 - [好感度モードの10シード評価・加入と交流配分・個性による差](HumanToCatBondSeedEvaluation.md)
 - [好感度の操作列比較・ソラの同時発動・10シード改善と体力消費](HumanToCatBondPlayerPlanning.md)

@@ -31,6 +31,11 @@ def prepare(player):
     elif player.objective == 'patron':
         from .core.cafe_patron import destinations
         from .core.cafe_patron_members import terms
+        if player.mode == 'fast':
+            from .cafe_autoplay_patron import recruit_for_conditions
+            recruitment = recruit_for_conditions(player)
+            if recruitment is not None:
+                return recruitment
         choices = destinations(c)
         ids = {row['id'] for row in choices}
         events = (c.activities or {}).get('events', {}).values()
@@ -45,6 +50,13 @@ def prepare(player):
                 satisfied = c.patron['members'][key] >= member['target']
             if satisfied:
                 continue
+            if player.mode == 'fast':
+                from .cafe_autoplay_patron import matching_wait_cat
+                waiting = matching_wait_cat(c, destination)
+                if waiting is not None:
+                    player._decision(s.profiles[waiting]['name'], '派遣待ち',
+                                     destination['name']+'。希望に一致する猫を休養させ、不一致の低加点訪問を見送る', waiting)
+                    continue
             eligible = [cat for cat in c.cats if not cafe_activities.dispatch_reason(c, cat, destination)]
             eligible = [cat for cat in eligible if terms(c, cat, key) is None or terms(c, cat, key)['gain'] > 0]
             from .cafe_autoplay_patron import dispatch_reason
