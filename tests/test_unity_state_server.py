@@ -4,12 +4,78 @@ import threading
 import unittest
 from urllib.request import urlopen, Request
 from urllib.error import HTTPError
+from unittest.mock import patch
 
 from cat_cafe_sim.cafe_new_game import create_game
 from cat_cafe_sim.unity_state_server import make_server, state_view
 
 
 class UnityStateTests(unittest.TestCase):
+    def test_one_day_business_matches_existing_session_and_preserves_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            session = create_game(directory)
+            reference = create_game(directory)
+            files = {path: path.read_bytes() for path in session.checkpoint_path.parent.iterdir()}
+            with make_server(session, 0) as server:
+                thread = threading.Thread(target=server.serve_forever, daemon=True)
+                thread.start()
+                base = f'http://127.0.0.1:{server.server_port}'
+                def read():
+                    with urlopen(base + '/state') as response:
+                        return json.load(response)
+                def post(state, kind, request_id, working_cats=None):
+                    command = dict(request_id=request_id, instance_id=state['instance_id'], expected_revision=state['revision'],
+                                   kind=kind, working_cats=working_cats or [])
+                    request = Request(base + '/commands', json.dumps(command).encode(), {'Content-Type': 'application/json'})
+                    try:
+                        with urlopen(request) as response:
+                            return response.status, json.load(response)
+                    except HTTPError as ex:
+                        return ex.code, json.load(ex)
+                try:
+                    initial = read()
+                    self.assertEqual(post(initial, 'advance_business', 'early')[0], 422)
+                    _, response = post(initial, 'set_shifts', 'all-rest')
+                    rest = response['state']
+                    self.assertEqual(post(rest, 'start_business', 'no-workers')[0], 422)
+                    _, response = post(rest, 'set_shifts', 'all-work', list(session.core.cats))
+                    initial = response['state']
+                    code, response = post(initial, 'start_business', 'start')
+                    self.assertEqual(code, 200)
+                    self.assertEqual(response['state']['tick'], 1)
+                    self.assertFalse(response['state']['can_set_shifts'])
+                    self.assertEqual(post(initial, 'start_business', 'start'), (code, response))
+                    state = response['state']
+                    snapshot = session.core.snapshot()
+                    # If automatic assignment has happened before an error, discard
+                    # the entire candidate instead of leaving a half-applied step.
+                    with patch.object(type(session.policy), 'choose', side_effect=ValueError('policy failed')):
+                        self.assertEqual(post(state, 'advance_business', 'failure')[0], 422)
+                    self.assertEqual(session.core.snapshot(), snapshot)
+                    self.assertEqual(read()['revision'], state['revision'])
+                    self.assertEqual(post(state, 'start_business', 'twice')[0], 422)
+                    occupied = False
+                    while not state['closed']:
+                        code, response = post(state, 'advance_business', f"tick-{state['tick']}")
+                        self.assertEqual(code, 200, response)
+                        state = response['state']
+                        occupied |= any(seat['customer_id'] for seat in state['seats'])
+                    while not reference.core.closed:
+                        reference.automatic_step(auto_assign=True)
+                    self.assertTrue(occupied)
+                    self.assertEqual(state['tick'], session.core.config.opening_ticks)
+                    self.assertGreater(state['completed_interactions'], 0)
+                    self.assertEqual(session.core.summary(), reference.core.summary())
+                    self.assertEqual(state['finance']['closing_funds'], state['funds'])
+                    self.assertEqual(state['finance']['net_cash_flow'], state['finance']['total_income'] - state['finance']['total_expenses'])
+                    after = session.core.snapshot()
+                    self.assertEqual(post(state, 'advance_business', 'after-close')[0], 422)
+                    self.assertEqual(after, session.core.snapshot())
+                    self.assertEqual(files, {path: path.read_bytes() for path in files})
+                finally:
+                    server.shutdown()
+                    thread.join()
+
     def test_read_only_http_and_live_session_projection(self):
         with tempfile.TemporaryDirectory() as directory:
             session = create_game(directory)
