@@ -217,7 +217,7 @@ class AutoPlayer:
                         decision = prepare_patron(self)
                     if decision is None and self.mode!='basic' and self.objective!='patron':
                         from .cafe_autoplay_strategy import prepare
-                        decision = prepare(s, self.emit, self._name, report=self._decision, mode=self.mode)
+                        decision = prepare(s, self.emit, self._name, report=self._decision, mode=self.mode, objective=self.objective)
                     if decision is None:
                         decision = self._basic_preparation()
                 else:

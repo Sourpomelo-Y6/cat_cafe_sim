@@ -1,6 +1,6 @@
 """経営方針の準備判断。ゲーム状態の変更は返した通常操作に任せる。"""
 from .cafe_autoplay_staffing import plan, expansion_reason
-from .core import cafe_equipment, cafe_expansion, cafe_seat_equipment, cafe_goal, cafe_reservation
+from .core import cafe_equipment, cafe_expansion, cafe_seat_equipment, cafe_goal, cafe_reservation, cafe_waiting_area
 
 
 def reserve(core):
@@ -10,12 +10,53 @@ def reserve(core):
     return max(300, 2*(cost.get('base_cost', 0)+cost.get('per_seat_cost', 0)*(seats+1)))
 
 
-def prepare(session, emit, name, report=None, mode="clear"):
+def waiting_reserve(core, daily_cost=None):
+    """待合の維持費も含め、増席後の2日分の運営費を残す。"""
+    if daily_cost is None:
+        daily_cost = cafe_waiting_area.daily_cost(core)
+    cost = (core.operating_cost or {}).get('rules', {})
+    seats = len(cafe_seat_equipment.seats(core))
+    return max(reserve(core), 2*(cost.get('base_cost', 0)
+               +cost.get('per_seat_cost', 0)*(seats+1)+daily_cost))
+
+
+def waiting_investment(session, staffing, remaining, report=None):
+    """待機の取りこぼしがあるとき、保存済みの待合設備を通常購入する。"""
+    c = session.core
+    if c.waiting_area is None or remaining <= 1:
+        return None
+    departures = c.day_results[-1]['summary'].get('departures', {}) if c.day_results else {}
+    demand = staffing['arrivals'] > min(len(cafe_seat_equipment.seats(c)), len(staffing['workers']))
+    if not demand and not any(departures.get(key, 0) for key in ('wait_timeout', 'queue_full')):
+        return None
+    if cafe_waiting_area.purchased(c):
+        selected = cafe_waiting_area.upgrade_rules()
+        problem = cafe_waiting_area.upgrade_reason(c, selected)
+        action = lambda: session.upgrade_waiting_area(selected)
+        label = '待合スペースの2段階目を強化'
+    else:
+        selected = c.waiting_area['rules']
+        problem = cafe_waiting_area.reason(c)
+        action = session.purchase_waiting_area
+        label = '待合スペースを強化'
+    buffer = waiting_reserve(c, selected['daily_cost'])
+    if problem or c.funds-selected['cost'] < buffer:
+        return None
+    reason = (f'来店予定{staffing["arrivals"]}人・出勤候補{len(staffing["workers"])}匹、'
+              f'前日の待機期限切れ{departures.get("wait_timeout", 0)}件・列満員退店{departures.get("queue_full", 0)}件。'
+              f'待機枠と猶予を広げて接客を待てるようにする。費用{selected["cost"]:g}、'
+              f'維持費{selected["daily_cost"]:g}/日、購入後の資金{c.funds-selected["cost"]:g}で予備資金{buffer:g}を確保')
+    if report:
+        report(label, '購入', reason)
+    return f'{label}（{reason}）', action
+
+
+def prepare(session, emit, name, report=None, mode="clear", *, objective="popularity"):
     c = session.core
     remaining = (cafe_goal.current_start(c.goal)+cafe_goal.current_rules(c.goal)['days']-c.day
                  if not c.goal.get('tracking_only') else float('inf'))
     duration = f'期限まで残り{remaining}日' if remaining != float('inf') else '目標期限なし'
-    buffer = reserve(c)
+    buffer = waiting_reserve(c) if mode == 'fast' and objective == 'popularity' else reserve(c)
     staffing = plan(session, mode=mode)
     limits = "疲労65・ストレス60以下で早期達成を優先" if mode == "fast" else "疲労・ストレスとも60以下で休養を優先"
     if emit:
@@ -27,6 +68,10 @@ def prepare(session, emit, name, report=None, mode="clear"):
         step = cafe_expansion.next_step(c, rules) if action==session.expand_seats else None
         cost = step['cost'] if step else rules.get('cost', 0)
         if action == session.expand_seats:
+            if mode == 'fast' and objective == 'popularity':
+                investment = waiting_investment(session, staffing, remaining, report)
+                if investment:
+                    return investment
             skipped = expansion_reason(c, staffing, mode=mode)
             if skipped:
                 if report:

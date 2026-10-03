@@ -13,6 +13,7 @@
 - [未着手機能と検討事項](HumanToCatPlannedFeatures.md)
 - [テスト用自動プレイCLI・GUIのおまかせ操作とバランス調整案](HumanToCatAutoPlayPlan.md)
 - [自動プレイの経営3方針・比較結果](HumanToCatAutoPlayPolicies.md)
+- [人気向け積極経営の待合投資・日次調査と10シード比較](HumanToCatAutoPlayPopularityInvestment.md)
 - [安定経営・積極経営の10シード比較と評価CLI](HumanToCatAutoPlaySeedEvaluation.md)
 - [人気・好感度・有力者の共通評価CLIと両経営方針の比較](HumanToCatAutoPlayObjectiveEvaluation.md)
 - [3人の有力者・気分型と厳格型の条件、旧セーブ互換](HumanToCatPatronMembers.md)

@@ -104,6 +104,28 @@ class AutoPlayGuiTests(unittest.TestCase):
         self.assertEqual(dialog.player.result.reason, 'goal_cleared')
         self.assertIn('積極経営', dialog.log.get('1.0', 'end'))
 
+    def test_fast_waiting_purchase_is_visible_and_saved(self):
+        from test_cafe_autoplay_investment import InvestmentTests
+        session = InvestmentTests.session(self, arrivals=(0, 0, 1))
+        InvestmentTests.first_stage(self, session)
+        session.purchase_rest_space()
+        with patch.object(self, 'session', return_value=session):
+            app = self.app()
+        dialog = self.dialog(app)
+        dialog.mode.set('積極経営')
+        dialog.interval_ms = 10000
+        dialog.start()
+        dialog.window.after_cancel(dialog.timer)
+        dialog.timer = None
+        dialog.advance()
+        dialog.stop()
+        self.assertIsNotNone(session.core.waiting_area['purchase'])
+        rows = [dialog.decision_table.item(item, 'values') for item in dialog.decision_table.get_children()]
+        self.assertTrue(any('待合スペース' in row[1] and row[2]=='購入'
+                            and '維持費10/日' in row[3] and '予備資金' in row[3] for row in rows))
+        self.assertIn('待合スペース', dialog.log.get('1.0', 'end'))
+        self.assertEqual(load_game(session.checkpoint_path)[0].core.snapshot(), session.core.snapshot())
+
     def test_decision_table_purchase_forecasts_details_and_small_window(self):
         app = self.app()
         dialog = self.dialog(app)
