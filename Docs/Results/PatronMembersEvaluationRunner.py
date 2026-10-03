@@ -23,6 +23,7 @@ def run(task):
         original_dispatch = session.dispatch
 
         def dispatch(cat_id, rules=None):
+            core = session.core
             # 通常の操作を委譲する直前に、同じ読み取り専用判定を記録する。
             if rules['id'] in cafe_patron_members.IDS:
                 candidates = []
@@ -44,6 +45,8 @@ def run(task):
         player = AutoPlayer(session, objective='patron', mode='clear',
                             max_days=90, emit=lambda line: None)
         result = player.run()
+        # 交流結果の保存等でセッションがコアを復元し直す場合がある。
+        core = session.core
         # 準備中の帰還で達成する場合、未閉店日の収支も最終資金に含まれる。
         projection = copy.copy(core)
         preparation = core.summary() if not core.closed else None
@@ -59,6 +62,8 @@ def run(task):
             metrics['uncompleted_day_finance'] = preparation
         if abs(metrics['starting_funds']+metrics['income']-metrics['expenses']-core.funds) > 1e-8:
             raise ValueError('閉店済み日と未閉店日の収支が一致しません。')
+        if metrics['days'] != result.days:
+            raise ValueError('完了日数と集計した日数が一致しません。')
         save_game(session, session.checkpoint_path)
         loaded, _ = load_game(session.checkpoint_path)
         if loaded.core.snapshot() != core.snapshot():

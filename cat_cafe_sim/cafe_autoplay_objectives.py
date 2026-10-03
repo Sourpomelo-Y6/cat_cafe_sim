@@ -45,6 +45,8 @@ def prepare(player):
                 continue
             eligible = [cat for cat in c.cats if not cafe_activities.dispatch_reason(c, cat, destination)]
             eligible = [cat for cat in eligible if terms(c, cat, key) is None or terms(c, cat, key)['gain'] > 0]
+            from .cafe_autoplay_patron import dispatch_reason
+            eligible = [cat for cat in eligible if not dispatch_reason(c, cat)]
             if eligible:
                 cat = min(eligible, key=lambda cat: (-(terms(c, cat, key) or {}).get('gain', 0), c.cats[cat].fatigue, cat))
                 note = '健康・疲労・余剰猫条件を確認'

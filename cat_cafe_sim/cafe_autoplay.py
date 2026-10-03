@@ -212,6 +212,9 @@ class AutoPlayer:
                     if self.objective!='popularity':
                         from .cafe_autoplay_objectives import prepare as prepare_objective
                         decision = prepare_objective(self)
+                    if decision is None and self.mode!='basic' and self.objective=='patron':
+                        from .cafe_autoplay_patron import prepare as prepare_patron
+                        decision = prepare_patron(self)
                     if decision is None and self.mode!='basic' and self.objective!='patron':
                         from .cafe_autoplay_strategy import prepare
                         decision = prepare(s, self.emit, self._name, report=self._decision, mode=self.mode)
