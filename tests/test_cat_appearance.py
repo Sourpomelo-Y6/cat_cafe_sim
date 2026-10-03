@@ -38,6 +38,6 @@ class AppearanceTests(unittest.TestCase):
                     store.set_cat_appearance('cat', value)
                 self.assertEqual(before, store.path.read_bytes())
 
-    def test_starting_profiles_have_unset_appearance(self):
+    def test_starting_profiles_have_editable_default_appearance(self):
         for profile in starting_conditions()['profiles']['cats'].values():
-            self.assertEqual(set(profile['appearance'].values()), {''})
+            self.assertTrue(all(profile['appearance'].values()))
