@@ -12,14 +12,17 @@ SCENES = (
 
 
 class CatActionPreviewWindow:
-    def __init__(self, parent, *, asset_path=ASSET_PATH, session_provider=None, registry=None):
+    def __init__(self, parent, *, asset_path=ASSET_PATH, session_provider=None, registry=None, text_reader=None):
         import tkinter as tk
         from tkinter import ttk
+        from tkinter.scrolledtext import ScrolledText
 
         self.window = tk.Toplevel(parent)
         self.session_provider = session_provider
         from .content_images import ImageRegistry
         self.registry = registry or ImageRegistry()
+        from .content_texts import TextReader
+        self.text_reader = text_reader or TextReader(self.registry.directory / 'texts.json')
         self.registered_cache = {}
         self.target_id = None
         self.timer = None
@@ -53,8 +56,11 @@ class CatActionPreviewWindow:
             self.buttons[key] = button
         self.image_label = ttk.Label(frame, anchor='center')
         self.image_label.pack(fill='both', expand=True)
+        self.introduction = tk.StringVar(master=self.window)
         self.caption = tk.StringVar(master=self.window)
-        ttk.Label(frame, textvariable=self.caption, wraplength=500).pack(anchor='w', pady=8)
+        self.description = ScrolledText(frame, width=60, height=6, wrap='word', state='disabled')
+        self.description.pack(fill='x', pady=8)
+        self.description_value = None
         ttk.Button(frame, text='閉じる', command=self.window.destroy).pack(anchor='e')
 
         try:
@@ -133,7 +139,20 @@ class CatActionPreviewWindow:
         image = image or self.images.get(key)
         if image is not None:
             self.image_label.configure(image=image, text='')
-        self.caption.set(f"{scene[1]}：{scene[2]} / " + ('登録画像' if registered else '仮の三毛猫画像（未登録・読込失敗時の代替）'))
+        name = '猫'
+        if self.session_provider is not None and self.target_id is not None:
+            session = self.session_provider()
+            name = session.profiles.get(self.target_id, {}).get('name', self.target_id)
+        introduction, caption = self.text_reader.display(self.target_id, name, key)
+        self.introduction.set(introduction)
+        self.caption.set(f"{scene[1]}：{caption} / " + ('登録画像' if registered else '仮の三毛猫画像（未登録・読込失敗時の代替）'))
+        value = self.introduction.get() + '\n\n' + self.caption.get()
+        if value != self.description_value:
+            self.description.configure(state='normal')
+            self.description.delete('1.0', 'end')
+            self.description.insert('1.0', value)
+            self.description.configure(state='disabled')
+            self.description_value = value
 
 
 def main():
