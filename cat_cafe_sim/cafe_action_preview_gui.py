@@ -12,19 +12,23 @@ SCENES = (
 
 
 class CatActionPreviewWindow:
-    def __init__(self, parent, *, asset_path=ASSET_PATH, session_provider=None):
+    def __init__(self, parent, *, asset_path=ASSET_PATH, session_provider=None, registry=None):
         import tkinter as tk
         from tkinter import ttk
 
         self.window = tk.Toplevel(parent)
         self.session_provider = session_provider
+        from .content_images import ImageRegistry
+        self.registry = registry or ImageRegistry()
+        self.registered_cache = {}
+        self.target_id = None
         self.timer = None
         self.window.bind('<Destroy>', self._destroyed)
-        self.window.title('猫の画像プレビュー — 三毛猫の試作')
+        self.window.title('猫の画像プレビュー')
         self.window.minsize(500, 410)
         frame = ttk.Frame(self.window, padding=12)
         frame.pack(fill='both', expand=True)
-        ttk.Label(frame, text='背景込みの三毛猫・4場面', font=('', 14, 'bold')).pack(anchor='w')
+        ttk.Label(frame, text='背景込みの猫画像・4場面', font=('', 14, 'bold')).pack(anchor='w')
         ttk.Label(frame, text='見た目の確認用です。ボタンを押しても営業や猫の状態は変わりません。',
                   wraplength=500).pack(anchor='w', pady=(4, 8))
         self.images = {}
@@ -34,6 +38,10 @@ class CatActionPreviewWindow:
         self.buttons = {}
         self.auto = tk.BooleanVar(master=self.window, value=session_provider is not None)
         if session_provider is not None:
+            self.cat_choice = tk.StringVar(master=self.window)
+            self.cat_selector = ttk.Combobox(frame, textvariable=self.cat_choice, state='readonly', width=40)
+            self.cat_selector.pack(fill='x', pady=(0, 6))
+            self.cat_selector.bind('<<ComboboxSelected>>', self.select_cat)
             ttk.Checkbutton(frame, text='ゲーム状態に合わせて自動表示', variable=self.auto,
                             command=self.sync).pack(anchor='w', pady=(0, 6))
         self.game_status = tk.StringVar(master=self.window)
@@ -81,22 +89,51 @@ class CatActionPreviewWindow:
             return
         for button in self.buttons.values():
             button.state(['disabled'] if self.auto.get() else ['!disabled'])
+        session = self.session_provider()
+        self.cat_labels = {f"{session.profiles.get(key, {}).get('name', key)}（{key}）": key
+                           for key in session.core.cats}
+        self.cat_selector.configure(values=list(self.cat_labels))
+        if self.target_id not in session.core.cats:
+            self.target_id = 'playtest-mike' if 'playtest-mike' in session.core.cats else next(iter(session.core.cats), None)
+        self.cat_choice.set(next((label for label, key in self.cat_labels.items() if key == self.target_id), ''))
         if not self.auto.get():
+            self.show_scene(self.scene.get())
             self.game_status.set('手動プレビュー中（ゲーム状態は変更しません）')
             return
         from .cafe_action_presentation import current_scene
-        view = current_scene(self.session_provider())
+        view = current_scene(session, self.target_id)
         self.show_scene(view['scene'])
-        self.game_status.set(f"{view['name']} / {view['room']} / {view['status']}\n画像は共通の仮の三毛猫です。背景は各状態で共通です。")
+        self.game_status.set(f"{view['name']} / {view['room']} / {view['status']}")
+
+    def select_cat(self, event=None):
+        self.target_id = self.cat_labels.get(self.cat_choice.get())
+        self.sync()
+
+    def registered_image(self, key):
+        import tkinter as tk
+        from .content_images import load_display_image
+        try:
+            path = self.registry.image_path(self.target_id, key)
+            if path is None:
+                return None
+            stamp = (str(path), path.stat().st_mtime_ns)
+            if key not in self.registered_cache or self.registered_cache[key][0] != stamp:
+                self.registered_cache[key] = (stamp, load_display_image(self.window, path))
+            return self.registered_cache[key][1]
+        except (OSError, ValueError, tk.TclError):
+            return None
 
     def show_scene(self, key):
         scene = next((item for item in SCENES if item[0] == key), None)
         if scene is None:
             raise ValueError('未知の場面です。')
         self.scene.set(key)
-        if key in self.images:
-            self.image_label.configure(image=self.images[key], text='')
-        self.caption.set(f'{scene[1]}：{scene[2]}')
+        image = self.registered_image(key) if self.target_id is not None else None
+        registered = image is not None
+        image = image or self.images.get(key)
+        if image is not None:
+            self.image_label.configure(image=image, text='')
+        self.caption.set(f"{scene[1]}：{scene[2]} / " + ('登録画像' if registered else '仮の三毛猫画像（未登録・読込失敗時の代替）'))
 
 
 def main():

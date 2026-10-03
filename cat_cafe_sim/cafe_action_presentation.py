@@ -12,9 +12,10 @@ def interaction_scene(records):
     return {'teaser': 'play', 'pet': 'pet'}.get(record['before']['mode'], 'normal')
 
 
-def current_scene(session):
+def current_scene(session, cat_id=None):
     core = session.core
-    cat_id = 'playtest-mike' if 'playtest-mike' in core.cats else next(iter(core.cats), None)
+    if cat_id not in core.cats:
+        cat_id = 'playtest-mike' if 'playtest-mike' in core.cats else next(iter(core.cats), None)
     if cat_id is None:
         return dict(scene='normal', cat_id=None, name='対象なし', room='対象なし', status='猫がいません。')
     name = session.profiles.get(cat_id, {}).get('name', cat_id)
