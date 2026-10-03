@@ -1,5 +1,6 @@
 """好感度・有力者の検証用に、通常操作だけで目標を進める。"""
 from .core import cafe_player, cafe_housing, cafe_activities
+from .cafe_autoplay_player import player_action
 
 
 def prepare(player):
@@ -56,34 +57,3 @@ def prepare(player):
                 player._decision(s.profiles[cat]['name'], '派遣', destination['name']+'。'+note, cat)
                 return f'{s.profiles[cat]["name"]}を{destination["name"]}へ派遣', lambda cat=cat, destination=destination: s.dispatch(cat, destination)
     return None
-
-
-def player_action(interaction):
-    """公開ルールで2手まで試し、好感度を増やせる交流を選ぶ。実状態は変更しない。"""
-    import copy
-    valid = interaction.valid_actions()
-    if 'connect' in valid:
-        return 'connect', None
-    if interaction.state['stamina'] <= 20:
-        return 'pause', None
-    options = [(action, None) for action in valid if action != 'switch']
-    if 'switch' in valid:
-        options += [('switch', key) for key in interaction.type_map if key != interaction.state['mode']]
-    ranked = []
-    for index, (action, target) in enumerate(options):
-        trial = copy.deepcopy(interaction)
-        trial.step(action, target)
-        futures = [trial]
-        if not trial.state['end_reason']:
-            futures = []
-            for follow in trial.valid_actions():
-                if follow == 'switch':
-                    continue
-                future = copy.deepcopy(trial)
-                future.step(follow)
-                futures.append(future)
-        score = max((future.state['affinity_pending']-interaction.state['affinity_pending'],
-                     future.state['stamina']) for future in futures)
-        ranked.append((score, -index, action, target))
-    _, _, action, target = max(ranked)
-    return action, target

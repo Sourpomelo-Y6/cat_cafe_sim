@@ -19,6 +19,7 @@
 - [有力者向けの負担予測・白猫の育成と休養・10シード改善比較](HumanToCatAutoPlayPatronSafeLoad.md)
 - [好感度・有力者の自動プレイ検証とCLI操作](HumanToCatAutoPlayObjectives.md)
 - [好感度モードの10シード評価・加入と交流配分・個性による差](HumanToCatBondSeedEvaluation.md)
+- [好感度の操作列比較・ソラの同時発動・10シード改善と体力消費](HumanToCatBondPlayerPlanning.md)
 - [第2段階後の通常客2人追加・10シード比較](HumanToCatSecondPopularCustomerEvaluation.md)
 - [安定経営の集中負担予測・発症6件の監査と改善比較](HumanToCatAutoPlaySafeLoad.md)
 - [自動プレイ5条件のバランス予備評価・集計と調整候補](HumanToCatAutoPlayBalanceEvaluation.md)
