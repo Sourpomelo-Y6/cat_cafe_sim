@@ -25,7 +25,8 @@ def prepare(player):
                     and not cafe_player.unavailable_reason(c, key)]
         if eligible:
             key = min(eligible, key=lambda key: (affinity[key], key))
-            player._decision(s.profiles[key]['name'], '交流', f"好感度{affinity[key]:g}、目標{goal['rules']['affinity']:g}。未達の猫から交流", key)
+            style = '営業に体力を残す操作も比較' if player.mode=='clear' else 'セットの好感度加点を優先'
+            player._decision(s.profiles[key]['name'], '交流', f"好感度{affinity[key]:g}、目標{goal['rules']['affinity']:g}。未達の猫から交流。{style}", key)
             return f'{s.profiles[key]["name"]}とプレイヤー交流を開始', lambda: s.play_with_player(key)
     elif player.objective == 'patron':
         from .core.cafe_patron import destinations

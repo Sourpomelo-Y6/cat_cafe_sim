@@ -97,3 +97,42 @@ class PlayerPlanningTests(unittest.TestCase):
         self.finish(interaction)
         with self.assertRaises(ValueError):
             player_action(interaction)
+
+    def test_stamina_policy_compares_gain_first_candidate_and_preserves_state(self):
+        for key in starting_conditions('bond')['profiles']['cats']:
+            with self.subTest(cat=key):
+                gain_first, reserve = self.interaction(key), self.interaction(key)
+                previous = self.finish(gain_first)
+                result = self.finish(reserve, lambda node: player_action(node, keep_stamina=True))
+                target = reserve.config.max_stamina*.6
+                score = lambda row: row['affinity_pending']+.2*min(target,row['stamina'])
+                self.assertGreaterEqual(score(result), score(previous))
+                self.assertGreater(result['affinity_delta'], 0)
+                self.assertGreater(result['stamina'], 0)
+                if key=='cat-sora':
+                    self.assertGreater(result['stamina'], 60)
+                    self.assertLess(result['affinity_delta'], previous['affinity_delta'])
+                self.assertEqual(verify_relationship(reserve.log()).log(), reserve.log())
+
+    def test_stamina_policy_cold_cache_resume_and_manual_deviation(self):
+        interaction = self.interaction()
+        interaction.step('switch', 'presence')
+        choose = lambda node: player_action(node, keep_stamina=True)
+        interaction.step(*choose(interaction))
+        resumed = verify_relationship(interaction.log())
+        _initial_plan.cache_clear()
+        while not interaction.state['end_reason']:
+            before = copy.deepcopy(interaction.log())
+            self.assertEqual(choose(interaction), choose(resumed))
+            self.assertEqual(interaction.log(), before)
+            action, target = choose(interaction)
+            interaction.step(action, target);resumed.step(action, target)
+        self.assertEqual(interaction.log(), resumed.log())
+
+    def test_stamina_policy_rejects_invalid_flag_and_keeps_low_stamina_legal(self):
+        for value in (None, 0, 1, 'clear'):
+            with self.assertRaises(ValueError):player_action(self.interaction(), keep_stamina=value)
+        interaction = self.interaction(stamina=1)
+        self.assertEqual(player_action(interaction, keep_stamina=True), ('pause', None))
+        result = self.finish(interaction, lambda node: player_action(node, keep_stamina=True))
+        self.assertNotEqual(result['end_reason'], 'exhausted')

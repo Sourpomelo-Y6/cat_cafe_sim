@@ -102,7 +102,7 @@ class AutoPlayer:
         if cafe_player.active(c) and self.objective=='bond' and self.mode!='basic':
             from .cafe_autoplay_objectives import player_action
             interaction = cafe_player.current(c)
-            action, target = player_action(interaction)
+            action, target = player_action(interaction, keep_stamina=self.mode=='clear')
             return f'プレイヤー交流: {action}'+(f' / {target}' if target else ''), lambda: s.player_command(action, target)
         if cafe_player.active(c):
             return '進行中のプレイヤー交流を終了', lambda: s.player_command(finish=True)

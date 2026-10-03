@@ -52,6 +52,7 @@
 - [猫の特性：初回仕様](HumanToCatTraits.md)
 - [猫の特徴とお客さんの好み：初回仕様](HumanToCatCustomerPreferences.md)
 - [プレイヤーと猫のコマンド交流](HumanToCatPlayerInteraction.md)
+- [好感度の自動交流：営業へ体力を残す判断と同期間比較](HumanToCatBondStaminaPlanning.md)
 - [保護猫の譲渡イベント・譲渡済みの表示切り替え](HumanToCatAdoption.md)
 - [ストレス・家出・帰還と経営終了：初回仕様](HumanToCatManagement.md)
 

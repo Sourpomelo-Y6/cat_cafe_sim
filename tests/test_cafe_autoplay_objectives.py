@@ -229,3 +229,16 @@ class ObjectiveAutoPlayTests(unittest.TestCase):
         self.assertEqual(result.reason, 'game_over')
         self.assertEqual(s.core.bond_goal['status'], 'active')
         self.replay(s)
+
+    def test_stamina_reserve_is_used_only_by_stable_bond_policy(self):
+        for mode in ('clear', 'fast'):
+            with self.subTest(mode=mode):
+                session = self.game('bond')
+                session.play_with_player('cat-sora')
+                player = AutoPlayer(session, objective='bond', mode=mode)
+                before = session.core.snapshot()
+                with patch('cat_cafe_sim.cafe_autoplay_objectives.player_action', return_value=('pause', None)) as choose:
+                    player._answer()
+                choose.assert_called_once()
+                self.assertEqual(choose.call_args.kwargs, {'keep_stamina': mode=='clear'})
+                self.assertEqual(session.core.snapshot(), before)
