@@ -713,9 +713,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if self.session.core.equipment_store is not None and selected_seat in seats(core):
             self.details.set('選択席 ' + selected_seat + '：' + description(core, selected_seat) + '\n' + self.details.get())
         self.refresh_dashboard()
-        self.autoplay_button.state(['!disabled'] if core.goal and not core.goal.get('tracking_only')
-                                   and core.goal['status']=='active' and not ended and not self.session.pending
-                                   else ['disabled'])
+        from .cafe_autoplay_gui import autoplay_available
+        self.autoplay_button.state(['!disabled'] if autoplay_available(self.session) else ['disabled'])
 
     def show_autoplay(self):
         from .cafe_autoplay_gui import CafeAutoPlayWindow

@@ -190,7 +190,7 @@ class AutoPlayer:
         if self.stop_on_goal:
             from .core.cafe_bond_goal import pending as bond_pending
             from .core.cafe_patron import pending as patron_pending
-            if c.goal['status']=='cleared' or bond_pending(c) or patron_pending(c):
+            if cafe_goal.pending(c) or bond_pending(c) or patron_pending(c):
                 return self._stop('goal_cleared', '結果を確認してから通常操作へ戻れます。')
         if self._days()-self.start_days >= self.max_days:
             return self._stop('day_limit')

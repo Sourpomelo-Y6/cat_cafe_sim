@@ -2,6 +2,23 @@
 from .cafe_autoplay import AutoPlayer, REASONS
 
 
+OBJECTIVES = {'人気': 'popularity', '好感度': 'bond', '有力者': 'patron'}
+
+
+def objective_targets(core):
+    return {key: value for key, value in (
+        ('popularity', core.goal if core.goal and not core.goal.get('tracking_only') else None),
+        ('bond', core.bond_goal), ('patron', core.patron)) if value is not None}
+
+
+def autoplay_available(session):
+    from .core import cafe_goal, cafe_bond_goal, cafe_patron
+    core = session.core
+    return bool(core.goal and core.management and not core.management.get('game_over')
+                and not session.pending and any(row['status']=='active' for row in objective_targets(core).values())
+                and not (cafe_goal.pending(core) or cafe_bond_goal.pending(core) or cafe_patron.pending(core)))
+
+
 class CafeAutoPlayWindow:
     interval_ms = 20
     MODES = {'基礎営業': 'basic', '安定経営': 'clear', '積極経営': 'fast'}
@@ -29,12 +46,22 @@ class CafeAutoPlayWindow:
         frame.columnconfigure(0, weight=1)
         frame.rowconfigure(4, weight=1)
         ttk.Label(frame, text='最大10日進め、各目標の達成・期限切れ・ゲームオーバーで止まります。\n'
-                  '基礎営業は出勤・休養と必要な回答、安定経営は休養を重視、積極経営は早期達成を重視して設備投資・予約も任せます。', wraplength=700).grid(row=0, sticky='w')
+                  '基礎営業は出勤・休養と必要な回答。安定経営・積極経営では選んだ目標への交流・加入・派遣も任せます。', wraplength=700).grid(row=0, sticky='w')
         row = ttk.Frame(frame)
         row.grid(row=1, sticky='ew', pady=8)
+        targets = objective_targets(self.session.core)
+        self.objectives = {label: key for label, key in OBJECTIVES.items() if key in targets}
+        preferred = self.session.core.objective
+        if preferred not in targets or targets[preferred]['status']!='active':
+            preferred = next((key for key, target in targets.items() if target['status']=='active'), next(iter(targets), ''))
+        self.objective = tk.StringVar(value=next((label for label, key in self.objectives.items() if key==preferred), ''))
+        ttk.Label(row, text='目標：').pack(side='left')
+        self.objective_selector = ttk.Combobox(row, textvariable=self.objective, values=tuple(self.objectives), state='readonly', width=7)
+        self.objective_selector.pack(side='left', padx=(0,6))
+        self.objective_selector.bind('<<ComboboxSelected>>', lambda event: self._controls())
         self.mode = tk.StringVar(value='基礎営業')
         ttk.Label(row, text='方針：').pack(side='left')
-        self.selector = ttk.Combobox(row, textvariable=self.mode, values=tuple(self.MODES), state='readonly', width=18)
+        self.selector = ttk.Combobox(row, textvariable=self.mode, values=tuple(self.MODES), state='readonly', width=12)
         self.selector.pack(side='left')
         self.start_button = ttk.Button(row, text='10日間おまかせ開始', command=self.start)
         self.start_button.pack(side='left', padx=8)
@@ -81,15 +108,30 @@ class CafeAutoPlayWindow:
         self._controls()
 
     def _available(self):
-        c = self.session.core
-        return bool(c.goal and not c.goal.get('tracking_only') and c.goal['status']=='active'
-                    and not (c.management or {}).get('game_over') and not self.session.pending
+        target = objective_targets(self.session.core).get(self.objectives.get(self.objective.get()))
+        return bool(target and target['status']=='active' and autoplay_available(self.session)
                     and self.session is self.app.session)
+
+    def _target_progress(self):
+        core = self.session.core
+        objective = self.objectives.get(self.objective.get())
+        if objective=='bond':
+            from .core.cafe_bond_goal import progress
+            return progress(core)
+        if objective=='patron':
+            from .core.cafe_patron import progress
+            return progress(core)
+        if objective=='popularity':
+            from .core.cafe_goal import current_rules
+            return f"人気：{core.management['popularity']:g} / {current_rules(core.goal)['target']:g}"
+        return '目標が未導入です。'
 
     def _controls(self):
         self.selector.configure(state='disabled' if self.running else 'readonly')
+        self.objective_selector.configure(state='disabled' if self.running else 'readonly')
         self.start_button.state(['!disabled'] if not self.running and self._available() else ['disabled'])
         self.stop_button.state(['!disabled'] if self.running else ['disabled'])
+        if self.player is None:self.progress.set('待機中：0 / 10日 · '+self._target_progress())
 
     def emit(self, line):
         self.lines.append(line)
@@ -137,9 +179,11 @@ class CafeAutoPlayWindow:
         self.decision_rows.clear()
         self._decision_text('行を選ぶと、判断理由の全文と実行結果を確認できます。')
         self.player = AutoPlayer(self.session, mode=self.MODES[self.mode.get()], max_days=10,
-                                 emit=self.emit, stop_on_goal=True, on_decision=self.record_decision)
+                                 emit=self.emit, stop_on_goal=True, on_decision=self.record_decision,
+                                 objective=self.objectives[self.objective.get()])
+        self.emit('おまかせ目標：'+self.objective.get())
         self.running = True
-        self.progress.set('進行中：0 / 10日')
+        self.progress.set('進行中：0 / 10日 · '+self._target_progress())
         self.summary.set('中止・通常操作へ戻ると、処理中の操作を終えて停止します。')
         self._controls()
         self._schedule()
@@ -155,12 +199,34 @@ class CafeAutoPlayWindow:
         if self.session is not self.app.session:
             self.stop()
             return
+        from .core.cafe_player import current
+        interaction = current(self.session.core)
+        before_operations = len(self.session.core.operations)
         try:
             progressed = self.player.step()
         except (OSError, ValueError, TypeError, KeyError, RuntimeError) as error:
             self.player._stop('blocked', str(error))
             progressed = False
-        self.progress.set(f'進行中：{self.player._days()-self.player.start_days} / 10日 · {self.session.core.day}日目')
+        for row in self.session.core.operations[before_operations:]:
+            for event in row['events']:
+                if event['kind']=='player_action':
+                    from .human_cat_gui import ACTION_NAMES, REACTION_NAMES
+                    record = event['record']
+                    name = self.session.profiles.get(event['cat_id'], {}).get('name', event['cat_id'])
+                    action = ACTION_NAMES[record['action']]
+                    if record['target_type'] and interaction:
+                        action += ' → '+interaction.type_map[record['target_type']].name
+                    self.emit(f"交流操作：{name} · {action} · {REACTION_NAMES[record['reaction']]}"
+                              f" / 残り体力 {record['after']['stamina']:g}")
+                elif event['kind']=='player_completed':
+                    result = event['result']
+                    name = self.session.profiles.get(event['cat_id'], {}).get('name', event['cat_id'])
+                    self.emit(f"交流結果：{name} · 好感度 {result['affinity_before']:g} → {result['affinity_after']:g}"
+                              f" / 残り体力 {result['stamina']:g} / 同時発動 {result['simultaneous_count']}回")
+                elif event['kind']=='patron_satisfaction':
+                    name = event.get('name', self.session.core.patron['rules']['name'])
+                    self.emit(f"訪問結果：{name} · 満足度＋{event['gain']:g} / 現在 {event['satisfaction']:g}")
+        self.progress.set(f'進行中：{self.player._days()-self.player.start_days} / 10日 · {self.session.core.day}日目 · '+self._target_progress())
         self.app.refresh()
         if progressed:
             self._schedule()
@@ -180,7 +246,7 @@ class CafeAutoPlayWindow:
     def _finish(self):
         self.running = False
         result = self.player.result
-        self.progress.set(f'終了：{REASONS[result.reason]} · {result.days} / 10日')
+        self.progress.set(f'終了：{REASONS[result.reason]} · {result.days} / 10日 · '+self._target_progress())
         after = self._state()
         rows = [f'資金 {self.before["funds"]:g} → {after["funds"]:g} / 人気 {self.before["popularity"]:g} → {after["popularity"]:g}']
         for key, values in after['cats'].items():
