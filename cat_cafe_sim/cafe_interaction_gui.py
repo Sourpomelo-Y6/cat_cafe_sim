@@ -433,7 +433,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         if existing is not None and existing.window.winfo_exists():
             existing.window.lift()
             return
-        self.action_preview_window = CatActionPreviewWindow(self.root)
+        self.action_preview_window = CatActionPreviewWindow(self.root, session_provider=lambda: self.session)
 
     def open_attention(self):
         if self._attention:
