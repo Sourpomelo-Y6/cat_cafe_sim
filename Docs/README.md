@@ -52,7 +52,7 @@
 - [猫の特性：初回仕様](HumanToCatTraits.md)
 - [猫の特徴とお客さんの好み：初回仕様](HumanToCatCustomerPreferences.md)
 - [プレイヤーと猫のコマンド交流](HumanToCatPlayerInteraction.md)
-- [保護猫の譲渡イベント：初回仕様](HumanToCatAdoption.md)
+- [保護猫の譲渡イベント・譲渡済みの表示切り替え](HumanToCatAdoption.md)
 - [ストレス・家出・帰還と経営終了：初回仕様](HumanToCatManagement.md)
 
 ## 加入・派遣・用品

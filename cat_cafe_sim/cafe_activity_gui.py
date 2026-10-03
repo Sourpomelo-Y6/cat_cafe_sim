@@ -46,6 +46,8 @@ class CafeActivityWindow:
         self.base_destinations = destinations(session.core)
         self.destinations = list(self.base_destinations)
         destination_controls=ttk.Frame(frame);destination_controls.pack(fill='x')
+        from .cafe_cat_visibility import adoption_toggle
+        self.show_adopted = adoption_toggle(destination_controls, self.refresh, inline=True)
         self.compare_button=ttk.Button(destination_controls,text='派遣先を比較…',command=self.show_comparison)
         self.compare_button.pack(side='right',padx=(6,0))
         self.destination_choice = ttk.Combobox(destination_controls, state='readonly', values=[row['name'] for row in self.destinations])
@@ -185,10 +187,12 @@ class CafeActivityWindow:
         previous_events=self.events.selection()
         self.cats.delete(*self.cats.get_children());self.events.delete(*self.events.get_children())
         from .core.cafe_growth import summary as growth_summary
-        for key,cat in core.cats.items():
+        from .cafe_cat_visibility import visible_cat_ids
+        visible = visible_cat_ids(core, self.show_adopted.get())
+        for key in visible:
+            cat = core.cats[key]
             self.cats.insert('','end',iid=key,values=(self.session.profiles.get(key,{}).get('name',key),ACTIVITY_LABELS[core.activity(key)],health_text(cat.health_status,cat.recovery_days_remaining),f'{cat.fatigue:g}',(trait(core,key) or {}).get('name','なし'),growth_summary(core,key),(dispatch_reason(core,key,self.rules) or '参加できます')+' / '+welcome_description(core,key,self.rules)+' / '+patron_description(core,key,self.rules['id'])))
-        if selected:self.cats.selection_set(selected[0])
-        elif core.cats:self.cats.selection_set(next(iter(core.cats)))
+        if visible:self.cats.selection_set(selected[0] if selected and selected[0] in visible else visible[0])
         labels={'missing':'派遣中断・行方不明','travelling':'派遣中','waiting':'帰還・確認待ち','resolved':'受取済み'}
         if core.activities:
             for key,e in core.activities['events'].items():

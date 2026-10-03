@@ -163,7 +163,9 @@ class CafeCatDetailsWindow:
         self.play_button.pack(side='left')
         self.close_button = ttk.Button(footer, text='閉じる', command=self.window.destroy)
         self.close_button.pack(side='right')
-        self.ids = list(session.core.cats)
+        from .cafe_cat_visibility import visible_cat_ids, adoption_toggle
+        self.show_adopted = adoption_toggle(frame, self.filter_cats, value=session.core.activity(cat_id)=='adopted')
+        self.ids = visible_cat_ids(session.core, self.show_adopted.get())
         labels = [f"{session.profiles.get(key, {}).get('name', key)}（{key}）" for key in self.ids]
         self.selector = ttk.Combobox(frame, values=labels, state='readonly')
         self.selector.pack(fill='x')
@@ -196,6 +198,16 @@ class CafeCatDetailsWindow:
         self.tables['events'].bind('<<TreeviewSelect>>', lambda event: self.show_event_detail())
         self.selector.bind('<<ComboboxSelected>>', lambda event:self.refresh())
         self.window.bind('<Escape>', lambda event:self.window.destroy())
+        self.refresh()
+
+    def filter_cats(self):
+        from .cafe_cat_visibility import visible_cat_ids
+        index = self.selector.current()
+        selected = self.ids[index] if 0 <= index < len(self.ids) else None
+        self.ids = visible_cat_ids(self.session.core, self.show_adopted.get())
+        self.selector.configure(values=[f"{self.session.profiles.get(key, {}).get('name', key)}（{key}）" for key in self.ids])
+        self.selector.set('')
+        if self.ids:self.selector.current(self.ids.index(selected) if selected in self.ids else 0)
         self.refresh()
 
     def show_event_detail(self):
@@ -231,6 +243,13 @@ class CafeCatDetailsWindow:
     def refresh(self):
         from tkinter import messagebox
         from .core.cafe_player import unavailable_reason, remaining, active
+        if not self.ids:
+            self.play_button.state(['disabled'])
+            self.play_notice.set('表示対象の猫がいません。「譲渡済みも表示」で記録を確認できます。')
+            self.notice.set('')
+            for tree in self.tables.values():tree.delete(*tree.get_children())
+            self.show_event_detail()
+            return
         running = bool(active(self.session.core))
         reason = ('先に交流結果の保存を再試行してください。' if self.session.pending else
                   '' if running else unavailable_reason(self.session.core, self.ids[self.selector.current()]))

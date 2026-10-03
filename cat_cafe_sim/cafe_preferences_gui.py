@@ -28,6 +28,8 @@ class CafePreferencesWindow:
         self.customers.pack(fill='x')
         self.notice = tk.StringVar()
         ttk.Label(frame, textvariable=self.notice, wraplength=460).pack(anchor='w', pady=6)
+        from .cafe_cat_visibility import adoption_toggle
+        self.show_adopted = adoption_toggle(frame, self.refresh)
         self.cats = CafeHistoryWindow.table(frame, ('猫', '特徴', '相性', '現在の担当可否'))
         self.cats.column('相性', width=340)
         self.customers.bind('<<ComboboxSelected>>', lambda event: self.choose_customer())
@@ -48,7 +50,10 @@ class CafePreferencesWindow:
         self.notice.set('好みは未導入です。新規ゲームで利用できます。' if data is None else
                         '来店後にお客さんの好みを確認できます。' if not customer_id else
                         f"{customer_name(customer_id)}：{FEATURES[preferred][0]}好き。通常行動のテンション上昇×{data['rules']['tension_multiplier']:g}。特別行動やテンション減少には補正しません。")
+        from .cafe_cat_visibility import visible_cat_ids
+        visible = set(visible_cat_ids(self.session.core, self.show_adopted.get()))
         for row in self.session.cat_choices(customer_id):
+            if row['cat_id'] not in visible:continue
             result = match(core, row['cat_id'], customer_id)
             self.cats.insert('', 'end', iid=row['cat_id'], values=(row['name'], result['features'], result['text'],
                              '担当可能' if row['available'] and customer_id in core.queue else '現在は割り当て不可'))

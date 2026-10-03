@@ -89,6 +89,8 @@ def build(app):
     row.grid(row=1, column=0, sticky='ew', pady=(10,4))
     app.objective_progress = tk.StringVar()
     ttk.Label(row, textvariable=app.objective_progress, wraplength=400).pack(side='left')
+    from .cafe_cat_visibility import adoption_toggle
+    app.show_adopted = adoption_toggle(row, app.refresh)
     app.cat_details_button = ttk.Button(row, text='選んだ猫の詳細・交流…', command=app.show_cat_details)
     app.cat_details_button.pack(side='right')
     app.compatibility_button = ttk.Button(row, text='お客との相性…', command=app.show_compatibility)

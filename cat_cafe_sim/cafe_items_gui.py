@@ -62,6 +62,8 @@ class CafeItemsWindow:
         item_frame.grid(row=0, column=0, sticky='nsew')
         cat_frame = ttk.Frame(use_page)
         cat_frame.grid(row=1, column=0, sticky='nsew', pady=(8, 0))
+        from .cafe_cat_visibility import adoption_toggle
+        self.show_adopted = adoption_toggle(cat_frame, self.selection_changed)
         self.usable_only=tk.BooleanVar(value=False)
         self.usable_only_button=ttk.Checkbutton(cat_frame,text='選んだ用品を使える猫だけ表示',variable=self.usable_only,command=self.selection_changed)
         self.usable_only_button.pack(anchor='w')
@@ -122,8 +124,9 @@ class CafeItemsWindow:
         from .core.cafe_activities import ACTIVITY_LABELS
         core=self.session.core
         sources=self.items.selection()
-        keys=tuple(key for key in core.cats if not self.usable_only.get() or
-                   (sources and not self.use_reason(sources[0],key)))
+        from .cafe_cat_visibility import visible_cat_ids
+        keys=tuple(key for key in visible_cat_ids(core, self.show_adopted.get())
+                   if not self.usable_only.get() or (sources and not self.use_reason(sources[0],key)))
         if not force and keys==self.cats.get_children():return
         previous=self.cats.selection()
         self.cats.delete(*self.cats.get_children())

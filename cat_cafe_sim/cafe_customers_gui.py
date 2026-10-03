@@ -30,8 +30,12 @@ class CafeCustomersWindow:
         ttk.Label(frame, text='予定は営業した場合の進行時点（0＝開店時）です。休業すると来店しません。\n来店回数はこの営業セーブの記録内で集計し、接客できなかった来店も含みます。', wraplength=620).pack(anchor='w', pady=5)
         self.view_day = tk.StringVar(value='今日：' + day_label(core))
         self.day_choices = ('今日：' + day_label(core), '翌日：' + day_label(core, core.day + 1))
-        self.day_selector = ttk.Combobox(frame, textvariable=self.view_day, values=self.day_choices, state='readonly')
-        self.day_selector.pack(anchor='w', pady=(0,4))
+        day_controls = ttk.Frame(frame)
+        day_controls.pack(fill='x', pady=(0,4))
+        from .cafe_cat_visibility import adoption_toggle
+        self.show_adopted = adoption_toggle(day_controls, self.select, inline=True)
+        self.day_selector = ttk.Combobox(day_controls, textvariable=self.view_day, values=self.day_choices, state='readonly')
+        self.day_selector.pack(side='left')
         self.day_selector.bind('<<ComboboxSelected>>', lambda event: self.fill())
         self.customers = CafeHistoryWindow.table(frame, ('お客さん','好み','来店回数','常連度','累積不満','予定の進行','本日の状態','客層'))
         self.customers.column('お客さん', width=145)
@@ -141,7 +145,10 @@ class CafeCustomersWindow:
             self.details.set(contact_description(self.session.core) + "\n" +
                              ("直近の接客：" + contact_result_text(self.session.core, latest) if latest else "接客結果はまだありません。") +
                              "\n" + self.details.get())
+        from .cafe_cat_visibility import visible_cat_ids
+        visible = set(visible_cat_ids(self.session.core, self.show_adopted.get()))
         for row in cat_rows(self.session, key):
+            if row['cat_id'] not in visible:continue
             status = ACTIVITY_LABELS[row['activity']] if row['activity'] != 'cafe' else ('出勤予定' if row['working'] else '休養予定')
             from .cafe_health_text import health_text
             status += '・' + health_text(row['health_status'], row['recovery_days_remaining'])

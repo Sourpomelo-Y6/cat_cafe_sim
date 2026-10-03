@@ -654,11 +654,13 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         self.seat_selector.configure(values=tuple(self.session.free_seats),state='readonly' if manual else 'disabled')
         if self.seat_choice.get() not in self.session.free_seats:
             self.seat_choice.set(self.session.free_seats[0] if self.session.free_seats else '')
-        rows = self.session.cat_choices(self.customer.get())
+        from .cafe_cat_visibility import visible_cat_ids
+        visible = set(visible_cat_ids(core, self.show_adopted.get()))
+        rows = [row for row in self.session.cat_choices(self.customer.get()) if row['cat_id'] in visible]
         self.cat_labels = {f"{row['name']}（{row['cat_id']}）": row['cat_id'] for row in rows}
         self.cat_selector.configure(values=tuple(self.cat_labels))
         if self.cat_choice.get() not in self.cat_labels:
-            self.cat_choice.set(next(iter(self.cat_labels)))
+            self.cat_choice.set(next(iter(self.cat_labels), ''))
         selected = next((row for row in rows if row['cat_id']==self.cat_labels.get(self.cat_choice.get())),None)
         self.start_button.state(['!disabled'] if manual and core.queue and selected and selected['available'] else ['disabled'])
         roster_selected = self.roster.selection()
@@ -672,6 +674,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
                                                '未導入' if row['stress'] is None else f"{row['stress']:g}",growth_summary(core,row['cat_id'])))
         if roster_selected and self.roster.exists(roster_selected[0]):
             self.roster.selection_set(roster_selected[0])
+        self.cat_details_button.state(['!disabled'] if rows else ['disabled'])
         if hasattr(core,'seats'):
             lines=[]
             for seat_id in core.seats:
@@ -745,7 +748,7 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
         else:
             self.objective_progress.set('猫の状態')
         seats = len(core.seats) if hasattr(core, 'seats') else 1
-        self.status.set(f"資金 {core.funds:g}　 /　{seats}席　 /　猫 {len(core.cats)}匹" + (f"　 /　人気 {core.management['popularity']:g}" if core.management else ''))
+        self.status.set(f"資金 {core.funds:g}　 /　{seats}席　 /　猫 {sum(core.activity(key) != 'adopted' for key in core.cats)}匹" + (f"　 /　人気 {core.management['popularity']:g}" if core.management else ''))
         if core.closed:
             self.run_button.grid_remove(); self.day_button.grid()
         else:
@@ -919,7 +922,8 @@ class CafeInteractionWindow(ManualCafeInteractionWindow):
     def show_cat_details(self):
         from .cafe_cat_details import CafeCatDetailsWindow
         selected = self.roster.selection()
-        cat_id = selected[0] if selected else self.cat_labels.get(self.cat_choice.get(), next(iter(self.session.core.cats)))
+        cat_id = selected[0] if selected else self.cat_labels.get(self.cat_choice.get())
+        if cat_id is None:return
         self.stop()
         self.refresh()
         self.cat_details_window = CafeCatDetailsWindow(self.root, self.session, cat_id, self.refresh)

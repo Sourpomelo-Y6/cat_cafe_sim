@@ -21,12 +21,16 @@ class CafeShiftWindow:
         ttk.Label(frame, text='営業開始前に設定してください。前日の設定を引き継ぎます。').pack(anchor='w')
         ttk.Label(frame, text='予測欄：閉店時の疲労 / 発症確率。ストレス欄も閉店時の見込みです。出勤は前日の接客量を使った目安です。',
                   wraplength=460).pack(anchor='w')
+        from .cafe_cat_visibility import adoption_toggle
         self.forecasts = {key: shift_forecast(session.core, key) for key in session.core.cats}
         self.forecast_note = tk.StringVar()
         footer = ttk.Frame(frame)
         footer.pack(side='bottom', fill='x')
-        self.proposal_button = ttk.Button(frame, text='疲労が高い2匹を休養する案を作成', command=self.propose_rest)
-        self.proposal_button.pack(anchor='w', pady=(6, 0))
+        proposal_controls = ttk.Frame(frame)
+        proposal_controls.pack(fill='x', pady=(6, 0))
+        self.show_adopted = adoption_toggle(proposal_controls, self.refresh_schedule, inline=True)
+        self.proposal_button = ttk.Button(proposal_controls, text='疲労が高い2匹を休養する案を作成', command=self.propose_rest)
+        self.proposal_button.pack(side='left')
         ttk.Label(frame, text='案は健康な猫を疲労順に最大2匹休養、残りを出勤にします。手動で変更できます。',
                   wraplength=460).pack(anchor='w')
         self.schedule_note = tk.StringVar()
@@ -61,7 +65,9 @@ class CafeShiftWindow:
                              stress_estimate_text(forecast['current_stress']) if forecast['current_stress'] is not None else '未導入',
                              '出勤不可' if forecast['sick'] else stress_estimate_text(forecast['work_stress']),
                              stress_estimate_text(forecast['rest_stress'])))
-        self.tree.selection_set(next(iter(session.core.cats)))
+        from .cafe_cat_visibility import visible_cat_ids
+        visible = visible_cat_ids(session.core)
+        if visible:self.tree.selection_set(visible[0])
         ttk.Label(footer, textvariable=self.forecast_note, wraplength=460).pack(anchor='w', pady=(0,8))
         controls = ttk.Frame(footer)
         controls.pack(fill='x')
@@ -104,7 +110,12 @@ class CafeShiftWindow:
 
     def refresh_schedule(self):
         from .core.cafe_activities import ACTIVITY_LABELS
+        from .cafe_cat_visibility import visible_cat_ids
+        visible = visible_cat_ids(self.session.core, self.show_adopted.get())
+        selected = self.tree.selection()
         for key in self.session.core.cats:
+            if key in visible:self.tree.move(key, '', 'end')
+            else:self.tree.detach(key)
             location=self.session.core.activity(key)
             self.tree.set(key, 'shift', ACTIVITY_LABELS[location] if location!='cafe' else '出勤' if key in self.working else '休養')
             if location!='cafe':
@@ -112,6 +123,9 @@ class CafeShiftWindow:
                 self.tree.set(key,'rest_forecast','在店していません')
                 self.tree.set(key,'work_stress','出勤不可')
                 self.tree.set(key,'rest_stress','在店していません')
+        self.tree.selection_remove(*self.tree.selection())
+        if visible:self.tree.selection_set(selected[0] if selected and selected[0] in visible else visible[0])
+        self.refresh_selection()
         if not self.working:
             self.schedule_note.set('全員休養の予定です（不在猫は対象外）。保存後「今日は休業する」で在店猫を休ませます。')
         else:
