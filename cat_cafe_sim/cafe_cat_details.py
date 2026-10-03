@@ -32,6 +32,9 @@ def cat_details(session, cat_id):
     basic += description(trait(core,cat_id))
     from .core.cafe_preferences import feature_text
     basic += [('特徴', feature_text((getattr(core, 'cat_features', None) or {}).get(cat_id, [])))]
+    from .core.cat_appearance import FIELDS, validate_appearance
+    appearance = validate_appearance((profile or {}).get('appearance', {}))
+    basic += [(label, appearance[key] or '未設定') for key, label in FIELDS.items()]
     from .core.cafe_player import state as player_state, remaining
     bond = player_state(core)
     basic += [('プレイヤーへの好感度', f"{bond['affinity'][cat_id]:g} / 100"),

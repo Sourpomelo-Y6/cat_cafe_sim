@@ -13,5 +13,6 @@ def add_playtest_cats(store):
     for row in definitions:
         if row['cat_id'] not in existing:
             store.register_cat(row['cat_id'],row['name'],presets[row['preset']])
+            store.set_cat_appearance(row['cat_id'], row.get('appearance', {}))
             added.append(row['cat_id'])
     return added

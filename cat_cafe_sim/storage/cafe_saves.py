@@ -18,6 +18,11 @@ class MemoryRelationships(RelationshipStore):
         self.data = copy.deepcopy(data)
 
 
+def profile_identity(data, cat_id):
+    profile = data.get('cats', {}).get(cat_id)
+    return {key: profile[key] for key in ('name', 'personality')} if profile else None
+
+
 def validate_progress(core, baseline, current):
     """既知の未保存結果の適用だけを許す。確定済み成果はハッシュで照合する。"""
     from ..core.cafe_checkpoint import receipt, is_receipt
@@ -26,27 +31,27 @@ def validate_progress(core, baseline, current):
     if core.recruitment:
         for key in core.recruitment['accepted']:
             row = core.recruitment['candidates'][key]
-            if baseline.get('cats', {}).get(key) != dict(name=row['name'], personality=row['personality']):
+            if profile_identity(baseline, key) != dict(name=row['name'], personality=row['personality']):
                 raise RelationshipConflict('受け入れた猫の名前・個性と関係データが一致しません。')
     from ..core.cafe_intake_request import accepted as request_cats
     for key,row in request_cats(core).items():
-        if baseline.get('cats',{}).get(key)!=dict(name=row['name'],personality=row['personality']):
+        if profile_identity(baseline, key)!=dict(name=row['name'],personality=row['personality']):
             raise RelationshipConflict('依頼から加入した猫と関係データが一致しません。')
     from ..core.cafe_dispatch_introduction import accepted as introduced_cats
     for key, row in introduced_cats(core).items():
-        if baseline.get('cats', {}).get(key) != dict(name=row['name'], personality=row['personality']):
+        if profile_identity(baseline, key) != dict(name=row['name'], personality=row['personality']):
             raise RelationshipConflict('派遣紹介から加入した猫と関係データが一致しません。')
     from ..core.cafe_regular_introduction import accepted as regular_cats
     for key,row in regular_cats(core).items():
-        if baseline.get('cats',{}).get(key)!=dict(name=row['name'],personality=row['personality']):
+        if profile_identity(baseline, key)!=dict(name=row['name'],personality=row['personality']):
             raise RelationshipConflict('常連紹介から加入した猫と関係データが一致しません。')
     from ..core.cafe_visiting_cat import accepted as visiting_cats
     for key,row in visiting_cats(core).items():
-        if baseline.get('cats',{}).get(key)!=dict(name=row['name'],personality=row['personality']):
+        if profile_identity(baseline, key)!=dict(name=row['name'],personality=row['personality']):
             raise RelationshipConflict('店先から加入した猫と関係データが一致しません。')
     from ..core.cafe_pet_shop import accepted as purchased_cats
     for key, row in purchased_cats(core).items():
-        if baseline.get('cats', {}).get(key) != dict(name=row['name'], personality=row['personality']):
+        if profile_identity(baseline, key) != dict(name=row['name'], personality=row['personality']):
             raise RelationshipConflict('購入した猫の名前・個性と関係データが一致しません。')
     matched = expected.data == current
     persisted = set()

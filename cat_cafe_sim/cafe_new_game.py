@@ -31,6 +31,8 @@ def starting_conditions(mode="popularity"):
         if row['cat_id'] in profiles['cats']:
             raise ValueError('初期猫のIDが重複しています。')
         RelationshipStore._register(profiles, row['cat_id'], row['name'], presets[row['preset']])
+        from .core.cat_appearance import validate_appearance
+        profiles['cats'][row['cat_id']]['appearance'] = validate_appearance(row.get('appearance', {}))
         initial_features[row['cat_id']] = validate_features(row.get('features', []))
         if row.get('trait') is not None:
             initial_traits[row['cat_id']] = traits[row['trait']]

@@ -11,7 +11,15 @@
       "features": [
         "calico",
         "short_hair"
-      ]
+      ],
+      "appearance": {
+        "eye_color": "",
+        "body_type": "",
+        "markings": "",
+        "face_shape": "",
+        "tail": "",
+        "notes": ""
+      }
     },
     {
       "cat_id": "cat-tama",
@@ -21,7 +29,15 @@
       "features": [
         "black_white",
         "short_hair"
-      ]
+      ],
+      "appearance": {
+        "eye_color": "",
+        "body_type": "",
+        "markings": "",
+        "face_shape": "",
+        "tail": "",
+        "notes": ""
+      }
     },
     {
       "cat_id": "cat-sora",
@@ -30,7 +46,15 @@
       "features": [
         "white",
         "long_hair"
-      ]
+      ],
+      "appearance": {
+        "eye_color": "",
+        "body_type": "",
+        "markings": "",
+        "face_shape": "",
+        "tail": "",
+        "notes": ""
+      }
     },
     {
       "cat_id": "cat-kohaku",
@@ -40,7 +64,15 @@
       "features": [
         "orange_tabby",
         "long_hair"
-      ]
+      ],
+      "appearance": {
+        "eye_color": "",
+        "body_type": "",
+        "markings": "",
+        "face_shape": "",
+        "tail": "",
+        "notes": ""
+      }
     },
     {
       "cat_id": "cat-mugi",
@@ -49,7 +81,15 @@
       "features": [
         "brown_tabby",
         "short_hair"
-      ]
+      ],
+      "appearance": {
+        "eye_color": "",
+        "body_type": "",
+        "markings": "",
+        "face_shape": "",
+        "tail": "",
+        "notes": ""
+      }
     }
   ]
 }

@@ -44,6 +44,18 @@ class CafeInteractionSession:
     def cat_name(self):
         return self.profiles.get(self.core.cat.id, {}).get('name', self.core.cat.id)
 
+    def set_cat_appearance(self, cat_id, appearance):
+        """外見だけを変更し、次の営業セーブにも引き継ぐ。"""
+        from .storage.cafe_saves import check_link
+        if cat_id not in self.core.cats:
+            raise ValueError('このゲームに在籍する猫を指定してください。')
+        check_link(self)
+        result = self.store.set_cat_appearance(cat_id, appearance)
+        self.profiles[cat_id] = next(row for row in self.store.list_cats() if row['cat_id'] == cat_id)
+        if self.checkpoint_baseline is not None:
+            self.checkpoint_baseline['cats'][cat_id]['appearance'] = result.copy()
+        return result
+
     @property
     def active_interactions(self):
         if isinstance(self.core,MultiSeatCafeCore):

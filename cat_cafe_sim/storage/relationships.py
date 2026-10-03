@@ -55,10 +55,13 @@ class RelationshipStore:
                 raise ValueError('invalid cats')
             for cat_id, cat in data['cats'].items():
                 identity(cat_id)
-                if not isinstance(cat, dict) or set(cat) != {'name', 'personality'}:
+                if not isinstance(cat, dict) or not {'name', 'personality'} <= set(cat) <= {'name', 'personality', 'appearance'}:
                     raise ValueError('invalid cat profile')
                 identity(cat['name'])
                 Personality.from_dict(cat['personality'])
+                if 'appearance' in cat:
+                    from ..core.cat_appearance import validate_appearance
+                    validate_appearance(cat['appearance'])
         return data
 
     def list_cats(self):
@@ -75,10 +78,12 @@ class RelationshipStore:
         identity(cat_id); identity(name)
         profile = dict(name=name, personality=personality.to_dict())
         cats = data.get('cats', {})
-        if cat_id in cats and cats[cat_id] != profile:
+        if cat_id in cats and any(cats[cat_id][key] != profile[key] for key in profile):
             raise RelationshipConflict('この猫IDは別の名前・個性で登録済みです。')
         data['format_version'] = 2
         data['cats'] = cats
+        if cat_id in cats and 'appearance' in cats[cat_id]:
+            profile['appearance'] = copy.deepcopy(cats[cat_id]['appearance'])
         cats[cat_id] = profile
         return copy.deepcopy(profile)
 
@@ -89,6 +94,18 @@ class RelationshipStore:
         if data != before:
             self._write(data)
         return profile
+
+    def set_cat_appearance(self, cat_id, appearance):
+        from ..core.cat_appearance import validate_appearance
+        identity(cat_id)
+        appearance = validate_appearance(appearance)
+        data = self._read()
+        if cat_id not in data.get('cats', {}):
+            raise ValueError('外見を設定する猫を先に登録してください。')
+        if data['cats'][cat_id].get('appearance') != appearance:
+            data['cats'][cat_id]['appearance'] = appearance
+            self._write(data)
+        return copy.deepcopy(appearance)
 
     def snapshot(self, cat_id, customer_id):
         identity(cat_id); identity(customer_id)
