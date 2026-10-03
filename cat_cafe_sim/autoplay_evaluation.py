@@ -13,6 +13,11 @@ from unittest.mock import patch
 from .cafe_autoplay import AutoPlayer
 from .cafe_new_game import create_game, starting_conditions
 from .core.cafe_finance import values, EXPENSE_KEYS
+from .autoplay_objective_metrics import collect_session, completed_window, summarize_objective
+from .storage.cafe_saves import save_game, load_game
+
+
+OBJECTIVES = ('popularity', 'bond', 'patron')
 
 
 SCENARIOS = {
@@ -33,16 +38,20 @@ GOAL_PRESETS = {
 }
 
 
-def evaluation_conditions(goal_preset, customer_preset='standard'):
+def evaluation_conditions(goal_preset, customer_preset='standard', objective='popularity'):
     if goal_preset not in GOAL_PRESETS:
         raise ValueError('人気目標の評価条件を確認してください。')
-    conditions = starting_conditions()
+    if objective not in OBJECTIVES:
+        raise ValueError('評価する目標を確認してください。')
+    conditions = starting_conditions(objective)
     if customer_preset not in ('standard', 'legacy'):
         raise ValueError('来店人数の評価条件を確認してください。')
     if customer_preset == 'legacy':
         conditions['weekdays'].pop('popular_customer_count', None)
         conditions['weekdays'].pop('second_popular_customer_count', None)
     stages = GOAL_PRESETS[goal_preset]
+    if objective != 'popularity' and goal_preset != 'standard':
+        raise ValueError('人気以外の評価は標準目標を指定してください。')
     if stages is not None:
         goal = conditions['goal']
         goal.update(target=stages[0][0], days=stages[0][1], cap=stages[-1][0],
@@ -103,31 +112,48 @@ def collect(core, result):
     return dict(reason=result.reason, message=result.message, metrics=metrics, stages=stages, daily=rows)
 
 
-def evaluate(*, max_days=60, scenarios=None, goal_preset='standard', customer_preset='standard', seed=0, emit=print):
+def evaluate(*, max_days=60, scenarios=None, goal_preset='standard', customer_preset='standard',
+             objective='popularity', seed=0, emit=print):
     if type(seed) is not int or seed < 0:
         raise ValueError('シードは0以上の整数を指定してください。')
     selected = list(SCENARIOS) if scenarios is None else list(scenarios)
     if not selected or any(name not in SCENARIOS for name in selected):
         raise ValueError('比較条件を確認してください。')
-    conditions = evaluation_conditions(goal_preset, customer_preset)
+    if type(max_days) is not int or max_days < 1:
+        raise ValueError('日数は1以上の整数を指定してください。')
+    conditions = evaluation_conditions(goal_preset, customer_preset, objective)
     encoded = json.dumps(conditions, ensure_ascii=False, sort_keys=True).encode()
     output = dict(format_version=1, evaluated_at=datetime.now(timezone.utc).isoformat(), seed=seed,
-                  goal_preset=goal_preset,
+                  goal_preset=goal_preset, objective=objective,
                   customer_preset=customer_preset,
                   max_days=max_days, conditions=conditions, conditions_sha256=hashlib.sha256(encoded).hexdigest(), runs={})
+    window_sources = {}
     with tempfile.TemporaryDirectory(prefix='cat-cafe-balance-') as directory:
         for name in selected:
             mode, excluded = SCENARIOS[name]
-            emit(f'比較開始: seed={seed} / {name}')
+            emit(f'比較開始: {objective} / seed={seed} / {name}')
             session = create_game(Path(directory)/name, copy.deepcopy(conditions), seed=seed)
             # 比較専用プロセスで購入可否だけを制限。係数・ゲーム状態は変更しない。
             # 休養・割り当て・イベントなどは同じ通常操作を実行する。
             with ExitStack() as stack:
                 for target in excluded:
                     stack.enter_context(patch('cat_cafe_sim.core.'+target, return_value='評価条件により購入を見送り'))
-                result = AutoPlayer(session, mode=mode, max_days=max_days).run()
-            output['runs'][name] = dict(mode=mode, excluded_purchase_checks=list(excluded), **collect(session.core, result))
-            emit(f'比較終了: seed={seed} / {name} / {result.reason} / {result.days}日 / 人気{session.core.management["popularity"]:g}')
+                result = AutoPlayer(session, objective=objective, mode=mode, max_days=max_days).run()
+            collected = collect_session(session, result, objective)
+            save_game(session, session.checkpoint_path)
+            loaded, _ = load_game(session.checkpoint_path)
+            if loaded.core.snapshot() != session.core.snapshot():
+                raise ValueError('最終状態の保存再開が一致しません。')
+            output['runs'][name] = dict(mode=mode, excluded_purchase_checks=list(excluded),
+                                       save_resume_verified=True, **collected)
+            if name in ('clear', 'fast'):
+                window_sources[name] = (session.core, result)
+            emit(f'比較終了: {objective} / seed={seed} / {name} / {result.reason}'
+                 f' / 閉店済み{result.days}日 / 現在{session.core.day}日目')
+    if 'clear' in selected and 'fast' in selected:
+        days = min(output['runs'][name]['metrics']['days'] for name in ('clear', 'fast'))
+        for name in ('clear', 'fast'):
+            output['runs'][name]['common_window_metrics'] = completed_window(*window_sources[name], days) if days else None
     return output
 
 
@@ -147,7 +173,7 @@ def summarize(reports):
         reasons = {reason: sum(run['reason'] == reason for run in runs)
                    for reason in sorted({run['reason'] for run in runs})}
         stages = []
-        for index in range(1, 4):
+        for index in (range(1, 4) if reports[0].get('objective', 'popularity') == 'popularity' else ()):
             cleared = [stage for run in runs for stage in run['stages']
                        if stage['stage'] == index and stage['status'] == 'cleared']
             expired = sum(stage['stage'] == index and stage['status'] == 'expired'
@@ -158,16 +184,23 @@ def summarize(reports):
                                spare_days=distribution([row['spare_days'] for row in cleared])))
         metric_names = ('days', 'illnesses', 'runaways', 'sick_cat_days', 'wait_timeouts',
                         'queue_full_departures', 'equipment_cost', 'income', 'expenses',
-                        'final_funds', 'seats', 'mean_fatigue', 'mean_stress')
+                        'final_funds', 'seats', 'mean_fatigue', 'mean_stress', 'seat_utilization')
         metrics = {key: distribution([run['metrics'][key] for run in runs]) for key in metric_names}
         arrivals = sum(run['metrics']['arrivals'] for run in runs)
         cat_days = sum(run['metrics']['cat_days'] for run in runs)
         summary[name] = dict(trials=len(runs), completed=len(completed),
                              completion_rate=len(completed)/len(runs), stop_reasons=reasons,
                              completion_days=distribution([run['metrics']['days'] for run in completed]),
+                             completion_calendar_days=distribution([
+                                 run['objective_result']['resolved_day'] for run in completed
+                                 if run.get('objective_result', {}).get('resolved_day') is not None]),
                              stages=stages, metrics=metrics,
                              wait_timeout_rate=sum(run['metrics']['wait_timeouts'] for run in runs)/arrivals if arrivals else None,
                              sick_cat_day_rate=sum(run['metrics']['sick_cat_days'] for run in runs)/cat_days if cat_days else None)
+        summary[name]['objective_metrics'] = summarize_objective(runs)
+        capacity = sum(run['metrics']['available_seat_ticks'] for run in runs)
+        summary[name]['seat_utilization'] = (sum(run['metrics']['occupied_seat_ticks'] for run in runs)
+                                             / capacity if capacity else None)
     paired = None
     if 'clear' in names and 'fast' in names:
         both = [report for report in reports
@@ -180,6 +213,18 @@ def summarize(reports):
                                                r['runs']['fast']['reason'] != 'completed' for r in reports),
                       only_fast_completed=sum(r['runs']['fast']['reason'] == 'completed' and
                                               r['runs']['clear']['reason'] != 'completed' for r in reports))
+        windows = [r for r in reports if all(r['runs'][name].get('common_window_metrics')
+                                            for name in ('clear', 'fast'))]
+        paired['common_window'] = dict(
+            trials=len(windows), days=distribution([r['runs']['clear']['common_window_metrics']['days'] for r in windows]),
+            fast_minus_clear={key: distribution([
+                r['runs']['fast']['common_window_metrics'][key]-r['runs']['clear']['common_window_metrics'][key]
+                for r in windows]) for key in ('income', 'final_funds', 'illnesses', 'runaways',
+                                               'mean_fatigue', 'mean_stress', 'seat_utilization', 'wait_timeouts')})
+        paired['fast_minus_clear_calendar_days'] = distribution([
+            r['runs']['fast']['objective_result']['resolved_day']-r['runs']['clear']['objective_result']['resolved_day']
+            for r in both if all(r['runs'][name].get('objective_result', {}).get('resolved_day') is not None
+                                 for name in ('clear', 'fast'))])
     return dict(by_scenario=summary, paired=paired)
 
 
@@ -188,12 +233,14 @@ def combine_reports(reports):
     if not reports or len({r['seed'] for r in reports}) != len(reports):
         raise ValueError('異なるシードの結果を1件以上指定してください。')
     first = reports[0]
+    if any(r.get('objective', 'popularity') != first.get('objective', 'popularity') for r in reports):
+        raise ValueError('同じ目標の結果を指定してください。')
     keys = ('conditions_sha256', 'max_days', 'goal_preset', 'customer_preset')
     if any(any(r[key] != first[key] for key in keys) or
            list(r['runs']) != list(first['runs']) for r in reports):
         raise ValueError('同じ初期設定・方針・日数上限の結果を指定してください。')
     output = {key: copy.deepcopy(first[key]) for key in (*keys, 'conditions')}
-    output.update(format_version=2, evaluated_at=datetime.now(timezone.utc).isoformat(),
+    output.update(format_version=2, objective=first.get('objective', 'popularity'), evaluated_at=datetime.now(timezone.utc).isoformat(),
                   seeds=[r['seed'] for r in reports], detail_level='metrics_and_stages',
                   evaluations=[dict(seed=r['seed'], evaluated_at=r['evaluated_at'],
                                     runs={name: {key: copy.deepcopy(value) for key, value in run.items() if key != 'daily'}
@@ -209,8 +256,25 @@ def evaluate_seeds(seeds, **kwargs):
     return combine_reports([evaluate(seed=seed, **kwargs) for seed in seeds])
 
 
+def evaluate_objectives(objectives, seeds, **kwargs):
+    objectives, seeds = list(objectives), list(seeds)
+    if not objectives or len(set(objectives)) != len(objectives) or any(o not in OBJECTIVES for o in objectives):
+        raise ValueError('重複のない評価目標を指定してください。')
+    # 全目標の条件を実行前に検証する。
+    for objective in objectives:
+        evaluation_conditions(kwargs.get('goal_preset', 'standard'),
+                              kwargs.get('customer_preset', 'standard'), objective)
+    return dict(format_version=3, evaluated_at=datetime.now(timezone.utc).isoformat(),
+                objectives=objectives, seeds=seeds,
+                by_objective={objective: evaluate_seeds(seeds, objective=objective, **kwargs)
+                              for objective in objectives})
+
+
 def main(argv=None):
-    parser = argparse.ArgumentParser(description='自動プレイ3方針と設備を外した条件を比較します。')
+    parser = argparse.ArgumentParser(description='人気・好感度・有力者の自動プレイ方針を比較します。')
+    objectives = parser.add_mutually_exclusive_group()
+    objectives.add_argument('--objective', choices=OBJECTIVES, default='popularity')
+    objectives.add_argument('--objectives', choices=OBJECTIVES, nargs='+', help='複数目標を同じシードで個別評価')
     parser.add_argument('--days', type=int, default=60)
     seeds = parser.add_mutually_exclusive_group()
     seeds.add_argument('--seed', type=int, default=0, help='単一シードの詳細評価（既定0）')
@@ -230,7 +294,17 @@ def main(argv=None):
         parser.error('シードは重複のない0以上の整数で指定してください。')
     options = dict(max_days=args.days, scenarios=args.scenarios, goal_preset=args.goal_preset,
                    customer_preset=args.customer_preset, emit=lambda line: print(line, flush=True))
-    result = evaluate_seeds(args.seeds, **options) if args.seeds is not None else evaluate(seed=args.seed, **options)
+    selected = args.objectives or [args.objective]
+    try:
+        for objective in selected:
+            evaluation_conditions(args.goal_preset, args.customer_preset, objective)
+        if args.objectives is not None:
+            result = evaluate_objectives(selected, args.seeds if args.seeds is not None else [args.seed], **options)
+        else:
+            result = (evaluate_seeds(args.seeds, objective=args.objective, **options) if args.seeds is not None
+                      else evaluate(seed=args.seed, objective=args.objective, **options))
+    except ValueError as error:
+        parser.error(str(error))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2)+'\n', encoding='utf-8')
     print(f'集計結果: {args.output}')

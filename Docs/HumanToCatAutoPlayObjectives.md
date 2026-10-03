@@ -32,7 +32,7 @@ python3 -m cat_cafe_sim.cafe_autoplay --objective bond --mode clear --resume rep
 
 人気段階の達成では次へ進み、最終人気の達成を確認した後も本来の検証対象が未達なら継続する。`stop_on_goal=True` では途中の人気段階でも止める。最終人気と本来の目標の成果・継続状態は個別に保存する。
 
-GUI「10日間おまかせ」も[好感度・有力者に対応](HumanToCatAutoPlayObjectiveGui.md)した。保存済みの目標から選び、共通の判断処理で最大10日進め、各目標の結果を確認する前に停止する。人気評価CLIの集計形式への他目標の追加や、対象別の評価拡充は後続。安定経営の好感度・有力者10シード評価は実施済みで、各評価資料を参照。
+GUI「10日間おまかせ」も[好感度・有力者に対応](HumanToCatAutoPlayObjectiveGui.md)した。保存済みの目標から選び、共通の判断処理で最大10日進め、各目標の結果を確認する前に停止する。[評価CLIも3目標の共通集計と方針比較に対応](HumanToCatAutoPlayObjectiveEvaluation.md)した。安定経営の好感度・有力者10シード評価は実施済みで、各評価資料を参照。
 
 好感度は後続の[10シード評価](HumanToCatBondSeedEvaluation.md)で全シード29日目に達成し、加入・交流配分・健康と経営を確認した。以下の単一シード値は初回確認時の記録。
 

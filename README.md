@@ -65,8 +65,8 @@ python3 -m cat_cafe_sim replay reports/day.json
 
 ## 今後の作業
 
-テスト用自動プレイの3つの判断方針と日本語ログを実装しました。GUI「10日間おまかせ」も実装済みで、通常設定・シード0の5条件を比較した[バランス予備評価](Docs/HumanToCatAutoPlayBalanceEvaluation.md)も追加しました。再実行は `python3 -m cat_cafe_sim.autoplay_evaluation`。採用した長めの案（人気250→450→650、期限20・20・25日、上限650）を新規ゲームへ反映しました。旧セーブの目標・期限・上限は維持します。CLIは `--objective bond|patron` で好感度・有力者も検証できます。[対象別の操作と検証](Docs/HumanToCatAutoPlayObjectives.md)を参照。その他の数値調整とGUIの対象拡張は後続です。[自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)に希望と提案を整理しています。
+テスト用自動プレイの3つの判断方針と日本語ログを実装しました。GUI「10日間おまかせ」も実装済みで、通常設定・シード0の5条件を比較した[バランス予備評価](Docs/HumanToCatAutoPlayBalanceEvaluation.md)も追加しました。再実行は `python3 -m cat_cafe_sim.autoplay_evaluation`。採用した長めの案（人気250→450→650、期限20・20・25日、上限650）を新規ゲームへ反映しました。旧セーブの目標・期限・上限は維持します。CLIは `--objective bond|patron` で好感度・有力者も検証できます。[対象別の操作と検証](Docs/HumanToCatAutoPlayObjectives.md)を参照。GUIも人気・好感度・有力者の目標選択に対応しています。その他の数値調整は後続です。[自動プレイ計画](Docs/HumanToCatAutoPlayPlan.md)に希望と提案を整理しています。
 
 新規ゲームでは人気第1段階達成後、通常客4人が毎営業日に時間を分けて来店します。旧セーブの予定は維持します。[通常客増加と自動プレイ比較](Docs/HumanToCatPopularCustomerGrowth.md)を参照してください。
 
-自動プレイの評価では `python3 -m cat_cafe_sim.autoplay_evaluation --seed 7 --scenarios clear fast` で単一シード、`--seeds 0 1 2 3 4 5 6 7 8 9` で複数シードを比較できます。単一評価は日次結果を含む従来形式、複数評価はシード別の指標・各段階の結果と集計を出力します。[複数シード評価](Docs/HumanToCatAutoPlaySeedEvaluation.md)を参照してください。
+自動プレイの評価では `python3 -m cat_cafe_sim.autoplay_evaluation --seed 7 --scenarios clear fast` で単一シード、`--seeds 0 1 2 3 4 5 6 7 8 9` で複数シードを比較できます。単一評価は日次結果を含む従来形式、複数評価はシード別の指標・各段階の結果と集計を出力します。[複数シード評価](Docs/HumanToCatAutoPlaySeedEvaluation.md)を参照してください。 `--objectives popularity bond patron --scenarios clear fast --days 90` で3目標を個別に生成して両経営方針を比較できます。[目標別の共通評価](Docs/HumanToCatAutoPlayObjectiveEvaluation.md)に操作方法と結果をまとめています。
