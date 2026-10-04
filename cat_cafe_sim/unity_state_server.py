@@ -129,6 +129,32 @@ def store_event_view(session):
                 funds=session.core.funds, choices=choices)
 
 
+def growth_view(session):
+    from .core.cafe_growth import pending, SPECIALIZATIONS, LABELS, total
+    core = session.core
+    result = []
+    for cat_id in pending(core):
+        row = core.growth['cats'][cat_id]
+        rules = core.growth['rules']
+        details = {
+            'service': f"接客終了時、消費した体力の{rules['service_stamina_refund']*100:g}%を回復します。",
+            'rest': f"在店休養時の疲労回復＋{rules['rest_recovery_bonus']:g}。",
+            'dispatch': f"派遣報酬を{rules['dispatch_reward_multiplier']:g}倍にします。"}
+        choices = []
+        for choice in SPECIALIZATIONS:
+            reason = ''
+            try:
+                copy.deepcopy(session).resolve_growth(cat_id, choice)
+            except ValueError as ex:
+                reason = str(ex)
+            choices.append(dict(choice=choice, label=LABELS[choice]+'を得意にする',
+                                detail=details[choice], can_select=not reason, reason=reason))
+        result.append(dict(cat_id=cat_id, name=session.profiles.get(cat_id, {}).get('name', cat_id),
+                           experience=total(row), threshold=rules['threshold'], service=row['service'],
+                           rest=row['rest'], dispatch=row['dispatch'], choices=choices))
+    return result
+
+
 def state_view(session, instance_id='', revision=0):
     core = session.core
     cats = []
@@ -159,7 +185,7 @@ def state_view(session, instance_id='', revision=0):
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
-                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session),
+                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None)
 
@@ -233,17 +259,19 @@ def make_server(session, port=8190, saves_directory=None):
                 if not 0 < length <= 16384:
                     raise ValueError('操作データのサイズが不正です。')
                 command = json.loads(self.rfile.read(length).decode('utf-8'))
-                if not isinstance(command, dict) or set(command) - {'save_id', 'choice'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
+                if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'continue_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'continue_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] == 'resolve_intake' and command.get('choice') not in ('accept', 'decline'):
                     raise ValueError('迎えるか見送るかを選んでください。')
                 if command['kind'] == 'resolve_store_event' and command.get('choice') not in ('repair', 'patch', 'close', 'full', 'small', 'decline'):
                     raise ValueError('店舗イベントの選択肢が不正です。')
+                if command['kind'] == 'resolve_growth' and (command.get('choice') not in ('service', 'rest', 'dispatch') or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
+                    raise ValueError('成長できる猫と得意分野を指定してください。')
                 if not isinstance(command['working_cats'], list) or any(not isinstance(key, str) for key in command['working_cats']):
                     raise ValueError('出勤猫の指定が不正です。')
             except (ValueError, UnicodeError) as ex:
@@ -298,6 +326,10 @@ def make_server(session, port=8190, saves_directory=None):
                         candidate.day_off()
                     else:
                         candidate.resolve_store_event(command['choice'])
+                elif command['kind'] == 'resolve_growth':
+                    if command['working_cats']:
+                        raise ValueError('成長選択には出勤猫を指定しないでください。')
+                    candidate.resolve_growth(command['cat_id'], command['choice'])
                 elif command['kind'] == 'continue_goal':
                     if command['working_cats']:
                         raise ValueError('継続営業には出勤猫の指定を付けないでください。')
