@@ -11,6 +11,79 @@ from cat_cafe_sim.unity_state_server import make_server, state_view
 
 
 class UnityStateTests(unittest.TestCase):
+    def test_housing_expansion_full_intake_both_stages_and_restore(self):
+        import copy
+        from pathlib import Path
+        from cat_cafe_sim.cafe_new_game import starting_conditions
+        from cat_cafe_sim.storage.cafe_saves import load_game
+        settings = starting_conditions()
+        settings['management']['starting_funds'] = 10000
+        settings['intake_request']['day'] = 2
+        settings['profiles']['cats']['sixth'] = copy.deepcopy(settings['profiles']['cats']['cat-mugi'])
+        settings['profiles']['cats']['sixth']['name'] = 'ツキ'
+        with tempfile.TemporaryDirectory() as directory:
+            session = create_game(Path(directory)/'source', settings)
+            session.day_off()
+            files = {p:p.read_bytes() for p in session.checkpoint_path.parent.iterdir()}
+            save_root = Path(directory)/'unity'
+            with make_server(session, 0, save_root) as server:
+                thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+                base = f'http://127.0.0.1:{server.server_port}'; counter = 0
+                def read():
+                    with urlopen(base+'/state') as response: return json.load(response)
+                def post(kind, command=None, **extra):
+                    nonlocal counter
+                    counter += 1; state = read()
+                    command = command or dict(request_id=str(counter), instance_id=state['instance_id'],
+                        expected_revision=state['revision'], kind=kind, working_cats=[], **extra)
+                    try:
+                        with urlopen(Request(base+'/commands', json.dumps(command).encode(), {'Content-Type':'application/json'})) as response:
+                            return response.status, json.load(response), command
+                    except HTTPError as ex: return ex.code, json.load(ex), command
+                try:
+                    before = read(); h = before['housing']
+                    self.assertEqual((h['count'], h['capacity'], h['free']), (6, 6, 0))
+                    self.assertTrue(h['can_expand']); self.assertFalse(before['intake_request']['can_accept'])
+                    self.assertEqual(post('upgrade_housing')[0], 422)
+                    self.assertEqual(read(), before)
+                    for kind, stage in (('purchase_housing',1), ('upgrade_housing',2)):
+                        before = read(); h = before['housing']; seats = before['seats']
+                        old_funds = session.core.funds; session.core.funds = h['cost']
+                        self.assertFalse(read()['housing']['can_expand'])
+                        self.assertEqual(post(kind)[0], 422); self.assertEqual(session.core.funds,h['cost'])
+                        session.core.funds = old_funds
+                        with patch.object(type(session.core), 'require_events_resolved', side_effect=ValueError('目標の結果を確認してください。')):
+                            self.assertFalse(read()['housing']['can_expand'])
+                            self.assertEqual(post(kind)[0], 422)
+                        self.assertEqual(read(),before)
+                        reference = copy.deepcopy(session)
+                        getattr(reference,kind)()
+                        code, result, command = post(kind); self.assertEqual(code,200,result)
+                        self.assertEqual(session.core.snapshot(),reference.core.snapshot())
+                        after = read(); self.assertEqual(after['funds'],old_funds-h['cost'])
+                        self.assertEqual(after['housing']['stage'],stage)
+                        self.assertEqual(after['housing']['capacity'],h['next_capacity'])
+                        self.assertEqual(after['housing']['daily_cost'],h['next_daily_cost'])
+                        self.assertEqual(after['housing']['operating_cost'],h['next_operating_cost'])
+                        self.assertEqual(after['seats'],seats)
+                        self.assertEqual(post(kind,command=command)[:2],(code,result))
+                        self.assertEqual(read(),after)
+                        self.assertEqual(post(kind)[0],422)
+                    self.assertTrue(read()['intake_request']['can_accept'])
+                    self.assertFalse(read()['housing']['can_expand'])
+                    snapshot=session.core.snapshot()
+                    code,saved,_=post('save_game'); self.assertEqual(code,200,saved)
+                    self.assertEqual(post('resolve_intake',choice='accept')[0],200)
+                    self.assertEqual(read()['housing']['count'],7)
+                    self.assertEqual(post('start_business')[0],200)
+                    self.assertFalse(read()['housing']['can_expand'])
+                    self.assertEqual(post('load_game',save_id=saved['save_id'])[0],200)
+                    self.assertEqual(session.core.snapshot(),snapshot)
+                    restarted,_=load_game(save_root/saved['save_id']/'cafe.json')
+                    self.assertEqual(restarted.core.snapshot(),snapshot)
+                    self.assertEqual(files,{p:p.read_bytes() for p in files})
+                finally: server.shutdown(); thread.join()
+
     def test_intake_answers_retries_failures_and_saved_cat_registration(self):
         import copy
         from pathlib import Path

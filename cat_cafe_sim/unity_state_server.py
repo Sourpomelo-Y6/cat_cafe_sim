@@ -48,6 +48,32 @@ def intake_view(session):
                 can_accept=pending(core) and not accept_reason)
 
 
+def housing_view(session):
+    from .core.cafe_housing import count, capacity, daily_cost, reason, upgrade_rules, upgrade_reason
+    from .core.cafe_operating_cost import estimate
+    core = session.core
+    data = core.housing
+    stage = 2 if data and data.get('upgrade') else 1 if data and data['purchase'] else 0
+    selected = upgrade_rules() if stage == 1 else data['rules'] if data else None
+    kind = 'upgrade_housing' if stage == 1 else 'purchase_housing' if data and stage == 0 else ''
+    problem = ''
+    try:
+        session._ready(for_housing=True)
+    except ValueError as ex:
+        problem = str(ex)
+    problem = problem or (upgrade_reason(core, upgrade_rules()) if stage else reason(core))
+    limit = capacity(core)
+    current_daily = daily_cost(core)
+    operating = estimate(core)
+    return dict(configured=data is not None, count=count(core), capacity=limit or 0,
+                free=max(0, limit-count(core)) if limit is not None else 0, stage=stage, kind=kind,
+                next_capacity=limit+selected['capacity_bonus'] if kind else limit or 0,
+                cost=selected['cost'] if kind else 0, funds_after=core.funds-(selected['cost'] if kind else 0),
+                daily_cost=current_daily, next_daily_cost=selected['daily_cost'] if kind else current_daily,
+                operating_cost=operating, next_operating_cost=operating-current_daily+selected['daily_cost'] if kind else operating,
+                can_expand=bool(kind) and not problem, reason=problem)
+
+
 def state_view(session, instance_id='', revision=0):
     core = session.core
     cats = []
@@ -78,7 +104,7 @@ def state_view(session, instance_id='', revision=0):
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
-                customers=customers,
+                customers=customers, housing=housing_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None)
 
@@ -157,7 +183,7 @@ def make_server(session, port=8190, saves_directory=None):
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] == 'resolve_intake' and command.get('choice') not in ('accept', 'decline'):
                     raise ValueError('迎えるか見送るかを選んでください。')
@@ -202,6 +228,13 @@ def make_server(session, port=8190, saves_directory=None):
                         candidate.store._write(data_store)
                         save_game(candidate, path / 'cafe.json', auto_assign=True)
                         candidate.store = MemoryRelationships(candidate.store._read())
+                elif command['kind'] in ('purchase_housing', 'upgrade_housing'):
+                    if command['working_cats']:
+                        raise ValueError('飼育スペースの拡張には出勤猫の指定を付けないでください。')
+                    if command['kind'] == 'purchase_housing':
+                        candidate.purchase_housing()
+                    else:
+                        candidate.upgrade_housing()
                 elif command['kind'] == 'resolve_intake':
                     if command['working_cats']:
                         raise ValueError('受け入れ依頼への回答には出勤猫の指定を付けないでください。')
