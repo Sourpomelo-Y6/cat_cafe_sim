@@ -177,6 +177,45 @@ def growth_view(session):
                            experience=sum(counts.values()), threshold=rules['mastery_threshold'] if stage == 1 else rules['second_mastery_threshold'],
                            play=counts['play'], contact=counts['contact'], quiet=counts['quiet'],
                            learned='・'.join(GROUP_LABELS[group] for group in learned_groups(row)), choices=choices))
+    from .core.cafe_growth import type_mastery_pending, type_mastery_stage, TYPE_GROUPS, type_label, learned_types
+    for cat_id in type_mastery_pending(core):
+        row = core.growth['cats'][cat_id]
+        rules = core.growth['rules']
+        stage = type_mastery_stage(core, cat_id)
+        extra = stage in ('second', 'second_group_second', 'third_group_second')
+        if stage.startswith('third_group'):
+            practice = row['third_group_practice']['individual']
+            group = row['third_group_practice']['mastery']
+            if extra: practice = practice['second']
+            counts = practice['actions']
+            title = '3つ目の分類の' + ('追加の' if extra else '') + '得意な行動'
+        elif stage.startswith('second_group'):
+            practice = row['second_group_type_practice']
+            group = row['second_mastery']
+            if extra: practice = practice['second']
+            counts = practice['actions']
+            title = '2つ目の分類の' + ('追加の' if extra else '') + '得意な行動'
+        else:
+            counts = row['second_type_mastery_actions'] if extra else row['type_mastery_actions']
+            group = row['mastery']
+            title = '2つ目の得意な行動' if extra else '得意な行動'
+        choices = []
+        for choice, action_group in TYPE_GROUPS.items():
+            if action_group != group: continue
+            reason = ''
+            try:
+                copy.deepcopy(session).resolve_growth_type_mastery(cat_id, choice)
+            except ValueError as ex:
+                reason = str(ex)
+            if choice in learned_types(row): reason = '習得済みです。'
+            elif counts[choice] <= 0: reason = 'この行動の接客実績がありません。'
+            choices.append(dict(choice=choice, label=type_label(choice),
+                                detail=f"成功接客の実績：{counts[choice]:g}回", can_select=not reason, reason=reason))
+        result.append(dict(cat_id=cat_id, name=session.profiles.get(cat_id, {}).get('name', cat_id),
+                           kind='resolve_growth_type_mastery', title=title, group=GROUP_LABELS[group],
+                           experience=sum(counts.values()), threshold=rules['second_type_mastery_threshold' if extra else 'type_mastery_threshold'],
+                           effect=f"選んだ行動の通常の関心増加を、分類の効果に追加で{rules['type_mastery_engagement_multiplier']:g}倍にします。",
+                           learned='・'.join(type_label(key) for key in learned_types(row)), choices=choices))
     return result
 
 
@@ -289,7 +328,7 @@ def make_server(session, port=8190, saves_directory=None):
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'continue_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] == 'resolve_intake' and command.get('choice') not in ('accept', 'decline'):
                     raise ValueError('迎えるか見送るかを選んでください。')
@@ -299,6 +338,10 @@ def make_server(session, port=8190, saves_directory=None):
                     raise ValueError('成長できる猫と得意分野を指定してください。')
                 if command['kind'] == 'resolve_growth_mastery' and (command.get('choice') not in ('play', 'contact', 'quiet') or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('熟練できる猫と得意な交流を指定してください。')
+                if command['kind'] == 'resolve_growth_type_mastery':
+                    from .core.cafe_growth import TYPE_GROUPS
+                    if command.get('choice') not in TYPE_GROUPS or not isinstance(command.get('cat_id'), str) or not command['cat_id']:
+                        raise ValueError('熟練できる猫と得意な行動を指定してください。')
                 if not isinstance(command['working_cats'], list) or any(not isinstance(key, str) for key in command['working_cats']):
                     raise ValueError('出勤猫の指定が不正です。')
             except (ValueError, UnicodeError) as ex:
@@ -361,6 +404,10 @@ def make_server(session, port=8190, saves_directory=None):
                     if command['working_cats']:
                         raise ValueError('交流選択には出勤猫を指定しないでください。')
                     candidate.resolve_growth_mastery(command['cat_id'], command['choice'])
+                elif command['kind'] == 'resolve_growth_type_mastery':
+                    if command['working_cats']:
+                        raise ValueError('行動選択には出勤猫を指定しないでください。')
+                    candidate.resolve_growth_type_mastery(command['cat_id'], command['choice'])
                 elif command['kind'] == 'continue_goal':
                     if command['working_cats']:
                         raise ValueError('継続営業には出勤猫の指定を付けないでください。')
