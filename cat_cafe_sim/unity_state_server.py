@@ -31,10 +31,15 @@ def state_view(session, instance_id='', revision=0):
         customers.append(dict(customer_id=visit.id, name=customer_name(visit.id), seat_id=seat_id,
                               status='seated' if seat_id else 'departed' if visit.departure_reason else 'waiting'))
     summary = core.summary()
+    required_action = ''
+    try:
+        session._ready()
+    except ValueError as ex:
+        required_action = str(ex)
     from .core.cafe_finance import values
     return dict(version=1, instance_id=instance_id, revision=revision,
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
-                closed=core.closed, opening_ticks=core.config.opening_ticks,
+                closed=core.closed, required_action=required_action, opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
@@ -117,7 +122,7 @@ def make_server(session, port=8190, saves_directory=None):
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if not isinstance(command['working_cats'], list) or any(not isinstance(key, str) for key in command['working_cats']):
                     raise ValueError('出勤猫の指定が不正です。')
@@ -160,6 +165,10 @@ def make_server(session, port=8190, saves_directory=None):
                         candidate.store._write(data_store)
                         save_game(candidate, path / 'cafe.json', auto_assign=True)
                         candidate.store = MemoryRelationships(candidate.store._read())
+                elif command['kind'] == 'next_day':
+                    if command['working_cats']:
+                        raise ValueError('翌日への操作には出勤猫の指定を付けないでください。')
+                    candidate.next_day()
                 else:
                     if command['working_cats']:
                         raise ValueError('営業操作には出勤猫の指定を付けないでください。')
