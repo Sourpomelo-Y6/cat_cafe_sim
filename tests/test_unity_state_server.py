@@ -11,6 +11,69 @@ from cat_cafe_sim.unity_state_server import make_server, state_view
 
 
 class UnityStateTests(unittest.TestCase):
+    def test_goal_results_continue_retry_and_save_restore(self):
+        import copy
+        from pathlib import Path
+        from cat_cafe_sim.cafe_new_game import starting_conditions
+        from cat_cafe_sim.storage.cafe_saves import load_game
+        for status, target in (('cleared',101), ('expired',600)):
+            with self.subTest(status=status), tempfile.TemporaryDirectory() as directory:
+                settings=starting_conditions()
+                settings['goal']=dict(days=1,target=target,cap=650,gain_per_success=5,
+                    stages=[dict(days=10,target=625),dict(days=10,target=650)])
+                session=create_game(Path(directory)/'source',settings)
+                while not session.core.closed: session.automatic_step(auto_assign=True)
+                self.assertEqual(session.core.goal['status'],status)
+                files={p:p.read_bytes() for p in session.checkpoint_path.parent.iterdir()}
+                with make_server(session,0,Path(directory)/'saves') as server:
+                    thread=threading.Thread(target=server.serve_forever,daemon=True); thread.start()
+                    base=f'http://127.0.0.1:{server.server_port}'; counter=0
+                    def read():
+                        with urlopen(base+'/state') as response:return json.load(response)
+                    def post(kind,command=None,**extra):
+                        nonlocal counter
+                        counter+=1; state=read()
+                        command=command or dict(kind=kind,request_id=str(counter),instance_id=state['instance_id'],expected_revision=state['revision'],working_cats=[],**extra)
+                        try:
+                            with urlopen(Request(base+'/commands',json.dumps(command).encode(),{'Content-Type':'application/json'})) as response:return response.status,json.load(response),command
+                        except HTTPError as ex:return ex.code,json.load(ex),command
+                    try:
+                        snapshot=session.core.snapshot(); waiting=read()
+                        self.assertEqual(session.core.snapshot(),snapshot)
+                        self.assertEqual(waiting['goal_result']['status'],status)
+                        self.assertTrue(waiting['goal_result']['can_continue'])
+                        self.assertEqual(post('next_day')[0],422)
+                        self.assertEqual(read(),waiting)
+                        code,saved_waiting,_=post('save_game'); self.assertEqual(code,200)
+                        waiting=read()
+                        with patch.object(type(session),'continue_goal',side_effect=ValueError('先に帰還・譲渡イベントを確認してください。')):
+                            self.assertFalse(read()['goal_result']['can_continue'])
+                            self.assertEqual(post('continue_goal')[0],422)
+                        self.assertEqual(read(),waiting)
+                        reference=copy.deepcopy(session); reference.continue_goal()
+                        code,result,command=post('continue_goal'); self.assertEqual(code,200,result)
+                        self.assertEqual(session.core.snapshot(),reference.core.snapshot())
+                        self.assertEqual(read()['funds'],waiting['funds'])
+                        self.assertIsNone(read()['goal_result'])
+                        self.assertEqual(read()['required_action'],'')
+                        confirmed=read()
+                        self.assertEqual(post('continue_goal',command=command)[:2],(code,result))
+                        self.assertEqual(read(),confirmed)
+                        self.assertEqual(post('continue_goal')[0],422)
+                        snapshot=session.core.snapshot()
+                        code,saved,_=post('save_game'); self.assertEqual(code,200)
+                        self.assertEqual(post('next_day')[0],200)
+                        self.assertEqual(post('load_game',save_id=saved['save_id'])[0],200)
+                        self.assertEqual(session.core.snapshot(),snapshot)
+                        self.assertIsNone(read()['goal_result'])
+                        restarted,_=load_game(Path(directory)/'saves'/saved['save_id']/'cafe.json')
+                        self.assertEqual(restarted.core.snapshot(),snapshot)
+                        self.assertEqual(post('load_game',save_id=saved_waiting['save_id'])[0],200)
+                        self.assertEqual(read()['goal_result']['status'],status)
+                        self.assertTrue(read()['goal_result']['can_continue'])
+                        self.assertEqual(files,{p:p.read_bytes() for p in files})
+                    finally:server.shutdown();thread.join()
+
     def test_housing_expansion_full_intake_both_stages_and_restore(self):
         import copy
         from pathlib import Path

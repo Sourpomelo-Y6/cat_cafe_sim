@@ -74,6 +74,27 @@ def housing_view(session):
                 can_expand=bool(kind) and not problem, reason=problem)
 
 
+def goal_result_view(session):
+    from .core.cafe_goal import pending, current_rules, current_start
+    if not pending(session.core):
+        return None
+    core = session.core
+    data = core.goal
+    selected = current_rules(data)
+    problem = ''
+    # Use the exact continuation rules on a detached copy, without selecting
+    # anything in the live session or writing relationship data.
+    try:
+        copy.deepcopy(session).continue_goal()
+    except ValueError as ex:
+        problem = str(ex)
+    return dict(status=data['status'], stage=len(data.get('history', []))+1,
+                started_day=current_start(data), deadline=current_start(data)+selected['days']-1,
+                resolved_day=data['resolved_day'], target=selected['target'],
+                popularity=core.management['popularity'], funds=core.funds,
+                can_continue=not problem, reason=problem)
+
+
 def state_view(session, instance_id='', revision=0):
     core = session.core
     cats = []
@@ -104,7 +125,7 @@ def state_view(session, instance_id='', revision=0):
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
-                customers=customers, housing=housing_view(session),
+                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None)
 
@@ -183,7 +204,7 @@ def make_server(session, port=8190, saves_directory=None):
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'continue_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] == 'resolve_intake' and command.get('choice') not in ('accept', 'decline'):
                     raise ValueError('迎えるか見送るかを選んでください。')
@@ -228,6 +249,10 @@ def make_server(session, port=8190, saves_directory=None):
                         candidate.store._write(data_store)
                         save_game(candidate, path / 'cafe.json', auto_assign=True)
                         candidate.store = MemoryRelationships(candidate.store._read())
+                elif command['kind'] == 'continue_goal':
+                    if command['working_cats']:
+                        raise ValueError('継続営業には出勤猫の指定を付けないでください。')
+                    candidate.continue_goal()
                 elif command['kind'] in ('purchase_housing', 'upgrade_housing'):
                     if command['working_cats']:
                         raise ValueError('飼育スペースの拡張には出勤猫の指定を付けないでください。')
