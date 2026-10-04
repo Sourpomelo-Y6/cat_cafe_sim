@@ -4,6 +4,8 @@ import copy
 import json
 import tempfile
 import uuid
+import re
+from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -41,14 +43,38 @@ def state_view(session, instance_id='', revision=0):
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None)
 
 
-def make_server(session, port=8190):
+def make_server(session, port=8190, saves_directory=None):
     # Normal automatic service persists relationship receipts. Keep these in memory
-    # until the Unity save feature exists; never modify the loaded game's files.
+    # between snapshot exports; never modify the loaded game's files.
     from .storage.cafe_saves import MemoryRelationships
     session.store = MemoryRelationships(session.store._read())
     instance_id = uuid.uuid4().hex
     revision = 0
     results = {}
+    save_root = Path(saves_directory or Path(__file__).resolve().parents[1] / 'saves/unity').resolve()
+
+    def save_path(save_id):
+        if not isinstance(save_id, str) or not re.fullmatch(r'[a-f0-9]{32}', save_id):
+            raise ValueError('保存データの指定が不正です。')
+        path = (save_root / save_id).resolve()
+        if path.parent != save_root:
+            raise ValueError('保存先の外側は読み込めません。')
+        return path
+
+    def saved_games():
+        rows = []
+        if save_root.exists():
+            for folder in save_root.iterdir():
+                try:
+                    path = save_path(folder.name)
+                    if not (path / 'cafe.json').is_file():
+                        continue
+                    row = json.loads((path / 'info.json').read_text(encoding='utf-8'))
+                    if row.get('save_id') == folder.name and isinstance(row.get('created_at'), str) and isinstance(row.get('label'), str):
+                        rows.append(row)
+                except (OSError, ValueError, AttributeError):
+                    continue
+        return sorted(rows, key=lambda row: row.get('created_at', ''), reverse=True)
     class Handler(BaseHTTPRequestHandler):
         def setup(self):
             super().setup()
@@ -68,6 +94,8 @@ def make_server(session, port=8190):
                 data, code = dict(version=1, service='cat-cafe-state', read_only=False), 200
             elif self.path == '/state':
                 data, code = state_view(session, instance_id, revision), 200
+            elif self.path == '/saves':
+                data, code = dict(saves=saved_games()), 200
             else:
                 data, code = dict(error='not_found'), 404
             self.reply(data, code)
@@ -84,12 +112,12 @@ def make_server(session, port=8190):
                 if not 0 < length <= 16384:
                     raise ValueError('操作データのサイズが不正です。')
                 command = json.loads(self.rfile.read(length).decode('utf-8'))
-                if not isinstance(command, dict) or set(command) != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
+                if not isinstance(command, dict) or set(command) - {'save_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if not isinstance(command['working_cats'], list) or any(not isinstance(key, str) for key in command['working_cats']):
                     raise ValueError('出勤猫の指定が不正です。')
@@ -108,8 +136,30 @@ def make_server(session, port=8190):
                 return
             try:
                 candidate = copy.deepcopy(session)
+                saved_id = ''
                 if command['kind'] == 'set_shifts':
                     candidate.set_shifts(command['working_cats'])
+                elif command['kind'] in ('save_game', 'load_game'):
+                    if command['working_cats']:
+                        raise ValueError('保存・再開には出勤猫を指定しないでください。')
+                    from .storage.cafe_saves import save_game, load_game
+                    from .storage.relationships import RelationshipStore
+                    if command['kind'] == 'load_game':
+                        candidate = load_game(save_path(command.get('save_id')) / 'cafe.json')[0]
+                        candidate.store = MemoryRelationships(candidate.store._read())
+                    else:
+                        saved_id = uuid.uuid4().hex
+                        path = save_path(saved_id)
+                        path.mkdir(parents=True, exist_ok=False)
+                        info = dict(save_id=saved_id, created_at=datetime.now(timezone.utc).isoformat(),
+                                    label=f'{candidate.core.day}日目 / 時刻 {candidate.core.tick} / 資金 {candidate.core.funds:g}'
+                                    + (' / 閉店' if candidate.core.closed else ''))
+                        RelationshipStore(path / 'info.json')._write(info)
+                        data_store = candidate.store._read()
+                        candidate.store = RelationshipStore(path / 'relationships.json')
+                        candidate.store._write(data_store)
+                        save_game(candidate, path / 'cafe.json', auto_assign=True)
+                        candidate.store = MemoryRelationships(candidate.store._read())
                 else:
                     if command['working_cats']:
                         raise ValueError('営業操作には出勤猫の指定を付けないでください。')
@@ -128,7 +178,7 @@ def make_server(session, port=8190):
                 projected = state_view(candidate, instance_id, revision + 1)
                 session.__dict__.update(candidate.__dict__)
                 revision += 1
-                data, code = dict(request_id=request_id, state=projected), 200
+                data, code = dict(request_id=request_id, save_id=saved_id, state=projected), 200
             except (ValueError, OSError) as ex:
                 data, code = dict(request_id=request_id, error=str(ex)), 422
             results[request_id] = (command, data, code)
@@ -143,13 +193,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--save', type=Path, help='Existing cafe.json (loaded once, never overwritten)')
     parser.add_argument('--port', type=int, default=8190)
+    parser.add_argument('--saves-directory', type=Path, help='Unity snapshot directory (default: saves/unity)')
     args = parser.parse_args()
     from .cafe_new_game import create_game
     from .storage.cafe_saves import load_game
     with tempfile.TemporaryDirectory(prefix='cat-cafe-unity-') as directory:
         session = load_game(args.save)[0] if args.save else create_game(directory)
-        with make_server(session, args.port) as server:
-            print(f'Unity state: http://127.0.0.1:{server.server_port} (state + shifts + business)', flush=True)
+        with make_server(session, args.port, args.saves_directory) as server:
+            print(f'Unity state: http://127.0.0.1:{server.server_port} (state + shifts + business + saves)', flush=True)
             try:
                 server.serve_forever()
             except KeyboardInterrupt:

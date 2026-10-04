@@ -11,6 +11,71 @@ from cat_cafe_sim.unity_state_server import make_server, state_view
 
 
 class UnityStateTests(unittest.TestCase):
+    def test_save_load_restart_active_service_and_closed_result(self):
+        from pathlib import Path
+        from cat_cafe_sim.storage.cafe_saves import load_game
+        with tempfile.TemporaryDirectory() as directory:
+            session = create_game(Path(directory)/'source')
+            original = {p:p.read_bytes() for p in session.checkpoint_path.parent.iterdir()}
+            save_root = Path(directory)/'unity'
+            with make_server(session, 0, save_root) as server:
+                thread = threading.Thread(target=server.serve_forever,daemon=True); thread.start()
+                base=f'http://127.0.0.1:{server.server_port}'
+                def read(path='/state'):
+                    with urlopen(base+path) as response: return json.load(response)
+                counter=0
+                def post(kind, save_id='', command=None):
+                    nonlocal counter
+                    counter+=1
+                    state=read()
+                    command=command or dict(kind=kind,request_id=str(counter),instance_id=state['instance_id'],expected_revision=state['revision'],working_cats=[],save_id=save_id)
+                    request=Request(base+'/commands',json.dumps(command).encode(),{'Content-Type':'application/json'})
+                    try:
+                        with urlopen(request) as response: return response.status,json.load(response),command
+                    except HTTPError as ex: return ex.code,json.load(ex),command
+                try:
+                    self.assertEqual(read('/saves')['saves'],[])
+                    self.assertEqual(post('start_business')[0],200)
+                    self.assertEqual(post('advance_business')[0],200)
+                    self.assertTrue(session.active_interactions)
+                    snapshot=session.core.snapshot(); relationships=session.store._read()
+                    code,result,command=post('save_game')
+                    self.assertEqual(code,200,result)
+                    self.assertEqual(post('save_game',command=command)[:2],(code,result))
+                    self.assertEqual(len(read('/saves')['saves']),1)
+                    save_id=result['save_id']
+                    loaded,_=load_game(save_root/save_id/'cafe.json')
+                    self.assertEqual(loaded.core.snapshot(),snapshot)
+                    self.assertEqual(loaded.store._read(),relationships)
+                    self.assertEqual(post('advance_business')[0],200)
+                    self.assertEqual(post('load_game',save_id)[0],200)
+                    self.assertEqual(session.core.snapshot(),snapshot)
+                    self.assertEqual(session.store._read(),relationships)
+                    self.assertEqual(post('load_game','../source')[0],422)
+                    self.assertEqual(session.core.snapshot(),snapshot)
+                    saved_file=save_root/save_id/'cafe.json'; saved_bytes=saved_file.read_bytes()
+                    saved_file.write_text('{broken',encoding='utf-8')
+                    self.assertEqual(post('load_game',save_id)[0],422)
+                    self.assertEqual(session.core.snapshot(),snapshot)
+                    saved_file.write_bytes(saved_bytes)
+                    with patch('cat_cafe_sim.storage.cafe_saves.save_game',side_effect=OSError('disk full')):
+                        self.assertEqual(post('save_game')[0],422)
+                    self.assertEqual(len(read('/saves')['saves']),1)
+                    self.assertEqual(session.core.snapshot(),snapshot)
+                    while not session.core.closed: self.assertEqual(post('advance_business')[0],200)
+                    closed=session.core.snapshot()
+                    code,result,_=post('save_game'); self.assertEqual(code,200,result)
+                    closed_id=result['save_id']
+                    self.assertEqual(post('load_game',save_id)[0],200)
+                    self.assertFalse(session.core.closed)
+                    self.assertEqual(post('load_game',closed_id)[0],200)
+                    self.assertEqual(session.core.snapshot(),closed)
+                    self.assertEqual(original,{p:p.read_bytes() for p in original})
+                finally: server.shutdown(); thread.join()
+            # Snapshot remains loadable after the server/session is destroyed.
+            restarted,_=load_game(save_root/closed_id/'cafe.json')
+            self.assertEqual(restarted.core.snapshot(),closed)
+
     def test_one_day_business_matches_existing_session_and_preserves_files(self):
         with tempfile.TemporaryDirectory() as directory:
             session = create_game(directory)
