@@ -95,6 +95,40 @@ def goal_result_view(session):
                 can_continue=not problem, reason=problem)
 
 
+def store_event_view(session):
+    from .core.cafe_store_events import waiting, LABELS
+    event = waiting(session.core)
+    if not event:
+        return None
+    rules = session.core.store_events['rules']
+    trouble = event['type'] == 'trouble'
+    rows = [('repair', '修理する'), ('patch', '応急処置する'), ('close', '休業して翌日へ')] if trouble else [
+        ('full', '支援する'), ('small', '少額支援する'), ('decline', '見送る')]
+    choices = []
+    for choice, label in rows:
+        reason = ''
+        try:
+            candidate = copy.deepcopy(session)
+            if choice == 'close':
+                candidate.day_off()
+            else:
+                candidate.resolve_store_event(choice)
+        except ValueError as ex:
+            reason = str(ex)
+        if trouble:
+            detail = (f"閉店時の運営費に {rules['trouble_cost']:g} を追加し、全席で営業します。" if choice == 'repair' else
+                      f"追加費用なし。今日は {min(rules['trouble_seat_loss'],len(session.core.seats))} 席を使用停止します。" if choice == 'patch' else
+                      '来客なしで猫を休ませ、翌日へ進みます。日次運営費は発生します。')
+        elif choice == 'decline':
+            detail = '資金と人気は変化しません。'
+        else:
+            prefix = 'support_' + choice
+            detail = f"資金 {rules[prefix+'_cost']:g} を使い、閉店時に人気＋{rules[prefix+'_popularity']:g}。"
+        choices.append(dict(choice=choice, label=label, detail=detail, can_select=not reason, reason=reason))
+    return dict(kind=event['type'], title=LABELS[event['type']], day=session.core.day,
+                funds=session.core.funds, choices=choices)
+
+
 def state_view(session, instance_id='', revision=0):
     core = session.core
     cats = []
@@ -125,7 +159,7 @@ def state_view(session, instance_id='', revision=0):
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
-                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session),
+                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None)
 
@@ -204,10 +238,12 @@ def make_server(session, port=8190, saves_directory=None):
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'continue_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'continue_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] == 'resolve_intake' and command.get('choice') not in ('accept', 'decline'):
                     raise ValueError('迎えるか見送るかを選んでください。')
+                if command['kind'] == 'resolve_store_event' and command.get('choice') not in ('repair', 'patch', 'close', 'full', 'small', 'decline'):
+                    raise ValueError('店舗イベントの選択肢が不正です。')
                 if not isinstance(command['working_cats'], list) or any(not isinstance(key, str) for key in command['working_cats']):
                     raise ValueError('出勤猫の指定が不正です。')
             except (ValueError, UnicodeError) as ex:
@@ -249,6 +285,19 @@ def make_server(session, port=8190, saves_directory=None):
                         candidate.store._write(data_store)
                         save_game(candidate, path / 'cafe.json', auto_assign=True)
                         candidate.store = MemoryRelationships(candidate.store._read())
+                elif command['kind'] == 'resolve_store_event':
+                    if command['working_cats']:
+                        raise ValueError('イベント回答には出勤猫を指定しないでください。')
+                    event = store_event_view(candidate)
+                    option = next((row for row in event['choices'] if row['choice'] == command['choice']), None) if event else None
+                    if option is None:
+                        raise ValueError('現在の店舗イベントに対応する選択肢ではありません。')
+                    if not option['can_select']:
+                        raise ValueError(option['reason'])
+                    if command['choice'] == 'close':
+                        candidate.day_off()
+                    else:
+                        candidate.resolve_store_event(command['choice'])
                 elif command['kind'] == 'continue_goal':
                     if command['working_cats']:
                         raise ValueError('継続営業には出勤猫の指定を付けないでください。')
