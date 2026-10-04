@@ -22,13 +22,21 @@ def state_view(session, instance_id='', revision=0):
                          fatigue=row['fatigue'], stress=row['stress'] or 0,
                          health_status=row['health_status'], activity=core.activity(cat_id)))
     seats = getattr(core, 'seats', {core.seat.id: core.seat})
+    from .cafe_customers import customer_name
+    customers = []
+    for visit in core.visits.values():
+        seat_id = next((key for key, seat in seats.items() if seat.customer_id == visit.id), '')
+        customers.append(dict(customer_id=visit.id, name=customer_name(visit.id), seat_id=seat_id,
+                              status='seated' if seat_id else 'departed' if visit.departure_reason else 'waiting'))
     summary = core.summary()
     from .core.cafe_finance import values
     return dict(version=1, instance_id=instance_id, revision=revision,
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
-                seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '') for key, seat in seats.items()],
+                seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
+                            customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
+                customers=customers,
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None)
 

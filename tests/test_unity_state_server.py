@@ -59,12 +59,19 @@ class UnityStateTests(unittest.TestCase):
                         code, response = post(state, 'advance_business', f"tick-{state['tick']}")
                         self.assertEqual(code, 200, response)
                         state = response['state']
+                        for seat in state['seats']:
+                            if seat['customer_id']:
+                                customer = next(row for row in state['customers'] if row['customer_id'] == seat['customer_id'])
+                                self.assertEqual(customer['status'], 'seated')
+                                self.assertEqual(customer['seat_id'], seat['seat_id'])
+                                self.assertEqual(customer['name'], seat['customer_name'])
                         occupied |= any(seat['customer_id'] for seat in state['seats'])
                     while not reference.core.closed:
                         reference.automatic_step(auto_assign=True)
                     self.assertTrue(occupied)
                     self.assertEqual(state['tick'], session.core.config.opening_ticks)
                     self.assertGreater(state['completed_interactions'], 0)
+                    self.assertTrue(all(customer['status'] == 'departed' for customer in state['customers']))
                     self.assertEqual(session.core.summary(), reference.core.summary())
                     self.assertEqual(state['finance']['closing_funds'], state['funds'])
                     self.assertEqual(state['finance']['net_cash_flow'], state['finance']['total_income'] - state['finance']['total_expenses'])
