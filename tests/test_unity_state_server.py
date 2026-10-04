@@ -11,6 +11,88 @@ from cat_cafe_sim.unity_state_server import make_server, state_view
 
 
 class UnityStateTests(unittest.TestCase):
+    def test_intake_answers_retries_failures_and_saved_cat_registration(self):
+        import copy
+        from pathlib import Path
+        from cat_cafe_sim.storage.cafe_saves import MemoryRelationships, load_game
+        for choice in ('accept', 'decline'):
+            with self.subTest(choice=choice), tempfile.TemporaryDirectory() as directory:
+                session = create_game(Path(directory) / 'source')
+                for _ in range(3): session.day_off()
+                self.assertEqual(session.core.intake_request['status'], 'waiting')
+                files = {p: p.read_bytes() for p in session.checkpoint_path.parent.iterdir()}
+                save_root = Path(directory) / 'unity'
+                with make_server(session, 0, save_root) as server:
+                    thread = threading.Thread(target=server.serve_forever, daemon=True); thread.start()
+                    base = f'http://127.0.0.1:{server.server_port}'
+                    def read():
+                        with urlopen(base+'/state') as response: return json.load(response)
+                    counter = 0
+                    def post(kind, answer='', save_id='', command=None):
+                        nonlocal counter
+                        counter += 1
+                        state = read()
+                        command = command or dict(request_id=str(counter), instance_id=state['instance_id'],
+                            expected_revision=state['revision'], kind=kind, working_cats=[], choice=answer, save_id=save_id)
+                        try:
+                            with urlopen(Request(base+'/commands', json.dumps(command).encode(),
+                                    {'Content-Type':'application/json'})) as response:
+                                return response.status, json.load(response), command
+                        except HTTPError as ex: return ex.code, json.load(ex), command
+                    try:
+                        waiting = read(); intake = waiting['intake_request']; funds = waiting['funds']
+                        self.assertTrue(intake['can_accept']); self.assertTrue(intake['can_decline'])
+                        self.assertEqual(intake['name'], 'ナナ'); self.assertTrue(intake['features'])
+                        self.assertEqual(post('resolve_intake', 'invalid')[0], 400)
+                        self.assertEqual(post('start_business')[0], 422)
+                        self.assertEqual(read(), waiting)
+                        code, saved_waiting, _ = post('save_game'); self.assertEqual(code, 200)
+                        waiting = read()
+                        if choice == 'accept':
+                            with patch.object(MemoryRelationships, '_write', side_effect=OSError('registration failed')):
+                                self.assertEqual(post('resolve_intake', choice)[0], 422)
+                            self.assertEqual(read(), waiting)
+                            with patch('cat_cafe_sim.core.cafe_housing.admission_reason', return_value='飼育スペースが満員です。'):
+                                self.assertFalse(read()['intake_request']['can_accept'])
+                                self.assertTrue(read()['intake_request']['can_decline'])
+                                self.assertEqual(post('resolve_intake', choice)[0], 422)
+                            old_funds = session.core.funds; session.core.funds = intake['cost']
+                            self.assertFalse(read()['intake_request']['can_accept'])
+                            self.assertTrue(read()['intake_request']['can_decline'])
+                            self.assertEqual(post('resolve_intake', choice)[0], 422)
+                            session.core.funds = old_funds
+                        reference = copy.deepcopy(session); reference.resolve_intake_request(choice)
+                        code, result, command = post('resolve_intake', choice)
+                        self.assertEqual(code, 200, result)
+                        self.assertEqual(session.core.snapshot(), reference.core.snapshot())
+                        self.assertEqual(session.store._read(), reference.store._read())
+                        answered = read()
+                        self.assertEqual(post('resolve_intake', command=command)[:2], (code, result))
+                        self.assertEqual(read(), answered)
+                        self.assertEqual(answered['intake_request']['status'], 'accepted' if choice=='accept' else 'declined')
+                        self.assertEqual(answered['funds'], funds-(intake['cost'] if choice=='accept' else 0))
+                        self.assertEqual(len(answered['cats']), 6 if choice=='accept' else 5)
+                        self.assertEqual(answered['required_action'], '')
+                        if choice == 'accept':
+                            cat = next(cat for cat in answered['cats'] if cat['cat_id']==intake['cat_id'])
+                            self.assertFalse(cat['working']); self.assertEqual(cat['stamina'], cat['max_stamina'])
+                            self.assertEqual(cat['health_status'], 'healthy')
+                        self.assertEqual(post('resolve_intake', 'decline' if choice=='accept' else 'accept')[0], 422)
+                        snapshot = session.core.snapshot(); relationships = session.store._read()
+                        code, saved, _ = post('save_game'); self.assertEqual(code, 200, saved)
+                        self.assertEqual(post('start_business')[0], 200)
+                        self.assertEqual(post('load_game', save_id=saved['save_id'])[0], 200)
+                        self.assertEqual(session.core.snapshot(), snapshot)
+                        self.assertEqual(session.store._read(), relationships)
+                        restarted, _ = load_game(save_root/saved['save_id']/'cafe.json')
+                        self.assertEqual(restarted.core.snapshot(), snapshot)
+                        self.assertEqual(restarted.store._read(), relationships)
+                        self.assertEqual(post('load_game', save_id=saved_waiting['save_id'])[0], 200)
+                        self.assertEqual(read()['intake_request']['status'], 'waiting')
+                        self.assertEqual(len(read()['cats']), 5)
+                        self.assertEqual(files, {p:p.read_bytes() for p in files})
+                    finally: server.shutdown(); thread.join()
+
     def test_next_day_recovery_retry_events_and_saved_preparation(self):
         import copy
         from pathlib import Path

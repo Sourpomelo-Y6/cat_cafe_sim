@@ -13,6 +13,41 @@ from pathlib import Path
 CONTENT_IDS = {f'cat-{name}': f'playtest-{name}' for name in ('mike', 'tama', 'sora', 'kohaku', 'mugi')}
 
 
+def intake_view(session):
+    from .core.cafe_intake_request import pending, require_response
+    from .core.cafe_housing import status as housing_status, admission_reason
+    from .core.cafe_preferences import feature_text
+    from .core.cafe_traits import description
+    from .core.human_cat_types import Personality
+    from .storage.cafe_saves import check_link
+    core = session.core
+    data = core.intake_request
+    if not data:
+        return None
+    rule = data['rules']
+    row = rule['candidate']
+    response_reason = ''
+    if pending(core):
+        try:
+            check_link(session)
+            if session.pending:
+                raise ValueError('先に接客結果の保存を再試行してください。')
+            require_response(core)
+        except ValueError as ex:
+            response_reason = str(ex)
+    accept_reason = response_reason or admission_reason(core) or (
+        '受け入れ後に資金が残る必要があります。' if core.funds <= row['cost'] else '')
+    personality = Personality.from_dict(row['personality'])
+    return dict(cat_id=rule['cat_id'], name=row['name'], day=rule['day'], status=data['status'],
+                cost=row['cost'], personality=next((name for name, value in session.presets.items()
+                                                   if value == personality), 'カスタム'),
+                features=feature_text(row.get('features', [])),
+                trait='\n'.join(f'{label}：{value}' for label, value in description(row.get('trait'))),
+                housing=housing_status(core), response_reason=response_reason, accept_reason=accept_reason,
+                can_decline=pending(core) and not response_reason,
+                can_accept=pending(core) and not accept_reason)
+
+
 def state_view(session, instance_id='', revision=0):
     core = session.core
     cats = []
@@ -39,7 +74,7 @@ def state_view(session, instance_id='', revision=0):
     from .core.cafe_finance import values
     return dict(version=1, instance_id=instance_id, revision=revision,
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
-                closed=core.closed, required_action=required_action, opening_ticks=core.config.opening_ticks,
+                closed=core.closed, required_action=required_action, intake_request=intake_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
@@ -117,13 +152,15 @@ def make_server(session, port=8190, saves_directory=None):
                 if not 0 < length <= 16384:
                     raise ValueError('操作データのサイズが不正です。')
                 command = json.loads(self.rfile.read(length).decode('utf-8'))
-                if not isinstance(command, dict) or set(command) - {'save_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
+                if not isinstance(command, dict) or set(command) - {'save_id', 'choice'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
+                if command['kind'] == 'resolve_intake' and command.get('choice') not in ('accept', 'decline'):
+                    raise ValueError('迎えるか見送るかを選んでください。')
                 if not isinstance(command['working_cats'], list) or any(not isinstance(key, str) for key in command['working_cats']):
                     raise ValueError('出勤猫の指定が不正です。')
             except (ValueError, UnicodeError) as ex:
@@ -165,6 +202,10 @@ def make_server(session, port=8190, saves_directory=None):
                         candidate.store._write(data_store)
                         save_game(candidate, path / 'cafe.json', auto_assign=True)
                         candidate.store = MemoryRelationships(candidate.store._read())
+                elif command['kind'] == 'resolve_intake':
+                    if command['working_cats']:
+                        raise ValueError('受け入れ依頼への回答には出勤猫の指定を付けないでください。')
+                    candidate.resolve_intake_request(command['choice'])
                 elif command['kind'] == 'next_day':
                     if command['working_cats']:
                         raise ValueError('翌日への操作には出勤猫の指定を付けないでください。')
