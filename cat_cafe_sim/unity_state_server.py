@@ -222,13 +222,18 @@ def growth_view(session):
 def state_view(session, instance_id='', revision=0):
     core = session.core
     cats = []
+    from .core.cafe_growth import description as growth_description
+    from .cafe_health_text import health_text
+    from .core.cafe_activities import ACTIVITY_LABELS
     for row in session.cat_choices():
         cat_id = row['cat_id']
         cats.append(dict(cat_id=cat_id, content_cat_id=CONTENT_IDS.get(cat_id, cat_id),
                          name=row['name'], stamina=row['stamina'],
                          max_stamina=core.config.max_stamina, working=row['working'],
                          fatigue=row['fatigue'], stress=row['stress'] or 0,
-                         health_status=row['health_status'], activity=core.activity(cat_id)))
+                         health_status=row['health_status'], activity=core.activity(cat_id),
+                         health_label=health_text(row['health_status'], core.cats[cat_id].recovery_days_remaining),
+                         activity_label=ACTIVITY_LABELS[core.activity(cat_id)], growth_details=growth_description(core, cat_id)))
     seats = getattr(core, 'seats', {core.seat.id: core.seat})
     from .cafe_customers import customer_name
     customers = []
