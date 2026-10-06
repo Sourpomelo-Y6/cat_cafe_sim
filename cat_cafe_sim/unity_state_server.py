@@ -219,6 +219,23 @@ def growth_view(session):
     return result
 
 
+def new_game_options():
+    from .cafe_new_game import starting_conditions
+    from .core.cafe_objective import MODES
+    result=[]
+    for mode,label in MODES.items():
+        settings=starting_conditions(mode)
+        if mode=='popularity':
+            goal=settings['goal']; stages=[goal]+goal.get('stages',[])
+            detail=' → '.join(f"{row['days']}日以内に人気{row['target']:g}" for row in stages)
+        elif mode=='patron': detail=f"有力者の満足度を{settings['patron']['target']:g}まで高めます。"
+        elif mode=='bond': detail=f"猫{settings['bond']['target']}匹との好感度をそれぞれ{settings['bond']['affinity']:g}まで高めます。"
+        else: detail='期限のある人気目標を設定せず、自由に営業します。'
+        result.append(dict(choice=mode,label=label,detail=detail,
+                           conditions=f"初期猫：{len(settings['profiles']['cats'])}匹 / 席：{settings['seat_count']}席 / 資金：{settings['management']['starting_funds']:g}"))
+    return result
+
+
 def state_view(session, instance_id='', revision=0):
     core = session.core
     cats = []
@@ -248,7 +265,7 @@ def state_view(session, instance_id='', revision=0):
     except ValueError as ex:
         required_action = str(ex)
     from .core.cafe_finance import values
-    return dict(version=1, instance_id=instance_id, revision=revision,
+    return dict(version=1, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "",
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, required_action=required_action, intake_request=intake_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
@@ -333,8 +350,10 @@ def make_server(session, port=8190, saves_directory=None):
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
+                if command['kind'] == 'new_game' and command.get('choice') not in ('popularity', 'patron', 'bond', 'free'):
+                    raise ValueError('新規ゲームの目標を選んでください。')
                 if command['kind'] == 'resolve_intake' and command.get('choice') not in ('accept', 'decline'):
                     raise ValueError('迎えるか見送るかを選んでください。')
                 if command['kind'] == 'resolve_store_event' and command.get('choice') not in ('repair', 'patch', 'close', 'full', 'small', 'decline'):
@@ -367,7 +386,7 @@ def make_server(session, port=8190, saves_directory=None):
                 saved_id = ''
                 if command['kind'] == 'set_shifts':
                     candidate.set_shifts(command['working_cats'])
-                elif command['kind'] in ('save_game', 'load_game'):
+                elif command['kind'] in ('save_game', 'load_game', 'new_game'):
                     if command['working_cats']:
                         raise ValueError('保存・再開には出勤猫を指定しないでください。')
                     from .storage.cafe_saves import save_game, load_game
@@ -376,6 +395,11 @@ def make_server(session, port=8190, saves_directory=None):
                         candidate = load_game(save_path(command.get('save_id')) / 'cafe.json')[0]
                         candidate.store = MemoryRelationships(candidate.store._read())
                     else:
+                        if command['kind'] == 'new_game':
+                            from .cafe_new_game import create_game, starting_conditions
+                            with tempfile.TemporaryDirectory() as directory:
+                                candidate=create_game(directory, starting_conditions(command['choice']))
+                                candidate.store=MemoryRelationships(candidate.store._read())
                         saved_id = uuid.uuid4().hex
                         path = save_path(saved_id)
                         path.mkdir(parents=True, exist_ok=False)
