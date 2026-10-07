@@ -497,7 +497,9 @@ def state_view(session, instance_id='', revision=0):
     except ValueError as ex:
         required_action = str(ex)
     from .core.cafe_finance import values
-    return dict(version=1, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
+    ended = (core.management or {}).get('game_over')
+    game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
+    return dict(version=1, game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, required_action=required_action, intake_request=intake_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
