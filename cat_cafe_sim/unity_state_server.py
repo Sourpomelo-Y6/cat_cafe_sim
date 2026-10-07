@@ -109,6 +109,46 @@ def objective_progress_view(session, mode=None):
     return dict(mode=mode, label=label, status=status, summary=summary+suffix, details=details+suffix)
 
 
+def missing_rest_view(session):
+    core = session.core
+    if not any(e['status'] == 'missing' for e in (core.management or {}).get('events', {}).values()):
+        return None
+    reason = ''
+    after = core.funds
+    try:
+        session._ready()
+        candidate = copy.deepcopy(session)
+        candidate.day_off()
+        after = candidate.core.funds
+    except ValueError as ex:
+        reason = str(ex)
+    return dict(can_rest=not reason, reason=reason, cost=core.funds-after, funds_after=after)
+
+
+def missing_cats_view(session):
+    core = session.core
+    data = core.management
+    rows = []
+    for event in (data or {}).get('events', {}).values():
+        reason = ''
+        waiting = event['status'] == 'waiting'
+        if waiting:
+            try:
+                copy.deepcopy(session).resolve_missing(event['id'])
+            except ValueError as ex:
+                reason = str(ex)
+        revealed = event['status'] != 'missing'
+        cost = event['cost'] if event['status'] == 'resolved' else data['rules']['kitten_cost'] if revealed and event['kitten'] else 0
+        rows.append(dict(choice=event['id'], cat_id=event['cat_id'],
+                         name=session.profiles.get(event['cat_id'], {}).get('name', event['cat_id']),
+                         status=event['status'], departed_day=event['departed_day'], remaining=event['remaining'],
+                         resolved_day=event['resolved_day'] or 0, kitten=revealed and event['kitten'], cost=cost,
+                         funds_after=core.funds-cost if waiting else core.funds,
+                         return_stress=data['rules']['return_stress'], max_stamina=core.config.max_stamina,
+                         can_resolve=waiting and not reason, reason=reason))
+    return rows
+
+
 def patron_dispatch_view(session):
     from .core.cafe_patron import destinations
     from .core.cafe_activities import dispatch_reason, reward
@@ -432,7 +472,7 @@ def state_view(session, instance_id='', revision=0):
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
-                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session), patron_dispatch=patron_dispatch_view(session),
+                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session), patron_dispatch=patron_dispatch_view(session), missing_cats=missing_cats_view(session), missing_rest=missing_rest_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None)
 
@@ -511,9 +551,9 @@ def make_server(session, port=8190, saves_directory=None):
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'dispatch_patron', 'receive_patron', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
-                if command['kind'] in ('dispatch_patron', 'receive_patron') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
+                if command['kind'] in ('dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
                 if command['kind'] == 'new_game' and command.get('choice') not in ('popularity', 'patron', 'bond', 'free'):
                     raise ValueError('新規ゲームの目標を選んでください。')
@@ -611,6 +651,20 @@ def make_server(session, port=8190, saves_directory=None):
                     if command['working_cats']:
                         raise ValueError('行動選択には出勤猫を指定しないでください。')
                     candidate.resolve_growth_type_mastery(command['cat_id'], command['choice'])
+                elif command['kind'] == 'rest_for_missing':
+                    if command['working_cats']:
+                        raise ValueError('休業には出勤猫を指定しないでください。')
+                    available = missing_rest_view(candidate)
+                    if available is None or not available['can_rest']:
+                        raise ValueError(available['reason'] if available else '家出中の猫がいる準備中に選んでください。')
+                    candidate.day_off()
+                elif command['kind'] == 'resolve_missing':
+                    if command['working_cats']:
+                        raise ValueError('帰還確認には出勤猫を指定しないでください。')
+                    event = (candidate.core.management or {}).get('events', {}).get(command['choice'])
+                    if event is None or event['cat_id'] != command['cat_id'] or event['status'] != 'waiting':
+                        raise ValueError('家出した猫の帰還待ち記録を選んでください。')
+                    candidate.resolve_missing(event['id'])
                 elif command['kind'] in ('dispatch_patron', 'receive_patron'):
                     if command['working_cats']:
                         raise ValueError('派遣操作には出勤猫を指定しないでください。')
