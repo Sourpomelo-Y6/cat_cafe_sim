@@ -109,6 +109,23 @@ def objective_progress_view(session, mode=None):
     return dict(mode=mode, label=label, status=status, summary=summary+suffix, details=details+suffix)
 
 
+def next_goal_view(session):
+    from .core.cafe_goal import next_rules
+    core = session.core
+    data = core.goal
+    if not data or data['status'] != 'cleared' or next_rules(data) is None:
+        return None
+    selected = next_rules(data)
+    problem = ''
+    try:
+        copy.deepcopy(session).advance_goal()
+    except ValueError as ex:
+        problem = str(ex)
+    start = core.day + int(core.closed)
+    return dict(stage=len(data.get('history', []))+2, target=selected['target'], days=selected['days'],
+                started_day=start, deadline=start+selected['days']-1, can_advance=not problem, reason=problem)
+
+
 def goal_result_view(session):
     from .core.cafe_goal import pending, current_rules, current_start
     from .core.cafe_patron import pending as patron_pending
@@ -314,7 +331,7 @@ def state_view(session, instance_id='', revision=0):
     except ValueError as ex:
         required_action = str(ex)
     from .core.cafe_finance import values
-    return dict(version=1, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session),
+    return dict(version=1, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, required_action=required_action, intake_request=intake_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
@@ -399,7 +416,7 @@ def make_server(session, port=8190, saves_directory=None):
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] == 'new_game' and command.get('choice') not in ('popularity', 'patron', 'bond', 'free'):
                     raise ValueError('新規ゲームの目標を選んでください。')
@@ -486,7 +503,7 @@ def make_server(session, port=8190, saves_directory=None):
                     if command['working_cats']:
                         raise ValueError('行動選択には出勤猫を指定しないでください。')
                     candidate.resolve_growth_type_mastery(command['cat_id'], command['choice'])
-                elif command['kind'] in ('continue_goal', 'continue_patron', 'continue_bond_goal'):
+                elif command['kind'] in ('continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal'):
                     if command['working_cats']:
                         raise ValueError('継続営業には出勤猫の指定を付けないでください。')
                     getattr(candidate, command['kind'])()
