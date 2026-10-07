@@ -39,7 +39,7 @@ class UnityPlayerTests(unittest.TestCase):
                     code,result,command=post('player_step',cat_id=cat,choice='switch',target_type='voice');self.assertEqual(code,200,result)
                     self.assertEqual(session.core.snapshot(),reference.core.snapshot());self.assertEqual(post('player_step',command)[:2],(code,result))
                     before=session.core.snapshot();view=read()['player_interaction'];self.assertEqual(session.core.snapshot(),before)
-                    self.assertGreaterEqual(view['stamina_before'], view['stamina']);self.assertEqual(view['mode'],'声をかける');self.assertIn('切り替える',view['history'])
+                    self.assertGreaterEqual(view['stamina_before'], view['stamina']);self.assertEqual(view['mode'],'声をかける');self.assertEqual(view['scene_key'],'voice');self.assertEqual(view['content_cat_id'],'playtest-mugi');self.assertIn('切り替える',view['history'])
                     midway=post('save_game')[1]['save_id']
                     self.assertEqual(post('player_step',cat_id=cat,choice='direct')[0],200)
                     self.assertEqual(post('load_game',save_id=midway)[0],200);self.assertEqual(read()['player_interaction'],view)
@@ -62,7 +62,11 @@ class UnityPlayerTests(unittest.TestCase):
             for _ in range(3):
                 session.play_with_player('cat-mugi')
                 interaction=state_view(session)['player_interaction'];self.assertFalse(next(a for a in interaction['actions'] if a['choice']=='connect')['can_select'])
+                self.assertEqual(state_view(session)['player_interaction']['scene_key'], 'teaser')
+                session.player_command('pause')
+                self.assertEqual(state_view(session)['player_interaction']['scene_key'], 'pause')
                 session.player_command('switch','presence')
+                self.assertEqual(state_view(session)['player_interaction']['scene_key'], 'presence')
                 self.assertFalse(next(a for a in state_view(session)['player_interaction']['actions'] if a['choice']=='intense')['can_select'])
                 session.player_command(finish=True)
             rows=state_view(session)['cats'];self.assertTrue(all(not r['can_player_start'] for r in rows));self.assertIn('使い切りました',rows[0]['player_reason'])
