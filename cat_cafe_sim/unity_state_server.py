@@ -109,6 +109,37 @@ def objective_progress_view(session, mode=None):
     return dict(mode=mode, label=label, status=status, summary=summary+suffix, details=details+suffix)
 
 
+def adoption_view(session):
+    from .cafe_customers import customer_name
+    core = session.core
+    enabled = bool(core.adoption and core.adoption['enabled'])
+    problem = ''
+    try:
+        copy.deepcopy(session).configure_adoption(not enabled)
+    except ValueError as ex:
+        problem = str(ex)
+    events = []
+    for event in (core.adoption or {}).get('events', {}).values():
+        reasons = {}
+        for choice in ('accept', 'decline'):
+            reason = ''
+            if event['status'] == 'waiting':
+                try:
+                    copy.deepcopy(session).resolve_adoption(event['id'], choice)
+                except ValueError as ex:
+                    reason = str(ex)
+            reasons[choice] = reason
+        events.append(dict(event_id=event['id'], cat_id=event['cat_id'],
+                           name=session.profiles.get(event['cat_id'], {}).get('name', event['cat_id']),
+                           customer_id=event['customer_id'], customer_name=customer_name(event['customer_id']),
+                           day=event['day'], status=event['status'], choice=event['choice'] or '',
+                           guest_affinity=event['guest_affinity'], player_affinity=event['player_affinity'], threshold=event['threshold'],
+                           can_accept=event['status']=='waiting' and not reasons['accept'],
+                           can_decline=event['status']=='waiting' and not reasons['decline'],
+                           accept_reason=reasons['accept'], decline_reason=reasons['decline']))
+    return dict(enabled=enabled, can_configure=not problem, reason=problem, events=events)
+
+
 def missing_rest_view(session):
     core = session.core
     if not any(e['status'] == 'missing' for e in (core.management or {}).get('events', {}).values()):
@@ -472,7 +503,7 @@ def state_view(session, instance_id='', revision=0):
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
-                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session), patron_dispatch=patron_dispatch_view(session), missing_cats=missing_cats_view(session), missing_rest=missing_rest_view(session),
+                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session), patron_dispatch=patron_dispatch_view(session), missing_cats=missing_cats_view(session), missing_rest=missing_rest_view(session), adoption=adoption_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None)
 
@@ -546,15 +577,19 @@ def make_server(session, port=8190, saves_directory=None):
                 if not 0 < length <= 16384:
                     raise ValueError('操作データのサイズが不正です。')
                 command = json.loads(self.rfile.read(length).decode('utf-8'))
-                if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
+                if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type', 'event_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
+                if command['kind'] == 'configure_adoption' and command.get('choice') not in ('on', 'off'):
+                    raise ValueError('譲渡イベントのON/OFFを指定してください。')
+                if command['kind'] == 'resolve_adoption' and (command.get('choice') not in ('accept', 'decline') or not isinstance(command.get('event_id'), str) or not command['event_id'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
+                    raise ValueError('譲渡の猫・申し出・選択を指定してください。')
                 if command['kind'] == 'new_game' and command.get('choice') not in ('popularity', 'patron', 'bond', 'free'):
                     raise ValueError('新規ゲームの目標を選んでください。')
                 if command['kind'] == 'resolve_intake' and command.get('choice') not in ('accept', 'decline'):
@@ -651,6 +686,16 @@ def make_server(session, port=8190, saves_directory=None):
                     if command['working_cats']:
                         raise ValueError('行動選択には出勤猫を指定しないでください。')
                     candidate.resolve_growth_type_mastery(command['cat_id'], command['choice'])
+                elif command['kind'] in ('configure_adoption', 'resolve_adoption'):
+                    if command['working_cats']:
+                        raise ValueError('譲渡操作には出勤猫を指定しないでください。')
+                    if command['kind'] == 'configure_adoption':
+                        candidate.configure_adoption(command['choice'] == 'on')
+                    else:
+                        event = (candidate.core.adoption or {}).get('events', {}).get(command['event_id'])
+                        if event is None or event['cat_id'] != command['cat_id'] or event['status'] != 'waiting':
+                            raise ValueError('回答待ちの譲渡申し出を選んでください。')
+                        candidate.resolve_adoption(event['id'], command['choice'])
                 elif command['kind'] == 'rest_for_missing':
                     if command['working_cats']:
                         raise ValueError('休業には出勤猫を指定しないでください。')
