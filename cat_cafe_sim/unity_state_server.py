@@ -109,6 +109,46 @@ def objective_progress_view(session, mode=None):
     return dict(mode=mode, label=label, status=status, summary=summary+suffix, details=details+suffix)
 
 
+def player_interaction_view(session):
+    from .core.cafe_player import current, remaining
+    from .core.human_cat_relationship import verify_relationship
+    from .human_cat_gui import ACTION_NAMES, REACTION_NAMES, END_NAMES
+    interaction = current(session.core)
+    active = interaction is not None
+    log = (session.core.player_bond or {}).get('last')
+    if not active:
+        interaction = verify_relationship(log) if log else None
+    if interaction is None:
+        return None
+    problem = ''
+    if active:
+        try:
+            copy.deepcopy(session).player_command(finish=True)
+        except ValueError as ex:
+            problem = str(ex)
+    summary = interaction.summary()
+    valid = interaction.valid_actions() if active and not problem else ()
+    targets = [dict(choice=key, label=row.name) for key, row in interaction.type_map.items() if key != interaction.state['mode']]
+    history = []
+    for row in interaction.records:
+        action = ACTION_NAMES[row['action']]
+        if row['target_type']:
+            action += ' → ' + interaction.type_map[row['target_type']].name
+        after = row['after']
+        delta = sum(row['affinity_breakdown'].values())
+        history.append(f"{row['tick']+1}：{action} / {REACTION_NAMES[row['reaction']]}\n体力 {after['stamina']:g} / 好感度 {delta:+g}")
+    return dict(session_id=interaction.session_id, cat_id=interaction.cat_id,
+                name=session.profiles.get(interaction.cat_id, {}).get('name', interaction.cat_id),
+                active=active, remaining_ticks=interaction.state['remaining_ticks'], remaining_sets=remaining(session.core),
+                mode=interaction.type_map[interaction.state['mode']].name,
+                affinity_before=summary['affinity_before'], affinity_after=summary['affinity_after'],
+                affinity_delta=summary['affinity_delta'], stamina=summary['stamina'],
+                engagement=summary['engagement'], tension=summary['tension'], history='\n\n'.join(history),
+                can_finish=active and not problem, reason=problem if active else END_NAMES[interaction.state['end_reason']],
+                actions=[dict(choice=key, label=label, can_select=key in valid) for key, label in ACTION_NAMES.items()],
+                targets=targets)
+
+
 def next_goal_view(session):
     from .core.cafe_goal import next_rules
     core = session.core
@@ -308,15 +348,25 @@ def state_view(session, instance_id='', revision=0):
     from .core.cafe_growth import description as growth_description
     from .cafe_health_text import health_text
     from .core.cafe_activities import ACTIVITY_LABELS
+    from .core.cafe_player import state as player_state, remaining, unavailable_reason
+    bond = player_state(core)
+    begin_problem = ''
+    try:
+        session._ready()
+    except ValueError as ex:
+        begin_problem = str(ex)
     for row in session.cat_choices():
         cat_id = row['cat_id']
+        player_reason = begin_problem or unavailable_reason(core, cat_id)
         cats.append(dict(cat_id=cat_id, content_cat_id=CONTENT_IDS.get(cat_id, cat_id),
                          name=row['name'], stamina=row['stamina'],
                          max_stamina=core.config.max_stamina, working=row['working'],
                          fatigue=row['fatigue'], stress=row['stress'] or 0,
                          health_status=row['health_status'], activity=core.activity(cat_id),
                          health_label=health_text(row['health_status'], core.cats[cat_id].recovery_days_remaining),
-                         activity_label=ACTIVITY_LABELS[core.activity(cat_id)], growth_details=growth_description(core, cat_id)))
+                         activity_label=ACTIVITY_LABELS[core.activity(cat_id)], growth_details=growth_description(core, cat_id),
+                         affinity=bond['affinity'][cat_id], remaining_sets=remaining(core),
+                         can_player_start=not player_reason, player_reason=player_reason))
     seats = getattr(core, 'seats', {core.seat.id: core.seat})
     from .cafe_customers import customer_name
     customers = []
@@ -337,7 +387,7 @@ def state_view(session, instance_id='', revision=0):
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
-                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session),
+                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None)
 
@@ -411,12 +461,12 @@ def make_server(session, port=8190, saves_directory=None):
                 if not 0 < length <= 16384:
                     raise ValueError('操作データのサイズが不正です。')
                 command = json.loads(self.rfile.read(length).decode('utf-8'))
-                if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
+                if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] == 'new_game' and command.get('choice') not in ('popularity', 'patron', 'bond', 'free'):
                     raise ValueError('新規ゲームの目標を選んでください。')
@@ -432,6 +482,17 @@ def make_server(session, port=8190, saves_directory=None):
                     from .core.cafe_growth import TYPE_GROUPS
                     if command.get('choice') not in TYPE_GROUPS or not isinstance(command.get('cat_id'), str) or not command['cat_id']:
                         raise ValueError('熟練できる猫と得意な行動を指定してください。')
+                if command['kind'] in ('player_begin', 'player_step', 'player_finish'):
+                    if not isinstance(command.get('cat_id'), str) or not command['cat_id']:
+                        raise ValueError('交流する猫を指定してください。')
+                    if not isinstance(command.get('target_type', ''), str):
+                        raise ValueError('切り替え先を指定してください。')
+                    if command['kind'] == 'player_step':
+                        from .human_cat_gui import ACTION_NAMES
+                        if command.get('choice') not in ACTION_NAMES:
+                            raise ValueError('交流の行動を選んでください。')
+                        if command['choice'] != 'switch' and command.get('target_type'):
+                            raise ValueError('切り替え以外には種類を指定しないでください。')
                 if not isinstance(command['working_cats'], list) or any(not isinstance(key, str) for key in command['working_cats']):
                     raise ValueError('出勤猫の指定が不正です。')
             except (ValueError, UnicodeError) as ex:
@@ -503,6 +564,18 @@ def make_server(session, port=8190, saves_directory=None):
                     if command['working_cats']:
                         raise ValueError('行動選択には出勤猫を指定しないでください。')
                     candidate.resolve_growth_type_mastery(command['cat_id'], command['choice'])
+                elif command['kind'] in ('player_begin', 'player_step', 'player_finish'):
+                    if command['working_cats']:
+                        raise ValueError('猫との交流には出勤猫の指定を付けないでください。')
+                    if command['kind'] == 'player_begin':
+                        candidate.play_with_player(command['cat_id'])
+                    else:
+                        from .core.cafe_player import current
+                        interaction = current(candidate.core)
+                        if interaction is None or interaction.cat_id != command['cat_id']:
+                            raise ValueError('進行中の交流の猫を指定してください。')
+                        candidate.player_command(command.get('choice'), command.get('target_type') or None,
+                                                 finish=command['kind']=='player_finish')
                 elif command['kind'] in ('continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal'):
                     if command['working_cats']:
                         raise ValueError('継続営業には出勤猫の指定を付けないでください。')
