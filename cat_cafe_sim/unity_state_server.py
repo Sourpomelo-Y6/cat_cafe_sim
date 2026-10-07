@@ -258,7 +258,7 @@ def player_interaction_view(session):
                 active=active, remaining_ticks=interaction.state['remaining_ticks'], remaining_sets=remaining(session.core),
                 mode=interaction.type_map[interaction.state['mode']].name,
                 affinity_before=summary['affinity_before'], affinity_after=summary['affinity_after'],
-                affinity_delta=summary['affinity_delta'], stamina=summary['stamina'],
+                affinity_delta=summary['affinity_delta'], stamina_before=interaction.initial_stamina, stamina=summary['stamina'],
                 engagement=summary['engagement'], tension=summary['tension'], history='\n\n'.join(history),
                 can_finish=active and not problem, reason=problem if active else END_NAMES[interaction.state['end_reason']],
                 actions=[dict(choice=key, label=label, can_select=key in valid) for key, label in ACTION_NAMES.items()],

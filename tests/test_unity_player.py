@@ -39,7 +39,7 @@ class UnityPlayerTests(unittest.TestCase):
                     code,result,command=post('player_step',cat_id=cat,choice='switch',target_type='voice');self.assertEqual(code,200,result)
                     self.assertEqual(session.core.snapshot(),reference.core.snapshot());self.assertEqual(post('player_step',command)[:2],(code,result))
                     before=session.core.snapshot();view=read()['player_interaction'];self.assertEqual(session.core.snapshot(),before)
-                    self.assertEqual(view['mode'],'声をかける');self.assertIn('切り替える',view['history'])
+                    self.assertGreaterEqual(view['stamina_before'], view['stamina']);self.assertEqual(view['mode'],'声をかける');self.assertIn('切り替える',view['history'])
                     midway=post('save_game')[1]['save_id']
                     self.assertEqual(post('player_step',cat_id=cat,choice='direct')[0],200)
                     self.assertEqual(post('load_game',save_id=midway)[0],200);self.assertEqual(read()['player_interaction'],view)
@@ -47,7 +47,7 @@ class UnityPlayerTests(unittest.TestCase):
                     self.assertEqual(post('player_step',cat_id=cat,choice='direct')[0],200)
                     self.assertEqual(post('player_finish',cat_id=cat)[0],200)
                     final=read();player=final['player_interaction'];self.assertFalse(player['active']);self.assertFalse(player['can_finish'])
-                    self.assertGreater(player['affinity_after'],0);self.assertTrue(all(not r['can_select'] for r in player['actions']))
+                    self.assertEqual(player['stamina_before'],view['stamina_before']);self.assertGreater(player['affinity_after'],0);self.assertTrue(all(not r['can_select'] for r in player['actions']))
                     self.assertEqual(final['tick'],0);self.assertEqual(final['funds'],1000)
                     self.assertEqual(final['goal_result']['kind'],'continue_bond_goal');self.assertIn('1 / 1匹',final['objective_progress']['summary'])
                     saved=post('save_game')[1]['save_id'];self.assertEqual(post('continue_bond_goal')[0],200)
