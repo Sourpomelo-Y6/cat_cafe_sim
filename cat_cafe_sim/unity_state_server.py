@@ -259,6 +259,8 @@ def player_interaction_view(session):
                 mode=interaction.type_map[interaction.state['mode']].name,
                 scene_key=('pause' if interaction.records and interaction.records[-1]['action'] == 'pause'
                            else interaction.state['mode']),
+                image_key=(interaction.state['mode'] + '__' + interaction.records[-1]['action']
+                           if interaction.records else interaction.state['mode']),
                 content_cat_id=CONTENT_IDS.get(interaction.cat_id, interaction.cat_id),
                 affinity_before=summary['affinity_before'], affinity_after=summary['affinity_after'],
                 affinity_delta=summary['affinity_delta'], stamina_before=interaction.initial_stamina, stamina=summary['stamina'],

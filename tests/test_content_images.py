@@ -9,9 +9,10 @@ class ImageReaderTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             registry = ImageRegistry(directory)
             self.assertIsNone(registry.image_path('cat-1', 'normal'))
-            registry.path.write_text(json.dumps({'version': 1, 'cats': {'cat-1': {'normal': 'images/a.png'}}}), encoding='utf-8')
+            registry.path.write_text(json.dumps({'version': 1, 'cats': {'cat-1': {'normal': 'images/a.png', 'ball__feint': 'images/b.png', 'brush': 'images/c.png'}}}), encoding='utf-8')
             self.assertEqual(registry.image_path('cat-1', 'normal'), Path(directory).resolve() / 'images/a.png')
             self.assertIsNone(registry.image_path('cat-2', 'normal'))
+            self.assertEqual(registry.image_path('cat-1', 'ball__feint'), Path(directory).resolve() / 'images/b.png')
             self.assertFalse(hasattr(registry, 'register'))
 
     def test_invalid_and_external_paths(self):

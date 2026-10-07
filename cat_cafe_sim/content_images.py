@@ -3,7 +3,10 @@ import json
 from pathlib import Path
 
 DEFAULT_DIRECTORY = Path(__file__).resolve().parents[1] / 'saves' / 'content_images'
-SCENE_IDS = ('normal', 'play', 'pet', 'sleep')
+from .core.human_cat_types import TYPE_IDS, default_types
+SCENE_IDS = ('normal', 'play', 'pet', 'sleep', 'pause') + TYPE_IDS + tuple(
+    row.id + '__' + action for row in default_types()
+    for action in row.actions + ('pause', 'switch', 'connect'))
 
 
 class ImageRegistry:
