@@ -62,7 +62,9 @@ class UnityPlayerTests(unittest.TestCase):
             for _ in range(3):
                 session.play_with_player('cat-mugi')
                 interaction=state_view(session)['player_interaction'];self.assertFalse(next(a for a in interaction['actions'] if a['choice']=='connect')['can_select'])
-                self.assertEqual(state_view(session)['player_interaction']['scene_key'], 'teaser')
+                initial_view=state_view(session)['player_interaction']
+                self.assertEqual({row['choice'] for row in initial_view['targets']}, {'ball','plush','tunnel','pet','brush','voice','presence'})
+                self.assertEqual(initial_view['scene_key'], 'teaser')
                 session.player_command('pause')
                 self.assertEqual(state_view(session)['player_interaction']['scene_key'], 'pause')
                 session.player_command('switch','presence')
