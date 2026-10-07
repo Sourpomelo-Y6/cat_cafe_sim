@@ -245,6 +245,11 @@ def player_interaction_view(session):
     summary = interaction.summary()
     valid = interaction.valid_actions() if active and not problem else ()
     targets = [dict(choice=key, label=row.name) for key, row in interaction.type_map.items() if key != interaction.state['mode']]
+    last = interaction.records[-1] if interaction.records else {}
+    event_image_key = ('simultaneous' if last.get('open_up_source') and last.get('connect_source')
+                       else 'open_up' if last.get('open_up_source') else '')
+    if event_image_key:
+        event_image_key = interaction.state['mode'] + '__' + event_image_key
     history = []
     for row in interaction.records:
         action = ACTION_NAMES[row['action']]
@@ -261,6 +266,7 @@ def player_interaction_view(session):
                            else interaction.state['mode']),
                 image_key=(interaction.state['mode'] + '__' + interaction.records[-1]['action']
                            if interaction.records else interaction.state['mode']),
+                event_image_key=event_image_key,
                 content_cat_id=CONTENT_IDS.get(interaction.cat_id, interaction.cat_id),
                 affinity_before=summary['affinity_before'], affinity_after=summary['affinity_after'],
                 affinity_delta=summary['affinity_delta'], stamina_before=interaction.initial_stamina, stamina=summary['stamina'],

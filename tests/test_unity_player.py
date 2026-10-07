@@ -56,6 +56,24 @@ class UnityPlayerTests(unittest.TestCase):
                     self.assertEqual(originals,{p:p.read_bytes() for p in originals})
                 finally:server.shutdown();thread.join()
 
+    def test_special_reaction_images_from_replayed_logs(self):
+        from types import SimpleNamespace
+        from cat_cafe_sim.core.human_cat_relationship import RelationshipInteraction
+        from cat_cafe_sim.unity_state_server import player_interaction_view
+        for tension, engagement, action, expected in ((0,100,'direct','open_up'),(100,100,'connect','simultaneous'),(100,0,'connect',''),(0,0,'direct','')):
+            interaction = RelationshipInteraction(cat_id='cat-mugi', customer_id='player', session_id='special', tension=tension, engagement=engagement)
+            interaction.step(action)
+            interaction.finish()
+            log = interaction.log()
+            session = SimpleNamespace(core=SimpleNamespace(player_bond={'last':log,'today':{}}), profiles={'cat-mugi':{'name':'ムギ'}})
+            before = copy.deepcopy(log)
+            view = player_interaction_view(session)
+            self.assertEqual(view['event_image_key'], 'teaser__'+expected if expected else '')
+            self.assertEqual(view['image_key'], 'teaser__'+action)
+            self.assertEqual(log, before)
+            session.core.player_bond = json.loads(json.dumps(session.core.player_bond))
+            self.assertEqual(player_interaction_view(session)['event_image_key'], 'teaser__'+expected if expected else '')
+
     def test_valid_actions_limits_and_health_reasons(self):
         with tempfile.TemporaryDirectory() as directory:
             session=create_game(Path(directory)/'source',starting_conditions('free'))
