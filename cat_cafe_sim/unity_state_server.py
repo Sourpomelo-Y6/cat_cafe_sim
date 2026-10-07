@@ -655,6 +655,8 @@ def make_server(session, port=8190, saves_directory=None):
                         path = save_path(saved_id)
                         path.mkdir(parents=True, exist_ok=False)
                         info = dict(save_id=saved_id, created_at=datetime.now(timezone.utc).isoformat(),
+                                    objective_label=objective_progress_view(candidate)['label'],
+                                    phase='closed' if candidate.core.closed else 'preparation' if candidate.core.can_set_shifts else 'open',
                                     label=f'{candidate.core.day}日目 / 時刻 {candidate.core.tick} / 資金 {candidate.core.funds:g}'
                                     + (' / 閉店' if candidate.core.closed else ''))
                         RelationshipStore(path / 'info.json')._write(info)

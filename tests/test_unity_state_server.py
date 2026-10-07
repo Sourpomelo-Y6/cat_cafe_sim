@@ -328,7 +328,16 @@ class UnityStateTests(unittest.TestCase):
                     self.assertEqual(code,200,result)
                     self.assertEqual(post('save_game',command=command)[:2],(code,result))
                     self.assertEqual(len(read('/saves')['saves']),1)
+                    row=read('/saves')['saves'][0]
+                    self.assertEqual(row['phase'],'open')
+                    self.assertTrue(row['objective_label'])
+                    self.assertTrue(row['created_at'])
                     save_id=result['save_id']
+                    info_path=save_root/save_id/'info.json'
+                    info=json.loads(info_path.read_text(encoding='utf-8'))
+                    info.pop('objective_label'); info.pop('phase')
+                    info_path.write_text(json.dumps(info),encoding='utf-8')
+                    self.assertEqual(read('/saves')['saves'][0]['save_id'],save_id)
                     loaded,_=load_game(save_root/save_id/'cafe.json')
                     self.assertEqual(loaded.core.snapshot(),snapshot)
                     self.assertEqual(loaded.store._read(),relationships)
@@ -350,6 +359,7 @@ class UnityStateTests(unittest.TestCase):
                     while not session.core.closed: self.assertEqual(post('advance_business')[0],200)
                     closed=session.core.snapshot()
                     code,result,_=post('save_game'); self.assertEqual(code,200,result)
+                    self.assertEqual(read('/saves')['saves'][0]['phase'],'closed')
                     closed_id=result['save_id']
                     self.assertEqual(post('load_game',save_id)[0],200)
                     self.assertFalse(session.core.closed)
