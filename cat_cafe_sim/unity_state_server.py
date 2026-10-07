@@ -74,25 +74,74 @@ def housing_view(session):
                 can_expand=bool(kind) and not problem, reason=problem)
 
 
+def objective_progress_view(session, mode=None):
+    from .core.cafe_objective import MODES
+    from .core.cafe_goal import current_rules, current_start
+    from .core.cafe_bond_goal import qualifying
+    from .core.cafe_player import state as player_state
+    core = session.core
+    mode = mode or core.objective or ('popularity' if core.goal and not core.goal.get('tracking_only') else 'free')
+    label = MODES[mode]
+    data = {'popularity': core.goal, 'patron': core.patron, 'bond': core.bond_goal}.get(mode)
+    status = data['status'] if data else 'active'
+    suffix = '（達成・継続中）' if data and data['continued'] and status == 'cleared' else '（結果確認待ち）' if data and status != 'active' and not data['continued'] else ''
+    if mode == 'popularity' and data:
+        selected = current_rules(data)
+        deadline = current_start(data) + selected['days'] - 1
+        remaining = max(0, deadline - core.day + (0 if core.closed else 1))
+        summary = f"第{len(data.get('history', []))+1}段階　人気 {core.management['popularity']:g} / {selected['target']:g}　残り{remaining}日"
+        details = f"{summary}\n期限：{deadline}日目の閉店まで"
+        if status == 'expired':
+            details += '\n期限内未達・継続営業' if data['continued'] else '\n期限内未達'
+    elif mode == 'patron' and data:
+        rows = [f"{data['rules']['name']}：{data['satisfaction']:g} / {data['rules']['target']:g}"]
+        rows += [f"{r['name']}：{data['members'][r['id']]:g} / {r['target']:g}" for r in data['rules'].get('members', [])]
+        summary = '　'.join(row.split('：')[1] for row in rows)
+        details = '全員の満足度を目標まで高めます。\n' + '\n'.join(rows)
+    elif mode == 'bond' and data:
+        selected = data['rules']
+        summary = f"好感度{selected['affinity']:g}以上の在籍猫　{len(qualifying(core))} / {selected['target']}匹"
+        affinity = player_state(core)['affinity']
+        details = summary + '\n' + '\n'.join(f"{row['name']}：{affinity[row['cat_id']]:g} / {selected['affinity']:g}" for row in session.cat_choices() if core.activity(row['cat_id']) != 'adopted')
+    else:
+        summary = '期限なし・自由に営業'
+        details = '自由営業にはクリア条件や期限はありません。'
+    return dict(mode=mode, label=label, status=status, summary=summary+suffix, details=details+suffix)
+
+
 def goal_result_view(session):
     from .core.cafe_goal import pending, current_rules, current_start
-    if not pending(session.core):
-        return None
+    from .core.cafe_patron import pending as patron_pending
+    from .core.cafe_bond_goal import pending as bond_pending
     core = session.core
-    data = core.goal
-    selected = current_rules(data)
+    kind = next((kind for kind, waiting in (('continue_patron', patron_pending), ('continue_bond_goal', bond_pending), ('continue_goal', pending)) if waiting(core)), None)
+    if not kind:
+        return None
     problem = ''
-    # Use the exact continuation rules on a detached copy, without selecting
-    # anything in the live session or writing relationship data.
     try:
-        copy.deepcopy(session).continue_goal()
+        getattr(copy.deepcopy(session), kind)()
     except ValueError as ex:
         problem = str(ex)
-    return dict(status=data['status'], stage=len(data.get('history', []))+1,
-                started_day=current_start(data), deadline=current_start(data)+selected['days']-1,
-                resolved_day=data['resolved_day'], target=selected['target'],
-                popularity=core.management['popularity'], funds=core.funds,
-                can_continue=not problem, reason=problem)
+    mode = {'continue_patron': 'patron', 'continue_bond_goal': 'bond', 'continue_goal': 'popularity'}[kind]
+    data = {'popularity': core.goal, 'patron': core.patron, 'bond': core.bond_goal}[mode]
+    progress = objective_progress_view(session, mode)
+    title = '人気目標を達成しました' if mode == 'popularity' else '有力者の満足度目標を達成しました' if mode == 'patron' else '好感度目標を達成しました'
+    if data['status'] == 'expired':
+        title = '人気目標の期限を迎えました'
+    details = progress['details'] if progress['mode'] == mode else ''
+    details += f"\n結果：{'達成' if data['status'] == 'cleared' else '期限内未達'}\n結果確定：{data['resolved_day']}日目"
+    captured = (core.clear_results or {}).get(mode)
+    if captured:
+        details += f"\n\nクリア時の成果\n所持金：{captured['funds']:g}　人気：{captured['popularity']:g}\n在籍猫：{captured['cats']}匹　累計売上：{captured['revenue']:g}"
+    else:
+        details += f"\n所持金：{core.funds:g}"
+    details += '\n\n「継続営業」で結果を確認し、猫や資金を引き継いで遊べます。'
+    result = dict(kind=kind, title=title, details=details, status=data['status'], resolved_day=data['resolved_day'], funds=core.funds, can_continue=not problem, reason=problem)
+    if mode == 'popularity':
+        selected = current_rules(data)
+        result.update(stage=len(data.get('history', []))+1, started_day=current_start(data), deadline=current_start(data)+selected['days']-1, target=selected['target'], popularity=core.management['popularity'])
+    return result
+
 
 
 def store_event_view(session):
@@ -265,7 +314,7 @@ def state_view(session, instance_id='', revision=0):
     except ValueError as ex:
         required_action = str(ex)
     from .core.cafe_finance import values
-    return dict(version=1, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "",
+    return dict(version=1, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, required_action=required_action, intake_request=intake_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
@@ -350,7 +399,7 @@ def make_server(session, port=8190, saves_directory=None):
                 request_id = command['request_id']
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] == 'new_game' and command.get('choice') not in ('popularity', 'patron', 'bond', 'free'):
                     raise ValueError('新規ゲームの目標を選んでください。')
@@ -437,10 +486,10 @@ def make_server(session, port=8190, saves_directory=None):
                     if command['working_cats']:
                         raise ValueError('行動選択には出勤猫を指定しないでください。')
                     candidate.resolve_growth_type_mastery(command['cat_id'], command['choice'])
-                elif command['kind'] == 'continue_goal':
+                elif command['kind'] in ('continue_goal', 'continue_patron', 'continue_bond_goal'):
                     if command['working_cats']:
                         raise ValueError('継続営業には出勤猫の指定を付けないでください。')
-                    candidate.continue_goal()
+                    getattr(candidate, command['kind'])()
                 elif command['kind'] in ('purchase_housing', 'upgrade_housing'):
                     if command['working_cats']:
                         raise ValueError('飼育スペースの拡張には出勤猫の指定を付けないでください。')
