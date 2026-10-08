@@ -1,5 +1,5 @@
 """増設前に費用・残金・席数を確認する。"""
-from .core.cafe_expansion import rules, reason, next_step, purchases, first_popularity_cleared,second_popularity_cleared,final_popularity_cleared
+from .core.cafe_expansion import rules, reason, next_step, purchases, first_popularity_cleared,second_popularity_cleared
 
 
 class CafeExpansionWindow:
@@ -38,10 +38,9 @@ class CafeExpansionWindow:
         step = next_step(core, self.selected) if hasattr(core, 'seats') else None
         history = ' / '.join(f"{row['day']}日目：{row['seats']}席（{row['cost']:g}）" for row in purchases(core))
         if step:
-            unlocked=(step['to_seats']==3 or step['to_seats']==4 and first_popularity_cleared(core)
-                      or step['to_seats']==5 and second_popularity_cleared(core)
-                      or step['to_seats'] in (6,7,8) and final_popularity_cleared(core))
-            stage="最終段階" if step["to_seats"] in (6,7,8) else f"第{step['to_seats']-3}段階"
+            unlocked=(step['to_seats']==3 or step['to_seats'] in (4,5) and first_popularity_cleared(core)
+                      or step['to_seats'] in (6,7,8) and second_popularity_cleared(core))
+            stage="第2段階" if step["to_seats"] in (6,7,8) else "第1段階"
             unlock='' if unlocked else f"\n{step['to_seats']}席は人気目標の{stage}達成後に解放されます。"
             visitors = '\n購入翌日から通常のお客さんが営業日ごとに1人増えます。' if step['to_seats'] in (4,5,6,7,8) else '\n来客数はまだ変わりません。'
             from .core.cafe_operating_cost import estimate

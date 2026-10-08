@@ -88,10 +88,10 @@ def reason(core, selected):
         return '現在追加できる席はありません。'
     if step['to_seats'] == 4 and not first_popularity_cleared(core):
         return '3席への増設は購入済みです。4席への増設は人気目標の第1段階達成後に解放されます。'
-    if step['to_seats']==5 and not second_popularity_cleared(core):
-        return '4席への増設は購入済みです。5席への増設は人気目標の第2段階達成後に解放されます。'
-    if step['to_seats'] in (6,7,8) and not final_popularity_cleared(core):
-        return f"{step['to_seats']}席への増設は人気目標の最終段階達成後に解放されます。"
+    if step['to_seats']==5 and not first_popularity_cleared(core):
+        return '4席への増設は購入済みです。5席への増設は人気目標の第1段階達成後に解放されます。'
+    if step['to_seats'] in (6,7,8) and not second_popularity_cleared(core):
+        return f"{step['to_seats']}席への増設は人気目標の第2段階達成後に解放されます。"
     expected = {f'seat-{i}' for i in range(1, step['from_seats']+1)}
     if set(core.seats) != expected or len(purchases(core)) != step['from_seats']-2:
         return '現在の席数と増設履歴が一致しません。'
@@ -171,14 +171,15 @@ def validate(core, data, seat_count):
         previous_day = row['day']
     if len(rows) >= 2 and not first_popularity_cleared(core):
         raise ValueError('4席への増設条件を満たしていません。')
-    if len(rows)>=3 and (not first_popularity_cleared(core) or not second_popularity_cleared(core)):
+    if len(rows)>=3 and not first_popularity_cleared(core):
         raise ValueError('5席への増設条件を満たしていません。')
-    if len(rows)>=4 and (not final_popularity_cleared(core) or rows[3]['day']<=core.goal['resolved_day']):
-        raise ValueError('6席への増設条件を満たしていません。')
-    if len(rows)>=5 and rows[4]['day']<=core.goal['resolved_day']:
-        raise ValueError('7席への増設条件を満たしていません。')
-    if len(rows)==6 and rows[5]['day']<=core.goal['resolved_day']:
-        raise ValueError('8席への増設条件を満たしていません。')
+    if len(rows)>=4:
+        if not second_popularity_cleared(core):
+            raise ValueError('6席以降への増設条件を満たしていません。')
+        history = core.goal.get('history',[])
+        second = history[1] if len(history)>=2 else core.goal
+        if any(row['day']<=second['resolved_day'] for row in rows[3:]):
+            raise ValueError('6席以降の増設日は第2段階達成日の翌日以降です。')
     for result in core.day_results:
         day = result['day']
         summary = result['summary']

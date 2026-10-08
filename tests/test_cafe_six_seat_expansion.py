@@ -10,7 +10,7 @@ from cat_cafe_sim.cafe_customers import directory
 from cat_cafe_sim.cafe_new_game import create_game, starting_conditions
 from cat_cafe_sim.core.cafe_checkpoint import checkpoint, digest, restore
 from cat_cafe_sim.core.cafe_expansion import (SIXTH_CUSTOMER_ID, FIFTH_CUSTOMER_ID, EXTRA_CUSTOMER_ID,
-    extra_schedule, final_popularity_cleared, next_step, reason, rules, six_seat_purchase)
+    extra_schedule, final_popularity_cleared, second_popularity_cleared, next_step, reason, rules, six_seat_purchase)
 from cat_cafe_sim.core.cafe_interaction import verify_cafe_interaction
 from cat_cafe_sim.core.cafe_operating_cost import estimate
 from cat_cafe_sim.core.cafe_reservation import waiting
@@ -51,8 +51,7 @@ class SixSeatExpansionTests(unittest.TestCase):
     def unlocked(self):
         s=self.five_seats()
         self.assertFalse(final_popularity_cleared(s.core))
-        self.rejected(s,s.expand_seats)
-        self.assertIn('最終段階',reason(s.core,rules()))
+        self.assertTrue(second_popularity_cleared(s.core))  # 資金条件とは別に第2段階で解放済み。
         while not s.core.closed:s.automatic_step()
         self.assertEqual(s.core.goal['status'],'cleared')
         self.assertTrue(final_popularity_cleared(s.core))
@@ -179,7 +178,7 @@ class SixSeatExpansionTests(unittest.TestCase):
             lambda d:d['state']['expansion']['purchases'][3].update(day=3),
             lambda d:d['state']['expansion']['purchases'][3].update(cost=1400),
             lambda d:d.update(seat_count=5),lambda d:d['state']['seats'].pop('seat-6'),
-            lambda d:d['state']['goal'].update(status='active',resolved_day=None),
+            lambda d:d['state']['goal']['history'][1].update(status='expired'),
             lambda d:d['state']['goal']['history'].pop(),
         ):
             bad=copy.deepcopy(source); mutate(bad); bad['digest']=digest({k:v for k,v in bad.items() if k!='digest'})

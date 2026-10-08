@@ -6,7 +6,7 @@ from pathlib import Path
 from cat_cafe_sim.cafe_customers import directory
 from cat_cafe_sim.cafe_new_game import create_game,starting_conditions
 from cat_cafe_sim.core.cafe_checkpoint import checkpoint,digest,restore
-from cat_cafe_sim.core.cafe_expansion import FIFTH_CUSTOMER_ID,extra_schedule,five_seat_purchase,reason,rules
+from cat_cafe_sim.core.cafe_expansion import FIFTH_CUSTOMER_ID,extra_schedule,five_seat_purchase,reason,rules,second_popularity_cleared
 from cat_cafe_sim.core.cafe_interaction import verify_cafe_interaction
 from cat_cafe_sim.storage.cafe_saves import load_game,save_game
 
@@ -31,7 +31,6 @@ class FiveSeatExpansionTests(unittest.TestCase):
         s=self.session;s.expand_seats()
         while not s.core.closed:s.automatic_step()
         s.advance_goal();s.next_day();s.expand_seats()
-        self.rejected(s,s.expand_seats)
         while not s.core.closed:s.automatic_step()
         self.assertEqual(s.core.goal['status'],'cleared')
         self.rejected(s,s.expand_seats)
@@ -54,11 +53,11 @@ class FiveSeatExpansionTests(unittest.TestCase):
         while s.core.tick<=6:s.step()
         self.assertIn(FIFTH_CUSTOMER_ID,s.core.visits);self.reload(s)
 
-    def test_fifth_seat_is_available_immediately_and_sixth_requires_final_stage(self):
+    def test_fifth_seat_is_available_immediately_and_sixth_is_unlocked_after_second_stage(self):
         s=self.unlock_and_buy()
         self.assertIn('seat-5',s.free_seats);self.assertIsNotNone(five_seat_purchase(s.core))
-        self.rejected(s,s.expand_seats)
-        self.assertIn('最終段階',reason(s.core,rules()))
+        self.assertTrue(second_popularity_cleared(s.core))
+        self.assertNotIn('第2段階',reason(s.core,rules()))
         old=rules();old.pop('six_seat_cost');old.pop('seven_seat_cost'); old.pop('eight_seat_cost')
         self.assertIn('現在追加できる席はありません',reason(s.core,old))
 
@@ -69,7 +68,7 @@ class FiveSeatExpansionTests(unittest.TestCase):
             lambda d:d['state']['expansion']['purchases'][2].update(seats=6),
             lambda d:d['state']['expansion']['purchases'][2].update(day=0),
             lambda d:d.update(seat_count=4),lambda d:d['state']['seats'].pop('seat-5'),
-            lambda d:d['state']['goal']['history'].pop(),
+            lambda d:d['state']['goal']['history'][0].update(status='expired'),
         ):
             bad=copy.deepcopy(source);mutate(bad);bad['digest']=digest({k:v for k,v in bad.items() if k!='digest'})
             with self.assertRaises(ValueError):restore(bad)

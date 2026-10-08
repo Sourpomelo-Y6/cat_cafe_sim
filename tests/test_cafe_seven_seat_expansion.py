@@ -165,7 +165,7 @@ class SevenSeatExpansionTests(unittest.TestCase):
             lambda d:d['state']['expansion']['purchases'][4].update(cost=1900),
             lambda d:d['state']['expansion']['purchases'][3].update(day=3),
             lambda d:d.update(seat_count=6),lambda d:d['state']['seats'].pop('seat-7'),
-            lambda d:d['state']['goal'].update(status='active',resolved_day=None),
+            lambda d:d['state']['goal']['history'][1].update(status='expired'),
             lambda d:d['state']['goal']['history'].pop(),
         ):
             bad=copy.deepcopy(source); mutate(bad); bad['digest']=digest({k:v for k,v in bad.items() if k!='digest'})
