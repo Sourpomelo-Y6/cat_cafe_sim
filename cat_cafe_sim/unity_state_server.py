@@ -1058,6 +1058,43 @@ def new_game_options():
     return result
 
 
+def finance_history_view(session):
+    core = session.core
+    days = list(core.day_results)
+    if core.closed:
+        days.append(core.day_result())
+    labels = [('opening_funds','開始資金'),('total_income','総収入'),('total_expenses','総支出'),
+              ('net_cash_flow','純収支'),('closing_funds','終了資金'),('revenue','接客売上'),
+              ('interaction_bonus','売上のうちボーナス'),('dispatch_income','派遣収入'),('item_sales_income','用品売却収入'),
+              ('operating_cost','運営費'),('store_event_expenses','店舗イベント支出'),('item_expenses','用品購入費'),
+              ('dispatch_trouble_expenses','派遣捜索費'),('pet_shop_expenses','猫購入費'),('recruitment_expenses','受け入れ費用'),
+              ('kitten_expenses','子猫引き渡し費用'),('expansion_expenses','増席費用'),('waiting_area_expenses','待合費用'),
+              ('housing_expenses','飼育スペース費用'),('equipment_expenses','休養設備費用'),('seat_equipment_expenses','接客設備費用')]
+    def amount(summary, key):
+        value = summary.get(key)
+        return '記録なし' if value is None else f'{value:+g}' if key=='net_cash_flow' else f'{value:g}'
+    rows = []
+    for index, day in enumerate(days):
+        summary=day['summary'];previous=days[index-1] if index else None
+        if previous and previous['day'] != day['day']-1:previous=None
+        comparison=[]
+        for key,label in labels[:6]:
+            value=summary.get(key);old=previous['summary'].get(key) if previous else None
+            comparison.append(f'{label}：{value-old:+g}' if value is not None and old is not None else f'{label}：比較できる記録なし')
+        kind='休業日' if day.get('day_type')=='day_off' else '営業日'
+        text='\n'.join(f'{label}：{amount(summary,key)}' for key,label in labels)
+        rows.append(dict(day=day['day'],label=f"{day['day']}日目・{kind}",
+                         overview=f"資金 {amount(summary,'opening_funds')} → {amount(summary,'closing_funds')} / 純収支 {amount(summary,'net_cash_flow')}",
+                         details=text+'\n\n前日との差（当日−前日）\n'+'\n'.join(comparison)))
+    totals=[]
+    for key,label in labels[1:4]:
+        values=[day['summary'].get(key) for day in days]
+        totals.append(f"{label}：{sum(values):+g}" if values and all(v is not None for v in values) else f'{label}：集計できる記録なし')
+    return dict(rows=rows,totals='記録期間の収支\n'+' / '.join(totals),
+                notes='閉店した日の確定結果です。営業途中の日は含みません。ボーナスは接客売上に含まれ、収入へ二重加算しません。記録のない旧項目は補いません。'
+                + ('\n関係データへの保存が未完了です。営業画面で保存を再試行してください。' if session.pending else ''))
+
+
 def cat_records_view(session, cat_id):
     from .cafe_cat_details import cat_details
     from .cafe_customers import customer_name
@@ -1128,7 +1165,7 @@ def state_view(session, instance_id='', revision=0):
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '', equipment_id=seat.equipment or '', equipment_description=equipment_description(core,key), equipment_name=equipment_description(core,key).split('（')[0]) for key, seat in seats.items()],
                 customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session), patron_dispatch=patron_dispatch_view(session), general_dispatch=general_dispatch_view(session), dispatch_choices=dispatch_choices_view(session), dispatch_troubles=dispatch_troubles_view(session), missing_cats=missing_cats_view(session), missing_rest=missing_rest_view(session), adoption=adoption_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
-                revenue=summary['revenue'], finance=values(summary) if core.closed else None)
+                revenue=summary['revenue'], finance=values(summary) if core.closed else None, finance_history=finance_history_view(session))
 
 
 def make_server(session, port=8190, saves_directory=None):
