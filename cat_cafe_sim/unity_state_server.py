@@ -346,6 +346,49 @@ def adoption_view(session):
     return dict(enabled=enabled, can_configure=not problem, reason=problem, events=events)
 
 
+def waiting_area_view(session):
+    from .core.cafe_waiting_area import purchased, queue_capacity, max_wait_ticks, daily_cost, reason, upgrade_rules, upgrade_reason
+    from .core.cafe_operating_cost import estimate
+    core = session.core
+    if core.waiting_area is None:
+        return None
+    problem = ''
+    try:
+        session._ready()
+    except ValueError as exc:
+        problem = str(exc)
+    bought = purchased(core)
+    upgraded = core.waiting_area.get('upgrade')
+    status = '2段階目まで強化済み' if upgraded else '購入済み' if bought else '未購入'
+    capacity, wait, upkeep, operating = queue_capacity(core), max_wait_ticks(core), daily_cost(core), estimate(core)
+    actions = []
+    for kind,label,selected,blocked,record in (
+        ('purchase_waiting_area','購入（1段階目）',core.waiting_area['rules'],reason(core),bought),
+        ('upgrade_waiting_area','2段階目へ強化',upgrade_rules(),None,upgraded)):
+        blocked = problem or blocked or (upgrade_reason(core,selected) if kind=='upgrade_waiting_area' else '')
+        cost = record['cost'] if record and kind=='purchase_waiting_area' else record['rules']['cost'] if record else selected['cost']
+        next_upkeep = upkeep if record else selected['daily_cost']
+        actions.append(dict(kind=kind,label=label,completed=bool(record),can_execute=not blocked,reason=blocked,cost=cost,
+            funds_after=core.funds if record else core.funds-cost,capacity_before=capacity,capacity_after=capacity if record else core.config.queue_capacity+selected['queue_bonus'],
+            wait_before=wait,wait_after=wait if record else core.config.max_wait_ticks+selected['wait_bonus'],daily_before=upkeep,daily_after=next_upkeep,
+            operating_before=operating,operating_after=operating-upkeep+next_upkeep if core.operating_cost is not None else 0))
+    notes = '購入・強化した日の営業から待機上限と待機猶予に適用します。\n当日から日次運営費が増え、休業日にも発生します。各操作は1回限りです。\n支払い後に資金が残る必要があります。席数や飼育枠は増えません。'
+    lines = [f'待合スペース：{status} / 所持金：{core.funds:g}',f'現在：待機上限 {capacity}人 / 待機猶予 {wait}刻\n待合の維持費 {upkeep:g} / 日次運営費合計 {operating:g}',notes,
+        '解放条件\n購入：人気第1段階達成後\n2段階目：購入済み・人気第2段階達成後\n営業準備中に操作できます。']
+    for row in actions:
+        lines.append(f"{row['label']}：実施済み / 支払額 {row['cost']:g}" if row['completed'] else
+            f"{row['label']}：費用 {row['cost']:g} / 資金 {core.funds:g} → {row['funds_after']:g}\n待機上限 {capacity} → {row['capacity_after']}人 / 待機猶予 {wait} → {row['wait_after']}刻\n待合の維持費 {upkeep:g} → {row['daily_after']:g} / 日次運営費合計 {operating:g} → {row['operating_after']:g}\n{row['reason'] or '実行できます。'}")
+    history = []
+    if bought:
+        selected = core.waiting_area['rules']
+        history.append(f"{bought['day']}日目：購入 / 支払額 {bought['cost']:g} / 待機上限＋{selected['queue_bonus']}人・猶予＋{selected['wait_bonus']}刻・維持費 {selected['daily_cost']:g}")
+    if upgraded:
+        selected = upgraded['rules']
+        history.append(f"{upgraded['day']}日目：2段階目へ強化 / 支払額 {selected['cost']:g} / 待機上限＋{selected['queue_bonus']}人・猶予＋{selected['wait_bonus']}刻・維持費 {selected['daily_cost']:g}")
+    lines.append('購入・強化履歴\n'+('\n'.join(history) or 'まだ記録はありません。'))
+    return dict(status=status,capacity=capacity,max_wait_ticks=wait,daily_cost=upkeep,operating_cost=operating,actions=actions,details='\n\n'.join(lines),notes=notes)
+
+
 def rest_space_view(session):
     from .core.cafe_equipment import rules, reason, upgrade_rules, upgrade_reason, recovery_bonus, soundproof_rules, soundproof_reason
     core = session.core
@@ -995,7 +1038,7 @@ def state_view(session, instance_id='', revision=0):
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
     return dict(version=1, game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
-                closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
+                closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), waiting_area=waiting_area_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '', equipment_id=seat.equipment or '', equipment_description=equipment_description(core,key), equipment_name=equipment_description(core,key).split('（')[0]) for key, seat in seats.items()],
@@ -1094,7 +1137,7 @@ def make_server(session, port=8190, saves_directory=None):
                     raise ValueError('常連紹介の猫と迎える／見送るを指定してください。')
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
@@ -1212,6 +1255,10 @@ def make_server(session, port=8190, saves_directory=None):
                         if event is None or event['cat_id'] != command['cat_id'] or event['status'] != 'waiting':
                             raise ValueError('回答待ちの譲渡申し出を選んでください。')
                         candidate.resolve_adoption(event['id'], command['choice'])
+                elif command['kind'] in ('purchase_waiting_area','upgrade_waiting_area'):
+                    if command['working_cats'] or command.get('cat_id') or command.get('choice') or command.get('event_id') or command.get('target_type'):
+                        raise ValueError('待合の購入・強化には猫や選択肢を指定しないでください。')
+                    getattr(candidate,command['kind'])()
                 elif command['kind'] in ('purchase_rest_space','upgrade_rest_space','soundproof_rest_space'):
                     if command['working_cats'] or command.get('cat_id') or command.get('choice') or command.get('event_id') or command.get('target_type'):
                         raise ValueError('休養設備には猫や選択肢を指定しないでください。')

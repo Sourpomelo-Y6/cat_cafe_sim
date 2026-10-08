@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 def rules(data=None):
-    if data is None:data=json.loads((Path(__file__).resolve().parents[2]/'config/cafe_waiting_area.json').read_text())
+    if data is None:data=json.loads((Path(__file__).resolve().parents[2]/'config/cafe_waiting_area.json').read_text(encoding='utf-8'))
     if not isinstance(data,dict) or set(data)!={'cost','queue_bonus','wait_bonus','daily_cost'}:
         raise ValueError('待合スペースの設定が不正です。')
     if (type(data['queue_bonus']) is not int or data['queue_bonus']<1 or type(data['wait_bonus']) is not int or data['wait_bonus']<1
@@ -30,7 +30,7 @@ def purchased(core):
 
 def upgrade_rules(data=None):
     if data is None:
-        data=json.loads((Path(__file__).resolve().parents[2]/'config/cafe_waiting_area_upgrade.json').read_text())
+        data=json.loads((Path(__file__).resolve().parents[2]/'config/cafe_waiting_area_upgrade.json').read_text(encoding='utf-8'))
     return rules(data)
 
 
