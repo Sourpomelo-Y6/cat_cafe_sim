@@ -26,7 +26,7 @@ def definition(data):
 
 
 def catalog():
-    data = json.loads((Path(__file__).resolve().parents[2]/'config/cafe_seat_equipment.json').read_text())
+    data = json.loads((Path(__file__).resolve().parents[2]/'config/cafe_seat_equipment.json').read_text(encoding='utf-8'))
     rows = [definition(row) for row in data]
     if len(rows) != 5 or {r['id'] for r in rows} != {'toys','cushion', *GROUP_EQUIPMENT}:
         raise ValueError('接客設備は従来の2種類と分類別の3種類を設定してください。')

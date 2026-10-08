@@ -346,6 +346,25 @@ def adoption_view(session):
     return dict(enabled=enabled, can_configure=not problem, reason=problem, events=events)
 
 
+def seat_equipment_view(session):
+    from .core.cafe_seat_equipment import catalog, owned, seats, reason, effect_text, description
+    core = session.core
+    problem = ''
+    try:
+        session._ready()
+    except ValueError as exc:
+        problem = str(exc)
+    problem = problem or reason(core)
+    layout = [dict(seat_id=key, item_id=seat.equipment or '', description=description(core,key)) for key,seat in seats(core).items()]
+    purchases = []
+    for row in owned(core):
+        installed = next((key for key,seat in seats(core).items() if seat.equipment==row['id']), '')
+        purchases.append(dict(item_id=row['id'], name=row['rules']['name'], day=row['day'], cost=row['rules']['cost'], effect=effect_text(row['rules']), seat_id=installed))
+    options = [dict(kind_id=row['id'], name=row['name'], cost=row['cost'], funds_after=core.funds-row['cost'], effect=effect_text(row), can_purchase=not problem and core.funds>row['cost']) for row in catalog()]
+    return dict(can_manage=not problem, reason=problem, seats=layout, catalog=options, owned=purchases,
+                details='1席に設備1つ。移動・交換・取り外しは無料です。取り外した設備は保管します。\n購入すると選択席に設置し、元の設備は保管します。購入後に資金が残る必要があります。\n特別行動のテンション上昇・減少量・体力消費は変更しません。')
+
+
 def expansion_view(session):
     from .core.cafe_expansion import rules, next_step, reason, purchases
     from .core.cafe_operating_cost import estimate
@@ -914,6 +933,7 @@ def state_view(session, instance_id='', revision=0):
                          can_player_start=not player_reason, player_reason=player_reason))
     seats = getattr(core, 'seats', {core.seat.id: core.seat})
     from .cafe_customers import customer_name
+    from .core.cafe_seat_equipment import description as equipment_description
     customers = []
     for visit in core.visits.values():
         seat_id = next((key for key, seat in seats.items() if seat.customer_id == visit.id), '')
@@ -930,10 +950,10 @@ def state_view(session, instance_id='', revision=0):
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
     return dict(version=1, game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
-                closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
+                closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
-                            customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
+                            customer_name=customer_name(seat.customer_id) if seat.customer_id else '', equipment_id=seat.equipment or '', equipment_description=equipment_description(core,key), equipment_name=equipment_description(core,key).split('（')[0]) for key, seat in seats.items()],
                 customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session), patron_dispatch=patron_dispatch_view(session), general_dispatch=general_dispatch_view(session), dispatch_choices=dispatch_choices_view(session), dispatch_troubles=dispatch_troubles_view(session), missing_cats=missing_cats_view(session), missing_rest=missing_rest_view(session), adoption=adoption_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None)
@@ -1029,7 +1049,7 @@ def make_server(session, port=8190, saves_directory=None):
                     raise ValueError('常連紹介の猫と迎える／見送るを指定してください。')
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
@@ -1147,6 +1167,19 @@ def make_server(session, port=8190, saves_directory=None):
                         if event is None or event['cat_id'] != command['cat_id'] or event['status'] != 'waiting':
                             raise ValueError('回答待ちの譲渡申し出を選んでください。')
                         candidate.resolve_adoption(event['id'], command['choice'])
+                elif command['kind'] in ('purchase_seat_equipment','equip_seat'):
+                    from .core.cafe_seat_equipment import catalog, seats as equipment_seats
+                    seat_id = command.get('target_type')
+                    choice = command.get('choice')
+                    if command['working_cats'] or command.get('cat_id') or command.get('event_id') or not isinstance(seat_id,str) or seat_id not in equipment_seats(candidate.core) or not isinstance(choice,str):
+                        raise ValueError('設備と設置先の席を指定してください。')
+                    if command['kind'] == 'purchase_seat_equipment':
+                        selected = next((row for row in catalog() if row['id']==choice),None)
+                        if selected is None:
+                            raise ValueError('購入する接客設備を選んでください。')
+                        candidate.purchase_seat_equipment(seat_id,selected)
+                    else:
+                        candidate.equip_seat(seat_id,choice or None)
                 elif command['kind'] == 'expand_seats':
                     if command['working_cats'] or command.get('cat_id') or command.get('choice') or command.get('event_id'):
                         raise ValueError('席の増設には猫や選択肢を指定しないでください。')
