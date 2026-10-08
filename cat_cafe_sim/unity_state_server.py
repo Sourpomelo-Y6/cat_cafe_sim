@@ -48,6 +48,50 @@ def intake_view(session):
                 can_accept=pending(core) and not accept_reason)
 
 
+def customer_trust_view(session):
+    from .cafe_customers import customer_name
+    data = session.core.customer_trust
+    if data is None:
+        return None
+    rows = []
+    for event in data['events'].values():
+        reason = ''
+        if event['status'] == 'waiting':
+            try:
+                copy.deepcopy(session).resolve_customer_trust(event['id'], 'recover')
+            except ValueError as ex:
+                reason = str(ex)
+        rows.append(dict(event_id=event['id'], customer_id=event['customer_id'], name=customer_name(event['customer_id']),
+                         day=event['day'], suspensions=event['suspensions'], status=event['status'], outcome=event['outcome'] or '',
+                         choice=event['choice'] or '', resolved_day=event['resolved_day'] or 0,
+                         reason=reason, can_respond=event['status'] == 'waiting' and not reason))
+    return dict(popularity_loss=data['rules']['popularity_loss'], events=rows)
+
+
+def reservation_view(session):
+    from .core.cafe_reservation import CUSTOMER_ID
+    from .cafe_customers import customer_name, customer_description
+    data = session.core.reservation
+    if data is None:
+        return None
+    row = data['request']
+    rules = data['rules']
+    reason = ''
+    if row and row['status'] == 'waiting':
+        try:
+            copy.deepcopy(session).resolve_reservation('decline')
+        except ValueError as ex:
+            reason = str(ex)
+    can_respond = bool(row and row['status'] == 'waiting' and not reason)
+    return dict(event_id=row['id'] if row else '', status=row['status'] if row else 'untriggered',
+                customer_id=CUSTOMER_ID, name=customer_name(CUSTOMER_ID), description=customer_description(CUSTOMER_ID),
+                offered_day=row['offered_day'] if row else 0, visit_day=row['visit_day'] if row else 0,
+                resolved_day=(row['resolved_day'] or 0) if row else 0, result=(row['result'] or '') if row else '',
+                open_up_count=rules['open_up_count'], arrival_tick=rules['arrival_tick'],
+                bonus=rules['bonus'], popularity_bonus=rules['popularity_bonus'],
+                reason=reason, can_accept=can_respond, can_decline=can_respond)
+
+
 def regular_introduction_view(session):
     from .core.cafe_regular_introduction import response_reason, admission_reason
     from .core.cafe_housing import status as housing_status
@@ -587,7 +631,7 @@ def state_view(session, instance_id='', revision=0):
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
     return dict(version=1, game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
-                closed=core.closed, required_action=required_action, intake_request=intake_view(session), regular_introduction=regular_introduction_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
+                closed=core.closed, required_action=required_action, intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
@@ -668,11 +712,15 @@ def make_server(session, port=8190, saves_directory=None):
                 if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type', 'event_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
+                if command.get('kind') == 'resolve_customer_trust' and (command.get('choice') not in ('recover', 'ignore') or not isinstance(command.get('event_id'), str) or not command['event_id']):
+                    raise ValueError('信頼回復のイベントと対応方針を指定してください。')
+                if command.get('kind') == 'resolve_reservation' and (command.get('choice') not in ('accept', 'decline') or not isinstance(command.get('event_id'), str) or not command['event_id']):
+                    raise ValueError('予約の依頼と引き受ける／辞退するを指定してください。')
                 if command.get('kind') == 'resolve_regular_introduction' and (command.get('choice') not in ('accept', 'decline') or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('常連紹介の猫と迎える／見送るを指定してください。')
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
@@ -842,6 +890,16 @@ def make_server(session, port=8190, saves_directory=None):
                         candidate.purchase_housing()
                     else:
                         candidate.upgrade_housing()
+                elif command['kind'] == 'resolve_customer_trust':
+                    event = (candidate.core.customer_trust or {}).get('events', {}).get(command['event_id'])
+                    if command['working_cats'] or not event or event['status'] != 'waiting':
+                        raise ValueError('回答待ちの信頼回復イベントを選んでください。')
+                    candidate.resolve_customer_trust(event['id'], command['choice'])
+                elif command['kind'] == 'resolve_reservation':
+                    row = (candidate.core.reservation or {}).get('request')
+                    if command['working_cats'] or not row or row['id'] != command['event_id'] or row['status'] != 'waiting':
+                        raise ValueError('回答待ちの予約を選んでください。')
+                    candidate.resolve_reservation(command['choice'])
                 elif command['kind'] == 'resolve_regular_introduction':
                     data = candidate.core.regular_introduction
                     if command['working_cats'] or not data or data['rules']['cat_id'] != command['cat_id'] or data['status'] != 'waiting':
