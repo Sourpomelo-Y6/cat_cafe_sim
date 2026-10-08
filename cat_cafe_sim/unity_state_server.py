@@ -1234,7 +1234,35 @@ def cat_records_view(session, cat_id):
                 history='閉店済みの日次実績です。個々の行動履歴ではありません。体力消耗は回復を差し引いた値です。\n\n'+history)
 
 
-def state_view(session, instance_id='', revision=0):
+def service_assignment_view(session, auto_assign=True):
+    from .cafe_customers import customer_name
+    from .core.cafe_activities import ACTIVITY_LABELS
+    from .cafe_health_text import health_text
+    from .core.cafe_waiting_area import max_wait_ticks
+    core=session.core;problem=''
+    try:session._ready()
+    except (ValueError,OSError) as ex:problem=str(ex)
+    problem=problem or ('本日の営業は終了しています。' if core.closed else '先に営業を開始してください。' if core.can_set_shifts else '')
+    active={item.cat_id for item in session.active_interactions.values()}
+    available={cat.id for cat in session.available_cats()};cats=[]
+    for row in session.cat_choices():
+        key=row['cat_id'];cat=core.cats[key]
+        reason=('別の席で接客中です。' if key in active else '在店していません。' if core.activity(key)!='cafe' else '出勤していません。' if not row['working'] else '健康な猫が対象です。' if cat.health_status!='healthy' else '接客を続けられる体力・状態が必要です。' if key not in available else '')
+        cats.append(dict(cat_id=key,name=row['name'],available=key in available,reason=reason,details=f"{row['name']} / {ACTIVITY_LABELS[core.activity(key)]} / {'出勤' if row['working'] else '休養'}\n健康：{health_text(cat.health_status,cat.recovery_days_remaining)} / 体力：{cat.stamina:g}/{core.config.max_stamina:g} / 疲労：{cat.fatigue:g}"))
+    customers=[]
+    for key in core.queue:
+        customers.append(dict(customer_id=key,name=customer_name(key),details=f"待機：{core.tick-core.visits[key].arrival_tick}刻 / 待機猶予の残り：{max(0,max_wait_ticks(core)-(core.tick-core.visits[key].arrival_tick))}刻",matches=[dict(cat_id=r['cat_id'],details=r['compatibility']['text']+f"\n親しみ：{r['affinity']:g}") for r in session.cat_choices(key)]))
+    seats=[]
+    from .core.cafe_seat_equipment import description as equipment_description
+    for number,(key,seat) in enumerate(getattr(core,'seats',{core.seat.id:core.seat}).items(),1):
+        free=key in session.free_seats
+        detail=(f"接客中：{customer_name(seat.customer_id)} / {session.profiles.get(seat.cat_id,{}).get('name',seat.cat_id or '')}" if seat.customer_id else '空席' if free else '使用できない席')+'\n'+equipment_description(core,key)
+        seats.append(dict(seat_id=key,label=f'席 {number}',available=free,reason='' if free else '接客中または使用できない席です。',details=detail))
+    waiting=bool(not auto_assign and not problem and customers and available and session.free_seats)
+    return dict(auto_assign=auto_assign,waiting=waiting,can_assign=not auto_assign and not problem,reason=('自動割り当てをOFFにしてから、客・猫・空席を選んでください。' if auto_assign and not problem else problem),cats=cats,customers=customers,seats=seats,notes='手動では担当待ちで時間を止めます。開始だけでは営業時計・資金・体力は進みません。接客を開始後、営業を進める操作で交流を進めます。自動割り当ては空席にのみ配置し、手動の担当を変更しません。')
+
+
+def state_view(session, instance_id='', revision=0, auto_assign=True):
     core = session.core
     cats = []
     from .core.cafe_growth import description as growth_description
@@ -1277,7 +1305,7 @@ def state_view(session, instance_id='', revision=0):
     ended = (core.management or {}).get('game_over')
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
     general=general_dispatch_view(session);patron=patron_dispatch_view(session)
-    return dict(version=1, dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
+    return dict(version=1, service_assignment=service_assignment_view(session,auto_assign), dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), waiting_area=waiting_area_view(session), customer_directory=customer_directory_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
@@ -1288,10 +1316,11 @@ def state_view(session, instance_id='', revision=0):
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None, finance_history=finance_history_view(session), pet_shop=pet_shop_view(session), objective_start=objective_start_view(session))
 
 
-def make_server(session, port=8190, saves_directory=None):
+def make_server(session, port=8190, saves_directory=None, *, auto_assign=True):
     # Normal automatic service persists relationship receipts. Keep these in memory
     # between snapshot exports; never modify the loaded game's files.
     from .storage.cafe_saves import MemoryRelationships
+    if type(auto_assign) is not bool:raise ValueError('自動割り当て設定が不正です。')
     session.store = MemoryRelationships(session.store._read())
     instance_id = uuid.uuid4().hex
     revision = 0
@@ -1335,7 +1364,7 @@ def make_server(session, port=8190, saves_directory=None):
         details+=f"\n経営目標：{objective['label']}\n{objective['summary']}\n経営ルール："+('導入済み' if core.management else '未導入')
         details+=' / 病気ルール：'+('有効' if core.health_rules else '未導入')
         details+='\n\n現在の未保存の進捗は置き換わります。元のセーブと関係データは変更しません。再開後はUnity用の別セーブへ保存できます。'
-        details+='\n元の自動割り当て設定：'+('有効' if auto_assign else '無効')+'。Unityでは自動進行は停止した状態で再開し、営業操作は既存の自動割り当てを使います。'
+        details+='\n元の自動割り当て設定：'+('有効' if auto_assign else '無効')+'。Unityでは自動進行を停止し、保存された自動割り当て設定を復元して再開します。'
         return dict(save_id=token,source_path=str(source),details=details,instance_id=instance_id,revision=revision)
 
     def save_path(save_id):
@@ -1384,7 +1413,7 @@ def make_server(session, port=8190, saves_directory=None):
             elif self.path == '/health':
                 data, code = dict(version=1, service='cat-cafe-state', read_only=False), 200
             elif self.path == '/state':
-                data, code = state_view(session, instance_id, revision), 200
+                data, code = state_view(session, instance_id, revision, auto_assign), 200
             elif self.path == '/saves':
                 data, code = dict(saves=saved_games()), 200
             else:
@@ -1392,7 +1421,7 @@ def make_server(session, port=8190, saves_directory=None):
             self.reply(data, code)
 
         def do_POST(self):
-            nonlocal revision
+            nonlocal revision, auto_assign
             if self.path != '/commands':
                 self.reply(dict(error='not_found'), 404)
                 return
@@ -1403,9 +1432,13 @@ def make_server(session, port=8190, saves_directory=None):
                 if not 0 < length <= 16384:
                     raise ValueError('操作データのサイズが不正です。')
                 command = json.loads(self.rfile.read(length).decode('utf-8'))
-                if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type', 'event_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
+                if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type', 'event_id', 'customer_id', 'seat_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
+                if command.get('kind')=='set_auto_assignment' and command.get('choice') not in ('automatic','manual'):
+                    raise ValueError('自動割り当てのON/OFFを選んでください。')
+                if command.get('kind')=='assign_service' and any(not isinstance(command.get(k),str) or not command[k] for k in ('customer_id','cat_id','seat_id')):
+                    raise ValueError('待機中の客・担当猫・空席を指定してください。')
                 if command.get('kind')=='start_objective' and command.get('choice') not in ('popularity','bond','patron','management'):
                     raise ValueError('開始する経営目標を選んでください。')
                 if command.get('kind') == 'purchase_cat' and (not isinstance(command.get('cat_id'),str) or not command['cat_id']):
@@ -1428,7 +1461,7 @@ def make_server(session, port=8190, saves_directory=None):
                     raise ValueError('常連紹介の猫と迎える／見送るを指定してください。')
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'purchase_cat', 'start_objective', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'load_python_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('assign_service', 'set_auto_assignment', 'set_shifts', 'start_business', 'advance_business', 'next_day', 'purchase_cat', 'start_objective', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'load_python_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
@@ -1480,8 +1513,18 @@ def make_server(session, port=8190, saves_directory=None):
                 return
             try:
                 candidate = copy.deepcopy(session)
+                candidate_assignment=auto_assign
                 saved_id = ''
-                if command['kind'] == 'set_shifts':
+                if command['kind']=='set_auto_assignment':
+                    if command['working_cats']:raise ValueError('自動割り当て設定には出勤猫を指定しないでください。')
+                    candidate.core.require_running()
+                    candidate_assignment=command['choice']=='automatic'
+                elif command['kind']=='assign_service':
+                    if command['working_cats']:raise ValueError('接客配置には出勤猫の変更を付けないでください。')
+                    if candidate_assignment:raise ValueError('先に自動割り当てをOFFにしてください。')
+                    if candidate.core.can_set_shifts:raise ValueError('先に営業を開始してください。')
+                    candidate.start(command['customer_id'],command['cat_id'],command['seat_id'])
+                elif command['kind'] == 'set_shifts':
                     candidate.set_shifts(command['working_cats'])
                 elif command['kind'] in ('save_game', 'load_game', 'load_python_game', 'new_game'):
                     if command['working_cats']:
@@ -1491,13 +1534,14 @@ def make_server(session, port=8190, saves_directory=None):
                     if command['kind']=='load_python_game':
                         entry=python_previews.get(command.get('save_id')) if isinstance(command.get('save_id'),str) else None
                         if entry is None:raise ValueError('先にPython版セーブの内容を確認してください。')
-                        candidate, signature, _, _=python_save(entry[0])
+                        candidate, signature, _, candidate_assignment=python_save(entry[0])
                         if signature!=entry[1]:raise ValueError('確認後に元のセーブまたは関係データが変更されました。再確認してください。')
                     elif command['kind'] == 'load_game':
-                        candidate = load_game(save_path(command.get('save_id')) / 'cafe.json')[0]
+                        candidate, candidate_assignment = load_game(save_path(command.get('save_id')) / 'cafe.json')
                         candidate.store = MemoryRelationships(candidate.store._read())
                     else:
                         if command['kind'] == 'new_game':
+                            candidate_assignment=True
                             from .cafe_new_game import create_game, starting_conditions
                             with tempfile.TemporaryDirectory() as directory:
                                 candidate=create_game(directory, starting_conditions(command['choice']))
@@ -1514,7 +1558,7 @@ def make_server(session, port=8190, saves_directory=None):
                         data_store = candidate.store._read()
                         candidate.store = RelationshipStore(path / 'relationships.json')
                         candidate.store._write(data_store)
-                        save_game(candidate, path / 'cafe.json', auto_assign=True)
+                        save_game(candidate, path / 'cafe.json', auto_assign=candidate_assignment)
                         candidate.store = MemoryRelationships(candidate.store._read())
                 elif command['kind'] == 'resolve_store_event':
                     if command['working_cats']:
@@ -1737,11 +1781,12 @@ def make_server(session, port=8190, saves_directory=None):
                             raise ValueError('出勤する猫を1匹以上選んでください。')
                     elif candidate.core.can_set_shifts:
                         raise ValueError('先に営業を開始してください。')
-                    if not candidate.automatic_step(auto_assign=True):
-                        raise ValueError('営業を進められません。')
+                    if not candidate.automatic_step(auto_assign=candidate_assignment):
+                        raise ValueError('待機中の客に担当猫と席を割り当てるか、自動割り当てをONにしてください。')
                 # Commit only a completely successful operation (including receipts).
-                projected = state_view(candidate, instance_id, revision + 1)
+                projected = state_view(candidate, instance_id, revision + 1, candidate_assignment)
                 session.__dict__.update(candidate.__dict__)
+                auto_assign=candidate_assignment
                 revision += 1
                 data, code = dict(request_id=request_id, save_id=saved_id, state=projected), 200
             except (ValueError, OSError) as ex:
@@ -1763,8 +1808,8 @@ def main():
     from .cafe_new_game import create_game
     from .storage.cafe_saves import load_game
     with tempfile.TemporaryDirectory(prefix='cat-cafe-unity-') as directory:
-        session = load_game(args.save)[0] if args.save else create_game(directory)
-        with make_server(session, args.port, args.saves_directory) as server:
+        session, auto_assign = load_game(args.save) if args.save else (create_game(directory), True)
+        with make_server(session, args.port, args.saves_directory, auto_assign=auto_assign) as server:
             print(f'Unity state: http://127.0.0.1:{server.server_port} (state + shifts + business + saves)', flush=True)
             try:
                 server.serve_forever()

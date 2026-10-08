@@ -62,9 +62,10 @@ class UnityPythonSaveTests(unittest.TestCase):
                 current=create_game(self.root/f'current-{version}-{phase}',starting_conditions('free'))
                 with server_api(current,self.root/f'unity-{version}-{phase}') as (read,post,preview):
                     before=read();code,row=preview(path);self.assertEqual(code,200,row);self.assertIn(f'資金：{old.core.funds:g}',row['details']);self.assertIn('経営ルール：未導入',row['details']);self.assertEqual(before,read());self.assertEqual(originals,{p:p.read_bytes() for p in originals})
-                    code,result,command=post('load_python_game',save_id=row['save_id']);self.assertEqual(code,200,result);self.assertEqual(expected,current.core.snapshot());self.assertEqual(post('load_python_game',command)[:2],(code,result));self.assertEqual(read(),result['state'])
+                    code,result,command=post('load_python_game',save_id=row['save_id']);self.assertEqual(code,200,result);self.assertEqual(expected,current.core.snapshot());self.assertEqual(post('load_python_game',command)[:2],(code,result));self.assertEqual(read(),result['state']);self.assertFalse(read()['service_assignment']['auto_assign'])
                     if phase=='preparation' and version==2:self.assertEqual(post('start_objective',choice='management')[0],200)
                     elif phase=='open':
+                        self.assertEqual(post('set_auto_assignment',choice='automatic')[0],200)
                         while not current.core.closed:self.assertEqual(post('advance_business')[0],200)
                     code,saved,_=post('save_game');self.assertEqual(code,200,saved);self.assertEqual(post('load_game',save_id=saved['save_id'])[0],200)
                 self.assertEqual(originals,{p:p.read_bytes() for p in originals});self.assertEqual(load_game(self.root/f'unity-{version}-{phase}'/saved['save_id']/'cafe.json')[0].core.snapshot(),current.core.snapshot())
