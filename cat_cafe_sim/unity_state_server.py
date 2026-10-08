@@ -5,6 +5,8 @@ import json
 import tempfile
 import uuid
 import re
+import hashlib
+from urllib.parse import urlsplit, parse_qs
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
@@ -1074,19 +1076,26 @@ def start_objective(session, choice):
             session.enable_goal()
     elif choice=='bond':session.enable_bond_goal()
     elif choice=='patron':session.enable_patron()
+    elif choice=='management':session.enable_management()
     else:raise ValueError('開始する経営目標を選んでください。')
 
 
 def objective_start_view(session):
-    from .core import cafe_goal,cafe_popularity_challenge,cafe_bond_goal,cafe_patron
+    from .core import cafe_goal,cafe_popularity_challenge,cafe_bond_goal,cafe_patron,cafe_management
     core=session.core;rows=[]
-    for choice,label in (('popularity','人気への挑戦'),('bond','猫との好感度目標'),('patron','有力者の満足度目標')):
-        data={'popularity':core.goal,'bond':core.bond_goal,'patron':core.patron}[choice]
+    for choice,label in (('popularity','人気への挑戦'),('bond','猫との好感度目標'),('patron','有力者の満足度目標'),('management','旧営業への経営ルール導入')):
+        data={'popularity':core.goal,'bond':core.bond_goal,'patron':core.patron,'management':core.management}[choice]
         started=bool(data and (choice!='popularity' or not data.get('tracking_only')))
         problem=''
         try:start_objective(copy.deepcopy(session),choice)
         except (ValueError,OSError) as ex:problem=str(ex)
-        if started:
+        if choice=='management':
+            r=data['rules'] if data else cafe_management.rules()
+            grant=0 if data else max(0,r['starting_funds']-core.funds)
+            details=(f"導入日：{data['started_day']}日目\n人気：{data['popularity']:g}\n導入時の資金補充：{data['grant']:g}" if data else f"病気ルールが有効な営業準備中に、一度だけ導入できます。\n資金：{core.funds:g} → {core.funds+grant:g}（補充：{grant:g}）\n人気：{r['starting_popularity']:g}、全猫のストレス：0で開始します。")
+            details+=f"\n\n接客1時刻ごとのストレス：+{r['stress_per_service_tick']:g}\n休養による回復：{r['rest_recovery']:g}\nプレイヤー交流の好感度上昇時：-{r['player_relief']:g} / 低下時：+{r['player_stress']:g}\nストレス{r['runaway_threshold']:g}以上で家出、人気-{r['popularity_loss']:g}。帰還まで{r['missing_days']}日、帰還時ストレス{r['return_stress']:g}。\n子猫を連れて帰る確率：{r['kitten_probability']*100:g}%、引き渡し費用：{r['kitten_cost']:g}。\n資金または人気が0以下になるとゲームオーバーです。"
+            details+='\n\n導入費用はありません。導入後の取消はできません。店・猫・既存の記録を維持します。新規ゲーム専用の施設・イベント・特徴などは追加しません。'
+        elif started:
             details=objective_progress_view(session,choice)['details']+f"\n開始日：{data.get('challenge_started_day',data['started_day'])}日目"
         elif choice=='popularity':
             try:
@@ -1102,9 +1111,9 @@ def objective_start_view(session):
             selected=cafe_patron.starting_rules(core);details=f"{selected['name']}の満足度{selected['target']:g}を目指します。期限なし。派遣の帰還報酬受取時に加算します。\n"
             details+='\n'.join(f"{r['name']}：満足度{r['target']:g}" for r in selected.get('members',[]))
             details+=f"\n開始後に有力者への派遣を選べます。既存の帰還報酬：{selected['destination']['reward']:g}。"
-        details+='\n\n開始費用はありません。開始後の取消・やり直しはできません。達成時は既存の成果記録・結果確認・継続営業を使います。'
+        if choice!='management':details+='\n\n開始費用はありません。開始後の取消・やり直しはできません。達成時は既存の成果記録・結果確認・継続営業を使います。'
         rows.append(dict(choice=choice,label=label,started=started,can_start=not problem,reason=problem,details=details))
-    return dict(rows=rows,notes='経営ルールが有効な営業準備中に、未開始の目標を一度だけ開始できます。開始時に選んだモードは変更しません。')
+    return dict(rows=rows,notes='旧営業の経営ルールは病気ルールが有効な準備中に導入できます。目標は経営ルール導入後の準備中に開始できます。開始時に選んだモードは変更しません。')
 
 
 def pet_shop_view(session):
@@ -1256,7 +1265,47 @@ def make_server(session, port=8190, saves_directory=None):
     instance_id = uuid.uuid4().hex
     revision = 0
     results = {}
+    python_previews = {}
     save_root = Path(saves_directory or Path(__file__).resolve().parents[1] / 'saves/unity').resolve()
+
+    def file_digest(path):
+        result=hashlib.sha256()
+        with path.open('rb') as stream:
+            for chunk in iter(lambda:stream.read(1024*1024),b''):result.update(chunk)
+        return result.hexdigest()
+
+    def python_save(path):
+        from .storage.cafe_saves import load_game
+        if not isinstance(path,str) or not path or len(path)>4096 or not Path(path).is_absolute():
+            raise ValueError('Python版の営業セーブの絶対パスを入力してください。')
+        source=Path(path).resolve()
+        # Verify the original checkpoint and its linked relationships with the existing reader.
+        source_digest=file_digest(source)
+        loaded, auto_assign=load_game(source)
+        relationships=loaded.store._read()
+        if relationships!=loaded.checkpoint_baseline:
+            raise ValueError('確認中に関係データが変更されました。再確認してください。')
+        signature=hashlib.sha256((source_digest+json.dumps(relationships,sort_keys=True,ensure_ascii=False)).encode('utf-8')).hexdigest()
+        if file_digest(source)!=source_digest:
+            raise ValueError('確認中にセーブが変更されました。再確認してください。')
+        loaded.store=MemoryRelationships(relationships)
+        loaded.checkpoint_path=None
+        return loaded, signature, source, auto_assign
+
+    def preview_python_save(path):
+        from .core.cafe_housing import count as cat_count
+        loaded, signature, source, auto_assign=python_save(path)
+        core=loaded.core;token=uuid.uuid4().hex
+        if len(python_previews)>=100:python_previews.pop(next(iter(python_previews)))
+        python_previews[token]=(str(source),signature)
+        phase='閉店後' if core.closed else '営業準備' if core.can_set_shifts else '営業中'
+        objective=objective_progress_view(loaded)
+        details=f"{core.day}日目 / 時刻 {core.tick} / {phase}\n資金：{core.funds:g} / 在籍猫：{cat_count(core)}匹 / 席数：{len(getattr(core,'seats',{core.seat.id:core.seat}))}\n猫："+'、'.join(loaded.profiles.get(key,{}).get('name',key) for key in core.cats if core.activity(key)!='adopted')
+        details+=f"\n経営目標：{objective['label']}\n{objective['summary']}\n経営ルール："+('導入済み' if core.management else '未導入')
+        details+=' / 病気ルール：'+('有効' if core.health_rules else '未導入')
+        details+='\n\n現在の未保存の進捗は置き換わります。元のセーブと関係データは変更しません。再開後はUnity用の別セーブへ保存できます。'
+        details+='\n元の自動割り当て設定：'+('有効' if auto_assign else '無効')+'。Unityでは自動進行は停止した状態で再開し、営業操作は既存の自動割り当てを使います。'
+        return dict(save_id=token,source_path=str(source),details=details,instance_id=instance_id,revision=revision)
 
     def save_path(save_id):
         if not isinstance(save_id, str) or not re.fullmatch(r'[a-f0-9]{32}', save_id):
@@ -1295,7 +1344,13 @@ def make_server(session, port=8190, saves_directory=None):
             self.wfile.write(body)
 
         def do_GET(self):
-            if self.path == '/health':
+            if urlsplit(self.path).path=='/python-save':
+                try:
+                    query=parse_qs(urlsplit(self.path).query,keep_blank_values=True)
+                    if set(query)!={'path'} or len(query['path'])!=1:raise ValueError('営業セーブのパスを1つ指定してください。')
+                    data,code=preview_python_save(query['path'][0]),200
+                except (ValueError,OSError) as ex:data,code=dict(error=str(ex)),422
+            elif self.path == '/health':
                 data, code = dict(version=1, service='cat-cafe-state', read_only=False), 200
             elif self.path == '/state':
                 data, code = state_view(session, instance_id, revision), 200
@@ -1320,7 +1375,7 @@ def make_server(session, port=8190, saves_directory=None):
                 if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type', 'event_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
-                if command.get('kind')=='start_objective' and command.get('choice') not in ('popularity','bond','patron'):
+                if command.get('kind')=='start_objective' and command.get('choice') not in ('popularity','bond','patron','management'):
                     raise ValueError('開始する経営目標を選んでください。')
                 if command.get('kind') == 'purchase_cat' and (not isinstance(command.get('cat_id'),str) or not command['cat_id']):
                     raise ValueError('購入する候補の猫を指定してください。')
@@ -1342,7 +1397,7 @@ def make_server(session, port=8190, saves_directory=None):
                     raise ValueError('常連紹介の猫と迎える／見送るを指定してください。')
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'purchase_cat', 'start_objective', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'purchase_cat', 'start_objective', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'load_python_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
@@ -1397,12 +1452,17 @@ def make_server(session, port=8190, saves_directory=None):
                 saved_id = ''
                 if command['kind'] == 'set_shifts':
                     candidate.set_shifts(command['working_cats'])
-                elif command['kind'] in ('save_game', 'load_game', 'new_game'):
+                elif command['kind'] in ('save_game', 'load_game', 'load_python_game', 'new_game'):
                     if command['working_cats']:
                         raise ValueError('保存・再開には出勤猫を指定しないでください。')
                     from .storage.cafe_saves import save_game, load_game
                     from .storage.relationships import RelationshipStore
-                    if command['kind'] == 'load_game':
+                    if command['kind']=='load_python_game':
+                        entry=python_previews.get(command.get('save_id')) if isinstance(command.get('save_id'),str) else None
+                        if entry is None:raise ValueError('先にPython版セーブの内容を確認してください。')
+                        candidate, signature, _, _=python_save(entry[0])
+                        if signature!=entry[1]:raise ValueError('確認後に元のセーブまたは関係データが変更されました。再確認してください。')
+                    elif command['kind'] == 'load_game':
                         candidate = load_game(save_path(command.get('save_id')) / 'cafe.json')[0]
                         candidate.store = MemoryRelationships(candidate.store._read())
                     else:

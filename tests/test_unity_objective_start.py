@@ -49,7 +49,7 @@ class UnityObjectiveStartTests(unittest.TestCase):
                 self.assertEqual(post('start_objective',**fields)[0],expected);self.assertEqual(before,s.core.snapshot())
             self.assertEqual(post('start_business')[0],200);self.assertTrue(all(not r['can_start'] for r in read()['objective_start']['rows']));self.assertEqual(post('start_objective',choice='bond')[0],422)
         s=self.fixture.game();s.core.management=None
-        self.assertTrue(all(not r['can_start'] for r in objective_start_view(s)['rows']))
+        self.assertTrue(all(not r['can_start'] for r in objective_start_view(s)['rows'] if r['choice']!='management'))
         from cat_cafe_sim.cafe_new_game import create_game,starting_conditions
         selected=starting_conditions('free');selected['store_events']['probability']=0;s=create_game(self.root/'pending',selected)
         for _ in range(3):s.day_off()
