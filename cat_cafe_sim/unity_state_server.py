@@ -1058,6 +1058,26 @@ def new_game_options():
     return result
 
 
+def cat_records_view(session, cat_id):
+    from .cafe_cat_details import cat_details
+    from .cafe_customers import customer_name
+    data = cat_details(session, cat_id)
+    admission = [(key, value) for key, value in data['basic']
+                 if key in ('加入経路', '加入日', '紹介者', '譲渡先', '譲渡成立日')]
+    events = '\n\n'.join(f'{str(day)+"日目" if day is not None else "日付の記録なし"} · {kind} · {target}\n{result}'
+                           for day, kind, target, result in data['events']) or '出来事の記録はありません。'
+    relationships = '\n\n'.join(f'{customer_name(key)}（{key}）\n確定済み親しみ：{affinity} / {stage} / {experience}'
+                                  for key, affinity, stage, experience in data['relationships']) or 'お客との関係記録はありません。'
+    labels = ('日目', '営業区分', '予定', '接客件数', '接客行動数', '体力消耗', '疲労変化', '体調変化', '獲得経験', '親しみ増減合計')
+    history = '\n\n'.join('\n'.join(f'{label}：{value}' for label, value in zip(labels, row))
+                            for row in data['history']) or '閉店済みの日次実績はありません。'
+    warning = '未保存の交流成果があります。保存済みの関係にはまだ反映されていません。\n\n' if data['pending'] else ''
+    return dict(events='加入・譲渡の記録\n'+ ('\n'.join(f'{key}：{value}' for key, value in admission) or '加入経路・加入日の記録はありません。')
+                +'\n\n保存済みの出来事を日付順に表示します。同日の行順は発生順を示しません。記録のない過去は補いません。\n\n'+events,
+                relationships=warning+'関係データに保存済みの値です。交流中・未保存の変化は含みません。\n\n'+relationships,
+                history='閉店済みの日次実績です。個々の行動履歴ではありません。体力消耗は回復を差し引いた値です。\n\n'+history)
+
+
 def state_view(session, instance_id='', revision=0):
     core = session.core
     cats = []
@@ -1081,7 +1101,7 @@ def state_view(session, instance_id='', revision=0):
                          health_status=row['health_status'], activity=core.activity(cat_id),
                          health_label=health_text(row['health_status'], core.cats[cat_id].recovery_days_remaining),
                          activity_label=ACTIVITY_LABELS[core.activity(cat_id)], growth_details=growth_description(core, cat_id),
-                         affinity=bond['affinity'][cat_id], remaining_sets=remaining(core),
+                         records=cat_records_view(session, cat_id), affinity=bond['affinity'][cat_id], remaining_sets=remaining(core),
                          can_player_start=not player_reason, player_reason=player_reason))
     seats = getattr(core, 'seats', {core.seat.id: core.seat})
     from .cafe_customers import customer_name

@@ -22,9 +22,13 @@ class UnityObjectiveTests(unittest.TestCase):
                 self.assertEqual(progress['status'], 'active')
                 if mode == 'popularity':
                     self.assertIn('残り20日', progress['summary'])
-                    session.core.closed = True
-                    self.assertIn('残り19日', state_view(session)['objective_progress']['summary'])
-                    session.core.closed = False
+                    closed_session = copy.deepcopy(session)
+                    from cat_cafe_sim.storage.cafe_saves import MemoryRelationships
+                    closed_session.store = MemoryRelationships(session.store._read())
+                    closed_session.checkpoint_path = None
+                    while not closed_session.core.closed:
+                        closed_session.automatic_step()
+                    self.assertIn('残り19日', state_view(closed_session)['objective_progress']['summary'])
                 elif mode == 'patron':
                     for row in session.core.patron['rules'].get('members', []):
                         self.assertIn(row['name'], progress['details'])

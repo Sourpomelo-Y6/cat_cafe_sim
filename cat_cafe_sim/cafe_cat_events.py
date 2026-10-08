@@ -125,4 +125,5 @@ def cat_events(core, cat_id):
             from .core.cafe_growth import type_label
             add(extra['selected_day'],'2つ目の分類の追加の得意な行動の選択','成長',type_label(extra['type_mastery']))
     # 同日の種類をまたぐ厳密な時系列は記録されていない。日付だけで安定ソートする。
-    return sorted(rows, key=lambda row: row[0])
+    # 古い成長記録には選択日がない場合がある。日付を補わず末尾へ置く。
+    return sorted(rows, key=lambda row: (row[0] is None, row[0] if row[0] is not None else 0))
