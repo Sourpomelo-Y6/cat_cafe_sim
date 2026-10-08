@@ -346,6 +346,51 @@ def adoption_view(session):
     return dict(enabled=enabled, can_configure=not problem, reason=problem, events=events)
 
 
+def rest_space_view(session):
+    from .core.cafe_equipment import rules, reason, upgrade_rules, upgrade_reason, recovery_bonus, soundproof_rules, soundproof_reason
+    core = session.core
+    problem = ''
+    try:
+        session._ready()
+    except ValueError as exc:
+        problem = str(exc)
+    owned = core.rest_space
+    fatigue = recovery_bonus(core)
+    stress = owned['soundproof']['rules']['stress_recovery_bonus'] if owned and 'soundproof' in owned else 0
+    status = '強化済み' if owned and 'upgrade' in owned else '設置済み' if owned else '未購入'
+    if stress:
+        status += '・防音改修済み'
+    actions = []
+    for kind, label, selected, check in (
+        ('purchase_rest_space','購入・設置',rules(),reason),
+        ('upgrade_rest_space','強化',upgrade_rules(),upgrade_reason),
+        ('soundproof_rest_space','防音改修',soundproof_rules(),soundproof_reason)):
+        blocked = problem or check(core,selected)
+        record = owned if kind=='purchase_rest_space' else owned.get('upgrade' if kind=='upgrade_rest_space' else 'soundproof') if owned else None
+        display = record['rules'] if record else selected
+        actions.append(dict(kind=kind, label=label, completed=bool(record), can_execute=not blocked, reason=blocked, cost=display['cost'], funds_after=core.funds-selected['cost'],
+                            recovery_before=fatigue, recovery_after=fatigue if record else selected.get('recovery_bonus',fatigue),
+                            stress_before=stress, stress_after=stress if record else selected.get('stress_recovery_bonus',stress)))
+    notes = '在店して休養・療養する猫が対象です。疲労回復は特性の倍率を適用した後に加算します。\n購入・改修した日の閉店・休業から有効です。購入時には回復しません。\n出勤中・不在の猫には適用しません。防音改修は休養ストレス回復のみ加算し、療養日数は変えません。'
+    lines = [f'休養スペース：{status} / 所持金：{core.funds:g}',f'現在の追加回復：疲労＋{fatigue:g} / ストレス＋{stress:g}',notes,
+             '解放条件\n購入：出勤・病気ルールが有効な営業準備中\n強化：人気第1段階達成後\n防音改修：人気第2段階達成後・経営ルールが有効\n各操作は1回限り。支払い後に資金が残る必要があります。']
+    for row in actions:
+        if row['completed']:
+            lines.append(f"{row['label']}：実施済み / 支払額 {row['cost']:g}")
+        else:
+            lines.append(f"{row['label']}：費用 {row['cost']:g} / 資金 {core.funds:g} → {row['funds_after']:g}\n追加回復：疲労＋{row['recovery_before']:g} → ＋{row['recovery_after']:g} / ストレス＋{row['stress_before']:g} → ＋{row['stress_after']:g}\n{row['reason'] or '実行できます。'}")
+    history = []
+    if owned:
+        for key,label in ((None,'購入・設置'),('upgrade','強化'),('soundproof','防音改修')):
+            record = owned if key is None else owned.get(key)
+            if record:
+                saved = record['rules']
+                effect = f"疲労＋{saved['recovery_bonus']:g}" if 'recovery_bonus' in saved else f"ストレス＋{saved['stress_recovery_bonus']:g}"
+                history.append(f"{record['day']}日目：{label} / 支払額 {saved['cost']:g} / {effect}")
+    lines.append('購入・改修履歴\n'+('\n'.join(history) or 'まだ記録はありません。'))
+    return dict(status=status, recovery_bonus=fatigue, stress_recovery_bonus=stress, actions=actions, details='\n\n'.join(lines), notes=notes)
+
+
 def seat_equipment_view(session):
     from .core.cafe_seat_equipment import catalog, owned, seats, reason, effect_text, description
     core = session.core
@@ -950,7 +995,7 @@ def state_view(session, instance_id='', revision=0):
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
     return dict(version=1, game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
-                closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
+                closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '', equipment_id=seat.equipment or '', equipment_description=equipment_description(core,key), equipment_name=equipment_description(core,key).split('（')[0]) for key, seat in seats.items()],
@@ -1049,7 +1094,7 @@ def make_server(session, port=8190, saves_directory=None):
                     raise ValueError('常連紹介の猫と迎える／見送るを指定してください。')
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
@@ -1167,6 +1212,10 @@ def make_server(session, port=8190, saves_directory=None):
                         if event is None or event['cat_id'] != command['cat_id'] or event['status'] != 'waiting':
                             raise ValueError('回答待ちの譲渡申し出を選んでください。')
                         candidate.resolve_adoption(event['id'], command['choice'])
+                elif command['kind'] in ('purchase_rest_space','upgrade_rest_space','soundproof_rest_space'):
+                    if command['working_cats'] or command.get('cat_id') or command.get('choice') or command.get('event_id') or command.get('target_type'):
+                        raise ValueError('休養設備には猫や選択肢を指定しないでください。')
+                    getattr(candidate,command['kind'])()
                 elif command['kind'] in ('purchase_seat_equipment','equip_seat'):
                     from .core.cafe_seat_equipment import catalog, seats as equipment_seats
                     seat_id = command.get('target_type')
