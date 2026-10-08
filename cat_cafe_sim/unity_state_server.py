@@ -346,6 +346,70 @@ def adoption_view(session):
     return dict(enabled=enabled, can_configure=not problem, reason=problem, events=events)
 
 
+def customer_directory_view(session):
+    from .cafe_customers import directory, cat_rows
+    from .core.cafe_weekdays import day_label
+    from .core.cafe_activities import ACTIVITY_LABELS
+    from .cafe_health_text import health_text
+    from .core.cafe_preferences import feature_text
+    from .core.cafe_checkpoint import outcome_result
+    from importlib import import_module
+    core = session.core
+    latest = {}
+    for value in core.outcomes.values():
+        result = outcome_result(value)
+        latest[result['customer_id']] = result
+    changes = {}
+    for event in core.events:
+        if event['kind']=='customer_discontent_changed':changes[event['customer_id']] = event
+    rows = []
+    labels = {'stable':'通常','waiting':'回答待ち','recovery':'信頼回復中','departed':'永久離脱'}
+    reasons = {'queue_full':'待機人数の上限で退店','wait_timeout':'待ち時間切れ','advanced_failure':'こだわり条件未達','good_service':'良い接客による不満回復','dissatisfied_service':'不満な接客評価'}
+    for row in directory(session):
+        key = row['customer_id']
+        today = row['status']+(' / '+str(row['arrival_tick'])+'刻' if row['arrival_tick'] is not None else '')
+        tomorrow = '来店予定 / '+str(row['tomorrow_tick'])+'刻' if row['tomorrow_tick'] is not None else '予定なし'
+        if row['tomorrow_suspended_until'] is not None:tomorrow=f"来店停止（{row['tomorrow_suspended_until']}日目まで）"
+        if row['trust'] and row['trust']['status']=='departed':tomorrow=row['status']
+        elif row['tomorrow_tick'] is None and row['status'].startswith('未解放'):tomorrow=row['status']
+        lines = [row['name']+' / '+row['description'],row['preference_text']+' / 来店曜日：'+row['weekdays'],
+                 f"来店回数：{row['visits']}回\n今日：{today}\n翌日：{tomorrow}"]
+        lines.append('常連度：未導入' if row['loyalty'] is None else f"常連度：{row['loyalty']:g}/{row['loyalty_target']:g}"+(f" / {row['regular_day']}日目に常連化" if row['regular_day'] is not None else '\n親しみが増える接客で上昇します。'))
+        lines.append('累積不満：未導入' if row['discontent'] is None else f"累積不満：{row['discontent']:g}/{row['discontent_target']:g}"+(f"\n{row['suspended_until']}日目まで来店停止。翌日から不満{row['discontent_return']:g}で復帰します。" if row['suspended_until'] is not None else ''))
+        change = changes.get(key)
+        if change:
+            cause = '・'.join(reasons.get(r,r) for r in change['reason'].split('+'))
+            lines.append(f"直近の不満変化：{change['before']:g} → {change['after']:g} / {cause}")
+        trust = row['trust']
+        lines.append('信頼状態：未導入' if trust is None else '信頼状態：'+labels[trust['status']])
+        if trust and trust['reason']:lines.append('離脱理由：'+{'ignored':'信頼回復に対応しなかった','recovery_failed':'信頼回復中の接客が不満になった'}.get(trust['reason'],trust['reason']))
+        satisfaction = row['satisfaction']
+        lines.append('直近の接客評価：記録なし' if satisfaction is None else f"直近の接客評価：{satisfaction['label']} / 点数 {satisfaction['score']:g}\n理由："+('・'.join(satisfaction['reasons']) or '加点要素なし'))
+        selected = core.customer_satisfaction
+        if selected:
+            lines.append(f"満足度の基準：満足は{selected['satisfied_score']:g}点以上、不満は{selected['dissatisfied_score']:g}点以下。\n親しみ上昇・特別行動・好み一致・関心とテンション各{selected['gauge_target']:g}以上を評価します。特殊客の条件と体力切れも評価に加わります。")
+        for module_name,attribute in (('advanced_customers','advanced_customers'),('vip_customer','vip_customer'),('quiet_customer','quiet_customer'),('play_customer','play_customer'),('contact_customer','contact_customer'),('longhair_customer','longhair_customer')):
+            module = import_module('.core.cafe_'+module_name,__package__)
+            if key==module.CUSTOMER_ID and getattr(core,attribute) is not None:
+                lines.append(module.description(core))
+                lines.append('直近の条件結果：'+module.result_text(core,latest[key]) if key in latest else '条件結果：接客記録はまだありません。')
+        from .core.cafe_reservation import CUSTOMER_ID as reservation_id
+        if key==reservation_id and core.reservation is not None:
+            rules = core.reservation['rules']
+            lines.append(f"予約条件：長毛の猫を担当し、心を開く{rules['open_up_count']}回以上。追加料金＋{rules['bonus']:g}・人気＋{rules['popularity_bonus']:g}。")
+        if session.pending:lines.append('接客結果の保存待ちがあります。')
+        cats = []
+        for cat in cat_rows(session,key):
+            activity = ACTIVITY_LABELS[cat['activity']] if cat['activity']!='cafe' else '出勤予定' if cat['working'] else '休養予定'
+            multiplier = core.customer_preferences['rules']['tension_multiplier'] if cat['matches'] else 1
+            text = f"{cat['name']} / 猫から客への親しみ {cat['affinity']:g}\n{cat['match_text']} / 特徴："+feature_text((core.cat_features or {}).get(cat['cat_id'],[]))
+            text += f"\n通常のテンション上昇×{multiplier:g} / {activity}・"+health_text(cat['health_status'],cat['recovery_days_remaining'])
+            cats.append(dict(cat_id=cat['cat_id'],adopted=cat['activity']=='adopted',details=text))
+        rows.append(dict(customer_id=key,name=row['name'],description=row['description'],preference_text=row['preference_text'],visits=row['visits'],today=today,tomorrow=tomorrow,details='\n\n'.join(lines),cats=cats))
+    return dict(today_label=day_label(core),tomorrow_label=day_label(core,core.day+1),rows=rows,
+                notes='予定は営業した場合の進行時点です（0刻＝開店時）。休業日は来店しません。\n来店回数はこの営業セーブの記録内で集計し、接客できなかった来店も含みます。')
+
+
 def waiting_area_view(session):
     from .core.cafe_waiting_area import purchased, queue_capacity, max_wait_ticks, daily_cost, reason, upgrade_rules, upgrade_reason
     from .core.cafe_operating_cost import estimate
@@ -1038,7 +1102,7 @@ def state_view(session, instance_id='', revision=0):
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
     return dict(version=1, game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
-                closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), waiting_area=waiting_area_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
+                closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), waiting_area=waiting_area_view(session), customer_directory=customer_directory_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '', equipment_id=seat.equipment or '', equipment_description=equipment_description(core,key), equipment_name=equipment_description(core,key).split('（')[0]) for key, seat in seats.items()],
