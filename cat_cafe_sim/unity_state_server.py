@@ -48,6 +48,46 @@ def intake_view(session):
                 can_accept=pending(core) and not accept_reason)
 
 
+def regular_introduction_view(session):
+    from .core.cafe_regular_introduction import response_reason, admission_reason
+    from .core.cafe_housing import status as housing_status
+    from .core.cafe_preferences import feature_text
+    from .core.cafe_traits import description
+    from .core.human_cat_types import Personality
+    from .storage.cafe_saves import check_link
+    from .cafe_customers import customer_name
+    core = session.core
+    data = core.regular_introduction
+    if not data:
+        return None
+    rule = data['rules']
+    row = rule['candidate']
+    problem = ''
+    if data['status'] == 'waiting':
+        try:
+            check_link(session)
+            if session.pending:
+                raise ValueError('先に接客結果の保存を再試行してください。')
+        except ValueError as ex:
+            problem = str(ex)
+        problem = problem or response_reason(core)
+    admission = problem or (admission_reason(core) if data['status'] == 'waiting' else '')
+    personality = Personality.from_dict(row['personality'])
+    return dict(cat_id=rule['cat_id'], content_cat_id=CONTENT_IDS.get(rule['cat_id'], rule['cat_id']),
+                name=row['name'], status=data['status'], customer_id=data['customer_id'] or '',
+                customer_name=customer_name(data['customer_id']) if data['customer_id'] else '',
+                presented_day=data['presented_day'] or 0, resolved_day=data['resolved_day'] or 0,
+                threshold=core.customer_loyalty['rules']['threshold'],
+                cost=row['cost'], funds_after=core.funds-row['cost'], housing=housing_status(core),
+                personality=next((name for name, value in session.presets.items() if value == personality), 'カスタム'),
+                features=feature_text(row.get('features', [])),
+                trait='\n'.join(f'{label}：{value}' for label, value in description(row.get('trait'))),
+                preferences='\n'.join(f'好み：{kind.name} {value:g}' for kind, value in zip(session.interaction_config.types, personality.type_preferences)),
+                response_reason=problem, accept_reason=admission,
+                can_decline=data['status'] == 'waiting' and not problem,
+                can_accept=data['status'] == 'waiting' and not admission)
+
+
 def visiting_cat_view(session):
     from .core.cafe_visiting_cat import progress, response_reason, daily_reason, admission_reason
     from .core.cafe_housing import status as housing_status
@@ -547,7 +587,7 @@ def state_view(session, instance_id='', revision=0):
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
     return dict(version=1, game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
-                closed=core.closed, required_action=required_action, intake_request=intake_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
+                closed=core.closed, required_action=required_action, intake_request=intake_view(session), regular_introduction=regular_introduction_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '') for key, seat in seats.items()],
@@ -628,9 +668,11 @@ def make_server(session, port=8190, saves_directory=None):
                 if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type', 'event_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
+                if command.get('kind') == 'resolve_regular_introduction' and (command.get('choice') not in ('accept', 'decline') or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
+                    raise ValueError('常連紹介の猫と迎える／見送るを指定してください。')
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'resolve_intake', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
@@ -800,6 +842,11 @@ def make_server(session, port=8190, saves_directory=None):
                         candidate.purchase_housing()
                     else:
                         candidate.upgrade_housing()
+                elif command['kind'] == 'resolve_regular_introduction':
+                    data = candidate.core.regular_introduction
+                    if command['working_cats'] or not data or data['rules']['cat_id'] != command['cat_id'] or data['status'] != 'waiting':
+                        raise ValueError('回答待ちの常連からの猫紹介を選んでください。')
+                    candidate.resolve_regular_introduction(command['choice'])
                 elif command['kind'] == 'resolve_visiting_cat':
                     data = candidate.core.visiting_cat
                     if command['working_cats'] or not data or data['rules']['cat_id'] != command['cat_id'] or data['status'] not in ('visiting', 'ready'):
