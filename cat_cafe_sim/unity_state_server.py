@@ -824,6 +824,36 @@ def general_dispatch_view(session):
     return dict(options=options,events=events)
 
 
+def dispatch_comparison_view(session, general=None, patron=None):
+    from .core.cafe_activities import destinations, ACTIVITY_LABELS
+    from .core.cafe_patron import destinations as patron_destinations
+    from .core.cafe_dispatch_unlocks import description as unlock_description
+    from .core.cafe_traits import effect
+    from .core.cafe_growth import dispatch_multiplier
+    core=session.core
+    general=general if general is not None else general_dispatch_view(session)
+    patron=patron if patron is not None else patron_dispatch_view(session)
+    catalogs={'general':{r['id']:r for r in destinations(core)},'patron':{r['id']:r for r in patron_destinations(core)}}
+    cats=[]
+    for cat_id,cat in core.cats.items():
+        rows=[]
+        for kind,view in (('general',general),('patron',patron)):
+            for option in view['options']:
+                if option['cat_id']!=cat_id:continue
+                rule=catalogs[kind][option['choice']]
+                trait_multiplier=effect(core,cat_id,'dispatch_reward');growth_multiplier=dispatch_multiplier(core,cat_id)
+                adjusted=rule['reward']*trait_multiplier*growth_multiplier
+                bonus=option['reward']-adjusted
+                unlock=unlock_description(core,rule['id']) if kind=='general' else '有力者目標の開始時設定（参加条件あり）'
+                details=f"{rule['name']}（{'一般派遣' if kind=='general' else '有力者訪問'}）\n出発費用：0 / 帰還まで：{rule['days']}回の閉店\n基本報酬：{rule['reward']:g} × 特性{trait_multiplier:g}倍 × 得意分野{growth_multiplier:g}倍 ＋ 歓迎加算{bonus:g} ＝ {option['reward']:g}"
+                if kind=='patron':details+=f"\n満足度加点：+{option['satisfaction']:g}（目標値が上限）"
+                details+='\n'+option['detail']+'\n解放状況：'+unlock
+                details+='\n現在：'+('派遣できます。' if option['can_select'] else option['reason'])
+                rows.append(dict(choice=rule['id'],kind=kind,label=rule['name'],days=rule['days'],cost=0,base_reward=rule['reward'],trait_multiplier=trait_multiplier,growth_multiplier=growth_multiplier,welcome_bonus=bonus,reward=option['reward'],satisfaction=option.get('satisfaction',0),can_select=option['can_select'],reason=option['reason'],unlock=unlock,details=details))
+        cats.append(dict(cat_id=cat_id,name=session.profiles.get(cat_id,{}).get('name',cat_id),status=ACTIVITY_LABELS[core.activity(cat_id)],rows=rows))
+    return dict(cats=cats,notes='現在の猫と保存設定から比較します。休業も帰還日数を進めます。出発後の選択イベント・トラブルによる報酬変化は予測に含みません。出発は選んだ派遣先の画面から行います。')
+
+
 def player_interaction_view(session):
     from .core.cafe_player import current, remaining
     from .core.human_cat_relationship import verify_relationship
@@ -1246,13 +1276,14 @@ def state_view(session, instance_id='', revision=0):
     from .core.cafe_finance import values
     ended = (core.management or {}).get('game_over')
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
-    return dict(version=1, game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
+    general=general_dispatch_view(session);patron=patron_dispatch_view(session)
+    return dict(version=1, dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), waiting_area=waiting_area_view(session), customer_directory=customer_directory_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
                 seats=[dict(seat_id=key, customer_id=seat.customer_id or '', cat_id=seat.cat_id or '',
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '', equipment_id=seat.equipment or '', equipment_description=equipment_description(core,key), equipment_name=equipment_description(core,key).split('（')[0]) for key, seat in seats.items()],
-                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session), patron_dispatch=patron_dispatch_view(session), general_dispatch=general_dispatch_view(session), dispatch_choices=dispatch_choices_view(session), dispatch_troubles=dispatch_troubles_view(session), missing_cats=missing_cats_view(session), missing_rest=missing_rest_view(session), adoption=adoption_view(session),
+                customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session), patron_dispatch=patron, general_dispatch=general, dispatch_choices=dispatch_choices_view(session), dispatch_troubles=dispatch_troubles_view(session), missing_cats=missing_cats_view(session), missing_rest=missing_rest_view(session), adoption=adoption_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None, finance_history=finance_history_view(session), pet_shop=pet_shop_view(session), objective_start=objective_start_view(session))
 
