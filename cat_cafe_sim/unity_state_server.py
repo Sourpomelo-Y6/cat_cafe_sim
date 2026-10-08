@@ -281,6 +281,7 @@ def housing_view(session):
 
 
 def objective_progress_view(session, mode=None):
+    include_other = mode is None
     from .core.cafe_objective import MODES
     from .core.cafe_goal import current_rules, current_start
     from .core.cafe_bond_goal import qualifying
@@ -312,7 +313,14 @@ def objective_progress_view(session, mode=None):
     else:
         summary = '期限なし・自由に営業'
         details = '自由営業にはクリア条件や期限はありません。'
-    return dict(mode=mode, label=label, status=status, summary=summary+suffix, details=details+suffix)
+    result=dict(mode=mode, label=label, status=status, summary=summary+suffix, details=details+suffix)
+    if include_other:
+        for extra,data in (('popularity',core.goal),('bond',core.bond_goal),('patron',core.patron)):
+            if extra==mode or not data or (extra=='popularity' and data.get('tracking_only')):continue
+            additional=objective_progress_view(session,extra)
+            result['summary']+='\n'+additional['label']+'：'+additional['summary']
+            result['details']+='\n\n'+additional['label']+'\n'+additional['details']
+    return result
 
 
 def adoption_view(session):
@@ -1058,6 +1066,47 @@ def new_game_options():
     return result
 
 
+def start_objective(session, choice):
+    if choice=='popularity':
+        if session.core.goal and session.core.goal.get('tracking_only'):
+            session.start_popularity_challenge()
+        else:
+            session.enable_goal()
+    elif choice=='bond':session.enable_bond_goal()
+    elif choice=='patron':session.enable_patron()
+    else:raise ValueError('開始する経営目標を選んでください。')
+
+
+def objective_start_view(session):
+    from .core import cafe_goal,cafe_popularity_challenge,cafe_bond_goal,cafe_patron
+    core=session.core;rows=[]
+    for choice,label in (('popularity','人気への挑戦'),('bond','猫との好感度目標'),('patron','有力者の満足度目標')):
+        data={'popularity':core.goal,'bond':core.bond_goal,'patron':core.patron}[choice]
+        started=bool(data and (choice!='popularity' or not data.get('tracking_only')))
+        problem=''
+        try:start_objective(copy.deepcopy(session),choice)
+        except (ValueError,OSError) as ex:problem=str(ex)
+        if started:
+            details=objective_progress_view(session,choice)['details']+f"\n開始日：{data.get('challenge_started_day',data['started_day'])}日目"
+        elif choice=='popularity':
+            try:
+                selected=cafe_popularity_challenge.rules(core)['goal'] if core.goal and core.goal.get('tracking_only') else cafe_goal.progression_rules()
+                stages=[selected,*selected.get('stages',[])]
+                details=' → '.join(f"人気{r['target']:g}（{r['days']}日間）" for r in stages)
+                details+=f"\n開始日を含む期限です。休業も日数に含みます。\n接客評価による人気増加：{selected['gain_per_success']:g} / 人気上限：{selected['cap']:g}"
+            except ValueError as ex:details=str(ex)
+            details+='\n現在の店・資金・猫・他の目標の進捗を維持します。段階ごとに次の挑戦か継続営業を選べます。'
+        elif choice=='bond':
+            selected=cafe_bond_goal.rules();details=f"プレイヤー好感度{selected['affinity']:g}以上の在籍猫を同時に{selected['target']}匹。譲渡済みの猫は対象外です。期限なし。準備中の猫との交流で好感度を上げます。"
+        else:
+            selected=cafe_patron.starting_rules(core);details=f"{selected['name']}の満足度{selected['target']:g}を目指します。期限なし。派遣の帰還報酬受取時に加算します。\n"
+            details+='\n'.join(f"{r['name']}：満足度{r['target']:g}" for r in selected.get('members',[]))
+            details+=f"\n開始後に有力者への派遣を選べます。既存の帰還報酬：{selected['destination']['reward']:g}。"
+        details+='\n\n開始費用はありません。開始後の取消・やり直しはできません。達成時は既存の成果記録・結果確認・継続営業を使います。'
+        rows.append(dict(choice=choice,label=label,started=started,can_start=not problem,reason=problem,details=details))
+    return dict(rows=rows,notes='経営ルールが有効な営業準備中に、未開始の目標を一度だけ開始できます。開始時に選んだモードは変更しません。')
+
+
 def pet_shop_view(session):
     from .storage.cafe_saves import MemoryRelationships
     from .core.cafe_housing import status as housing_status
@@ -1196,7 +1245,7 @@ def state_view(session, instance_id='', revision=0):
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '', equipment_id=seat.equipment or '', equipment_description=equipment_description(core,key), equipment_name=equipment_description(core,key).split('（')[0]) for key, seat in seats.items()],
                 customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session), patron_dispatch=patron_dispatch_view(session), general_dispatch=general_dispatch_view(session), dispatch_choices=dispatch_choices_view(session), dispatch_troubles=dispatch_troubles_view(session), missing_cats=missing_cats_view(session), missing_rest=missing_rest_view(session), adoption=adoption_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
-                revenue=summary['revenue'], finance=values(summary) if core.closed else None, finance_history=finance_history_view(session), pet_shop=pet_shop_view(session))
+                revenue=summary['revenue'], finance=values(summary) if core.closed else None, finance_history=finance_history_view(session), pet_shop=pet_shop_view(session), objective_start=objective_start_view(session))
 
 
 def make_server(session, port=8190, saves_directory=None):
@@ -1271,6 +1320,8 @@ def make_server(session, port=8190, saves_directory=None):
                 if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type', 'event_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
+                if command.get('kind')=='start_objective' and command.get('choice') not in ('popularity','bond','patron'):
+                    raise ValueError('開始する経営目標を選んでください。')
                 if command.get('kind') == 'purchase_cat' and (not isinstance(command.get('cat_id'),str) or not command['cat_id']):
                     raise ValueError('購入する候補の猫を指定してください。')
                 if command.get('kind') == 'resolve_customer_trust' and (command.get('choice') not in ('recover', 'ignore') or not isinstance(command.get('event_id'), str) or not command['event_id']):
@@ -1291,7 +1342,7 @@ def make_server(session, port=8190, saves_directory=None):
                     raise ValueError('常連紹介の猫と迎える／見送るを指定してください。')
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'purchase_cat', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('set_shifts', 'start_business', 'advance_business', 'next_day', 'purchase_cat', 'start_objective', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
@@ -1452,6 +1503,10 @@ def make_server(session, port=8190, saves_directory=None):
                     if event is None or event['cat_id'] != command['cat_id'] or event['status'] != 'waiting':
                         raise ValueError('家出した猫の帰還待ち記録を選んでください。')
                     candidate.resolve_missing(event['id'])
+                elif command['kind']=='start_objective':
+                    if command['working_cats']:
+                        raise ValueError('目標開始には出勤猫を指定しないでください。')
+                    start_objective(candidate,command['choice'])
                 elif command['kind'] == 'purchase_cat':
                     if command['working_cats']:
                         raise ValueError('猫の購入には出勤猫を指定しないでください。')
