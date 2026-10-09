@@ -1276,6 +1276,25 @@ def service_assignment_view(session, auto_assign=True):
     return dict(auto_assign=auto_assign,waiting=waiting,can_assign=not auto_assign and not problem,reason=('自動割り当てをOFFにしてから、客・猫・空席を選んでください。' if auto_assign and not problem else problem),cats=cats,customers=customers,seats=seats,notes='手動では担当待ちで時間を止めます。開始だけでは営業時計・資金・体力は進みません。接客を開始後、営業を進める操作で交流を進めます。自動割り当ては空席にのみ配置し、手動の担当を変更しません。')
 
 
+def pending_results_view(session):
+    """Only unfinished relationship receipts; never replay business rewards here."""
+    from .core.cafe_checkpoint import outcome_result
+    from .cafe_customers import customer_name
+    rows=[]
+    for key, log in session.core.outcomes.items():
+        if key not in session.pending:
+            continue
+        result=outcome_result(log)
+        cat_id=result['cat_id'];customer_id=result['customer_id']
+        name=session.profiles.get(cat_id,{}).get('name',cat_id)
+        before=result['affinity_before'];after=result['affinity_after']
+        rows.append(dict(session_id=key, cat_id=cat_id, customer_id=customer_id,
+                         details=f"猫：{name} / お客：{customer_name(customer_id)}\n親しみ：{before:g} → {after:g}（増減 {after-before:+g}）\n交流ID：{key}"))
+    return dict(count=len(rows), rows=rows,
+                reason=getattr(session,'_unity_persist_error','') if rows else '',
+                notes='会計・体力・報酬は反映済みです。未保存の親しみを確定してから営業を続けてください。\n再試行は未保存の結果だけを処理します。Unity内の関係データに確定後、セーブで進捗を保存してください。')
+
+
 def state_view(session, instance_id='', revision=0, auto_assign=True, autoplay_run=None):
     from .unity_autoplay import projection as autoplay_projection
     core = session.core
@@ -1322,7 +1341,7 @@ def state_view(session, instance_id='', revision=0, auto_assign=True, autoplay_r
     ended = (core.management or {}).get('game_over')
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
     general=general_dispatch_view(session);patron=patron_dispatch_view(session)
-    return dict(version=1, autoplay=autoplay_projection(session,autoplay_run), service_assignment=service_assignment_view(session,auto_assign), dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
+    return dict(version=1, pending_results=pending_results_view(session), autoplay=autoplay_projection(session,autoplay_run), service_assignment=service_assignment_view(session,auto_assign), dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), waiting_area=waiting_area_view(session), customer_directory=customer_directory_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
@@ -1496,7 +1515,7 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True, a
                     raise ValueError('常連紹介の猫と迎える／見送るを指定してください。')
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('start_autoplay', 'step_autoplay', 'stop_autoplay', 'assign_service', 'set_auto_assignment', 'set_shifts', 'start_business', 'advance_business', 'next_day', 'purchase_cat', 'start_objective', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'load_python_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('persist_retry', 'start_autoplay', 'step_autoplay', 'stop_autoplay', 'assign_service', 'set_auto_assignment', 'set_shifts', 'start_business', 'advance_business', 'next_day', 'purchase_cat', 'start_objective', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'load_python_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
@@ -1547,13 +1566,20 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True, a
                 self.reply(dict(error='操作履歴が上限です。サーバーを再起動してください。'), 503)
                 return
             try:
-                if autoplay_run and autoplay_run['running'] and command['kind'] not in ('step_autoplay','stop_autoplay'):
+                if autoplay_run and autoplay_run['running'] and command['kind'] not in ('persist_retry','step_autoplay','stop_autoplay'):
                     raise ValueError('おまかせを中止してから通常操作や保存を行ってください。')
                 candidate = copy.deepcopy(session)
                 candidate_run=copy.deepcopy(autoplay_run)
                 candidate_assignment=auto_assign
                 saved_id = ''
-                if command['kind'] in ('start_autoplay','step_autoplay','stop_autoplay'):
+                if session.pending and command['kind'] != 'persist_retry':
+                    raise ValueError('未保存の交流結果を先に保存してください。')
+                if command['kind'] == 'persist_retry':
+                    if command['working_cats']:raise ValueError('結果保存には出勤猫の変更を付けないでください。')
+                    if not candidate.pending:raise ValueError('未保存の交流結果はありません。')
+                    candidate.persist()
+                    candidate._unity_persist_error=''
+                elif command['kind'] in ('start_autoplay','step_autoplay','stop_autoplay'):
                     if command['working_cats']:raise ValueError('おまかせ操作には出勤猫の変更を付けないでください。')
                     if command['kind']=='start_autoplay':
                         candidate_run=unity_autoplay.start(candidate,command['autoplay_objective'],command['autoplay_mode'],command['autoplay_days'],candidate_assignment)
@@ -1840,6 +1866,11 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True, a
                 revision += 1
                 data, code = dict(request_id=request_id, save_id=saved_id, state=projected), 200
             except (ValueError, OSError) as ex:
+                # Preserve the existing atomic operation contract, including a partial
+                # receipt failure. Only the recovery notice changes on a failed retry.
+                if command['kind']=='persist_retry' and session.pending and not command['working_cats']:
+                    session._unity_persist_error=str(ex)
+                    revision+=1
                 data, code = dict(request_id=request_id, error=str(ex)), 422
             results[request_id] = (command, data, code)
             self.reply(data, code)
