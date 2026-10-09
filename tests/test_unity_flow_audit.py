@@ -12,7 +12,8 @@ class UnityFlowAuditTests(unittest.TestCase):
     def compare(self, session, reference):
         actual=state_view(session);expected=state_view(reference)
         for key in ('day','tick','closed','can_set_shifts','funds','required_action','objective',
-                    'objective_progress','cats','finance','finance_history','housing'):
+                    'objective_progress','cats','finance','finance_history','business_history',
+                    'housing','rest_proposal','clear_results','recruitment'):
             self.assertEqual(actual[key],expected[key],key)
 
     def resolve(self, session, reference, post):
