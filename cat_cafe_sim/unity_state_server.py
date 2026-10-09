@@ -1262,7 +1262,8 @@ def service_assignment_view(session, auto_assign=True):
     return dict(auto_assign=auto_assign,waiting=waiting,can_assign=not auto_assign and not problem,reason=('自動割り当てをOFFにしてから、客・猫・空席を選んでください。' if auto_assign and not problem else problem),cats=cats,customers=customers,seats=seats,notes='手動では担当待ちで時間を止めます。開始だけでは営業時計・資金・体力は進みません。接客を開始後、営業を進める操作で交流を進めます。自動割り当ては空席にのみ配置し、手動の担当を変更しません。')
 
 
-def state_view(session, instance_id='', revision=0, auto_assign=True):
+def state_view(session, instance_id='', revision=0, auto_assign=True, autoplay_run=None):
+    from .unity_autoplay import projection as autoplay_projection
     core = session.core
     cats = []
     from .core.cafe_growth import description as growth_description
@@ -1305,7 +1306,7 @@ def state_view(session, instance_id='', revision=0, auto_assign=True):
     ended = (core.management or {}).get('game_over')
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
     general=general_dispatch_view(session);patron=patron_dispatch_view(session)
-    return dict(version=1, service_assignment=service_assignment_view(session,auto_assign), dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
+    return dict(version=1, autoplay=autoplay_projection(session,autoplay_run), service_assignment=service_assignment_view(session,auto_assign), dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), waiting_area=waiting_area_view(session), customer_directory=customer_directory_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
@@ -1316,7 +1317,8 @@ def state_view(session, instance_id='', revision=0, auto_assign=True):
                 revenue=summary['revenue'], finance=values(summary) if core.closed else None, finance_history=finance_history_view(session), pet_shop=pet_shop_view(session), objective_start=objective_start_view(session))
 
 
-def make_server(session, port=8190, saves_directory=None, *, auto_assign=True):
+def make_server(session, port=8190, saves_directory=None, *, auto_assign=True, autoplay_run=None):
+    from . import unity_autoplay
     # Normal automatic service persists relationship receipts. Keep these in memory
     # between snapshot exports; never modify the loaded game's files.
     from .storage.cafe_saves import MemoryRelationships
@@ -1413,7 +1415,7 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True):
             elif self.path == '/health':
                 data, code = dict(version=1, service='cat-cafe-state', read_only=False), 200
             elif self.path == '/state':
-                data, code = state_view(session, instance_id, revision, auto_assign), 200
+                data, code = state_view(session, instance_id, revision, auto_assign, autoplay_run), 200
             elif self.path == '/saves':
                 data, code = dict(saves=saved_games()), 200
             else:
@@ -1421,7 +1423,7 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True):
             self.reply(data, code)
 
         def do_POST(self):
-            nonlocal revision, auto_assign
+            nonlocal revision, auto_assign, autoplay_run
             if self.path != '/commands':
                 self.reply(dict(error='not_found'), 404)
                 return
@@ -1432,9 +1434,11 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True):
                 if not 0 < length <= 16384:
                     raise ValueError('操作データのサイズが不正です。')
                 command = json.loads(self.rfile.read(length).decode('utf-8'))
-                if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type', 'event_id', 'customer_id', 'seat_id'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
+                if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type', 'event_id', 'customer_id', 'seat_id', 'autoplay_objective', 'autoplay_mode', 'autoplay_days'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
                 request_id = command['request_id']
+                if command.get('kind')=='start_autoplay' and (command.get('autoplay_objective') not in ('popularity','bond','patron') or command.get('autoplay_mode') not in ('basic','clear','fast') or type(command.get('autoplay_days')) is not int or not 1<=command['autoplay_days']<=10):
+                    raise ValueError('おまかせの目標・方針・1〜10日の進行日数を指定してください。')
                 if command.get('kind')=='set_auto_assignment' and command.get('choice') not in ('automatic','manual'):
                     raise ValueError('自動割り当てのON/OFFを選んでください。')
                 if command.get('kind')=='assign_service' and any(not isinstance(command.get(k),str) or not command[k] for k in ('customer_id','cat_id','seat_id')):
@@ -1461,7 +1465,7 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True):
                     raise ValueError('常連紹介の猫と迎える／見送るを指定してください。')
                 if not isinstance(request_id, str) or not 1 <= len(request_id) <= 100:
                     raise ValueError('操作IDが不正です。')
-                if command['kind'] not in ('assign_service', 'set_auto_assignment', 'set_shifts', 'start_business', 'advance_business', 'next_day', 'purchase_cat', 'start_objective', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'load_python_game', 'new_game') or type(command['expected_revision']) is not int:
+                if command['kind'] not in ('start_autoplay', 'step_autoplay', 'stop_autoplay', 'assign_service', 'set_auto_assignment', 'set_shifts', 'start_business', 'advance_business', 'next_day', 'purchase_cat', 'start_objective', 'resolve_intake', 'resolve_customer_trust', 'resolve_reservation', 'resolve_regular_introduction', 'resolve_visiting_cat', 'resolve_store_event', 'resolve_growth', 'resolve_growth_mastery', 'resolve_growth_type_mastery', 'continue_goal', 'continue_patron', 'continue_bond_goal', 'advance_goal', 'purchase_item', 'use_item', 'sell_item', 'resolve_dispatch_introduction', 'resolve_dispatch_trouble', 'resolve_dispatch_choice', 'dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing', 'rest_for_missing', 'day_off', 'expand_seats', 'purchase_seat_equipment', 'equip_seat', 'purchase_rest_space', 'upgrade_rest_space', 'soundproof_rest_space', 'purchase_waiting_area', 'upgrade_waiting_area', 'configure_adoption', 'resolve_adoption', 'player_begin', 'player_step', 'player_finish', 'purchase_housing', 'upgrade_housing', 'save_game', 'load_game', 'load_python_game', 'new_game') or type(command['expected_revision']) is not int:
                     raise ValueError('未対応の操作です。')
                 if command['kind'] in ('dispatch_general', 'receive_general', 'dispatch_patron', 'receive_patron', 'resolve_missing') and (not isinstance(command.get('choice'), str) or not command['choice'] or not isinstance(command.get('cat_id'), str) or not command['cat_id']):
                     raise ValueError('派遣する猫と派遣先・帰還記録を指定してください。')
@@ -1512,10 +1516,20 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True):
                 self.reply(dict(error='操作履歴が上限です。サーバーを再起動してください。'), 503)
                 return
             try:
+                if autoplay_run and autoplay_run['running'] and command['kind'] not in ('step_autoplay','stop_autoplay'):
+                    raise ValueError('おまかせを中止してから通常操作や保存を行ってください。')
                 candidate = copy.deepcopy(session)
+                candidate_run=copy.deepcopy(autoplay_run)
                 candidate_assignment=auto_assign
                 saved_id = ''
-                if command['kind']=='set_auto_assignment':
+                if command['kind'] in ('start_autoplay','step_autoplay','stop_autoplay'):
+                    if command['working_cats']:raise ValueError('おまかせ操作には出勤猫の変更を付けないでください。')
+                    if command['kind']=='start_autoplay':
+                        candidate_run=unity_autoplay.start(candidate,command['autoplay_objective'],command['autoplay_mode'],command['autoplay_days'],candidate_assignment)
+                        candidate_assignment=True
+                    else:
+                        candidate_assignment=unity_autoplay.advance(candidate,candidate_run,cancel=command['kind']=='stop_autoplay')
+                elif command['kind']=='set_auto_assignment':
                     if command['working_cats']:raise ValueError('自動割り当て設定には出勤猫を指定しないでください。')
                     candidate.core.require_running()
                     candidate_assignment=command['choice']=='automatic'
@@ -1535,13 +1549,16 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True):
                         entry=python_previews.get(command.get('save_id')) if isinstance(command.get('save_id'),str) else None
                         if entry is None:raise ValueError('先にPython版セーブの内容を確認してください。')
                         candidate, signature, _, candidate_assignment=python_save(entry[0])
+                        candidate_run=None
                         if signature!=entry[1]:raise ValueError('確認後に元のセーブまたは関係データが変更されました。再確認してください。')
                     elif command['kind'] == 'load_game':
                         candidate, candidate_assignment = load_game(save_path(command.get('save_id')) / 'cafe.json')
+                        candidate_run=unity_autoplay.load_report(save_path(command.get('save_id')) / 'autoplay.json')
                         candidate.store = MemoryRelationships(candidate.store._read())
                     else:
                         if command['kind'] == 'new_game':
                             candidate_assignment=True
+                            candidate_run=None
                             from .cafe_new_game import create_game, starting_conditions
                             with tempfile.TemporaryDirectory() as directory:
                                 candidate=create_game(directory, starting_conditions(command['choice']))
@@ -1559,6 +1576,7 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True):
                         candidate.store = RelationshipStore(path / 'relationships.json')
                         candidate.store._write(data_store)
                         save_game(candidate, path / 'cafe.json', auto_assign=candidate_assignment)
+                        unity_autoplay.save_report(candidate_run,path / 'autoplay.json')
                         candidate.store = MemoryRelationships(candidate.store._read())
                 elif command['kind'] == 'resolve_store_event':
                     if command['working_cats']:
@@ -1784,9 +1802,10 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True):
                     if not candidate.automatic_step(auto_assign=candidate_assignment):
                         raise ValueError('待機中の客に担当猫と席を割り当てるか、自動割り当てをONにしてください。')
                 # Commit only a completely successful operation (including receipts).
-                projected = state_view(candidate, instance_id, revision + 1, candidate_assignment)
+                projected = state_view(candidate, instance_id, revision + 1, candidate_assignment, candidate_run)
                 session.__dict__.update(candidate.__dict__)
                 auto_assign=candidate_assignment
+                autoplay_run=candidate_run
                 revision += 1
                 data, code = dict(request_id=request_id, save_id=saved_id, state=projected), 200
             except (ValueError, OSError) as ex:
@@ -1809,7 +1828,9 @@ def main():
     from .storage.cafe_saves import load_game
     with tempfile.TemporaryDirectory(prefix='cat-cafe-unity-') as directory:
         session, auto_assign = load_game(args.save) if args.save else (create_game(directory), True)
-        with make_server(session, args.port, args.saves_directory, auto_assign=auto_assign) as server:
+        from .unity_autoplay import load_report
+        autoplay_run=load_report(args.save.parent/'autoplay.json') if args.save else None
+        with make_server(session, args.port, args.saves_directory, auto_assign=auto_assign, autoplay_run=autoplay_run) as server:
             print(f'Unity state: http://127.0.0.1:{server.server_port} (state + shifts + business + saves)', flush=True)
             try:
                 server.serve_forever()
