@@ -1214,10 +1214,24 @@ def finance_history_view(session):
                 + ('\n関係データへの保存が未完了です。営業画面で保存を再試行してください。' if session.pending else ''))
 
 
-def cat_records_view(session, cat_id):
+def cat_profile_view(data):
+    """Reuse the Python detail labels and values without inferring missing profiles."""
+    from .core.cat_appearance import FIELDS
+    sections = [
+        ('プロフィール', {'名前', '猫ID', '個性'}),
+        ('特性と効果', {'特性', '接客ストレス', '接客疲労', '休養時の疲労回復', '派遣報酬', '派遣帰還時のストレス'}),
+        ('特徴・外見', {'特徴', *FIELDS.values()}),
+        ('交流の好み', {key for key, _ in data['basic'] if key.startswith(('好み：', '強さの好み：'))}
+         | {'飽きやすさ', '種類切り替えへの反応'}),
+    ]
+    return '\n\n'.join(title+'\n'+'\n'.join(f'{key}：{value}' for key, value in data['basic'] if key in keys)
+                        for title, keys in sections)
+
+
+def cat_records_view(session, cat_id, details=None):
     from .cafe_cat_details import cat_details
     from .cafe_customers import customer_name
-    data = cat_details(session, cat_id)
+    data = details if details is not None else cat_details(session, cat_id)
     admission = [(key, value) for key, value in data['basic']
                  if key in ('加入経路', '加入日', '紹介者', '譲渡先', '譲渡成立日')]
     events = '\n\n'.join(f'{str(day)+"日目" if day is not None else "日付の記録なし"} · {kind} · {target}\n{result}'
@@ -1276,8 +1290,10 @@ def state_view(session, instance_id='', revision=0, auto_assign=True, autoplay_r
         session._ready()
     except ValueError as ex:
         begin_problem = str(ex)
+    from .cafe_cat_details import cat_details
     for row in session.cat_choices():
         cat_id = row['cat_id']
+        detail = cat_details(session, cat_id)
         player_reason = begin_problem or unavailable_reason(core, cat_id)
         cats.append(dict(cat_id=cat_id, content_cat_id=CONTENT_IDS.get(cat_id, cat_id),
                          name=row['name'], stamina=row['stamina'],
@@ -1286,7 +1302,7 @@ def state_view(session, instance_id='', revision=0, auto_assign=True, autoplay_r
                          health_status=row['health_status'], activity=core.activity(cat_id),
                          health_label=health_text(row['health_status'], core.cats[cat_id].recovery_days_remaining),
                          activity_label=ACTIVITY_LABELS[core.activity(cat_id)], growth_details=growth_description(core, cat_id),
-                         records=cat_records_view(session, cat_id), affinity=bond['affinity'][cat_id], remaining_sets=remaining(core),
+                         profile_details=cat_profile_view(detail), records=cat_records_view(session, cat_id, detail), affinity=bond['affinity'][cat_id], remaining_sets=remaining(core),
                          can_player_start=not player_reason, player_reason=player_reason))
     seats = getattr(core, 'seats', {core.seat.id: core.seat})
     from .cafe_customers import customer_name
