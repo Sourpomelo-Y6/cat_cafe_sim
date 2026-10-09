@@ -1310,12 +1310,22 @@ def state_view(session, instance_id='', revision=0, auto_assign=True, autoplay_r
     except ValueError as ex:
         begin_problem = str(ex)
     from .cafe_cat_details import cat_details
+    from .cafe_shift_forecast import shift_forecast, estimate_text, stress_estimate_text, forecast_note
     for row in session.cat_choices():
         cat_id = row['cat_id']
         detail = cat_details(session, cat_id)
+        forecast = shift_forecast(core, cat_id)
+        at_cafe = core.activity(cat_id) == 'cafe'
+        forecast_details = ('前日接客：' + (str(forecast['previous_actions']) + '行動' if forecast['previous_actions'] is not None else '記録なし')
+            + '\n出勤：疲労 / 発症 ' + ('出勤不可' if not at_cafe or forecast['sick'] else estimate_text(forecast['work']))
+            + ' / ストレス ' + ('出勤不可' if not at_cafe or forecast['sick'] else stress_estimate_text(forecast['work_stress']))
+            + '\n休養：疲労 / 発症 ' + (estimate_text(forecast['rest']) if at_cafe else '在店していません')
+            + ' / ストレス ' + (stress_estimate_text(forecast['rest_stress']) if at_cafe else '在店していません')
+            + '\n' + (forecast_note(forecast) if at_cafe else '在店していない猫は出勤・休養の対象外です。')
+            + ('\nストレス管理は未導入です。' if forecast['current_stress'] is None else ''))
         player_reason = begin_problem or unavailable_reason(core, cat_id)
         cats.append(dict(cat_id=cat_id, content_cat_id=CONTENT_IDS.get(cat_id, cat_id),
-                         name=row['name'], stamina=row['stamina'],
+                         name=row['name'], shift_forecast=forecast_details, stamina=row['stamina'],
                          max_stamina=core.config.max_stamina, working=row['working'],
                          fatigue=row['fatigue'], stress=row['stress'] or 0,
                          health_status=row['health_status'], activity=core.activity(cat_id),
@@ -1341,7 +1351,9 @@ def state_view(session, instance_id='', revision=0, auto_assign=True, autoplay_r
     ended = (core.management or {}).get('game_over')
     game_over = dict(reason=ended['reason'], day=ended['day'], popularity=core.management['popularity']) if ended else None
     general=general_dispatch_view(session);patron=patron_dispatch_view(session)
-    return dict(version=1, pending_results=pending_results_view(session), autoplay=autoplay_projection(session,autoplay_run), service_assignment=service_assignment_view(session,auto_assign), dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
+    from .core.cafe_shifts import fatigue_rest_schedule
+    rest_proposal = fatigue_rest_schedule({key: cat for key, cat in core.cats.items() if core.activity(key) == 'cafe'})
+    return dict(rest_proposal=rest_proposal, version=1, pending_results=pending_results_view(session), autoplay=autoplay_projection(session,autoplay_run), service_assignment=service_assignment_view(session,auto_assign), dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), waiting_area=waiting_area_view(session), customer_directory=customer_directory_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
