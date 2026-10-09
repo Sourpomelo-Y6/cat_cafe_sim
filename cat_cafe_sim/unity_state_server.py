@@ -1203,6 +1203,43 @@ def pet_shop_view(session):
     return dict(rows=rows,housing=housing_status(core),notes='候補と価格は新規ゲーム開始時の保存設定を使います。営業準備中に購入できます。購入した猫は同じ候補から再購入できません。')
 
 
+def business_history_view(session):
+    from .cafe_history import comparison_rows
+    days = comparison_rows(session.core)
+    rows = []
+    metrics = [('popularity', '店の人気'), ('popularity_gain', '獲得人気'),
+               ('completed_interactions', '交流件数')]
+    ratings = [('satisfied', '満足'), ('normal', '普通'), ('dissatisfied', '不満')]
+    departures = [('queue_full', '満員で帰った客'), ('wait_timeout', '待ち切れず帰った客')]
+    previous = None
+    for result in days:
+        summary = result['summary']
+        values = {key: summary.get(key) for key, _ in metrics}
+        evaluation = summary.get('customer_satisfaction')
+        leaving = summary.get('departures')
+        for key, label in ratings:
+            values['rating_' + key] = evaluation.get(key, 0) if evaluation is not None else None
+        for key, label in departures:
+            values['departure_' + key] = leaving.get(key, 0) if leaving is not None else None
+        labels = metrics + [('rating_' + key, '接客評価・' + label) for key, label in ratings] + [('departure_' + key, label) for key, label in departures]
+        details = []
+        differences = []
+        for key, label in labels:
+            value = values[key]
+            details.append(label + '：' + (f'{value:g}' if value is not None else '未導入・記録なし'))
+            before = previous[1].get(key) if previous and result['day'] == previous[0] + 1 else None
+            differences.append(label + '：' + (f'{value-before:+g}' if value is not None and before is not None else '比較できる記録なし'))
+        details.append('目標結果：' + {'active': '挑戦中', 'cleared': 'クリア', 'expired': '期限内未達'}.get(summary.get('goal_status'), '未導入・記録なし'))
+        details.append('席数：' + (str(summary['seat_count']) if 'seat_count' in summary else '記録なし'))
+        details.append('店舗イベント：' + summary.get('store_event', '未導入・記録なし'))
+        label = f"{result['day']}日目 / " + ('休業日' if result.get('day_type') == 'day_off' else '営業日')
+        overview = '前日差は直前の確定記録との比較です。\n獲得人気はその日に得た値で、人気の前日差とは異なります。'
+        rows.append(dict(day=result['day'], label=label, overview=overview, details='\n'.join(details) + '\n\n前日との差\n' + '\n'.join(differences)))
+        previous = result['day'], values
+    return dict(rows=rows, totals=f'閉店済みの記録：{len(rows)}日分',
+                notes='閉店済みの日を比較します（休業日を含む）。\n未導入・記録不足は現在値やゼロで補いません。')
+
+
 def finance_history_view(session):
     core = session.core
     days = list(core.day_results)
@@ -1387,7 +1424,7 @@ def state_view(session, instance_id='', revision=0, auto_assign=True, autoplay_r
                             customer_name=customer_name(seat.customer_id) if seat.customer_id else '', equipment_id=seat.equipment or '', equipment_description=equipment_description(core,key), equipment_name=equipment_description(core,key).split('（')[0]) for key, seat in seats.items()],
                 customers=customers, housing=housing_view(session), goal_result=goal_result_view(session), store_event=store_event_view(session), growth_choices=growth_view(session), player_interaction=player_interaction_view(session), patron_dispatch=patron, general_dispatch=general, dispatch_choices=dispatch_choices_view(session), dispatch_troubles=dispatch_troubles_view(session), missing_cats=missing_cats_view(session), missing_rest=missing_rest_view(session), adoption=adoption_view(session),
                 waiting_count=len(core.queue), completed_interactions=summary['completed_interactions'],
-                revenue=summary['revenue'], finance=values(summary) if core.closed else None, finance_history=finance_history_view(session), pet_shop=pet_shop_view(session), objective_start=objective_start_view(session))
+                revenue=summary['revenue'], finance=values(summary) if core.closed else None, finance_history=finance_history_view(session), business_history=business_history_view(session), pet_shop=pet_shop_view(session), objective_start=objective_start_view(session))
 
 
 def make_server(session, port=8190, saves_directory=None, *, auto_assign=True, autoplay_run=None):
