@@ -1422,7 +1422,22 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True, a
             self.wfile.write(body)
 
         def do_GET(self):
-            if urlsplit(self.path).path=='/python-save':
+            if urlsplit(self.path).path in ('/business-log','/business-log/export'):
+                try:
+                    from .unity_business_log import load_log, projection
+                    route=urlsplit(self.path).path;query=parse_qs(urlsplit(self.path).query,keep_blank_values=True)
+                    if not set(query)<= {'path','offset'} or any(len(values)!=1 for values in query.values()):raise ValueError('営業ログの指定が不正です。')
+                    if route.endswith('/export'):
+                        if query:raise ValueError('出力は現在の営業ログを選んでください。')
+                        data=dict(instance_id=instance_id,revision=revision,log_json=json.dumps(session.core.log(),ensure_ascii=False,indent=2)+'\n')
+                    else:
+                        path=query.get('path',[''])[0];offset=int(query.get('offset',['0'])[0])
+                        log=load_log(path) if path else session.core.log()
+                        data=dict(projection(log,offset,path or '現在の営業'),instance_id=instance_id,revision=revision)
+                    code=200
+                except (ValueError,OSError,KeyError,TypeError,AttributeError,IndexError,AssertionError) as ex:
+                    data,code=dict(error='営業ログを確認できません：'+str(ex)),422
+            elif urlsplit(self.path).path=='/python-save':
                 try:
                     query=parse_qs(urlsplit(self.path).query,keep_blank_values=True)
                     if set(query)!={'path'} or len(query['path'])!=1:raise ValueError('営業セーブのパスを1つ指定してください。')
