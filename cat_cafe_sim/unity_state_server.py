@@ -922,6 +922,32 @@ def next_goal_view(session):
                 started_day=start, deadline=start+selected['days']-1, can_advance=not problem, reason=problem)
 
 
+def clear_results_view(session):
+    from .core.cafe_clear_results import goals, completed, metric
+    from .cafe_clear_results_gui import LABELS
+    core = session.core
+    rows = []
+    for mode, label in LABELS.items():
+        if not completed(core, mode):
+            continue
+        goal = goals(core)[mode]
+        saved = (core.clear_results or {}).get(mode)
+        target, _ = metric(core, mode)
+        value = saved['value'] if saved else len(goal['achieved_cats']) if mode == 'bond' else goal['rules']['target'] if mode == 'patron' else None
+        achieved = f'{value:g} / {target:g}' if value is not None else f'目標 {target:g} 達成（達成時の実数は記録なし）'
+        if mode == 'bond':
+            achieved += '匹'
+        details = f"達成日：{saved['day'] if saved else goal['resolved_day']}日目\n目標の達成値：{achieved}"
+        for field, caption in (('funds', '所持金'), ('popularity', '店の人気'), ('cats', '在籍猫数'), ('revenue', '累計接客売上')):
+            text = f"{saved[field]:g}" + ('匹' if field == 'cats' else '') if saved else '記録なし'
+            details += f'\n{caption}：{text}'
+        notes = '達成した瞬間の記録です。継続営業後も数値は変わりません。' if saved else '旧セーブには達成時の詳しい成果がありません。現在値では補いません。'
+        if goal['continued']:
+            notes += ' この目標の結果は確認済みです。'
+        rows.append(dict(mode=mode, label=label, details=details, notes=notes))
+    return dict(rows=rows, notes='人気の最終段階・有力者・猫との好感度の達成結果を、ここで見返せます。')
+
+
 def goal_result_view(session):
     from .core.cafe_goal import pending, current_rules, current_start
     from .core.cafe_patron import pending as patron_pending
@@ -1353,7 +1379,7 @@ def state_view(session, instance_id='', revision=0, auto_assign=True, autoplay_r
     general=general_dispatch_view(session);patron=patron_dispatch_view(session)
     from .core.cafe_shifts import fatigue_rest_schedule
     rest_proposal = fatigue_rest_schedule({key: cat for key, cat in core.cats.items() if core.activity(key) == 'cafe'})
-    return dict(rest_proposal=rest_proposal, version=1, pending_results=pending_results_view(session), autoplay=autoplay_projection(session,autoplay_run), service_assignment=service_assignment_view(session,auto_assign), dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
+    return dict(clear_results=clear_results_view(session), rest_proposal=rest_proposal, version=1, pending_results=pending_results_view(session), autoplay=autoplay_projection(session,autoplay_run), service_assignment=service_assignment_view(session,auto_assign), dispatch_comparison=dispatch_comparison_view(session,general,patron), game_over=game_over, instance_id=instance_id, revision=revision, new_game_options=new_game_options(), objective=core.objective or "", objective_progress=objective_progress_view(session), next_goal=next_goal_view(session),
                 can_set_shifts=core.can_set_shifts, day=core.day, tick=core.tick, funds=core.funds, cats=cats,
                 closed=core.closed, required_action=required_action, day_off=day_off_view(session), expansion=expansion_view(session), seat_equipment=seat_equipment_view(session), rest_space=rest_space_view(session), waiting_area=waiting_area_view(session), customer_directory=customer_directory_view(session), items=items_view(session), intake_request=intake_view(session), customer_trust=customer_trust_view(session), reservation=reservation_view(session), regular_introduction=regular_introduction_view(session), dispatch_introductions=dispatch_introductions_view(session), visiting_cat=visiting_cat_view(session), opening_ticks=core.config.opening_ticks,
                 phase='closed' if core.closed else 'preparation' if core.can_set_shifts else 'open',
