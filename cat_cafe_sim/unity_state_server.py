@@ -981,7 +981,7 @@ def goal_result_view(session):
     else:
         details += f"\n所持金：{core.funds:g}"
     details += '\n\n「継続営業」で結果を確認し、猫や資金を引き継いで遊べます。'
-    result = dict(kind=kind, title=title, details=details, status=data['status'], resolved_day=data['resolved_day'], funds=core.funds, can_continue=not problem, reason=problem)
+    result = dict(kind=kind, title=title, summary=progress['summary'], details=details, status=data['status'], resolved_day=data['resolved_day'], funds=core.funds, can_continue=not problem, reason=problem)
     if mode == 'popularity':
         selected = current_rules(data)
         result.update(stage=len(data.get('history', []))+1, started_day=current_start(data), deadline=current_start(data)+selected['days']-1, target=selected['target'], popularity=core.management['popularity'])
@@ -1174,7 +1174,7 @@ def objective_start_view(session):
             details+='\n'.join(f"{r['name']}：満足度{r['target']:g}" for r in selected.get('members',[]))
             details+=f"\n開始後に有力者への派遣を選べます。既存の帰還報酬：{selected['destination']['reward']:g}。"
         if choice!='management':details+='\n\n開始費用はありません。開始後の取消・やり直しはできません。達成時は既存の成果記録・結果確認・継続営業を使います。'
-        rows.append(dict(choice=choice,label=label,started=started,can_start=not problem,reason=problem,details=details))
+        rows.append(dict(choice=choice,label=label,started=started,can_start=not problem,reason=problem,details=details,summary=objective_progress_view(session,choice)['summary']+('\n期限なし' if choice in ('bond','patron') else '') if started and choice!='management' else '導入済み' if started else '未開始'))
     return dict(rows=rows,notes='旧営業の経営ルールは病気ルールが有効な準備中に導入できます。目標は経営ルール導入後の準備中に開始できます。開始時に選んだモードは変更しません。')
 
 
