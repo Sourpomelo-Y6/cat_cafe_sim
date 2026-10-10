@@ -20,7 +20,7 @@ class UnityCustomerDirectoryTests(unittest.TestCase):
         self.assertEqual(before,s.core.snapshot());self.assertEqual(stored,s.store.path.read_bytes());self.assertEqual(s.core.customer_preferences['customers'],{})
         self.assertEqual([r['customer_id'] for r in rows],[r['customer_id'] for r in directory(s)])
         for row,source in zip(rows,directory(s)):
-            self.assertEqual(row['visits'],source['visits']);self.assertIn(str(source['arrival_tick'])+'刻',row['today'])
+            self.assertEqual(row['presentation_version'],1);self.assertIn(row['name'],row['overview_details']);self.assertIn('信頼状態',row['status_details']);self.assertIn('直近の接客評価',row['condition_details']);self.assertTrue(row['planned_today']);self.assertFalse(row['needs_attention']);self.assertTrue(all(c['matches'] and c['tension_multiplier']==1.25 and c['name'] and c['affinity']>=0 for c in row['cats']));self.assertEqual(row['visits'],source['visits']);self.assertIn(str(source['arrival_tick'])+'刻',row['today'])
             self.assertIn('未導入',row['details']);self.assertTrue(all('好みに一致' in r['details'] and '×1.25' in r['details'] for r in row['cats']))
         legacy=self.fixture.session();self.assertTrue(all('好み未設定' in c['details'] for r in state_view(legacy)['customer_directory']['rows'] for c in r['cats']))
     def test_http_save_load_live_counts_and_existing_relationships(self):
@@ -49,10 +49,10 @@ class UnityCustomerDirectoryTests(unittest.TestCase):
         fixture=discontent_fixtures.CustomerDiscontentTests();fixture.setUp();self.addCleanup(fixture.doCleanups)
         selected=dict(discontent_fixtures.rules(),waiting_gain=100);s=fixture.session(selected);s.step()
         before=s.core.snapshot();row=next(r for r in state_view(s)['customer_directory']['rows'] if r['customer_id']=='guest-2')
-        self.assertEqual(before,s.core.snapshot());self.assertIn('来店停止',row['today']);self.assertIn('来店停止',row['tomorrow']);self.assertIn('上限で退店',row['details']);self.assertIn('復帰',row['details'])
+        self.assertEqual(before,s.core.snapshot());self.assertIn('来店停止',row['today']);self.assertIn('来店停止',row['tomorrow']);self.assertTrue(row['needs_attention']);self.assertFalse(row['planned_today']);self.assertFalse(row['planned_tomorrow']);self.assertIn('上限で退店',row['details']);self.assertIn('復帰',row['details'])
         fixture=trust_fixtures.CustomerTrustTests();fixture.setUp();self.addCleanup(fixture.doCleanups);event=fixture.warning();s=fixture.s
         row=next(r for r in state_view(s)['customer_directory']['rows'] if r['customer_id']=='guest-1');self.assertIn('回答待ち',row['details'])
         s.resolve_customer_trust(event['id'],'ignore');row=next(r for r in state_view(s)['customer_directory']['rows'] if r['customer_id']=='guest-1')
-        self.assertIn('永久離脱',row['today']);self.assertIn('永久離脱',row['tomorrow']);self.assertIn('対応しなかった',row['details'])
+        self.assertTrue(row['needs_attention']);self.assertFalse(row['planned_today']);self.assertFalse(row['planned_tomorrow']);self.assertIn('永久離脱',row['today']);self.assertIn('永久離脱',row['tomorrow']);self.assertIn('対応しなかった',row['details'])
 
 if __name__=='__main__':unittest.main()

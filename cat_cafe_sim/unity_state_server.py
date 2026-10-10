@@ -393,6 +393,7 @@ def customer_directory_view(session):
         trust = row['trust']
         lines.append('信頼状態：未導入' if trust is None else '信頼状態：'+labels[trust['status']])
         if trust and trust['reason']:lines.append('離脱理由：'+{'ignored':'信頼回復に対応しなかった','recovery_failed':'信頼回復中の接客が不満になった'}.get(trust['reason'],trust['reason']))
+        condition_start = len(lines)
         satisfaction = row['satisfaction']
         lines.append('直近の接客評価：記録なし' if satisfaction is None else f"直近の接客評価：{satisfaction['label']} / 点数 {satisfaction['score']:g}\n理由："+('・'.join(satisfaction['reasons']) or '加点要素なし'))
         selected = core.customer_satisfaction
@@ -414,8 +415,13 @@ def customer_directory_view(session):
             multiplier = core.customer_preferences['rules']['tension_multiplier'] if cat['matches'] else 1
             text = f"{cat['name']} / 猫から客への親しみ {cat['affinity']:g}\n{cat['match_text']} / 特徴："+feature_text((core.cat_features or {}).get(cat['cat_id'],[]))
             text += f"\n通常のテンション上昇×{multiplier:g} / {activity}・"+health_text(cat['health_status'],cat['recovery_days_remaining'])
-            cats.append(dict(cat_id=cat['cat_id'],adopted=cat['activity']=='adopted',details=text))
-        rows.append(dict(customer_id=key,name=row['name'],description=row['description'],preference_text=row['preference_text'],visits=row['visits'],today=today,tomorrow=tomorrow,details='\n\n'.join(lines),cats=cats))
+            cats.append(dict(cat_id=cat['cat_id'],adopted=cat['activity']=='adopted',details=text, name=cat['name'], matches=cat['matches'], affinity=cat['affinity'], tension_multiplier=multiplier))
+        rows.append(dict(customer_id=key,name=row['name'],description=row['description'],preference_text=row['preference_text'],visits=row['visits'],today=today,tomorrow=tomorrow,details='\n\n'.join(lines),cats=cats,
+                         presentation_version=1, overview_details='\n\n'.join(lines[:3]),
+                         status_details='\n\n'.join(lines[3:condition_start]), condition_details='\n\n'.join(lines[condition_start:]),
+                         planned_today=not core.closed and row['arrival_tick'] is not None and row['status'] in ('来店予定','待機中','接客中','退店済み','信頼回復中'),
+                         planned_tomorrow=row['tomorrow_tick'] is not None and row['tomorrow_suspended_until'] is None and not (trust and trust['status']=='departed'),
+                         needs_attention=row['suspended_until'] is not None or row['tomorrow_suspended_until'] is not None or bool(trust and trust['status'] in ('waiting','recovery','departed'))))
     return dict(today_label=day_label(core),tomorrow_label=day_label(core,core.day+1),rows=rows,
                 notes='予定は営業した場合の進行時点です（0刻＝開店時）。休業日は来店しません。\n来店回数はこの営業セーブの記録内で集計し、接客できなかった来店も含みます。')
 
