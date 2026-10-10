@@ -1550,7 +1550,14 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True, a
                         rows.append(row)
                 except (OSError, ValueError, AttributeError):
                     continue
-        return sorted(rows, key=lambda row: row.get('created_at', ''), reverse=True)
+        visible=[]; seen=set()
+        for row in sorted(rows, key=lambda row: row.get('created_at', ''), reverse=True):
+            slot=row.get('slot',0)
+            if type(slot) is int and 1<=slot<=10:
+                if slot in seen: continue
+                seen.add(slot)
+            visible.append(row)
+        return visible
     class Handler(BaseHTTPRequestHandler):
         def setup(self):
             super().setup()
@@ -1609,8 +1616,11 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True, a
                 if not 0 < length <= 16384:
                     raise ValueError('操作データのサイズが不正です。')
                 command = json.loads(self.rfile.read(length).decode('utf-8'))
-                if not isinstance(command, dict) or set(command) - {'save_id', 'choice', 'cat_id', 'target_type', 'event_id', 'customer_id', 'seat_id', 'autoplay_objective', 'autoplay_mode', 'autoplay_days'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
+                if not isinstance(command, dict) or set(command) - {'save_id', 'save_slot', 'choice', 'cat_id', 'target_type', 'event_id', 'customer_id', 'seat_id', 'autoplay_objective', 'autoplay_mode', 'autoplay_days'} != {'request_id', 'instance_id', 'expected_revision', 'kind', 'working_cats'}:
                     raise ValueError('操作データの形式が不正です。')
+                slot=command.get('save_slot',0)
+                if type(slot) is not int or not 0<=slot<=10 or (slot and command.get('kind')!='save_game'):
+                    raise ValueError('セーブスロットは1〜10を指定してください。')
                 request_id = command['request_id']
                 if command.get('kind')=='start_autoplay' and (command.get('autoplay_objective') not in ('popularity','bond','patron') or command.get('autoplay_mode') not in ('basic','clear','fast') or type(command.get('autoplay_days')) is not int or not 1<=command['autoplay_days']<=10):
                     raise ValueError('おまかせの目標・方針・1〜10日の進行日数を指定してください。')
@@ -1748,17 +1758,18 @@ def make_server(session, port=8190, saves_directory=None, *, auto_assign=True, a
                         saved_id = uuid.uuid4().hex
                         path = save_path(saved_id)
                         path.mkdir(parents=True, exist_ok=False)
-                        info = dict(save_id=saved_id, created_at=datetime.now(timezone.utc).isoformat(),
+                        info = dict(save_id=saved_id, slot=slot, created_at=datetime.now(timezone.utc).isoformat(),
                                     objective_label=objective_progress_view(candidate)['label'],
                                     phase='closed' if candidate.core.closed else 'preparation' if candidate.core.can_set_shifts else 'open',
                                     label=f'{candidate.core.day}日目 / 時刻 {candidate.core.tick} / 資金 {candidate.core.funds:g}'
                                     + (' / 閉店' if candidate.core.closed else ''))
-                        RelationshipStore(path / 'info.json')._write(info)
                         data_store = candidate.store._read()
                         candidate.store = RelationshipStore(path / 'relationships.json')
                         candidate.store._write(data_store)
                         save_game(candidate, path / 'cafe.json', auto_assign=candidate_assignment)
                         unity_autoplay.save_report(candidate_run,path / 'autoplay.json')
+                        # Publish the slot only after all save files have been written.
+                        RelationshipStore(path / 'info.json')._write(info)
                         candidate.store = MemoryRelationships(candidate.store._read())
                 elif command['kind'] == 'resolve_store_event':
                     if command['working_cats']:
