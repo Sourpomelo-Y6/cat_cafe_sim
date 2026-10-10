@@ -13,6 +13,17 @@ class UnityFinanceHistoryTests(unittest.TestCase):
         self.temp=tempfile.TemporaryDirectory();self.addCleanup(self.temp.cleanup)
         self.root=Path(self.temp.name);self.s=create_game(self.root/'source')
 
+    def test_presentation_sections_preserve_values_and_missing_comparison(self):
+        s=self.s
+        s.day_off()
+        from cat_cafe_sim.unity_state_server import finance_history_view
+        before=copy.deepcopy(s.core.snapshot());row=finance_history_view(s)['rows'][0]
+        self.assertEqual(row['presentation_version'],1)
+        self.assertIn('総収入',row['headline']);self.assertIn('運営費',row['breakdown'])
+        self.assertIn('比較できる記録なし',row['comparison'])
+        self.assertEqual(row['details'],row['breakdown']+'\n\n'+row['comparison'])
+        self.assertEqual(before,s.core.snapshot())
+
     def test_empty_and_closed_business_then_day_off(self):
         s=self.s;before=copy.deepcopy(s.core.snapshot());self.assertEqual(finance_history_view(s)['rows'],[]);self.assertEqual(before,s.core.snapshot())
         while not s.core.closed:s.automatic_step()

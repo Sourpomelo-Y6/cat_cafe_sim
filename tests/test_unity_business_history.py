@@ -17,6 +17,7 @@ class UnityBusinessHistoryTests(unittest.TestCase):
         while not s.core.closed:s.automatic_step()
         first=business_history_view(s);summary=s.core.day_result()['summary']
         self.assertEqual(len(first['rows']),1)
+        row=first['rows'][0];self.assertEqual(row['presentation_version'],1);self.assertIn('店の人気',row['headline']);self.assertIn('接客評価',row['breakdown']);self.assertIn('比較できる記録なし',row['comparison']);self.assertEqual(row['details'],row['breakdown']+'\n\n'+row['comparison'])
         self.assertIn(f"店の人気：{summary['popularity']:g}",first['rows'][0]['details'])
         self.assertIn(f"接客評価・満足：{summary['customer_satisfaction']['satisfied']}",first['rows'][0]['details'])
         s.next_day();self.assertEqual(business_history_view(s),first);s.day_off()

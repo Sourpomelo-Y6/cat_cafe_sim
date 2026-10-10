@@ -1290,7 +1290,9 @@ def business_history_view(session):
         details.append('店舗イベント：' + summary.get('store_event', '未導入・記録なし'))
         label = f"{result['day']}日目 / " + ('休業日' if result.get('day_type') == 'day_off' else '営業日')
         overview = '前日差は直前の確定記録との比較です。\n獲得人気はその日に得た値で、人気の前日差とは異なります。'
-        rows.append(dict(day=result['day'], label=label, overview=overview, details='\n'.join(details) + '\n\n前日との差\n' + '\n'.join(differences)))
+        rows.append(dict(day=result['day'], label=label, overview=overview, details='\n'.join(details) + '\n\n前日との差\n' + '\n'.join(differences),
+                         presentation_version=1, headline=' / '.join(details[:3])+'\n'+' / '.join(details[3:6])+'\n'+' / '.join(details[6:8]),
+                         breakdown='\n'.join(details), comparison='前日との差\n'+'\n'.join(differences)))
         previous = result['day'], values
     return dict(rows=rows, totals=f'閉店済みの記録：{len(rows)}日分',
                 notes='閉店済みの日を比較します（休業日を含む）。\n未導入・記録不足は現在値やゼロで補いません。')
@@ -1323,7 +1325,9 @@ def finance_history_view(session):
         text='\n'.join(f'{label}：{amount(summary,key)}' for key,label in labels)
         rows.append(dict(day=day['day'],label=f"{day['day']}日目・{kind}",
                          overview=f"資金 {amount(summary,'opening_funds')} → {amount(summary,'closing_funds')} / 純収支 {amount(summary,'net_cash_flow')}",
-                         details=text+'\n\n前日との差（当日−前日）\n'+'\n'.join(comparison)))
+                         details=text+'\n\n前日との差（当日−前日）\n'+'\n'.join(comparison), presentation_version=1,
+                         headline=f"資金 {amount(summary,'opening_funds')} → {amount(summary,'closing_funds')} / 純収支 {amount(summary,'net_cash_flow')}\n総収入 {amount(summary,'total_income')} / 総支出 {amount(summary,'total_expenses')}",
+                         breakdown=text, comparison='前日との差（当日−前日）\n'+'\n'.join(comparison)))
     totals=[]
     for key,label in labels[1:4]:
         values=[day['summary'].get(key) for day in days]
