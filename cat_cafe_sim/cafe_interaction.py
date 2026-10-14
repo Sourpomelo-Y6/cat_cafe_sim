@@ -205,7 +205,7 @@ class CafeInteractionSession:
         row = updated.recruitment['candidates'][cat_id]
         self._commit_recruited(updated, cat_id, row)
 
-    def _commit_recruited(self, updated, cat_id, row):
+    def _commit_recruited(self, updated, cat_id, row, *, appearance=None):
         import copy
         from .core.human_cat_types import Personality
         from .storage.relationships import RelationshipConflict
@@ -213,6 +213,10 @@ class CafeInteractionSession:
         if cat_id in data.get('cats', {}) or any(p['cat_id'] == cat_id for p in data['pairs']):
             raise RelationshipConflict('この候補の猫IDはすでに関係データに登録されています。')
         profile = self.store._register(data, cat_id, row['name'], Personality.from_dict(row['personality']))
+        if appearance is not None:
+            from .core.cat_appearance import validate_appearance
+            profile['appearance'] = validate_appearance(appearance)
+            data['cats'][cat_id]['appearance'] = copy.deepcopy(profile['appearance'])
         profiles = dict(self.profiles, **{cat_id: dict(cat_id=cat_id, **profile)})
         baseline = copy.deepcopy(data) if self.checkpoint_baseline is not None else None
         self.store._write(data)
@@ -276,7 +280,13 @@ class CafeInteractionSession:
             return
         if choice=='accept':
             rule=updated.intake_request['rules']
-            self._commit_recruited(updated,rule['cat_id'],rule['candidate'])
+            import json
+            from pathlib import Path
+            definition = json.loads((Path(__file__).resolve().parents[1] / 'config/cafe_intake_request.json').read_text(encoding='utf-8'))
+            appearance = definition.get('appearance') if (rule['cat_id'] == definition['cat_id']
+                and rule['candidate']['name'] == definition['name']
+                and rule['candidate'].get('features', []) == definition['features']) else None
+            self._commit_recruited(updated,rule['cat_id'],rule['candidate'],appearance=appearance)
         else:
             self.core=updated
 

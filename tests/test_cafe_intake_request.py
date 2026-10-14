@@ -50,6 +50,8 @@ class IntakeRequestTests(unittest.TestCase):
         self.assertEqual(s.profiles[key]['name'], rule['candidate']['name'])
         self.assertEqual(s.core.summary()['recruitment_expenses'], 200)
         s = self.reload(s)
+        self.assertTrue(all(s.profiles[key]['appearance'].values()))
+        self.assertEqual(s.profiles[key]['appearance']['eye_color'], '両目とも琥珀色')
         snapshot = s.core.snapshot()
         with patch.object(s.store, '_write', side_effect=AssertionError('duplicate write')):
             s.resolve_intake_request('accept')
