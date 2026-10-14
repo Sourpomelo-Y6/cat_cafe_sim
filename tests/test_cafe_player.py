@@ -47,7 +47,26 @@ class PlayerTests(unittest.TestCase):
             action()
         self.assertEqual(before, session.core.log())
 
-    def test_three_sets_ten_commands_shared_with_customer_rules_and_resume(self):
+    def test_legacy_ten_turn_save_resumes_then_new_set_has_twenty(self):
+        s = self.session()
+        key = next(iter(s.core.cats))
+        # Reproduce an old start with its recorded ten-turn config.
+        s.core.play_with_player(key, replace(s.interaction_config, ticks=10,
+            max_stamina=s.core.config.max_stamina).to_dict())
+        for _ in range(4):
+            s.player_command('pause')
+        s = self.reload(s)
+        self.assertEqual(current(s.core).config.ticks, 10)
+        for _ in range(6):
+            s.player_command('pause')
+        self.assertIsNone(current(s.core))
+        self.assertEqual(verify_relationship(s.core.player_bond['last']).config.ticks, 10)
+        s.play_with_player(key)
+        self.assertEqual(current(s.core).config.ticks, 20)
+        s = self.reload(s)
+        self.assertEqual(current(s.core).config.ticks, 20)
+
+    def test_three_sets_twenty_commands_shared_with_customer_rules_and_resume(self):
         for seats in (1, 2):
             with self.subTest(seats=seats):
                 s = self.session(seats)
@@ -56,7 +75,7 @@ class PlayerTests(unittest.TestCase):
                 original = self.store.path.read_bytes()
                 s.play_with_player(keys[0])
                 self.assertEqual(remaining(s.core), 2)
-                self.assertEqual(current(s.core).config.ticks, 10)
+                self.assertEqual(current(s.core).config.ticks, 20)
                 reference = verify_relationship(current(s.core).log())
                 for action, target in [('switch','voice'),('direct',None),('adapt',None)]:
                     reference.step(action, target)

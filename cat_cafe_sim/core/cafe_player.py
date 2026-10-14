@@ -2,7 +2,8 @@
 import copy
 
 DAILY_TURNS = 3
-SET_TICKS = 10
+LEGACY_SET_TICKS = 10
+SET_TICKS = 20
 AFFINITY_GAIN = 5
 MAX_AFFINITY = 100
 
@@ -105,7 +106,7 @@ def begin(core, cat_id, config):
     if reason:
         raise ValueError(reason)
     config = RelationshipConfig.from_dict(config)
-    if config.ticks != SET_TICKS or config.max_stamina != core.config.max_stamina:
+    if config.ticks not in (LEGACY_SET_TICKS, SET_TICKS) or config.max_stamina != core.config.max_stamina:
         raise ValueError('プレイヤー交流のターン数・体力上限が不正です。')
     bond = copy.deepcopy(state(core))
     interaction = RelationshipInteraction(config, cat_id=cat_id, customer_id='player',
@@ -187,7 +188,7 @@ def validate(core, data):
         interaction = verify_relationship(log)
         key = interaction.cat_id
         if (key not in core.cats or interaction.customer_id != 'player'
-                or interaction.config.ticks != SET_TICKS
+                or interaction.config.ticks not in (LEGACY_SET_TICKS, SET_TICKS)
                 or interaction.config.max_stamina != core.config.max_stamina):
             raise ValueError('プレイヤー交流の対象・設定が不正です。')
         if field == 'active':
