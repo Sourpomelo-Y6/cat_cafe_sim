@@ -90,6 +90,8 @@ class RegularIntroductionTests(unittest.TestCase):
         self.assertEqual(s.core.funds,funds-200); self.assertEqual(len(s.core.cats),6)
         self.assertEqual(s.profiles[key]['name'],rule['candidate']['name'])
         self.assertEqual(s.profiles[key]['personality'],rule['candidate']['personality'])
+        self.assertEqual(s.profiles[key]['appearance']['eye_color'],'両目とも明るい緑色')
+        self.assertEqual(self.reload(s).profiles[key]['appearance'],s.profiles[key]['appearance'])
         self.assertEqual(s.core.traits[key],rule['candidate']['trait'])
         self.assertEqual(s.core.cat_features[key],rule['candidate']['features'])
         self.assertEqual(s.core.cats[key].stamina,s.core.config.max_stamina)
