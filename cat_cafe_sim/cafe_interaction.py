@@ -249,7 +249,13 @@ class CafeInteractionSession:
         if self.core.visiting_cat==updated.visiting_cat:return
         if choice=='accept':
             rule=updated.visiting_cat['rules']
-            self._commit_recruited(updated,rule['cat_id'],rule['candidate'])
+            import json
+            from pathlib import Path
+            definition = json.loads((Path(__file__).resolve().parents[1] / 'config/cafe_visiting_cat.json').read_text(encoding='utf-8'))
+            appearance = definition.get('appearance') if (rule['cat_id'] == definition['cat_id']
+                and rule['candidate']['name'] == definition['name']
+                and rule['candidate'].get('features', []) == definition['features']) else None
+            self._commit_recruited(updated,rule['cat_id'],rule['candidate'],appearance=appearance)
         else:self.core=updated
 
     def resolve_regular_introduction(self, choice):

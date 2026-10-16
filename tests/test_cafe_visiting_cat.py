@@ -92,6 +92,8 @@ class VisitingCatTests(unittest.TestCase):
         s.resolve_visiting_cat('accept'); self.assertEqual(s.core.funds,funds-200)
         self.assertEqual(len(s.core.cats),6); self.assertEqual(s.profiles[key]['name'],'ココ')
         self.assertEqual(s.profiles[key]['personality'],row['personality'])
+        self.assertEqual(s.profiles[key]['appearance']['eye_color'],'両目とも琥珀色')
+        self.assertEqual(self.reload(s).profiles[key]['appearance'],s.profiles[key]['appearance'])
         self.assertEqual(s.core.traits[key],row['trait']); self.assertEqual(s.core.cat_features[key],row['features'])
         self.assertEqual(s.core.cats[key].stamina,s.core.config.max_stamina)
         self.assertEqual((s.core.cats[key].fatigue,s.core.management['stress'][key],s.core.player_bond['affinity'][key]),(0,0,0))
