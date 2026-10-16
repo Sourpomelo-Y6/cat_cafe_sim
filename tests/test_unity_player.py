@@ -12,7 +12,7 @@ from cat_cafe_sim.unity_state_server import make_server,state_view
 
 
 class UnityPlayerTests(unittest.TestCase):
-    def test_mike_execution_image_keys_respect_actual_reaction(self):
+    def test_all_registered_cats_execution_image_keys_respect_actual_reaction(self):
         from cat_cafe_sim.unity_state_server import player_interaction_view
         with tempfile.TemporaryDirectory() as directory:
             for mode in ('teaser', 'ball', 'plush', 'tunnel', 'pet', 'brush', 'voice', 'presence'):
@@ -30,8 +30,15 @@ class UnityPlayerTests(unittest.TestCase):
                         interaction.records[-1]['reaction'] = reaction
                         expected = 'switch' if reaction in ('turn_away', 'confused', 'listless') else action
                         from unittest.mock import patch
+                        from cat_cafe_sim.unity_state_server import player_image_action
+                        for cat_id in ('cat-mike', 'cat-tama', 'cat-sora', 'cat-kohaku', 'cat-mugi',
+                                       'request-cat-1', 'regular-rescue-1', 'visiting-cat-1'):
+                            self.assertEqual(player_image_action(cat_id, action, reaction), expected)
+                        self.assertEqual(player_image_action('custom-cat', action, reaction), action)
                         with patch('cat_cafe_sim.core.cafe_player.current', return_value=interaction):
+                            before = copy.deepcopy(interaction.records)
                             self.assertEqual(player_interaction_view(session)['image_key'], mode + '__' + expected)
+                            self.assertEqual(interaction.records, before)
 
     def test_interaction_retry_read_only_midway_save_result_and_bond_clear(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -112,7 +119,10 @@ class UnityPlayerTests(unittest.TestCase):
                 self.assertEqual(state_view(session)['player_interaction']['scene_key'], 'presence')
                 self.assertEqual(state_view(session)['player_interaction']['image_key'], 'presence__switch')
                 session.player_command('adapt')
-                self.assertEqual(state_view(session)['player_interaction']['image_key'], 'presence__adapt')
+                from cat_cafe_sim.core.cafe_player import current
+                reaction = current(session.core).records[-1]['reaction']
+                expected = 'switch' if reaction in ('turn_away', 'confused', 'listless') else 'adapt'
+                self.assertEqual(state_view(session)['player_interaction']['image_key'], 'presence__' + expected)
                 self.assertFalse(next(a for a in state_view(session)['player_interaction']['actions'] if a['choice']=='intense')['can_select'])
                 session.player_command(finish=True)
             rows=state_view(session)['cats'];self.assertTrue(all(not r['can_player_start'] for r in rows));self.assertIn('使い切りました',rows[0]['player_reason'])

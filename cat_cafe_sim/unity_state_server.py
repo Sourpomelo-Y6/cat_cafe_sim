@@ -860,6 +860,14 @@ def dispatch_comparison_view(session, general=None, patron=None):
     return dict(cats=cats,notes='現在の猫と保存設定から比較します。休業も帰還日数を進めます。出発後の選択イベント・トラブルによる報酬変化は予測に含みません。出発は選んだ派遣先の画面から行います。')
 
 
+def player_image_action(cat_id, action, reaction):
+    paired_cats = ('cat-mike', 'cat-tama', 'cat-sora', 'cat-kohaku', 'cat-mugi',
+                   'request-cat-1', 'regular-rescue-1', 'visiting-cat-1')
+    if cat_id in paired_cats and action in ('direct', 'adapt') and reaction in ('turn_away', 'confused', 'listless'):
+        return 'switch'
+    return action
+
+
 def player_interaction_view(session):
     from .core.cafe_player import current, remaining
     from .core.human_cat_relationship import verify_relationship
@@ -899,11 +907,9 @@ def player_interaction_view(session):
                 mode=interaction.type_map[interaction.state['mode']].name,
                 scene_key=('pause' if interaction.records and interaction.records[-1]['action'] == 'pause'
                            else interaction.state['mode']),
-                image_key=(interaction.state['mode'] + '__' + (
-                    'switch' if interaction.cat_id == 'cat-mike'
-                    and last.get('action') in ('direct', 'adapt')
-                    and last.get('reaction') in ('turn_away', 'confused', 'listless')
-                    else last['action']) if interaction.records else interaction.state['mode']),
+                image_key=(interaction.state['mode'] + '__' + player_image_action(
+                    interaction.cat_id, last['action'], last.get('reaction'))
+                    if interaction.records else interaction.state['mode']),
                 event_image_key=event_image_key,
                 content_cat_id=CONTENT_IDS.get(interaction.cat_id, interaction.cat_id),
                 affinity_before=summary['affinity_before'], affinity_after=summary['affinity_after'],
