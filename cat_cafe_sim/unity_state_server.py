@@ -899,8 +899,11 @@ def player_interaction_view(session):
                 mode=interaction.type_map[interaction.state['mode']].name,
                 scene_key=('pause' if interaction.records and interaction.records[-1]['action'] == 'pause'
                            else interaction.state['mode']),
-                image_key=(interaction.state['mode'] + '__' + interaction.records[-1]['action']
-                           if interaction.records else interaction.state['mode']),
+                image_key=(interaction.state['mode'] + '__' + (
+                    'switch' if interaction.cat_id == 'cat-mike'
+                    and last.get('action') in ('direct', 'adapt')
+                    and last.get('reaction') in ('turn_away', 'confused', 'listless')
+                    else last['action']) if interaction.records else interaction.state['mode']),
                 event_image_key=event_image_key,
                 content_cat_id=CONTENT_IDS.get(interaction.cat_id, interaction.cat_id),
                 affinity_before=summary['affinity_before'], affinity_after=summary['affinity_after'],

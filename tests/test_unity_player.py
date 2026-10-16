@@ -12,6 +12,27 @@ from cat_cafe_sim.unity_state_server import make_server,state_view
 
 
 class UnityPlayerTests(unittest.TestCase):
+    def test_mike_execution_image_keys_respect_actual_reaction(self):
+        from cat_cafe_sim.unity_state_server import player_interaction_view
+        with tempfile.TemporaryDirectory() as directory:
+            for mode in ('teaser', 'ball', 'plush', 'tunnel', 'pet', 'brush', 'voice', 'presence'):
+                for action in ('direct', 'adapt'):
+                    session = create_game(Path(directory) / (mode + action), starting_conditions('free'))
+                    session.play_with_player('cat-mike')
+                    if mode != 'teaser':
+                        session.player_command('switch', mode)
+                        self.assertEqual(player_interaction_view(session)['image_key'], mode + '__switch')
+                    session.player_command(action)
+                    # Presentation boundary: gameplay has already recorded this reaction.
+                    from cat_cafe_sim.core.cafe_player import current
+                    interaction = current(session.core)
+                    for reaction in ('neutral', 'favorable', 'enthusiastic', 'turn_away', 'confused', 'listless'):
+                        interaction.records[-1]['reaction'] = reaction
+                        expected = 'switch' if reaction in ('turn_away', 'confused', 'listless') else action
+                        from unittest.mock import patch
+                        with patch('cat_cafe_sim.core.cafe_player.current', return_value=interaction):
+                            self.assertEqual(player_interaction_view(session)['image_key'], mode + '__' + expected)
+
     def test_interaction_retry_read_only_midway_save_result_and_bond_clear(self):
         with tempfile.TemporaryDirectory() as directory:
             settings=starting_conditions('bond');settings['bond']=dict(target=1,affinity=.5)
