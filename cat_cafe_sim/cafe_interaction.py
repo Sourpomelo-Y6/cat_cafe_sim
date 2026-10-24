@@ -194,7 +194,8 @@ class CafeInteractionSession:
         self._ready()
         updated = copy.deepcopy(self.core)
         updated.purchase_cat(cat_id)
-        self._commit_recruited(updated, cat_id, updated.pet_shop['candidates'][cat_id])
+        self._commit_recruited(updated, cat_id, updated.pet_shop['candidates'][cat_id],
+                               appearance=updated.pet_shop['candidates'][cat_id].get('appearance'))
 
     def recruit_cat(self, cat_id):
         import copy
@@ -203,7 +204,7 @@ class CafeInteractionSession:
         updated = copy.deepcopy(self.core)
         updated.recruit_cat(cat_id)
         row = updated.recruitment['candidates'][cat_id]
-        self._commit_recruited(updated, cat_id, row)
+        self._commit_recruited(updated, cat_id, row, appearance=row.get('appearance'))
 
     def _commit_recruited(self, updated, cat_id, row, *, appearance=None):
         import copy
@@ -237,7 +238,15 @@ class CafeInteractionSession:
         if original == result:
             return
         if choice == 'accept':
-            self._commit_recruited(updated, result['cat_id'], result['candidate'])
+            import json
+            from pathlib import Path
+            destination = updated.activities['events'][event_id]['destination']['id']
+            filename = {'shopping_street_event': 'cafe_dispatch_introduction.json',
+                        'cat_photo_studio': 'cafe_photo_introduction.json'}.get(destination)
+            definition = json.loads((Path(__file__).resolve().parents[1] / 'config' / filename).read_text(encoding='utf-8')) if filename else {}
+            appearance = definition.get('appearance') if (result['candidate']['name'].startswith(definition.get('name', '') + '（派遣紹介')
+                and result['candidate'].get('features', []) == definition.get('features')) else None
+            self._commit_recruited(updated, result['cat_id'], result['candidate'], appearance=appearance)
         else:
             self.core = updated
 

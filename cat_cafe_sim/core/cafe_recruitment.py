@@ -26,7 +26,7 @@ def catalog(data=None):
     names = set()
     for row in data:
         if (not isinstance(row, dict) or not {'name', 'preset', 'cost'} <= set(row)
-                <= {'name', 'preset', 'cost', 'trait', 'features'}
+                <= {'name', 'preset', 'cost', 'trait', 'features', 'appearance'}
                 or not isinstance(row['preset'], str) or row['preset'] not in presets
                 or ('trait' in row and (not isinstance(row['trait'], str) or row['trait'] not in traits))):
             raise ValueError('受け入れ紹介元の個性・特性・項目が不正です。')
@@ -39,6 +39,9 @@ def catalog(data=None):
             candidate['features'] = copy.deepcopy(row['features'])
         if 'trait' in row:
             candidate['trait'] = copy.deepcopy(traits[row['trait']])
+        if 'appearance' in row:
+            from .cat_appearance import validate_appearance
+            candidate['appearance'] = validate_appearance(row['appearance'])
         rows.append(validate_candidates({'catalog-cat': candidate})['catalog-cat'])
     return rows
 
@@ -67,7 +70,7 @@ def validate_candidates(rows):
         raise ValueError('受け入れ候補が不正です。')
     for key, row in rows.items():
         identity(key)
-        if not isinstance(row, dict) or not {'name', 'personality', 'cost'} <= set(row) <= {'name', 'personality', 'cost', 'trait', 'features'}:
+        if not isinstance(row, dict) or not {'name', 'personality', 'cost'} <= set(row) <= {'name', 'personality', 'cost', 'trait', 'features', 'appearance'}:
             raise ValueError('候補の項目が不正です。')
         if 'features' in row:
             from .cafe_preferences import validate_features
@@ -75,6 +78,9 @@ def validate_candidates(rows):
         if 'trait' in row:
             from .cafe_traits import validate_trait
             validate_trait(row['trait'])
+        if 'appearance' in row:
+            from .cat_appearance import validate_appearance
+            validate_appearance(row['appearance'])
         identity(row['name'])
         Personality.from_dict(row['personality'])
         cost = row['cost']

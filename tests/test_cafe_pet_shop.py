@@ -57,7 +57,7 @@ class PetShopTests(unittest.TestCase):
     def test_catalog_distinct_fixed_candidates_and_reserved_ids(self):
         rows = candidates({'shop-1', 'shop-3'})
         self.assertEqual(list(rows), ['shop-2', 'shop-4', 'shop-5'])
-        self.assertEqual([row['name'] for row in rows.values()], ['チロ', 'レオ', 'ナナ'])
+        self.assertEqual([row['name'] for row in rows.values()], ['チロ', 'レオ', 'ハナ'])
         self.assertEqual([row['cost'] for row in rows.values()], [400, 450, 500])
         combinations = lambda rows: {(digest(row['personality']), tuple(row['features']), row['trait']['id']) for row in rows}
         self.assertFalse(combinations(rows.values()) & combinations(catalog()))
@@ -81,6 +81,7 @@ class PetShopTests(unittest.TestCase):
                 self.assertEqual(s.core.summary()['opening_funds'], 3000)
                 self.assertEqual(s.core.cat_features['shop-1'], source['shop-1']['features'])
                 self.assertEqual(s.core.traits['shop-1'], source['shop-1']['trait'])
+                self.assertEqual(s.profiles['shop-1']['appearance'], source['shop-1']['appearance'])
                 self.assertNotIn('shop-1', s.core.working_cats)
                 self.assertEqual(s.core.cats['shop-1'].stamina, s.core.config.max_stamina)
                 self.assertEqual(s.core.management['stress']['shop-1'], 0)
@@ -91,6 +92,7 @@ class PetShopTests(unittest.TestCase):
                 self.assertIn((1, '加入', 'ペットショップ', '購入費 400'), cat_events(s.core, 'shop-1'))
                 self.assertEqual(verify_cafe_interaction(s.core.log()).snapshot(), s.core.snapshot())
                 s = self.reload(s)
+                self.assertEqual(s.profiles['shop-1']['appearance'], source['shop-1']['appearance'])
                 self.rejected(s, lambda: s.purchase_cat('shop-1'))
                 s.day_off()
                 self.assertEqual(s.core.summary()['pet_shop_expenses'], 0)

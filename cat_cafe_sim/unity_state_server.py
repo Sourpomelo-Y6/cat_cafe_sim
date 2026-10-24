@@ -169,7 +169,7 @@ def dispatch_introductions_view(session):
             problem = problem or response_reason(core,event['id'])
         admission = problem or (admission_reason(core,event['id']) if data['status']=='waiting' else '')
         personality = Personality.from_dict(row['personality'])
-        result.append(dict(event_id=event['id'],cat_id=data['cat_id'],content_cat_id=CONTENT_IDS.get(data['cat_id'],data['cat_id']),
+        result.append(dict(event_id=event['id'],cat_id=data['cat_id'],content_cat_id=content_cat_id(core, data['cat_id']),
                            name=row['name'],status=data['status'],destination=event['destination']['name'],
                            sender_name=session.profiles[event['cat_id']]['name'],presented_day=data['presented_day'] or 0,resolved_day=data['resolved_day'] or 0,
                            cost=row['cost'],funds_after=core.funds-row['cost'],housing=housing_status(core),
@@ -860,10 +860,33 @@ def dispatch_comparison_view(session, general=None, patron=None):
     return dict(cats=cats,notes='現在の猫と保存設定から比較します。休業も帰還日数を進めます。出発後の選択イベント・トラブルによる報酬変化は予測に含みません。出発は選んだ派遣先の画面から行います。')
 
 
+def content_cat_id(core, cat_id):
+    for event in (getattr(core, 'activities', None) or {}).get('events', {}).values():
+        if event.get('introduction', {}).get('cat_id') == cat_id:
+            return 'intro-' + event['destination']['id']
+    recruitment = getattr(core, 'recruitment', None) or {}
+    rows = recruitment.get('candidates', {})
+    if cat_id in rows:
+        import re
+        from .core.cafe_recruitment import catalog, BATCH_SIZE
+        # Allocation is ascending inside each dated batch, including skipped used IDs.
+        if all(re.fullmatch(r'rescue-[1-9][0-9]*', key) for key in rows):
+            days = recruitment.get('presented_days', {})
+            ordered = sorted(rows, key=lambda key: (days.get(key, recruitment['opened_day']), int(key.split('-')[1])))
+            index = ordered.index(cat_id)
+            definitions = catalog()
+            expected = dict(definitions[index % len(definitions)])
+            batch = index // BATCH_SIZE
+            if batch: expected['name'] += f'（紹介{batch + 1}）'
+            if {k:v for k,v in rows[cat_id].items() if k != 'appearance'} == {k:v for k,v in expected.items() if k != 'appearance'}:
+                return f'catalog-{index % len(definitions) + 1}'
+    return CONTENT_IDS.get(cat_id, cat_id)
+
+
 def player_image_action(cat_id, action, reaction):
     paired_cats = ('cat-mike', 'cat-tama', 'cat-sora', 'cat-kohaku', 'cat-mugi',
-                   'request-cat-1', 'regular-rescue-1', 'visiting-cat-1')
-    if cat_id in paired_cats and action in ('direct', 'adapt') and reaction in ('turn_away', 'confused', 'listless'):
+                   'request-cat-1', 'regular-rescue-1', 'visiting-cat-1', 'shop-1', 'shop-2', 'shop-3')
+    if (cat_id in paired_cats or cat_id.startswith(('dispatch-rescue-', 'rescue-'))) and action in ('direct', 'adapt') and reaction in ('turn_away', 'confused', 'listless'):
         return 'switch'
     return action
 
@@ -911,7 +934,7 @@ def player_interaction_view(session):
                     interaction.cat_id, last['action'], last.get('reaction'))
                     if interaction.records else interaction.state['mode']),
                 event_image_key=event_image_key,
-                content_cat_id=CONTENT_IDS.get(interaction.cat_id, interaction.cat_id),
+                content_cat_id=content_cat_id(session.core, interaction.cat_id),
                 affinity_before=summary['affinity_before'], affinity_after=summary['affinity_after'],
                 affinity_delta=summary['affinity_delta'], stamina_before=interaction.initial_stamina, stamina=summary['stamina'],
                 engagement=summary['engagement'], tension=summary['tension'], history='\n\n'.join(history),
@@ -1213,7 +1236,7 @@ def pet_shop_view(session):
         details+=f"\n\n価格：{row['cost']:g}\n所持金：{core.funds:g}"+ (f" → 購入後：{core.funds-row['cost']:g}" if joined is None else '')
         details+='\n飼育スペース：'+housing_status(core)+'\n\n'+preferences
         details+=f'\n\n{joined}日目に購入しました。加入後の状態は猫一覧から確認できます。' if joined is not None else '\n\n健康・体力全回復・休養予定で加入します。疲労・ストレス・プレイヤー好感度・経験は0です。購入後に資金が残る必要があります。'
-        rows.append(dict(cat_id=key,content_cat_id=CONTENT_IDS.get(key,key),name=row['name'],cost=row['cost'],funds_after=core.funds-row['cost'],
+        rows.append(dict(cat_id=key,content_cat_id=content_cat_id(core, key),name=row['name'],cost=row['cost'],funds_after=core.funds-row['cost'],
                          accepted=joined is not None,accepted_day=joined or 0,can_purchase=not problem,reason=problem,details=details))
     return dict(rows=rows,housing=housing_status(core),notes='候補と価格は新規ゲーム開始時の保存設定を使います。営業準備中に購入できます。購入した猫は同じ候補から再購入できません。')
 
@@ -1255,7 +1278,7 @@ def recruitment_view(session):
         details+=f"\n猫ID：{key} / 紹介日：{data.get('presented_days',{}).get(key,data.get('opened_day',core.day))}日目\n加入時の体力：{core.config.max_stamina:g} / {core.config.max_stamina:g}\n\n価格：{row['cost']:g}\n所持金：{core.funds:g}"+ (f" → 受け入れ後：{core.funds-row['cost']:g}" if joined is None else '')
         details+='\n飼育スペース：'+housing_status(core)+'\n\n'+preferences
         details+=f'\n\n{joined}日目に受け入れしました。加入後の状態は猫一覧から確認できます。' if joined is not None else '\n\n健康・体力全回復・休養予定で加入します。疲労・ストレス・プレイヤー好感度・経験は0です。受け入れ後に資金が残る必要があります。'
-        rows.append(dict(cat_id=key,content_cat_id=CONTENT_IDS.get(key,key),name=row['name'],cost=row['cost'],funds_after=core.funds-row['cost'],
+        rows.append(dict(cat_id=key,content_cat_id=content_cat_id(core, key),name=row['name'],cost=row['cost'],funds_after=core.funds-row['cost'],
                          accepted=joined is not None,accepted_day=joined or 0,can_purchase=not problem,reason=problem,details=details,trait_id=(row.get('trait') or {}).get('id',''),features=row.get('features',[])))
     traits={'':'なし',**{key:value['name'] for key,value in definitions().items()}}
     traits.update({row['trait']['id']:row['trait']['name'] for row in data['candidates'].values() if row.get('trait')})
@@ -1456,7 +1479,7 @@ def state_view(session, instance_id='', revision=0, auto_assign=True, autoplay_r
             + '\n' + (forecast_note(forecast) if at_cafe else '在店していない猫は出勤・休養の対象外です。')
             + ('\nストレス管理は未導入です。' if forecast['current_stress'] is None else ''))
         player_reason = begin_problem or unavailable_reason(core, cat_id)
-        cats.append(dict(cat_id=cat_id, content_cat_id=CONTENT_IDS.get(cat_id, cat_id),
+        cats.append(dict(cat_id=cat_id, content_cat_id=content_cat_id(core, cat_id),
                          name=row['name'], shift_forecast=forecast_details, stamina=row['stamina'],
                          max_stamina=core.config.max_stamina, working=row['working'],
                          fatigue=row['fatigue'], stress=row['stress'] or 0,
