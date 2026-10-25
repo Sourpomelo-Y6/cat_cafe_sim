@@ -35,6 +35,11 @@
       "subject_id": "person-guest-6",
       "game_id": "guest-6",
       "image": "people/35267d0ee7f23dd2756a5cd942e215b66e07d1348e8fdbc9f5c2e6425ed4887b.png"
+    },
+    {
+      "subject_id": "person-guest-7",
+      "game_id": "guest-7",
+      "image": "people/77665685f662f477bfd65b030812e4347f918933a402cce795df8815d4ae97d1.png"
     }
   ]
 }
