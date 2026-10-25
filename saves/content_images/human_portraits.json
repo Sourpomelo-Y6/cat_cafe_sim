@@ -15,6 +15,11 @@
       "subject_id": "person-reservation-longhair",
       "game_id": "reservation-longhair",
       "image": "people/deabee0dcdeaa1a80d03369f10dc0251f57f57ba1e24921919c22d3d32a53306.png"
+    },
+    {
+      "subject_id": "person-guest-3",
+      "game_id": "guest-3",
+      "image": "people/3821a02fbe187442a3fb7d2843c1191fb8e71a3544a41d6fb0802a89d4d915e6.png"
     }
   ]
 }
