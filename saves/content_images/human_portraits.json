@@ -4,7 +4,17 @@
     {
       "subject_id": "guest-1",
       "game_id": "guest-1",
-      "image": "people/7f80e3ded51f662510c53514f2f5a1e0440b04450eef9a448e8e9ea68799a8f5.png"
+      "image": "people/0c815814fbaa02bf25092e99e7bc57ed858a9270e52bb679d97bd8117400b7f7.png"
+    },
+    {
+      "subject_id": "person-952c631405e649fdb50c390881804977",
+      "game_id": "guest-2",
+      "image": "people/ce47440c0d108d859835f07a5cac37a660acf4024e4dd2ea5ac4c90a08550852.png"
+    },
+    {
+      "subject_id": "person-reservation-longhair",
+      "game_id": "reservation-longhair",
+      "image": "people/deabee0dcdeaa1a80d03369f10dc0251f57f57ba1e24921919c22d3d32a53306.png"
     }
   ]
 }

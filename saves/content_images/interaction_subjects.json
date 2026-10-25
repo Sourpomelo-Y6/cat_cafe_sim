@@ -170,6 +170,16 @@
       "notes": "白・短毛、琥珀色の目、卵形の顔、細長い白い尾。穏やかな甘えん坊。",
       "call": "{cat}",
       "enabled": true
+    },
+    {
+      "id": "person-reservation-longhair",
+      "kind": "speech",
+      "name": "森さん",
+      "game_id": "reservation-longhair",
+      "content_id": "",
+      "notes": "",
+      "call": "{cat}",
+      "enabled": true
     }
   ]
 }
