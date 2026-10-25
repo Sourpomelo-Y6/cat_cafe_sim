@@ -60,6 +60,11 @@
       "subject_id": "person-guest-11",
       "game_id": "guest-11",
       "image": "people/3ddc4aba9164fab5e2a588ebbac95c3ad0a44bda299161ff4325a1cf1325d4c5.png"
+    },
+    {
+      "subject_id": "person-guest-12",
+      "game_id": "guest-12",
+      "image": "people/1313db1e0f1182300a8093c93313f4d8d8e40e9a0591664e33a7c207d39d56c9.png"
     }
   ]
 }
