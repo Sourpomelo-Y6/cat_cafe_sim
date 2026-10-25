@@ -75,6 +75,11 @@
       "subject_id": "person-advanced-longhair",
       "game_id": "advanced-longhair",
       "image": "people/171b8c79ef7d4490ce7bc726d589ad6534bbc3570f622ced8131c99c79f91d1d.png"
+    },
+    {
+      "subject_id": "person-advanced-quiet",
+      "game_id": "advanced-quiet",
+      "image": "people/e22af873da839ecef3afd391dfddfa34b24f637f90d56127fc7c5f5b165b7496.png"
     }
   ]
 }
