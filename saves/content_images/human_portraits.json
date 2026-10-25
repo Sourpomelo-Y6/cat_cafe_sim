@@ -65,6 +65,11 @@
       "subject_id": "person-guest-12",
       "game_id": "guest-12",
       "image": "people/1313db1e0f1182300a8093c93313f4d8d8e40e9a0591664e33a7c207d39d56c9.png"
+    },
+    {
+      "subject_id": "person-advanced-white",
+      "game_id": "advanced-white",
+      "image": "people/ec1faf1dbf00bc767da66f9353d9f75a9f56e4a15b272ef85ed3fca098e41cc4.png"
     }
   ]
 }
