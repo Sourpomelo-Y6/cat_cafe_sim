@@ -70,6 +70,11 @@
       "subject_id": "person-advanced-white",
       "game_id": "advanced-white",
       "image": "people/ec1faf1dbf00bc767da66f9353d9f75a9f56e4a15b272ef85ed3fca098e41cc4.png"
+    },
+    {
+      "subject_id": "person-advanced-longhair",
+      "game_id": "advanced-longhair",
+      "image": "people/171b8c79ef7d4490ce7bc726d589ad6534bbc3570f622ced8131c99c79f91d1d.png"
     }
   ]
 }
