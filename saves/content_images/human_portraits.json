@@ -20,6 +20,11 @@
       "subject_id": "person-guest-3",
       "game_id": "guest-3",
       "image": "people/3821a02fbe187442a3fb7d2843c1191fb8e71a3544a41d6fb0802a89d4d915e6.png"
+    },
+    {
+      "subject_id": "person-guest-4",
+      "game_id": "guest-4",
+      "image": "people/04b48ed19be7cca7490b47950ca4eba20cb8de4ec3e1b246f6aac2bf06a2cdfc.png"
     }
   ]
 }
