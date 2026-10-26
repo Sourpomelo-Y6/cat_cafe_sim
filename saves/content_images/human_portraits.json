@@ -85,6 +85,11 @@
       "subject_id": "person-advanced-play",
       "game_id": "advanced-play",
       "image": "people/4e6313908661f30c1435c735392934d052ea86eaa90f465d0b99305ae5d18990.png"
+    },
+    {
+      "subject_id": "person-advanced-contact",
+      "game_id": "advanced-contact",
+      "image": "people/d724809a16adbfda49e673b883ad42222dfa58b843e75768ff50884a35893fa8.png"
     }
   ]
 }
