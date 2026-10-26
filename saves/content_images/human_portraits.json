@@ -105,6 +105,11 @@
       "subject_id": "person-expanded-guest-2",
       "game_id": "expanded-guest-2",
       "image": "people/5edbe0f62d457b16c30e55ed032c35e149d219aab9fb07889a00ad3d0b43dd93.png"
+    },
+    {
+      "subject_id": "person-expanded-guest-3",
+      "game_id": "expanded-guest-3",
+      "image": "people/d51f661bbf76ded66859aac2170e617f70811a0b8b9bec95c030e33d712e112e.png"
     }
   ]
 }
