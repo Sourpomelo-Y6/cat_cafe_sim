@@ -90,6 +90,11 @@
       "subject_id": "person-advanced-contact",
       "game_id": "advanced-contact",
       "image": "people/d724809a16adbfda49e673b883ad42222dfa58b843e75768ff50884a35893fa8.png"
+    },
+    {
+      "subject_id": "person-vip-calico",
+      "game_id": "vip-calico",
+      "image": "people/1b21b4c9acb5e6e26b4d1b0a15d439f225e563d902a9c3ad9a71baa906171ad3.png"
     }
   ]
 }
