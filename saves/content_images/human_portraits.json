@@ -95,6 +95,11 @@
       "subject_id": "person-vip-calico",
       "game_id": "vip-calico",
       "image": "people/1b21b4c9acb5e6e26b4d1b0a15d439f225e563d902a9c3ad9a71baa906171ad3.png"
+    },
+    {
+      "subject_id": "person-expanded-guest",
+      "game_id": "expanded-guest",
+      "image": "people/78e935372ba3fefc75cc2e8e51524eb847c914522c91fc0e88f8028ed9c964cf.png"
     }
   ]
 }
