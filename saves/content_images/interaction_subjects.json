@@ -430,6 +430,16 @@
       "notes": "白黒・長毛、緑色の目と白い顔、黒い耳・頭頂と白い尾先。穏やかな甘えん坊。",
       "call": "{cat}",
       "enabled": true
+    },
+    {
+      "id": "catalog-6",
+      "kind": "cat_response",
+      "name": "クルミ",
+      "game_id": "catalog-6",
+      "content_id": "catalog-6",
+      "notes": "キジトラ・短毛、金黄色の丸い目、幅のある体、太い縞と短めの尾。中立。",
+      "call": "{cat}",
+      "enabled": true
     }
   ]
 }
