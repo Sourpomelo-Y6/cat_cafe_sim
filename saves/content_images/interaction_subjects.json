@@ -442,6 +442,16 @@
       "enabled": true
     },
     {
+      "id": "catalog-7",
+      "kind": "cat_response",
+      "name": "シロ",
+      "game_id": "catalog-7",
+      "content_id": "catalog-7",
+      "notes": "白猫・長毛、黄緑色の目、長い脚、幅のある逆三角形の顔、豊かな白い尾。活発な探検家。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
       "id": "person-event-guest-41",
       "kind": "speech",
       "name": "小川さん",
