@@ -120,6 +120,11 @@
       "subject_id": "person-expanded-guest-5",
       "game_id": "expanded-guest-5",
       "image": "people/e9fea2022a638bff6c8bfd34be03596e9712928e4f92d50a992528c1b2bf9388.png"
+    },
+    {
+      "subject_id": "person-event-guest-41",
+      "game_id": "event-guest-41",
+      "image": "people/88e14c70d99255bd50d0b1cc0a55ab8bf49cecc35b78a7948dbb250325007797.png"
     }
   ]
 }
