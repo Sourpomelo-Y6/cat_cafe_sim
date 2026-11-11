@@ -460,6 +460,116 @@
       "notes": "役割：祭りの日に来店する臨時客。直近の開発観戦patronルート41日目の会話で customer_id=event-guest-41 と小川さんの本文を照合。今回採用した外見：短い波打つ暗褐色の髪、眼鏡なし、赤茶の上着と生成りのシャツ、開いた目と穏やかな閉じ口。外見のみの制作設定。年齢・職業・来歴・趣味・固有口調は追加しない。既存の来店条件・数値・過去本文は変更しない。",
       "call": "{cat}",
       "enabled": true
+    },
+    {
+      "id": "catalog-8",
+      "kind": "cat_response",
+      "name": "スズ",
+      "game_id": "catalog-8",
+      "content_id": "catalog-8",
+      "notes": "黒猫・長毛、エメラルド色の目、面長の顔、長い黒い尾。距離を大切にする猫。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
+      "id": "catalog-9",
+      "kind": "cat_response",
+      "name": "マメ",
+      "game_id": "catalog-9",
+      "content_id": "catalog-9",
+      "notes": "三毛・短毛、水色の目、白い目元と橙色の額斑、白先の橙色の尾。中立。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
+      "id": "catalog-10",
+      "kind": "cat_response",
+      "name": "アンズ",
+      "game_id": "catalog-10",
+      "content_id": "catalog-10",
+      "notes": "茶トラ・長毛、青緑色の目、細身の体と卵形の顔、長い房状の尾。穏やかな甘えん坊。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
+      "id": "catalog-11",
+      "kind": "cat_response",
+      "name": "カエデ",
+      "game_id": "catalog-11",
+      "content_id": "catalog-11",
+      "notes": "キジトラ・長毛、琥珀色の目、幅広い丸顔、濃い輪縞の尾。遊び好きで繊細。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
+      "id": "catalog-12",
+      "kind": "cat_response",
+      "name": "フク",
+      "game_id": "catalog-12",
+      "content_id": "catalog-12",
+      "notes": "白黒・短毛、翡翠色の目、白い逆V字の鼻筋、白い尾先、右の口元に黒点。活発な探検家。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
+      "id": "catalog-13",
+      "kind": "cat_response",
+      "name": "ナギ",
+      "game_id": "catalog-13",
+      "content_id": "catalog-13",
+      "notes": "黒猫・短毛、淡い氷青色の目と幅広い丸顔、黒い尾先。中立。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
+      "id": "catalog-14",
+      "kind": "cat_response",
+      "name": "ミント",
+      "game_id": "catalog-14",
+      "content_id": "catalog-14",
+      "notes": "白黒・長毛、ミント色の目、細い白い鼻筋、左肩の独立した黒斑、白い尾先。遊び好きで繊細。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
+      "id": "catalog-15",
+      "kind": "cat_response",
+      "name": "トラ",
+      "game_id": "catalog-15",
+      "content_id": "catalog-15",
+      "notes": "キジトラ・短毛、オリーブ色の目、細身と楔形の顔、輪縞の尾と黒い先端。活発な探検家。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
+      "id": "catalog-16",
+      "kind": "cat_response",
+      "name": "シオン",
+      "game_id": "catalog-16",
+      "content_id": "catalog-16",
+      "notes": "白猫・短毛、サファイアブルーの目、丸顔と短い口元、滑らかな白い尾。距離を大切にする猫。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
+      "id": "catalog-17",
+      "kind": "cat_response",
+      "name": "ルナ",
+      "game_id": "catalog-17",
+      "content_id": "catalog-17",
+      "notes": "茶トラ・長毛、葉のような緑の目、銅色の渦巻き模様、丸顔とがっしりした体、豊かな尾。穏やかな甘えん坊。",
+      "call": "{cat}",
+      "enabled": true
+    },
+    {
+      "id": "catalog-18",
+      "kind": "cat_response",
+      "name": "チャイ",
+      "game_id": "catalog-18",
+      "content_id": "catalog-18",
+      "notes": "三毛・長毛、琥珀色の目、左目の下の黒斑、赤茶色の尾先。遊び好きで繊細な猫。",
+      "call": "{cat}",
+      "enabled": true
     }
   ]
 }
